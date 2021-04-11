@@ -12,7 +12,7 @@
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.z
  */
 
 #include "mainwindow.h"
@@ -175,7 +175,12 @@ MainWindow::MainWindow(QWidget *parent) :
         showStatusInfo(msg, !isError);
 
         if (isError) {
+#ifdef DEBUG_PRINTWARNINGS
             qWarning() << "TCP Error:" << msg;
+#endif
+#ifdef DEBUG_NETWORK
+            qDebug() << QDateTime::currentDateTime().toString() << "TCP Error:" << msg;
+#endif
             QMessageBox::warning(this, "TCP Error", msg);
         }
     });
@@ -312,6 +317,10 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
 
 void MainWindow::addCar(int id, bool pollData)
 {
+#ifdef DEBUG_FUNCTIONS
+    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - MainWindow::addCar, id: " << id << ", pollData:" << pollData;
+#endif
+
     CarInterface *car = new CarInterface(this);
     mCars.append(car);
     QString name;
@@ -326,6 +335,9 @@ void MainWindow::addCar(int id, bool pollData)
 
 void MainWindow::connectJoystick(QString dev)
 {
+#ifdef DEBUG_FUNCTIONS
+    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - MainWindow::connectJoystick, dev: " << dev;
+#endif
 #ifdef HAS_JOYSTICK
     if (mJoystick->init(dev) == 0) {
         qDebug() << "JS Axes:" << mJoystick->numAxes();
@@ -364,11 +376,17 @@ void MainWindow::connectJoystick(QString dev)
 
 void MainWindow::addTcpConnection(QString ip, int port)
 {
+#ifdef DEBUG_FUNCTIONS
+    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - MainWindow::addTcpConnection, ip: " << ip << ", port:" << port;
+#endif
     mTcpClientMulti->addConnection(ip, port);
 }
 
 void MainWindow::setNetworkTcpEnabled(bool enabled, int port)
 {
+#ifdef DEBUG_FUNCTIONS
+    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - MainWindow::setNetworkTcpEnabled, enabled: " << enabled << ", port:" << port;
+#endif
     ui->networkInterface->setTcpEnabled(enabled, port);
 }
 
@@ -712,7 +730,8 @@ void MainWindow::pingRx(int time, QString msg)
 
 void MainWindow::pingError(QString msg, QString error)
 {
-    QMessageBox::warning(this, "Error ping " + msg, error);
+    qDebug() << "Error ping: " << msg << error;
+	QMessageBox::warning(this, "Error ping " + msg, error);
 }
 
 void MainWindow::enuRx(quint8 id, double lat, double lon, double height)
@@ -941,11 +960,17 @@ void MainWindow::jsButtonChanged(int button, bool pressed)
 
 void MainWindow::on_carAddButton_clicked()
 {    
+#ifdef DEBUG_BUTTONS
+	qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Add car";
+#endif
     addCar(mCars.size() + mCopters.size());
 }
 
 void MainWindow::on_copterAddButton_clicked()
 {
+#ifdef DEBUG_BUTTONS
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Add copter";
+#endif
     CopterInterface *copter = new CopterInterface(this);
     int id = mCars.size() + mCopters.size();
     mCopters.append(copter);
@@ -961,7 +986,10 @@ void MainWindow::on_copterAddButton_clicked()
 
 void MainWindow::on_serialConnectButton_clicked()
 {
-    if(mSerialPort->isOpen()) {
+#ifdef DEBUG_BUTTONS
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Serial connect";
+#endif
+	if(mSerialPort->isOpen()) {
         return;
     }
 
@@ -985,6 +1013,9 @@ void MainWindow::on_serialConnectButton_clicked()
 
 void MainWindow::on_serialRefreshButton_clicked()
 {
+#ifdef DEBUG_BUTTONS
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Serial refresh";
+#endif
     ui->serialPortBox->clear();
     bool found = false;
 
@@ -1010,6 +1041,9 @@ void MainWindow::on_serialRefreshButton_clicked()
 
 void MainWindow::on_disconnectButton_clicked()
 {
+#ifdef DEBUG_BUTTONS
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Disconnect";
+#endif
     if (mSerialPort->isOpen()) {
         mSerialPort->close();
     }
@@ -1023,16 +1057,25 @@ void MainWindow::on_disconnectButton_clicked()
 
 void MainWindow::on_mapRemoveTraceButton_clicked()
 {
+#ifdef DEBUG_BUTTONS
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Remove trace";
+#endif
     ui->mapWidget->clearTrace();
 }
 
 void MainWindow::on_MapRemovePixmapsButton_clicked()
 {
+#ifdef DEBUG_BUTTONS
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Map remove pixmap";
+#endif
     ui->mapWidget->clearPerspectivePixmaps();
 }
 
 void MainWindow::on_udpConnectButton_clicked()
 {
+#ifdef DEBUG_BUTTONS
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Udp connect";
+#endif
     QHostAddress ip;
 
     if (ip.setAddress(ui->udpIpEdit->text().trimmed())) {
@@ -1055,11 +1098,17 @@ void MainWindow::on_udpConnectButton_clicked()
 
 void MainWindow::on_udpPingButton_clicked()
 {
+#ifdef DEBUG_BUTTONS
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Udp ping";
+#endif
     mPing->pingHost(ui->udpIpEdit->text(), 64, "UDP Host");
 }
 
 void MainWindow::on_tcpConnectButton_clicked()
 {
+#ifdef DEBUG_BUTTONS
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Tcp connect";
+#endif
     mTcpClientMulti->disconnectAll();
     QStringList conns = ui->tcpConnEdit->toPlainText().split("\n");
 
@@ -1078,6 +1127,9 @@ void MainWindow::on_tcpConnectButton_clicked()
 
 void MainWindow::on_tcpPingButton_clicked()
 {
+#ifdef DEBUG_BUTTONS
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Tcp ping";
+#endif
     QStringList conns = ui->tcpConnEdit->toPlainText().split("\n");
 
     for (QString c: conns) {
@@ -1108,11 +1160,17 @@ void MainWindow::on_mapRouteSpeedBox_valueChanged(double arg1)
 
 void MainWindow::on_jsConnectButton_clicked()
 {
+#ifdef DEBUG_BUTTONS
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Joystick connect";
+#endif
     connectJoystick(ui->jsPortEdit->text());
 }
 
 void MainWindow::on_jsDisconnectButton_clicked()
 {
+#ifdef DEBUG_BUTTONS
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Joystick disconnect";
+#endif
 #ifdef HAS_JOYSTICK
     mJoystick->stop();
 #endif
@@ -1280,9 +1338,15 @@ void MainWindow::on_stopButton_clicked()
 
 void MainWindow::on_mapUploadRouteButton_clicked()
 {
+#ifdef DEBUG_BUTTONS
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Map - Upload route";
+#endif
     if (!mSerialPort->isOpen() && !mPacketInterface->isUdpConnected() && !mTcpClientMulti->isAnyConnected()) {
         QMessageBox::warning(this, "Upload route",
                              "Serial port not connected.");
+#ifdef DEBUG_MESSAGEBOXES
+        qDebug() << QDateTime::currentDateTime().toString() << " - MESSAGEBOX - Upload route - Serial port not connected";
+#endif
         return;
     }
 
@@ -1732,6 +1796,9 @@ void MainWindow::on_pollIntervalBox_valueChanged(int arg1)
 
 void MainWindow::on_actionAbout_triggered()
 {
+#ifdef DEBUG_BUTTONS
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - About";
+#endif
     QMessageBox::about(this, "RControlStation",
                        tr("<b>RControlStation %1</b><br>"
                           "&copy; Benjamin Vedder 2016 - 2017<br>"
@@ -1741,6 +1808,9 @@ void MainWindow::on_actionAbout_triggered()
 
 void MainWindow::on_actionAboutLibrariesUsed_triggered()
 {
+#ifdef DEBUG_BUTTONS
+	qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - About libraries";
+#endif
     QMessageBox::about(this, "Libraries Used",
                        tr("<b>Icons<br>"
                           "<a href=\"https://icons8.com/\">https://icons8.com/</a><br><br>"
@@ -1767,7 +1837,7 @@ void MainWindow::on_actionSaveRouteswithIDs_triggered()
 
 void MainWindow::on_actionLoadRoutes_triggered()
 {
-    QString filename = QFileDialog::getOpenFileName(this,
+	QString filename = QFileDialog::getOpenFileName(this,
                                                     tr("Load Routes"), "",
                                                     tr("Xml files (*.xml)"));
 
@@ -1777,12 +1847,22 @@ void MainWindow::on_actionLoadRoutes_triggered()
         if (res >= 0) {
             showStatusInfo("Loaded routes", true);
         } else if (res == -1) {
+#ifdef DEBUG_DIALOG
+        	qDebug() << QDateTime::currentDateTime().toString() << " - DIALOG - Loaded routes - " << "Could not open\n" + filename + "\nfor reading";
+
+#endif
             QMessageBox::critical(this, "Load Routes",
                                   "Could not open\n" + filename + "\nfor reading");
         } else if (res == -2) {
+#ifdef DEBUG_DIALOG
+        	qDebug() << QDateTime::currentDateTime().toString() << " - DIALOG - Loaded routes - " <<  "routes tag not found in " + filename;
+#endif
             QMessageBox::critical(this, "Load Routes",
                                   "routes tag not found in " + filename);
         } else {
+#ifdef DEBUG_DIALOG
+        	qDebug() << QDateTime::currentDateTime().toString() << " - DIALOG - Loaded routes - " <<  "unknown error";
+#endif
             QMessageBox::critical(this, "Load Routes", "unknown error");
         }
     }
@@ -1981,6 +2061,7 @@ void MainWindow::on_modeRouteButton_toggled(bool checked)
 
 void MainWindow::on_uploadAnchorButton_clicked()
 {
+    qDebug() << "Upload anchor button clicked";
     QVector<UWB_ANCHOR> anchors;
     for (LocPoint p: ui->mapWidget->getAnchors()) {
         UWB_ANCHOR a;
@@ -2190,19 +2271,9 @@ void MainWindow::on_mapRoutePosAttrBox_currentIndexChanged(int index)
     ui->mapWidget->setRoutePointAttributes(attr);
 }
 
-void MainWindow::on_clearAnchorButton_clicked()
-{
-    mPacketInterface->clearUwbAnchors(ui->mapCarBox->value());
-}
-
-void MainWindow::on_setBoundsRoutePushButton_clicked()
-{
-    int r = ui->mapWidget->getRouteNow();
-    ui->boundsRouteSpinBox->setValue(r);
-}
-
 void MainWindow::on_boundsFillPushButton_clicked()
 {
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Fill bounds";
     QList<LocPoint> bounds = ui->mapWidget->getRoute(ui->boundsRouteSpinBox->value());
 
     double spacing = ui->boundsFillSpacingSpinBox->value();
@@ -2229,18 +2300,35 @@ void MainWindow::on_boundsFillPushButton_clicked()
 
 }
 
+void MainWindow::on_clearAnchorButton_clicked()
+{
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Clear anchor";
+    mPacketInterface->clearUwbAnchors(ui->mapCarBox->value());
+}
+
+void MainWindow::on_setBoundsRoutePushButton_clicked()
+{
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Set bounds";
+    int r = ui->mapWidget->getRouteNow();
+    ui->boundsRouteSpinBox->setValue(r);
+}
+
 void MainWindow::on_lowerToolsCheckBox_stateChanged(int arg1)
 {
+	qDebug() << QDateTime::currentDateTime().toString() << " - CHECKBOX (STATE CHANGE) - Lower tools";
+
     ui->lowerToolsDistanceSpinBox->setEnabled(arg1 != 0);
 }
 
 void MainWindow::on_raiseToolsCheckBox_stateChanged(int arg1)
 {
+	qDebug() << QDateTime::currentDateTime().toString() << " - CHECKBOX (STATE CHANGE) - Raise tools";
     ui->raiseToolsDistanceSpinBox->setEnabled(arg1 != 0);
 }
 
 void MainWindow::on_WgSettingsPushButton_clicked()
 {
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Wg Settings";
     if (!mWireGuard)
         mWireGuard.reset(new WireGuard(this));
     mWireGuard->show();
@@ -2248,7 +2336,8 @@ void MainWindow::on_WgSettingsPushButton_clicked()
 
 void MainWindow::on_WgConnectPushButton_clicked()
 {
-    system("pkexec wg-quick up wg_sdvp");
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Wg Connect";
+	system("pkexec wg-quick up wg_sdvp");
     QList<QNetworkInterface> interfaces = QNetworkInterface::allInterfaces();
     if (std::find_if(interfaces.begin(), interfaces.end(),
                      [](QNetworkInterface currInterface){return currInterface.name() == "wg_sdvp";}) != interfaces.end())
@@ -2259,6 +2348,7 @@ void MainWindow::on_WgConnectPushButton_clicked()
 
 void MainWindow::on_WgDisconnectPushButton_clicked()
 {
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Wg Disconnect";
     system("pkexec wg-quick down wg_sdvp");
     QList<QNetworkInterface> interfaces = QNetworkInterface::allInterfaces();
     if (std::find_if(interfaces.begin(), interfaces.end(),
@@ -2268,9 +2358,22 @@ void MainWindow::on_WgDisconnectPushButton_clicked()
         ui->wgStatusLabel->setText("Status: Interface down");
 }
 
+void MainWindow::on_AutopilotStartPushButton_clicked()
+{
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Autopilot start";
+    ui->throttleOffButton->setChecked(true);
+    QWidget *tmp = ui->carsWidget->widget(ui->mapCarBox->value());
+    if (tmp) {
+        CarInterface *car = dynamic_cast<CarInterface*>(tmp);
+        car->setAp(true, false);
+    }
+}
+
 void MainWindow::on_AutopilotConfigurePushButton_clicked()
 {
-    ui->mainTabWidget->setCurrentIndex(ui->mainTabWidget->indexOf(ui->tab));
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Autopilot configure";
+
+	ui->mainTabWidget->setCurrentIndex(ui->mainTabWidget->indexOf(ui->tab));
     ui->carsWidget->setCurrentIndex(ui->mapCarBox->value());
 
     QWidget *tmp = ui->carsWidget->widget(ui->mapCarBox->value());
@@ -2280,18 +2383,9 @@ void MainWindow::on_AutopilotConfigurePushButton_clicked()
     }
 }
 
-void MainWindow::on_AutopilotStartPushButton_clicked()
-{
-    ui->throttleOffButton->setChecked(true);
-    QWidget *tmp = ui->carsWidget->widget(ui->mapCarBox->value());
-    if (tmp) {
-        CarInterface *car = dynamic_cast<CarInterface*>(tmp);
-        car->setAp(true, false);
-    }
-}
-
 void MainWindow::on_AutopilotStopPushButton_clicked()
 {
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Autopilot stop";
     QWidget *tmp = ui->carsWidget->widget(ui->mapCarBox->value());
     if (tmp) {
         CarInterface *car = dynamic_cast<CarInterface*>(tmp);
@@ -2301,6 +2395,7 @@ void MainWindow::on_AutopilotStopPushButton_clicked()
 
 void MainWindow::on_AutopilotRestartPushButton_clicked()
 {
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Autopilot restart";
     ui->throttleOffButton->setChecked(true);
     QWidget *tmp = ui->carsWidget->widget(ui->mapCarBox->value());
     if (tmp) {
@@ -2311,9 +2406,15 @@ void MainWindow::on_AutopilotRestartPushButton_clicked()
 
 void MainWindow::on_AutopilotPausePushButton_clicked()
 {
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Autopilot pause";
     QWidget *tmp = ui->carsWidget->widget(ui->mapCarBox->value());
     if (tmp) {
         CarInterface *car = dynamic_cast<CarInterface*>(tmp);
         car->setAp(false, false);
     }
+}
+
+void MainWindow::on_pushButton_clicked()
+{
+    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Fence!";
 }
