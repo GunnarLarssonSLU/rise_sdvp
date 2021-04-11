@@ -43,8 +43,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>241</width>
-           <height>84</height>
+           <width>180</width>
+           <height>68</height>
           </rect>
          </property>
          <attribute name="label">
@@ -104,8 +104,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>244</width>
-           <height>138</height>
+           <width>148</width>
+           <height>88</height>
           </rect>
          </property>
          <attribute name="label">
@@ -210,8 +210,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>241</width>
-           <height>83</height>
+           <width>106</width>
+           <height>71</height>
           </rect>
          </property>
          <attribute name="label">
@@ -1166,7 +1166,7 @@
                <enum>QTabWidget::Rounded</enum>
               </property>
               <property name="currentIndex">
-               <number>0</number>
+               <number>1</number>
               </property>
               <property name="usesScrollButtons">
                <bool>false</bool>
@@ -1455,8 +1455,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>265</width>
-                     <height>1080</height>
+                     <width>332</width>
+                     <height>974</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_23">
@@ -1586,6 +1586,13 @@
                         <widget class="QProgressBar" name="mapUploadRouteProgressBar">
                          <property name="value">
                           <number>0</number>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QPushButton" name="pushButton">
+                         <property name="text">
+                          <string>Fence</string>
                          </property>
                         </widget>
                        </item>
@@ -2070,8 +2077,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>246</width>
-                     <height>613</height>
+                     <width>196</width>
+                     <height>436</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -2365,8 +2372,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>270</width>
-                     <height>1130</height>
+                     <width>210</width>
+                     <height>783</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_15">
@@ -2977,8 +2984,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>330</width>
-                     <height>864</height>
+                     <width>332</width>
+                     <height>532</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_27">
@@ -3499,7 +3506,7 @@
      <x>0</x>
      <y>0</y>
      <width>1561</width>
-     <height>40</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuHelp">

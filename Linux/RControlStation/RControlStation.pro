@@ -24,6 +24,12 @@ unix:!macx {
     DEFINES += HAS_JOYSTICK
 }
 
+DEFINES += DEBUG_PRINTWARNINGS
+DEFINES += DEBUG_BUTTONS
+DEFINES += DEBUG_NETWORK
+DEFINES += DEBUG_MESSAGEBOXES
+DEFINES += DEBUG_FUNCTIONS
+
 # OpenGL support
 !android: DEFINES += HAS_OPENGL
 win32: LIBS += -lOpengl32
@@ -41,7 +47,7 @@ win32: LIBS += -lOpengl32
 TARGET = RControlStation
 TEMPLATE = app
 
-CONFIG(release, debug|release):DEFINES += QT_NO_DEBUG_OUTPUT
+#CONFIG(release, debug|release):DEFINES += QT_NO_DEBUG_OUTPUT
 
 release_win {
     DESTDIR = build/win
@@ -193,11 +199,7 @@ contains(DEFINES, HAS_LIME_SDR) {
 }
 
 contains(DEFINES, HAS_SIM_SCEN) {
-    INCLUDEPATH += esmini/EnvironmentSimulator/Libraries/esminiLib \
-            esmini/EnvironmentSimulator/Modules/RoadManager \
-            esmini/externals/pugixml \
-            esmini/EnvironmentSimulator/Modules/CommonMini
-    LIBS += -L"esmini/bin/" -lesminiLib
+    include(esmini/EnvironmentSimulator.pri)
     SOURCES += pagesimscen.cpp
     HEADERS += pagesimscen.h \
             simscentree.h
