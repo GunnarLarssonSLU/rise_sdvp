@@ -810,7 +810,7 @@
        <enum>QTabWidget::North</enum>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -1775,7 +1775,7 @@
                           <double>120.000000000000000</double>
                          </property>
                          <property name="value">
-                          <double>3.000000000000000</double>
+                          <double>5.000000000000000</double>
                          </property>
                         </widget>
                        </item>
