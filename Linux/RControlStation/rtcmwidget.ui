@@ -32,7 +32,7 @@
         <item>
          <widget class="QLineEdit" name="ntripServerEdit">
           <property name="text">
-           <string>localhost</string>
+           <string>192.168.200.1</string>
           </property>
          </widget>
         </item>

@@ -175,6 +175,10 @@ void RtcmWidget::refPosRx(double lat, double lon, double height, double antenna_
 
 void RtcmWidget::on_ntripConnectButton_clicked()
 {
+#ifdef DEBUG_BUTTONS
+	qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON - Connect RTCM";
+#endif
+
     if (ui->ntripBox->isChecked()) {
         mRtcm->connectNtrip(ui->ntripServerEdit->text(),
                             ui->ntripStreamEdit->text(),
@@ -188,6 +192,9 @@ void RtcmWidget::on_ntripConnectButton_clicked()
 
 void RtcmWidget::on_ntripDisconnectButton_clicked()
 {
+#ifdef DEBUG_BUTTONS
+	qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON - Disconnect RTCM";
+#endif
     mRtcm->disconnectTcpNtrip();
 }
 
