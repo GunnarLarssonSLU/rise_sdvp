@@ -36,7 +36,7 @@
          </size>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>2</number>
         </property>
         <widget class="QWidget" name="page">
          <property name="geometry">
@@ -104,7 +104,7 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>148</width>
+           <width>180</width>
            <height>88</height>
           </rect>
          </property>
@@ -210,7 +210,7 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>106</width>
+           <width>181</width>
            <height>71</height>
           </rect>
          </property>
@@ -273,7 +273,7 @@
                <enum>QPlainTextEdit::NoWrap</enum>
               </property>
               <property name="plainText">
-               <string>127.0.0.1:8300</string>
+               <string>192.168.200.100</string>
               </property>
              </widget>
             </item>
@@ -693,7 +693,7 @@
             <double>0.010000000000000</double>
            </property>
            <property name="value">
-            <double>0.150000000000000</double>
+            <double>0.600000000000000</double>
            </property>
           </widget>
          </item>
@@ -810,7 +810,7 @@
        <enum>QTabWidget::North</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
