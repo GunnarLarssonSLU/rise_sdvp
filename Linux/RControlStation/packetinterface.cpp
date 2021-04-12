@@ -802,6 +802,9 @@ bool PacketInterface::replaceRoute(quint8 id, QList<LocPoint> points, int retrie
 
 bool PacketInterface::removeLastRoutePoint(quint8 id, int retries)
 {
+#ifdef DEBUG_PACKETINERFACE
+    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - PacketInterface::removeLastRoutePoint, id:" << id << ", retries: " << retries;
+#endif
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_AP_REMOVE_LAST_POINT;
@@ -811,7 +814,11 @@ bool PacketInterface::removeLastRoutePoint(quint8 id, int retries)
 
 bool PacketInterface::clearRoute(quint8 id, int retries)
 {
-    qint32 send_index = 0;
+#ifdef DEBUG_PACKETINERFACE
+    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - PacketInterface::clearRoute, id:" << id << ", retries: " << retries;
+#endif
+
+	qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_AP_CLEAR_POINTS;
 
