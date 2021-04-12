@@ -244,8 +244,8 @@ void RtcmWidget::on_ntripBox_toggled(bool checked)
         ui->ntripPasswordEdit->setEnabled(true);
         ui->ntripStreamEdit->setEnabled(true);
     } else {
-        ui->ntripServerEdit->setText("localhost");
-        ui->ntripPortBox->setValue(65300);
+        ui->ntripServerEdit->setText("192.168.200.1");
+        ui->ntripPortBox->setValue(2101);
 
         ui->ntripUserEdit->setEnabled(false);
         ui->ntripPasswordEdit->setEnabled(false);
