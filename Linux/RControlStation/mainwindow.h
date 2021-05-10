@@ -90,13 +90,9 @@ private slots:
 
     void on_carAddButton_clicked();
     void on_copterAddButton_clicked();
-    void on_serialConnectButton_clicked();
-    void on_serialRefreshButton_clicked();
     void on_disconnectButton_clicked();
     void on_mapRemoveTraceButton_clicked();
     void on_MapRemovePixmapsButton_clicked();
-    void on_udpConnectButton_clicked();
-    void on_udpPingButton_clicked();
     void on_tcpConnectButton_clicked();
     void on_tcpPingButton_clicked();
     void on_mapZeroButton_clicked();

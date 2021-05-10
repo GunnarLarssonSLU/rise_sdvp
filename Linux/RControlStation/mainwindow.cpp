@@ -185,7 +185,6 @@ MainWindow::MainWindow(QWidget *parent) :
         }
     });
 
-    on_serialRefreshButton_clicked();
     on_mapCameraWidthBox_valueChanged(ui->mapCameraWidthBox->value());
     on_mapCameraOpacityBox_valueChanged(ui->mapCameraOpacityBox->value());
     if (WireGuard::isWireGuardInstalled()) {
@@ -195,6 +194,12 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->wgStatusLabel->setText("Status: Not installed");
         ui->wgGroupBox->setEnabled(false);
     }
+
+    //Initialize
+    on_WgConnectPushButton_clicked();
+    on_tcpConnectButton_clicked();
+    on_jsConnectButton_clicked();
+    on_carAddButton_clicked();
 
 
 #ifdef HAS_JOYSTICK
@@ -497,6 +502,13 @@ void MainWindow::timerSlot()
             utility::truncate_number_abs(&js_mr_roll, 1.0);
             utility::truncate_number_abs(&js_mr_pitch, 1.0);
             utility::truncate_number_abs(&js_mr_yaw, 1.0);
+#ifdef DEBUG_FUNCTIONS
+            if (mThrottle !=0 || mSteering !=0)
+            {
+            	qDebug() << QDateTime::currentDateTime().toString() << " - JOYSTICK (timerslot), mThrottle: " << mThrottle << ", mSteering: " << mSteering;
+            }
+#endif
+
         }
 
         //mSteering /= 2.0;
@@ -668,8 +680,8 @@ void MainWindow::showStatusInfo(QString info, bool isGood)
 
 void MainWindow::packetDataToSend(QByteArray &data)
 {
-#ifdef DEBUG_FUNCTIONS
-    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - MainWindow::packetDataToSend";
+#ifdef DEBUG_PACKETINTERFACE
+    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - MainWindow::packetDataToSend: " << data;
 #endif
     if (mSerialPort->isOpen()) {
         mSerialPort->write(data);
@@ -734,7 +746,7 @@ void MainWindow::ackReceived(quint8 id, CMD_PACKET cmd, QString msg)
 
 void MainWindow::rtcmReceived(QByteArray data)
 {
-#ifdef DEBUG_FUNCTIONS
+#ifdef DEBUG_PACKETINTERFACE
     qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - MainWindow::rtcmReceived";
 #endif
     mPacketInterface->sendRtcmUsb(255, data);
@@ -1042,60 +1054,6 @@ void MainWindow::on_copterAddButton_clicked()
     connect(copter, SIGNAL(showStatusInfo(QString,bool)), this, SLOT(showStatusInfo(QString,bool)));
 }
 
-void MainWindow::on_serialConnectButton_clicked()
-{
-#ifdef DEBUG_BUTTONS
-    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Serial connect";
-#endif
-	if(mSerialPort->isOpen()) {
-        return;
-    }
-
-    mSerialPort->setPortName(ui->serialPortBox->currentData().toString());
-    mSerialPort->open(QIODevice::ReadWrite);
-
-    if(!mSerialPort->isOpen()) {
-        return;
-    }
-
-    mSerialPort->setBaudRate(QSerialPort::Baud115200);
-    mSerialPort->setDataBits(QSerialPort::Data8);
-    mSerialPort->setParity(QSerialPort::NoParity);
-    mSerialPort->setStopBits(QSerialPort::OneStop);
-    mSerialPort->setFlowControl(QSerialPort::NoFlowControl);
-
-    mPacketInterface->stopUdpConnection();
-
-    mTcpClientMulti->disconnectAll();
-}
-
-void MainWindow::on_serialRefreshButton_clicked()
-{
-#ifdef DEBUG_BUTTONS
-    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Serial refresh";
-#endif
-    ui->serialPortBox->clear();
-    bool found = false;
-
-    QList<QSerialPortInfo> ports = QSerialPortInfo::availablePorts();
-    foreach(const QSerialPortInfo &port, ports) {
-        QString name = port.portName();
-        int index = ui->serialPortBox->count();
-        // put STMicroelectronics device first in list and add prefix
-        if(port.manufacturer() == "STMicroelectronics") {
-            name.insert(0, "IF - ");
-            index = 0;
-            found = true;
-        }
-        ui->serialPortBox->insertItem(index, name, port.systemLocation());
-    }
-
-    ui->serialPortBox->setCurrentIndex(0);
-
-    if (found && !mSerialPort->isOpen()) {
-        on_serialConnectButton_clicked();
-    }
-}
 
 void MainWindow::on_disconnectButton_clicked()
 {
@@ -1127,39 +1085,6 @@ void MainWindow::on_MapRemovePixmapsButton_clicked()
     qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Map remove pixmap";
 #endif
     ui->mapWidget->clearPerspectivePixmaps();
-}
-
-void MainWindow::on_udpConnectButton_clicked()
-{
-#ifdef DEBUG_BUTTONS
-    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Udp connect";
-#endif
-    QHostAddress ip;
-
-    if (ip.setAddress(ui->udpIpEdit->text().trimmed())) {
-        if (mSerialPort->isOpen()) {
-            mSerialPort->close();
-        }
-
-        mTcpClientMulti->disconnectAll();
-
-        mPacketInterface->startUdpConnection(ip, ui->udpPortBox->value());
-
-        QHostAddress ip2;
-        if (ip2.setAddress(ui->udpIp2Edit->text().trimmed())) {
-            mPacketInterface->startUdpConnection2(ip2);
-        }
-    } else {
-        showStatusInfo("Invalid IP address", false);
-    }
-}
-
-void MainWindow::on_udpPingButton_clicked()
-{
-#ifdef DEBUG_BUTTONS
-    qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Udp ping";
-#endif
-    mPing->pingHost(ui->udpIpEdit->text(), 64, "UDP Host");
 }
 
 void MainWindow::on_tcpConnectButton_clicked()
@@ -1907,21 +1832,33 @@ void MainWindow::on_actionAboutLibrariesUsed_triggered()
 
 void MainWindow::on_actionExit_triggered()
 {
+#ifdef DEBUG_BUTTONS
+	qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Exit";
+#endif
     qApp->exit();
 }
 
 void MainWindow::on_actionSaveRoutes_triggered()
 {
+#ifdef DEBUG_BUTTONS
+	qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Save routes";
+#endif
     saveRoutes(false);
 }
 
 void MainWindow::on_actionSaveRouteswithIDs_triggered()
 {
+#ifdef DEBUG_BUTTONS
+	qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Save routes with IDs";
+#endif
     saveRoutes(true);
 }
 
 void MainWindow::on_actionLoadRoutes_triggered()
 {
+#ifdef DEBUG_BUTTONS
+	qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Load routes";
+#endif
 	QString filename = QFileDialog::getOpenFileName(this,
                                                     tr("Load Routes"), "",
                                                     tr("Xml files (*.xml)"));
@@ -1955,11 +1892,17 @@ void MainWindow::on_actionLoadRoutes_triggered()
 
 void MainWindow::on_actionTestIntersection_triggered()
 {
+#ifdef DEBUG_BUTTONS
+	qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - TestIntersection";
+#endif
     mIntersectionTest->show();
 }
 
 void MainWindow::on_actionSaveSelectedRouteAsDriveFile_triggered()
 {
+#ifdef DEBUG_BUTTONS
+	qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Save selected route as drive file";
+#endif
     QString filename = QFileDialog::getSaveFileName(this,
                                                     tr("Save Drive File"), "",
                                                     tr("Csv files (*.csv)"));
@@ -2015,6 +1958,9 @@ void MainWindow::on_actionSaveSelectedRouteAsDriveFile_triggered()
 
 void MainWindow::on_actionLoadDriveFile_triggered()
 {
+#ifdef DEBUG_BUTTONS
+	qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Load drive file";
+#endif
     QString filename = QFileDialog::getOpenFileName(this,
                                                     tr("Load Drive File"), "",
                                                     tr("Csv files (*.csv)"));
@@ -2080,6 +2026,9 @@ void MainWindow::on_actionLoadDriveFile_triggered()
 
 void MainWindow::on_mapSaveAsPdfButton_clicked()
 {
+#ifdef DEBUG_BUTTONS
+	qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Save as PDF";
+#endif
     QString filename = QFileDialog::getSaveFileName(this,
                                                     tr("Save Map Image"), "",
                                                     tr("Pdf files (*.pdf)"));
@@ -2102,6 +2051,9 @@ void MainWindow::on_mapSaveAsPdfButton_clicked()
 
 void MainWindow::on_mapSaveAsPngButton_clicked()
 {
+#ifdef DEBUG_BUTTONS
+	qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Save as PNG";
+#endif
     QString filename = QFileDialog::getSaveFileName(this,
                                                     tr("Save Map Image"), "",
                                                     tr("png files (*.png)"));

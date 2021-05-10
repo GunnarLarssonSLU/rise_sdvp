@@ -28,6 +28,9 @@
 #include <iostream>
 #include "joystick.h"
 #include <QMetaType>
+#include <QDebug>
+#include <QDateTime>
+
 
 Joystick::Joystick(QObject *parent) :
     QThread(parent)
@@ -200,11 +203,17 @@ void Joystick::run()
             case JS_EVENT_AXIS:
                 mMutex.lock();
                 mAxes[event.number] = event.value;
+#ifdef DEBUG_JOYSTICK
+    qDebug() << QDateTime::currentDateTime().toString() << " - JOYSTICK (run)- JS_EVENT_AXIS, number: " << event.number << ", value: " << event.value;
+#endif
                 mMutex.unlock();
                 break;
             case JS_EVENT_BUTTON:
                 mMutex.lock();
                 mButtons[event.number] = event.value;
+#ifdef DEBUG_JOYSTICK
+    qDebug() << QDateTime::currentDateTime().toString() << " - JOYSTICK (run)- JS_EVENT_BUTTON, number: " << event.number << ", value: " << event.value;
+#endif
                 mMutex.unlock();
                 if (!(event.type & JS_EVENT_INIT)) {
                     Q_EMIT buttonChanged(event.number, event.value);
