@@ -130,11 +130,15 @@ int CarInterface::getId()
 
 bool CarInterface::pollData()
 {
+	// Nothing to qDebug, as the function is called frequently
     return ui->pollBox->isChecked();
 }
 
 void CarInterface::setPollData(bool poll)
 {
+#ifdef DEBUG_FUNCTIONS
+    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - CarInterface::setPollData";
+#endif
     ui->pollBox->setChecked(poll);
 }
 
@@ -160,6 +164,9 @@ void CarInterface::setOrientation(double roll, double pitch, double yaw)
 
 void CarInterface::setStateData(CAR_STATE data)
 {
+#ifdef DEBUG_FUNCTIONS
+    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - CarInterface::setStateData, speed: " << data.speed*3.6 << ", temperature " << data.temp_fet << ", roll: " << data.roll << ", pitch: " << data.pitch << ", yaw: " << data.yaw << ", firmware version: " << data.fw_major << ":" << data.fw_minor << ", temperature: " << data.temp_fet;
+#endif
     mLastCarState = data;
 
     ui->imuPlot->addSample(data.accel, data.gyro, data.mag);
@@ -301,6 +308,10 @@ void CarInterface::setPacketInterface(PacketInterface *packetInterface)
 
 void CarInterface::setControlValues(double throttle, double steering, double max, bool currentMode)
 {
+#ifdef DEBUG_FUNCTIONS
+    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - CarInterface::setControlValues, throttle: " << throttle << ", steering: "<< steering << ", max: " << max << ", currentMode:" << currentMode;
+#endif
+
     if (ui->keyboardControlBox->isChecked()) {
         if (fabs(throttle) < 0.005) {
             emit setRcCurrent(mId, 0.0, steering);
@@ -678,7 +689,10 @@ void CarInterface::on_vescToolTcpBox_toggled(bool checked)
 
 void CarInterface::on_autopilotBox_toggled(bool checked)
 {
-    if (!ui->autopilotBox->isEnabled()) {
+#ifdef DEBUG_BUTTONS
+	qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Autopilot - toggled";
+#endif
+	if (!ui->autopilotBox->isEnabled()) {
         return;
     }
 
@@ -837,7 +851,11 @@ void CarInterface::on_setClockPiButton_clicked()
 
 void CarInterface::on_rebootPiButton_clicked()
 {
-    if (mPacketInterface) {
+#ifdef DEBUG_BUTTONS
+	qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Reboot";
+#endif
+
+	if (mPacketInterface) {
         bool res = mPacketInterface->sendReboot(mId, false);
         if (!res) {
             QMessageBox::warning(this, "Reboot Raspberry Pi",
@@ -849,6 +867,9 @@ void CarInterface::on_rebootPiButton_clicked()
 
 void CarInterface::on_shutdownPiButton_clicked()
 {
+#ifdef DEBUG_BUTTONS
+	qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Shutdown";
+#endif
     if (mPacketInterface) {
         bool res = mPacketInterface->sendReboot(mId, true);
         if (!res) {
@@ -1043,6 +1064,9 @@ void CarInterface::on_experimentVZoomButton_toggled(bool checked)
 
 void CarInterface::on_camStartButton_clicked()
 {
+#ifdef DEBUG_BUTTONS
+	qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Camera start";
+#endif
     mImageByteCnt = 0;
     mImageCnt = 0;
     mImageTimer.restart();
@@ -1061,6 +1085,9 @@ void CarInterface::on_camStartButton_clicked()
 
 void CarInterface::on_camStopButton_clicked()
 {
+#ifdef DEBUG_BUTTONS
+	qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON CLICK - Camera stop";
+#endif
     mPacketInterface->startCameraStream(mId, -1, 0, 0, 0, 0, 0);
     ui->camWidget->setPixmap(QPixmap());
 
