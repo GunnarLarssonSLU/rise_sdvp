@@ -34,6 +34,7 @@
 #include "tcpclientmulti.h"
 #include "wireguard.h"
 #include <memory>
+#include <QGamepad>
 
 #ifdef HAS_LIME_SDR
 #include "gpssim.h"
@@ -41,10 +42,6 @@
 
 #ifdef HAS_SIM_SCEN
 #include "pagesimscen.h"
-#endif
-
-#ifdef HAS_JOYSTICK
-#include "joystick.h"
 #endif
 
 namespace Ui {
@@ -228,8 +225,7 @@ private:
     QList<QPair<int, int> > mSupportedFirmwares;
 
 #ifdef HAS_JOYSTICK
-    Joystick *mJoystick;
-    JS_TYPE mJsType;
+    QGamepad *mJoystick;
 #endif
 
 #ifdef HAS_LIME_SDR

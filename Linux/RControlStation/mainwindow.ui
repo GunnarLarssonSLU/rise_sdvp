@@ -46,7 +46,7 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>181</width>
+           <width>292</width>
            <height>71</height>
           </rect>
          </property>
@@ -80,7 +80,7 @@
                <bool>true</bool>
               </property>
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="MinimumExpanding">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -99,10 +99,22 @@
             </item>
             <item row="0" column="0" rowspan="2">
              <widget class="QPlainTextEdit" name="tcpConnEdit">
-              <property name="maximumSize">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+                <horstretch>99</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
                <size>
                 <width>145</width>
                 <height>65</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>16777215</height>
                </size>
               </property>
               <property name="lineWrapMode">
@@ -632,7 +644,7 @@
        <enum>QTabWidget::North</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">

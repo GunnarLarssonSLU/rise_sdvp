@@ -12,6 +12,7 @@ QT       += network
 QT       += opengl
 QT       += quick
 QT       += quickcontrols2
+QT       += gamepad
 
 CONFIG   += c++11
 
@@ -184,8 +185,8 @@ FORMS    += mainwindow.ui \
     wireguard.ui
 
 contains(DEFINES, HAS_JOYSTICK) {
-    SOURCES += joystick.cpp
-    HEADERS += joystick.h
+    SOURCES +=
+    HEADERS +=
 }
 
 contains(DEFINES, HAS_OPENGL) {
