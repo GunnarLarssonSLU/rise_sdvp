@@ -309,7 +309,7 @@ void CarInterface::setPacketInterface(PacketInterface *packetInterface)
 void CarInterface::setControlValues(double throttle, double steering, double max, bool currentMode)
 {
 #ifdef DEBUG_FUNCTIONS
-    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - CarInterface::setControlValues, throttle: " << throttle << ", steering: "<< steering << ", max: " << max << ", currentMode:" << currentMode;
+ //   qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - CarInterface::setControlValues, throttle: " << throttle << ", steering: "<< steering << ", max: " << max << ", currentMode:" << currentMode;
 #endif
 
     if (ui->keyboardControlBox->isChecked()) {

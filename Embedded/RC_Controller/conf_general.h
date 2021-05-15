@@ -20,6 +20,33 @@
 
 #include "datatypes.h"
 
+#define IS_DRANGEN	1
+
+// MacTrac
+// Valve: Low values: Turn right; high values: turn left
+#ifdef IS_MACTRAC
+#define HAS_HYDRAULIC_DRIVE			1
+#define SERVO_VESC_S1				178.0 // Left
+#define SERVO_VESC_S2				240.0 // Right
+#define USE_ADCONV_FOR_VIN
+#define SERVO_VESC_HYDRAULIC
+#define HYDRAULIC_HAS_SPEED_SENSOR
+#define SERVO_VESC_ID				0
+#define SERVO_VESC_INVERTED			0
+#define SERVO_VESC_P_GAIN			3.0
+#define SERVO_VESC_I_GAIN			5.0
+#define SERVO_VESC_D_GAIN			1.0
+#define SERVO_VESC_DEADBAND_COMP    0.2
+#define IS_F9_BOARD					1
+#endif
+
+#ifdef IS_DRANGEN
+#define HAS_HYDRAULIC_DRIVE			1
+#define SERVO_VESC_ID				41
+#define IS_F9_BOARD					0
+#endif
+
+
 // Board
 #ifndef IS_F9_BOARD
 #define IS_F9_BOARD					1
@@ -96,41 +123,17 @@
 #define DIFF_STEERING_VESC_RIGHT	1
 #endif
 
-//#define IS_DRANGEN
-//#define IS_MACTRAC
-
-// MacTrac
-// Steering Center: 210
-// Valve: Low values: Turn right; high values: turn left
-#ifdef IS_MACTRAC
-#define HAS_HYDRAULIC_DRIVE			1
-#define SERVO_VESC_S1				178.0 // Left
-#define SERVO_VESC_S2				240.0 // Right
-#define USE_ADCONV_FOR_VIN
-#define SERVO_VESC_HYDRAULIC
-#define HYDRAULIC_HAS_SPEED_SENSOR
-#define SERVO_VESC_ID				0
-#define SERVO_VESC_INVERTED			0
-#define SERVO_VESC_P_GAIN			3.0
-#define SERVO_VESC_I_GAIN			5.0
-#define SERVO_VESC_D_GAIN			1.0
-#define SERVO_VESC_DEADBAND_COMP    0.2
-#endif
-
-#ifdef IS_DRANGEN
-#define HAS_HYDRAULIC_DRIVE			1
-#endif
 
 // Hydraulic drive
 #ifndef HAS_HYDRAULIC_DRIVE
-#define HAS_HYDRAULIC_DRIVE			0
+#define HAS_HYDRAULIC_DRIVE			1
 #endif
 
 // VESC for steering
 // ID of VESC for steering.
 // -1: No steering VESC
 #ifndef SERVO_VESC_ID
-#define SERVO_VESC_ID				-1
+#define SERVO_VESC_ID				41
 #endif
 /*
  * Angle should be increasing from S1 to S2 (possibly

@@ -47,6 +47,9 @@ RtcmWidget::RtcmWidget(QWidget *parent) :
     ui->refSendLonBox->setValue(12.89134921);
     ui->refSendHBox->setValue(219.0);
 
+    //Initialize
+    on_ntripConnectButton_clicked();
+
     // Onsala default
 //    double lon, lat, h;
 //    utility::xyzToLlh(3370667.1982, 711818.7226, 5349787.8784, &lat, &lon, &h);
