@@ -122,9 +122,10 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(mJoystick, &QGamepad::axisRightYChanged, this, [](double value){
         qDebug() << "Right Y" << value;
     });
+/*	These buttons are not used
     connect(mJoystick, &QGamepad::buttonAChanged, this, [](bool pressed){
         qDebug() << "Button A" << pressed;
-//        jsButtonChanged(int button, bool pressed);
+       jsButtonChanged(int button, bool pressed);
     });
     connect(mJoystick, &QGamepad::buttonBChanged, this, [](bool pressed){
         qDebug() << "Button B" << pressed;
@@ -135,18 +136,26 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(mJoystick, &QGamepad::buttonYChanged, this, [](bool pressed){
         qDebug() << "Button Y" << pressed;
     });
+*/
+    static MainWindow *mThis=this;          // Just to be able to get the lambdas to work
     connect(mJoystick, &QGamepad::buttonL1Changed, this, [](bool pressed){
         qDebug() << "Button L1" << pressed;
+        mThis->jsButtonChanged(4, pressed);
     });
     connect(mJoystick, &QGamepad::buttonR1Changed, this, [](bool pressed){
         qDebug() << "Button R1" << pressed;
+        mThis->jsButtonChanged(5, pressed);
     });
     connect(mJoystick, &QGamepad::buttonL2Changed, this, [](double value){
         qDebug() << "Button L2: " << value;
+        mThis->jsButtonChanged(6, value>0);
     });
+
     connect(mJoystick, &QGamepad::buttonR2Changed, this, [](double value){
         qDebug() << "Button R2: " << value;
+        mThis->jsButtonChanged(7, value>0);
     });
+/*    These buttons are not used
     connect(mJoystick, &QGamepad::buttonSelectChanged, this, [](bool pressed){
         qDebug() << "Button Select" << pressed;
     });
@@ -156,7 +165,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(mJoystick, &QGamepad::buttonGuideChanged, this, [](bool pressed){
         qDebug() << "Button Guide" << pressed;
     });
-// ..
+*/
 #endif
 
     mPing = new Ping(this);
@@ -260,7 +269,6 @@ MainWindow::MainWindow(QWidget *parent) :
     on_tcpConnectButton_clicked();
     on_jsConnectButton_clicked();
     on_carAddButton_clicked();
-
 
 
 #ifdef HAS_JOYSTICK
