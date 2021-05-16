@@ -86,10 +86,6 @@ private slots:
     void lastRoutePointRemoved();
     void nmeaReceived(quint8 id, QByteArray nmea_msg);
     void configurationReceived(quint8 id, MAIN_CONFIG config);
-    void plotInitReceived(quint8 id, QString xLabel, QString yLabel);
-    void plotDataReceived(quint8 id, double x, double y);
-    void plotAddGraphReceived(quint8 id, QString name);
-    void plotSetGraphReceived(quint8 id, int graph);
     void loadMagCal();
     void cameraImageReceived(quint8 id, QImage image, int bytes);
 
@@ -109,12 +105,6 @@ private slots:
     void on_setClockPiButton_clicked();
     void on_rebootPiButton_clicked();
     void on_shutdownPiButton_clicked();
-    void on_experimentSavePngButton_clicked();
-    void on_experimentSavePdfButton_clicked();
-    void on_experimentSaveXmlButton_clicked();
-    void on_experimentLoadXmlButton_clicked();
-    void on_experimentHZoomButton_toggled(bool checked);
-    void on_experimentVZoomButton_toggled(bool checked);
     void on_camStartButton_clicked();
     void on_camStopButton_clicked();
     void on_camShowMapBox_toggled(bool checked);
