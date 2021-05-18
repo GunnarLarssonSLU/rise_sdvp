@@ -20,10 +20,13 @@ CONFIG   += c++11
 # sudo apt-get install libassimp-dev
 #DEFINES += HAS_ASSIMP
 
+CONFIG-= windows
+QMAKE_LFLAGS += $$QMAKE_LFLAGS_WINDOWS
+
 # Linux only
-unix:!macx {
+#unix:!macx {
     DEFINES += HAS_JOYSTICK
-}
+#}
 
 DEFINES += DEBUG_PRINTWARNINGS
 DEFINES += DEBUG_BUTTONS
