@@ -11,8 +11,16 @@
 # make qtbase
 # make qtserialport
 
+#
+# Fixes
+#
+# When compiling qt - make gdal_CONFIGURE_OPTS='--with-openjpeg=no --with-cryptopp=no' EXCLUDE_PKGS='ocaml%'
+# When compiling program - in the makefile change -lopengl32 to /opt/mxe/usr/i686-w64-mingw32.static/lib/libopengl32.a
+
+
 export PATH=/opt/mxe/usr/bin/:$PATH
-/opt/mxe/usr/bin/i686-w64-mingw32.static-qmake-qt5 -config release "CONFIG+=release_win"
+#/opt/mxe/usr/bin/i686-w64-mingw32.static-qmake-qt5 -config release "CONFIG+=release_win"
+/opt/mxe/usr/bin/i686-w64-mingw32.static-qmake-qt5
 make clean
 make -j8
 rm -rf build/win/obj
