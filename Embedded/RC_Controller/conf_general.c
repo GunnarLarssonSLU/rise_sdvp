@@ -134,10 +134,9 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 	conf->ap_time_add_repeat_ms = 60 * 1000;
 
 	conf->log_rate_hz = 50;
-	conf->log_en = true;
+	conf->log_en = false;
 	strcpy(conf->log_name, "New Log");
-//	conf->log_mode_ext = 0;
-	conf->log_mode_ext = 1;
+	conf->log_mode_ext = 0;
 	conf->log_uart_baud = 115200;
 
 	// Default car settings
@@ -279,10 +278,6 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 	conf->car.steering_range = -0.9;
 	conf->car.axis_distance = 1.0;
 	conf->car.steering_max_angle_rad = atanf(conf->car.axis_distance / 1.5);
-
-	conf->log_en = true;
-	conf->log_mode_ext = LOG_EXT_ETHERNET;
-	conf->log_rate_hz = 10;
 #endif
 
 #ifdef IS_MACTRAC

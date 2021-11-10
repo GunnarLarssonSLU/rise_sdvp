@@ -34,7 +34,6 @@
 #include "tcpclientmulti.h"
 #include "wireguard.h"
 #include <memory>
-#include <QGamepad>
 
 #ifdef HAS_LIME_SDR
 #include "gpssim.h"
@@ -42,6 +41,10 @@
 
 #ifdef HAS_SIM_SCEN
 #include "pagesimscen.h"
+#endif
+
+#ifdef HAS_JOYSTICK
+#include "joystick.h"
 #endif
 
 namespace Ui {
@@ -194,8 +197,6 @@ private slots:
 
     void on_AutopilotPausePushButton_clicked();
 
-    void on_pushButton_clicked();
-
 private:
     Ui::MainWindow *ui;
     QTimer *mTimer;
@@ -225,7 +226,8 @@ private:
     QList<QPair<int, int> > mSupportedFirmwares;
 
 #ifdef HAS_JOYSTICK
-    QGamepad *mJoystick;
+    Joystick *mJoystick;
+    JS_TYPE mJsType;
 #endif
 
 #ifdef HAS_LIME_SDR

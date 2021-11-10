@@ -12,7 +12,6 @@ QT       += network
 QT       += opengl
 QT       += quick
 QT       += quickcontrols2
-QT       += gamepad
 
 CONFIG   += c++11
 
@@ -20,25 +19,14 @@ CONFIG   += c++11
 # sudo apt-get install libassimp-dev
 #DEFINES += HAS_ASSIMP
 
-CONFIG-= windows
-QMAKE_LFLAGS += $$QMAKE_LFLAGS_WINDOWS
-
 # Linux only
-#unix:!macx {
+unix:!macx {
     DEFINES += HAS_JOYSTICK
-#}
-
-DEFINES += DEBUG_PRINTWARNINGS
-DEFINES += DEBUG_BUTTONS
-DEFINES += DEBUG_NETWORK
-DEFINES += DEBUG_MESSAGEBOXES
-DEFINES += DEBUG_FUNCTIONS
-#DEFINES += DEBUG_PACKETINTERFACE
-DEFINES += DEBUG_JOYSTICK
+}
 
 # OpenGL support
 !android: DEFINES += HAS_OPENGL
-win32: LIBS += -lOpengl32
+win32: LIBS += -lopengl32
 
 # Lime SDR support
 #DEFINES += HAS_LIME_SDR
@@ -53,7 +41,7 @@ win32: LIBS += -lOpengl32
 TARGET = RControlStation
 TEMPLATE = app
 
-#CONFIG(release, debug|release):DEFINES += QT_NO_DEBUG_OUTPUT
+CONFIG(release, debug|release):DEFINES += QT_NO_DEBUG_OUTPUT
 
 release_win {
     DESTDIR = build/win
@@ -188,8 +176,8 @@ FORMS    += mainwindow.ui \
     wireguard.ui
 
 contains(DEFINES, HAS_JOYSTICK) {
-    SOURCES +=
-    HEADERS +=
+    SOURCES += joystick.cpp
+    HEADERS += joystick.h
 }
 
 contains(DEFINES, HAS_OPENGL) {
@@ -205,7 +193,11 @@ contains(DEFINES, HAS_LIME_SDR) {
 }
 
 contains(DEFINES, HAS_SIM_SCEN) {
-    include(esmini/EnvironmentSimulator.pri)
+    INCLUDEPATH += esmini/EnvironmentSimulator/Libraries/esminiLib \
+            esmini/EnvironmentSimulator/Modules/RoadManager \
+            esmini/externals/pugixml \
+            esmini/EnvironmentSimulator/Modules/CommonMini
+    LIBS += -L"esmini/bin/" -lesminiLib
     SOURCES += pagesimscen.cpp
     HEADERS += pagesimscen.h \
             simscentree.h

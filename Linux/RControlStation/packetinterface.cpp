@@ -310,6 +310,10 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         conf.car.steering_range = utility::buffer_get_double32_auto(data, &ind);
         conf.car.steering_ramp_time = utility::buffer_get_double32_auto(data, &ind);
         conf.car.axis_distance = utility::buffer_get_double32_auto(data, &ind);
+        //Added 20211011
+        conf.car.vesc_p_gain = utility::buffer_get_double32_auto(data, &ind);
+        conf.car.vesc_i_gain = utility::buffer_get_double32_auto(data, &ind);
+        conf.car.vesc_d_gain = utility::buffer_get_double32_auto(data, &ind);
 
         // Multirotor settings
         conf.mr.vel_decay_e = utility::buffer_get_double32_auto(data, &ind);
@@ -547,7 +551,8 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     case CMD_CLEAR_UWB_ANCHORS:
         emit ackReceived(id, cmd, "CMD_CLEAR_UWB_ANCHORS");
         break;
-
+    case CMD_HEARTBEAT:
+    // ToDo: Set action if heartbeat is missing for more than 1 sec
     default:
         break;
     }
@@ -802,9 +807,6 @@ bool PacketInterface::replaceRoute(quint8 id, QList<LocPoint> points, int retrie
 
 bool PacketInterface::removeLastRoutePoint(quint8 id, int retries)
 {
-#ifdef DEBUG_PACKETINTERFACE
-    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - PacketInterface::removeLastRoutePoint, id:" << id << ", retries: " << retries;
-#endif
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_AP_REMOVE_LAST_POINT;
@@ -814,11 +816,7 @@ bool PacketInterface::removeLastRoutePoint(quint8 id, int retries)
 
 bool PacketInterface::clearRoute(quint8 id, int retries)
 {
-#ifdef DEBUG_PACKETINTERFACE
-    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - PacketInterface::clearRoute, id:" << id << ", retries: " << retries;
-#endif
-
-	qint32 send_index = 0;
+    qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_AP_CLEAR_POINTS;
 
@@ -827,9 +825,6 @@ bool PacketInterface::clearRoute(quint8 id, int retries)
 
 bool PacketInterface::setApActive(quint8 id, bool active, bool resetState, int retries)
 {
-#ifdef DEBUG_PACKETINTERFACE
-    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - PacketInterface::setApActive, id:" << id << ", active: " << active << ", resetState: " << resetState << ", retries: " << retries;
-#endif
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_AP_SET_ACTIVE;
@@ -841,9 +836,6 @@ bool PacketInterface::setApActive(quint8 id, bool active, bool resetState, int r
 
 bool PacketInterface::setConfiguration(quint8 id, MAIN_CONFIG &conf, int retries)
 {
-#ifdef DEBUG_PACKETINTERFACE
-    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - PacketInterface::setConfiguration, id:" << id << ", retries: " << retries;
-#endif
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_SET_MAIN_CONFIG;
@@ -909,6 +901,9 @@ bool PacketInterface::setConfiguration(quint8 id, MAIN_CONFIG &conf, int retries
     utility::buffer_append_double32_auto(mSendBuffer, conf.car.steering_range, &send_index);
     utility::buffer_append_double32_auto(mSendBuffer, conf.car.steering_ramp_time, &send_index);
     utility::buffer_append_double32_auto(mSendBuffer, conf.car.axis_distance, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.car.vesc_p_gain, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.car.vesc_i_gain, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.car.vesc_d_gain, &send_index);
 
     // Multirotor settings
     utility::buffer_append_double32_auto(mSendBuffer, conf.mr.vel_decay_e, &send_index);
@@ -971,9 +966,6 @@ bool PacketInterface::setConfiguration(quint8 id, MAIN_CONFIG &conf, int retries
 
 bool PacketInterface::setPosAck(quint8 id, double x, double y, double angle, int retries)
 {
-#ifdef DEBUG_PACKETINTERFACE
-    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - PacketInterface::setPosAck, id:" << id << ", x:" << x << ", y:" << y << ", angle:" << angle << ", retries: " << retries;
-#endif
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_SET_POS_ACK;
@@ -985,9 +977,6 @@ bool PacketInterface::setPosAck(quint8 id, double x, double y, double angle, int
 
 bool PacketInterface::setYawOffsetAck(quint8 id, double angle, int retries)
 {
-#ifdef DEBUG_PACKETINTERFACE
-    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - PacketInterface::setYawOffsetAck, id:" << id  << ", angle:" << angle << ", retries: " << retries;
-#endif
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_SET_YAW_OFFSET_ACK;
@@ -997,9 +986,6 @@ bool PacketInterface::setYawOffsetAck(quint8 id, double angle, int retries)
 
 bool PacketInterface::setEnuRef(quint8 id, double *llh, int retries)
 {
-#ifdef DEBUG_PACKETINTERFACE
-    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - PacketInterface::setEnuRef, id:" << id  << ", retries: " << retries;
-#endif
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_SET_ENU_REF;
@@ -1011,9 +997,6 @@ bool PacketInterface::setEnuRef(quint8 id, double *llh, int retries)
 
 bool PacketInterface::setSystemTime(quint8 id, qint32 sec, qint32 usec, int retries)
 {
-#ifdef DEBUG_PACKETINTERFACE
-    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - PacketInterface::setSystemTime, id:" << id  << ", sec: " << sec << ", usec: " << usec << ", retries: " << retries;
-#endif
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_SET_SYSTEM_TIME;
@@ -1024,9 +1007,6 @@ bool PacketInterface::setSystemTime(quint8 id, qint32 sec, qint32 usec, int retr
 
 bool PacketInterface::sendReboot(quint8 id, bool powerOff, int retries)
 {
-#ifdef DEBUG_PACKETINTERFACE
-    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - PacketInterface::sendReboot, id:" << id  << ", powerOff: " << powerOff << ", retries: " << retries;
-#endif
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_REBOOT_SYSTEM;
@@ -1041,9 +1021,6 @@ bool PacketInterface::getRoutePart(quint8 id,
                                    int &routeLen,
                                    int retries)
 {
-#ifdef DEBUG_PACKETINTERFACE
-    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - PacketInterface::getRoutePart, id:" << id  << ", first: " << first << ", num: " << num << ", retries: " << retries;
-#endif
     bool appendDone = false;
 
     auto conn = connect(this, &PacketInterface::routePartReceived,
@@ -1093,9 +1070,6 @@ bool PacketInterface::getRoutePart(quint8 id,
 
 bool PacketInterface::getRoute(quint8 id, QList<LocPoint> &points, int retries)
 {
-#ifdef DEBUG_PACKETINTERFACE
-    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - PacketInterface::getRoute, id:" << id  << ", retries: " << retries;
-#endif
     int routeLen;
     bool ok = getRoutePart(id, points.size(), 10, points, routeLen, retries);
 
@@ -1113,9 +1087,6 @@ bool PacketInterface::getRoute(quint8 id, QList<LocPoint> &points, int retries)
 bool PacketInterface::setSyncPoint(quint8 id, int point, int time, int min_time_diff,
                                    bool ack, int retries)
 {
-#ifdef DEBUG_PACKETINTERFACE
-    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - PacketInterface::setSyncPoint, id:" << id  << ", point:" << point << ",time" << time << ", min_time_diff: " << min_time_diff << ", ack: " << ack << ", retries: " << retries;
-#endif
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_AP_SYNC_POINT;
@@ -1132,9 +1103,6 @@ bool PacketInterface::setSyncPoint(quint8 id, int point, int time, int min_time_
 
 bool PacketInterface::addUwbAnchor(quint8 id, UWB_ANCHOR a, int retries)
 {
-#ifdef DEBUG_PACKETINTERFACE
-    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - PacketInterface::addUwbAnchor, id:" << id  << ", retries: " << retries;
-#endif
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_ADD_UWB_ANCHOR;
@@ -1148,9 +1116,6 @@ bool PacketInterface::addUwbAnchor(quint8 id, UWB_ANCHOR a, int retries)
 
 bool PacketInterface::clearUwbAnchors(quint8 id, int retries)
 {
-#ifdef DEBUG_PACKETINTERFACE
-    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - PacketInterface::clearUwbAnchors, id:" << id  << ", retries: " << retries;
-#endif
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_CLEAR_UWB_ANCHORS;
@@ -1160,9 +1125,6 @@ bool PacketInterface::clearUwbAnchors(quint8 id, int retries)
 
 void PacketInterface::ioBoardSetPwmDuty(quint8 id, quint8 board, double duty)
 {
-#ifdef DEBUG_PACKETINTERFACE
-    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - PacketInterface::ioBoardSetPwmDuty, id:" << id  << ",board: " << board << ", duty: " << duty;
-#endif
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_IO_BOARD_SET_PWM_DUTY;
@@ -1432,5 +1394,14 @@ void PacketInterface::sendCameraFrameAck(quint8 id)
     packet.clear();
     packet.append(id);
     packet.append((char)CMD_CAMERA_FRAME_ACK);
+    sendPacket(packet);
+}
+
+void PacketInterface::setApMode(quint8 id, AP_MODE mode)
+{
+    QByteArray packet;
+    packet.append(id);
+    packet.append(CMD_SET_AP_MODE);
+    packet.append(mode);
     sendPacket(packet);
 }

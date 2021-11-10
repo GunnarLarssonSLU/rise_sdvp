@@ -20,70 +20,9 @@
 
 #include "datatypes.h"
 
-#define IS_DRANGEN	1
-
-// MacTrac
-// Valve: Low values: Turn right; high values: turn left
-#ifdef IS_MACTRAC
-#define HAS_HYDRAULIC_DRIVE			1
-#define SERVO_VESC_S1				178.0 // Left
-#define SERVO_VESC_S2				240.0 // Right
-#define USE_ADCONV_FOR_VIN
-#define SERVO_VESC_HYDRAULIC
-#define HYDRAULIC_HAS_SPEED_SENSOR
-#define SERVO_VESC_ID				0
-#define SERVO_VESC_INVERTED			0
-#define SERVO_VESC_P_GAIN			3.0
-#define SERVO_VESC_I_GAIN			5.0
-#define SERVO_VESC_D_GAIN			1.0
-#define SERVO_VESC_DEADBAND_COMP    0.2
-#define IS_F9_BOARD					1
-#endif
-
-#ifdef IS_DRANGEN
-#define HAS_HYDRAULIC_DRIVE			1
-#define SERVO_VESC_ID				41
-#define IS_F9_BOARD					0
-#endif
-
-
 // Board
 #ifndef IS_F9_BOARD
 #define IS_F9_BOARD					1
-#endif
-
-#if IS_F9_BOARD
-#define HAS_CC2520					0
-#define HAS_CC1120					0
-#define UBLOX_IS_F9P				1
-#define LED_RED_GPIO				GPIOC
-#define LED_RED_PIN					10
-#define LED_GREEN_GPIO				GPIOC
-#define LED_GREEN_PIN				11
-#define CAN1_RX_GPIO				GPIOB
-#define CAN1_RX_PIN					8
-#define CAN1_TX_GPIO				GPIOB
-#define CAN1_TX_PIN					9
-#define HAS_BMI160					1
-#define HAS_ID_SW					0
-#define VIN_R1						39000.0
-#define VIN_R2						2200.0
-#else
-#define HAS_CC2520					1
-#define HAS_CC1120					1
-#define UBLOX_IS_F9P				0
-#define LED_RED_GPIO				GPIOE
-#define LED_RED_PIN					0
-#define LED_GREEN_GPIO				GPIOE
-#define LED_GREEN_PIN				1
-#define CAN1_RX_GPIO				GPIOD
-#define CAN1_RX_PIN					0
-#define CAN1_TX_GPIO				GPIOD
-#define CAN1_TX_PIN					1
-#define HAS_BMI160					0
-#define HAS_ID_SW					1
-#define VIN_R1						10000.0
-#define VIN_R2						1500.0
 #endif
 
 #define MAIN_MODE_CAR 				0
@@ -123,17 +62,43 @@
 #define DIFF_STEERING_VESC_RIGHT	1
 #endif
 
+//#define IS_DRANGEN
+//#define IS_MACTRAC
+
+// MacTrac
+// Steering Center: 210
+// Valve: Low values: Turn right; high values: turn left
+#ifdef IS_MACTRAC
+#define HAS_HYDRAULIC_DRIVE			1
+#define SERVO_VESC_S1				178.0 // Left
+#define SERVO_VESC_S2				240.0 // Right
+#define USE_ADCONV_FOR_VIN
+#define SERVO_VESC_HYDRAULIC
+#define HYDRAULIC_HAS_SPEED_SENSOR
+#define SERVO_VESC_ID				0
+#define SERVO_VESC_INVERTED			0
+#define SERVO_VESC_P_GAIN			3.0
+#define SERVO_VESC_I_GAIN			5.0
+#define SERVO_VESC_D_GAIN			1.0
+#define SERVO_VESC_DEADBAND_COMP    0.2
+#endif
+
+#ifdef IS_DRANGEN
+#define HAS_HYDRAULIC_DRIVE			1
+#define SERVO_VESC_ID				41
+#define IS_F9_BOARD					0
+#endif
 
 // Hydraulic drive
 #ifndef HAS_HYDRAULIC_DRIVE
-#define HAS_HYDRAULIC_DRIVE			1
+#define HAS_HYDRAULIC_DRIVE			0
 #endif
 
 // VESC for steering
 // ID of VESC for steering.
 // -1: No steering VESC
 #ifndef SERVO_VESC_ID
-#define SERVO_VESC_ID				41
+#define SERVO_VESC_ID				-1
 #endif
 /*
  * Angle should be increasing from S1 to S2 (possibly
@@ -214,6 +179,41 @@
 
 // Autopilot settings
 #define AP_ROUTE_SIZE				1000
+
+// Board-dependent settings
+#if IS_F9_BOARD
+#define HAS_CC2520					0
+#define HAS_CC1120					0
+#define UBLOX_IS_F9P				1
+#define LED_RED_GPIO				GPIOC
+#define LED_RED_PIN					10
+#define LED_GREEN_GPIO				GPIOC
+#define LED_GREEN_PIN				11
+#define CAN1_RX_GPIO				GPIOB
+#define CAN1_RX_PIN					8
+#define CAN1_TX_GPIO				GPIOB
+#define CAN1_TX_PIN					9
+#define HAS_BMI160					1
+#define HAS_ID_SW					0
+#define VIN_R1						39000.0
+#define VIN_R2						2200.0
+#else
+#define HAS_CC2520					1
+#define HAS_CC1120					1
+#define UBLOX_IS_F9P				0
+#define LED_RED_GPIO				GPIOE
+#define LED_RED_PIN					0
+#define LED_GREEN_GPIO				GPIOE
+#define LED_GREEN_PIN				1
+#define CAN1_RX_GPIO				GPIOD
+#define CAN1_RX_PIN					0
+#define CAN1_TX_GPIO				GPIOD
+#define CAN1_TX_PIN					1
+#define HAS_BMI160					0
+#define HAS_ID_SW					1
+#define VIN_R1						10000.0
+#define VIN_R2						1500.0
+#endif
 
 // Global variables
 extern MAIN_CONFIG main_config;
