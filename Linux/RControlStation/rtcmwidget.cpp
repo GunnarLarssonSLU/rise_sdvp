@@ -47,9 +47,6 @@ RtcmWidget::RtcmWidget(QWidget *parent) :
     ui->refSendLonBox->setValue(12.89134921);
     ui->refSendHBox->setValue(219.0);
 
-    //Initialize
-    on_ntripConnectButton_clicked();
-
     // Onsala default
 //    double lon, lat, h;
 //    utility::xyzToLlh(3370667.1982, 711818.7226, 5349787.8784, &lat, &lon, &h);
@@ -178,10 +175,6 @@ void RtcmWidget::refPosRx(double lat, double lon, double height, double antenna_
 
 void RtcmWidget::on_ntripConnectButton_clicked()
 {
-#ifdef DEBUG_BUTTONS
-	qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON - Connect RTCM";
-#endif
-
     if (ui->ntripBox->isChecked()) {
         mRtcm->connectNtrip(ui->ntripServerEdit->text(),
                             ui->ntripStreamEdit->text(),
@@ -195,9 +188,6 @@ void RtcmWidget::on_ntripConnectButton_clicked()
 
 void RtcmWidget::on_ntripDisconnectButton_clicked()
 {
-#ifdef DEBUG_BUTTONS
-	qDebug() << QDateTime::currentDateTime().toString() << " - BUTTON - Disconnect RTCM";
-#endif
     mRtcm->disconnectTcpNtrip();
 }
 
@@ -248,7 +238,9 @@ void RtcmWidget::on_ntripBox_toggled(bool checked)
         ui->ntripStreamEdit->setEnabled(true);
     } else {
         ui->ntripServerEdit->setText("192.168.200.1");
+//        ui->ntripServerEdit->setText("localhost");
         ui->ntripPortBox->setValue(2101);
+//        ui->ntripPortBox->setValue(65300);
 
         ui->ntripUserEdit->setEnabled(false);
         ui->ntripPasswordEdit->setEnabled(false);

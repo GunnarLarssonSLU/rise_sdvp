@@ -136,9 +136,6 @@ bool isLineSegmentWithinRect(const QPointF &p1, const QPointF &p2, double xStart
 
 MapWidget::MapWidget(QWidget *parent) : QWidget(parent)
 {
-#ifdef DEBUG_FUNCTIONS
-    qDebug() << QDateTime::currentDateTime().toString() << " - FUNCTION - MapWidget::MapWidget";
-#endif
     mScaleFactor = 0.1;
     mRotation = 0;
     mXOffset = 0;
@@ -194,15 +191,10 @@ MapWidget::MapWidget(QWidget *parent) : QWidget(parent)
 //    mRefLon = 12.89134921;
 //    mRefHeight = 219.0;
 
-    // Uppsala testbed
-    mRefLat = 59.811464;
-    mRefLon = 17.657693;
-    mRefHeight = 11; // Based on Google Earth
-
     // ASTA
-    //mRefLat = 57.78100308;
-    //mRefLon = 12.76925422;
-    //mRefHeight = 253.76;
+    mRefLat = 57.78100308;
+    mRefLon = 12.76925422;
+    mRefHeight = 253.76;
 
     // Home
     //    mRefLat = 57.57848470;
