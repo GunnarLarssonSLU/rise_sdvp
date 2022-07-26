@@ -92,6 +92,8 @@ MainWindow::MainWindow(QWidget *parent) :
     mThrottle = 0.0;
     mSteering = 0.0;
 
+    qDebug() << "Start";
+
 #ifdef HAS_JOYSTICK
     mJoystick = new Joystick(this);
     mJsType = JS_TYPE_HK;
@@ -1518,14 +1520,16 @@ void MainWindow::on_mapOsmClearCacheButton_clicked()
 void MainWindow::on_mapOsmServerOsmButton_toggled(bool checked)
 {
     if (checked) {
-        ui->mapWidget->osmClient()->setTileServerUrl("http://tile.openstreetmap.org");
+                ui->mapWidget->osmClient()->setTileServerUrl("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile");
+    	//        ui->mapWidget->osmClient()->setTileServerUrl("http://tile.openstreetmap.org");
     }
 }
 
 void MainWindow::on_mapOsmServerHiResButton_toggled(bool checked)
 {
     if (checked) {
-        ui->mapWidget->osmClient()->setTileServerUrl("http://c.osm.rrze.fau.de/osmhd"); // Also https
+                ui->mapWidget->osmClient()->setTileServerUrl("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile");
+    	//        ui->mapWidget->osmClient()->setTileServerUrl("http://c.osm.rrze.fau.de/osmhd"); // Also https
     }
 }
 

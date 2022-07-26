@@ -43,9 +43,9 @@
 #include "pagesimscen.h"
 #endif
 
-#ifdef HAS_JOYSTICK
-#include "joystick.h"
-#endif
+//#ifdef HAS_JOYSTICK
+//#include "joystick.h"
+//#endif
 
 namespace Ui {
 class MainWindow;
