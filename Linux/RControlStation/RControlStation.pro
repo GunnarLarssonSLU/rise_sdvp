@@ -41,7 +41,7 @@ win32: LIBS += -lopengl32
 TARGET = RControlStation
 TEMPLATE = app
 
-CONFIG(release, debug|release):DEFINES += QT_NO_DEBUG_OUTPUT
+#CONFIG(release, debug|release):DEFINES += QT_NO_DEBUG_OUTPUT
 
 release_win {
     DESTDIR = build/win

@@ -119,6 +119,7 @@ bool OsmClient::setCacheDir(QString path)
 
     if (file.isDir()) {
         mCacheDir = path;
+        qDebug() << "Cache folder:" << path;
         return true;
     } else {
         qWarning() << "Invalid cache directory provided.";
@@ -132,6 +133,7 @@ bool OsmClient::setTileServerUrl(QString path)
 
     if (url.isValid()) {
         mTileServer = path;
+        qDebug() << "Tile server:" << path;
         return true;
     } else {
         qWarning() << "Invalid tile server url provided:" << url.errorString();
@@ -182,8 +184,10 @@ OsmTile OsmClient::getTile(int zoom, int x, int y, int &res)
         res = 1;
         mRamTilesLoaded++;
     } else if (!mCacheDir.isEmpty()) {
+//        QString path = mCacheDir + "/" + QString::number(zoom) + "/" +
+//                QString::number(x) + "/" + QString::number(y) + ".png";
         QString path = mCacheDir + "/" + QString::number(zoom) + "/" +
-                QString::number(x) + "/" + QString::number(y) + ".png";
+                QString::number(y) + "/" + QString::number(x) + ".jpeg";
         QFile file;
         file.setFileName(path);
 
@@ -225,19 +229,28 @@ OsmTile OsmClient::getTile(int zoom, int x, int y, int &res)
 int OsmClient::downloadTile(int zoom, int x, int y)
 {
     int retval = -1;
+    qDebug() << "TRY TO DOWNLOAD";
 
     if (!mTileServer.isEmpty()) {
         if (mDownloadingTiles.size() < mMaxDownloadingTiles) {
             quint64 key = calcKey(zoom, x, y);
+            qDebug() << "(in downloadTile) x:" << x << ", y: " << y << ", zoom: " << zoom << "key :" << key;
+
             if (!mDownloadingTiles.contains(key)) {
                 // Only add if this tile is not already downloading
-                QString path = mTileServer + "/" + QString::number(zoom) +
-                        "/" + QString::number(x) + "/" + QString::number(y) + ".png";
+//                QString path = mTileServer + "/" + QString::number(zoom) +
+//                        "/" + QString::number(x) + "/" + QString::number(y) + ".png";
+                QString path = mTileServer + QString::number(zoom) +
+                        "/" + QString::number(y) + "/" + QString::number(x);
+                qDebug() << "Tile server:" << path;
+               // cout << "Tile server:" << path;
+
                 QNetworkRequest request(path);
                 request.setRawHeader("User-Agent", "Firefox");
                 mWebCtrl.get(request);
                 mDownloadingTiles.insert(key, true);
             }
+            qDebug() << "I am confused";
             retval = 1;
         } else {
             emit errorGetTile("Too many tiles downloading.");
@@ -267,32 +280,46 @@ void OsmClient::clearCache()
 void OsmClient::fileDownloaded(QNetworkReply *pReply)
 {
     QString path = pReply->url().toString();
-    path = path.left(path.length() - 4);
+//    path = path.left(path.length() - 4);   // Not used if ESRI, used if OpenStreetMap
     int ind = path.lastIndexOf("/");
-    int y = path.mid(ind + 1).toInt();
+    int item1 = path.mid(ind + 1).toInt();
     path = path.left(ind);
     ind = path.lastIndexOf("/");
-    int x = path.mid(ind + 1).toInt();
+    int item2 = path.mid(ind + 1).toInt();
     path = path.left(ind);
     ind = path.lastIndexOf("/");
     int zoom = path.mid(ind + 1).toInt();
-    quint64 key = calcKey(zoom, x, y);
 
+//If ESRI
+    int x=item1;
+    int y=item2;
+// If OpenStreetmap
+//    int x=item2;
+//    int y=item1;
+
+
+    quint64 key = calcKey(zoom, x, y);
     mDownloadingTiles.remove(key);
 
     if (pReply->error() == QNetworkReply::NoError) {
         QPixmap pm;
         QByteArray data = pReply->readAll();
-        pm.loadFromData(data, "PNG");
+        pm.loadFromData(data, "JPG");    // If ESRI
+//        pm.loadFromData(data, "PNG");  // If OpenStreetMap
 
         // Try to cache tile
         if (!mCacheDir.isEmpty()) {
+// IF ESRI
             QString path = mCacheDir + "/" + QString::number(zoom) + "/" +
-                    QString::number(x) + "/" + QString::number(y) + ".png";
+                    QString::number(y) + "/" + QString::number(x) + ".jpeg";
+// If OpenStreetMap
+//            QString path = mCacheDir + "/" + QString::number(zoom) + "/" +
+//                    QString::number(x) + "/" + QString::number(y) + ".png";
             QFile file;
             file.setFileName(path);
             if (!file.exists()) {
-                QDir().mkpath(mCacheDir + "/" + QString::number(zoom) + "/" + QString::number(x));
+//                QDir().mkpath(mCacheDir + "/" + QString::number(zoom) + "/" + QString::number(x));
+                QDir().mkpath(mCacheDir + "/" + QString::number(zoom) + "/" + QString::number(y));
                 if (file.open(QIODevice::ReadWrite)) {
                     file.write(data);
                     file.close();
@@ -301,13 +328,12 @@ void OsmClient::fileDownloaded(QNetworkReply *pReply)
                 }
             }
         }
-
         mTilesDownloaded++;
         mDownloadErrorTiles.remove(key);
         emitTile(OsmTile(pm, zoom, x, y));
     } else {
         mDownloadErrorTiles.insert(key, true);
-        emit errorGetTile("Download error: " + pReply->errorString());
+        emit errorGetTile("Download error (fileDownloaded): " + pReply->errorString());
     }
 }
 
