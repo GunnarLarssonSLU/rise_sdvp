@@ -315,6 +315,10 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         conf.car.vesc_i_gain = utility::buffer_get_double32_auto(data, &ind);
         conf.car.vesc_d_gain = utility::buffer_get_double32_auto(data, &ind);
 
+        conf.car.vesc_p_gain = utility::buffer_get_double32_auto(data, &ind);
+        conf.car.vesc_i_gain = utility::buffer_get_double32_auto(data, &ind);
+        conf.car.vesc_d_gain = utility::buffer_get_double32_auto(data, &ind);
+
         // Multirotor settings
         conf.mr.vel_decay_e = utility::buffer_get_double32_auto(data, &ind);
         conf.mr.vel_decay_l = utility::buffer_get_double32_auto(data, &ind);

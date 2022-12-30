@@ -109,7 +109,7 @@
                <enum>QPlainTextEdit::NoWrap</enum>
               </property>
               <property name="plainText">
-               <string>192.168.200.100</string>
+               <string>192.168.1.147</string>
               </property>
              </widget>
             </item>
@@ -613,7 +613,6 @@
         <property name="font">
          <font>
           <pointsize>15</pointsize>
-          <weight>75</weight>
           <bold>true</bold>
          </font>
         </property>
