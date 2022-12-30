@@ -105,6 +105,7 @@ static THD_FUNCTION(servo_thread, arg) {
 #ifdef SERVO_VESC_HYDRAULIC
 		(void)as5047_read;
 		float pos_io_board = comm_can_io_board_as5047_angle();
+
 		bool ok = pos_io_board != m_pos_now_raw;
 		m_pos_now_raw = pos_io_board;
 #else
@@ -130,8 +131,8 @@ static THD_FUNCTION(servo_thread, arg) {
 		float error = m_pos_set - m_pos_now;
 
 		float dt = 0.01;
-		float p_term = error * SERVO_VESC_P_GAIN;
-		i_term += error * (SERVO_VESC_I_GAIN * dt);
+		float p_term = error * main_config.car.vesc_p_gain;
+		i_term += error * (main_config.car.vesc_i_gain * dt);
 
 		// Average DT for the D term when the error does not change. This likely
 		// happens at low speed when the position resolution is low and several
@@ -142,7 +143,7 @@ static THD_FUNCTION(servo_thread, arg) {
 		if (error == prev_error) {
 			d_term = 0.0;
 		} else {
-			d_term = (error - prev_error) * (SERVO_VESC_D_GAIN / dt_int);
+			d_term = (error - prev_error) * (main_config.car.vesc_i_gain / dt_int);
 			dt_int = 0.0;
 		}
 
