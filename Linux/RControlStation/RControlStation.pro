@@ -16,14 +16,12 @@ QT		 += gamepad
 
 CONFIG   += c++11
 
+DEFINES += HAS_JOYSTICK_CHECK
+DEFINES += HAS_JOYSTICK
+
 # Ubuntu
 # sudo apt-get install libassimp-dev
 #DEFINES += HAS_ASSIMP
-
-# Linux only
-unix:!macx {
-    DEFINES += HAS_JOYSTICK
-}
 
 # OpenGL support
 !android: DEFINES += HAS_OPENGL

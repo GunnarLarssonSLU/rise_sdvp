@@ -315,9 +315,9 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         conf.car.vesc_i_gain = utility::buffer_get_double32_auto(data, &ind);
         conf.car.vesc_d_gain = utility::buffer_get_double32_auto(data, &ind);
 
-        conf.car.vesc_p_gain = utility::buffer_get_double32_auto(data, &ind);
-        conf.car.vesc_i_gain = utility::buffer_get_double32_auto(data, &ind);
-        conf.car.vesc_d_gain = utility::buffer_get_double32_auto(data, &ind);
+        conf.car.anglemin = utility::buffer_get_double32_auto(data, &ind);
+        conf.car.anglemax = utility::buffer_get_double32_auto(data, &ind);
+        conf.car.angledegrees = utility::buffer_get_double32_auto(data, &ind);
 
         // Multirotor settings
         conf.mr.vel_decay_e = utility::buffer_get_double32_auto(data, &ind);
@@ -435,7 +435,6 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         if (len <= 1) {
             break;
         }
-
         state.fw_major = data[ind++];
         state.fw_minor = data[ind++];
         state.roll = utility::buffer_get_double32(data, 1e6, &ind);
@@ -909,6 +908,10 @@ bool PacketInterface::setConfiguration(quint8 id, MAIN_CONFIG &conf, int retries
     utility::buffer_append_double32_auto(mSendBuffer, conf.car.vesc_i_gain, &send_index);
     utility::buffer_append_double32_auto(mSendBuffer, conf.car.vesc_d_gain, &send_index);
 
+    utility::buffer_append_double32_auto(mSendBuffer, conf.car.anglemin, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.car.anglemax, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.car.angledegrees, &send_index);
+
     // Multirotor settings
     utility::buffer_append_double32_auto(mSendBuffer, conf.mr.vel_decay_e, &send_index);
     utility::buffer_append_double32_auto(mSendBuffer, conf.mr.vel_decay_l, &send_index);
@@ -1059,7 +1062,7 @@ bool PacketInterface::getRoutePart(quint8 id,
             break;
         }
 
-        qDebug() << "Retrying to send packet...";
+        qDebug() << "Retrying to send packet2...";
     }
 
     disconnect(conn);

@@ -187,6 +187,8 @@ void CarInterface::setStateData(CAR_STATE data)
     }
     QString battTxt;
     battTxt.sprintf("Battery: %.1f %% (%.2f V)", battp, data.vin);
+//    battTxt.sprintf("Ver: %.1f %% (%.2f V)", battp, 1.0*data.temp_fet);
+
     if (battp > 100.0) {
         battp = 100.0;
     }
@@ -233,6 +235,7 @@ void CarInterface::setStateData(CAR_STATE data)
         car->setLocationUwb(loc_uwb);
         car->setApGoal(ap_goal);
         car->setTime(data.ms_today);
+        /*
 
         //QList<LocPoint> bounds = mMap->getRoute(ui->boundsRouteSpinBox->value());
         QList<LocPoint> bounds = mMap->getRoute(0);
@@ -240,16 +243,24 @@ void CarInterface::setStateData(CAR_STATE data)
         {
         	setAp(false, false);
         }
+*/
 
-        /*
-        void MainWindow::on_AutopilotPausePushButton_clicked()
-        {
-            QWidget *tmp = ui->carsWidget->widget(ui->mapCarBox->value());
-            if (tmp) {
-                CarInterface *car = dynamic_cast<CarInterface*>(tmp);
-                car->setAp(false, false);
-            }
-        }*/
+//        //QList<LocPoint> bounds = mMap->getRoute(ui->boundsRouteSpinBox->value());
+//        QList<LocPoint> bounds = mMap->getRoute(0);
+//        if (RouteMagic::isPointOutside(loc, bounds))
+//        {
+//        	setAp(false, false);
+//        }
+
+
+//        void MainWindow::on_AutopilotPausePushButton_clicked()
+//        {
+//            QWidget *tmp = ui->carsWidget->widget(ui->mapCarBox->value());
+//            if (tmp) {
+//                CarInterface *car = dynamic_cast<CarInterface*>(tmp);
+//                car->setAp(false, false);
+//            }
+//        }
 
         mMap->update();
     }
@@ -805,6 +816,9 @@ void CarInterface::getConfGui(MAIN_CONFIG &conf)
     conf.car.vesc_p_gain = ui->confServoPGainBox->value();
     conf.car.vesc_i_gain = ui->confServoIGainBox->value();
     conf.car.vesc_d_gain = ui->confServoDGainBox->value();
+    conf.car.anglemin = ui->confAngleMinBox->value();
+    conf.car.anglemax = ui->confAngleMaxBox->value();
+    conf.car.angledegrees = ui->confAngleDegreesBox->value();
 
     conf.car.steering_max_angle_rad = atan(ui->confAxisDistanceBox->value() / ui->confTurnRadBox->value());
 
@@ -830,6 +844,9 @@ void CarInterface::setConfGui(MAIN_CONFIG &conf)
     ui->confServoPGainBox->setValue(conf.car.vesc_p_gain);
     ui->confServoIGainBox->setValue(conf.car.vesc_i_gain);
     ui->confServoDGainBox->setValue(conf.car.vesc_d_gain);
+    ui->confAngleMinBox->setValue(conf.car.anglemin);
+    ui->confAngleMaxBox->setValue(conf.car.anglemax);
+    ui->confAngleDegreesBox->setValue(conf.car.angledegrees);
 
     ui->confTurnRadBox->setValue(conf.car.axis_distance / tan(conf.car.steering_max_angle_rad));
 
