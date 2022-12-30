@@ -109,19 +109,20 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(mJoystick, SIGNAL(buttonChanged(int,bool)),
             this, SLOT(jsButtonChanged(int,bool)));
 
-
     connect(mJoystick, &QGamepad::axisLeftXChanged, this, [](double value){
-            qDebug() << "Left X" << value;
+ //           qDebug() << "Left X" << value;
         });
         connect(mJoystick, &QGamepad::axisLeftYChanged, this, [](double value){
-            qDebug() << "Left Y" << value;
+ //           qDebug() << "Left Y" << value;
         });
         connect(mJoystick, &QGamepad::axisRightXChanged, this, [](double value){
-            qDebug() << "Right X" << value;
+ //           qDebug() << "Right X" << value;
         });
         connect(mJoystick, &QGamepad::axisRightYChanged, this, [](double value){
-            qDebug() << "Right Y" << value;
+ //           qDebug() << "Right Y" << value;
         });
+
+
     /*	These buttons are not used
         connect(mJoystick, &QGamepad::buttonAChanged, this, [](bool pressed){
             qDebug() << "Button A" << pressed;
@@ -166,7 +167,7 @@ MainWindow::MainWindow(QWidget *parent) :
             qDebug() << "Button Guide" << pressed;
         });
     */
-	#endif
+    #endif
 
     mPing = new Ping(this);
     mNmea = new NmeaServer(this);
@@ -264,9 +265,9 @@ MainWindow::MainWindow(QWidget *parent) :
     bool connectJs = false;
 
     {
-    	 QGamepad js;
-    	    if (js.isConnected()) {
-    	            connectJs = true;
+         QGamepad js;
+            if (js.isConnected()) {
+                    connectJs = true;
         }
     }
 
@@ -285,10 +286,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
     //Initialize
-    on_WgConnectPushButton_clicked();
-    on_tcpConnectButton_clicked();
- //   on_jsConnectButton_clicked();
- //   on_carAddButton_clicked();
+//    on_WgConnectPushButton_clicked();
+//    on_tcpConnectButton_clicked();
+//    on_jsConnectButton_clicked();
+//    on_carAddButton_clicked();
 
 
     qApp->installEventFilter(this);
@@ -452,78 +453,77 @@ void MainWindow::serialPortError(QSerialPort::SerialPortError error)
 
 void MainWindow::timerSlot()
 {
-	// Nothing to qDebug, as the function is called frequently
+#ifdef HAS_JOYSTICK
+    // Nothing to qDebug, as the function is called frequently
 
-		bool js_connected = false;
-	    double js_mr_thr = 0.0;
-	    double js_mr_roll = 0.0;
-	    double js_mr_pitch = 0.0;
-	    double js_mr_yaw = 0.0;
+        double js_mr_thr = 0.0;
+        double js_mr_roll = 0.0;
+        double js_mr_pitch = 0.0;
+        double js_mr_yaw = 0.0;
 
-	    // Update throttle and steering from keys.
-	    if (mJoystick->isConnected()) {
+        // Update throttle and steering from keys.
+        if (mJoystick->isConnected()) {
 
-	            mThrottle = -mJoystick->axisLeftY();
-	            deadband(mThrottle,0.1, 1.0);
-	            mSteering = mJoystick->axisRightX();
-	            // qDebug () << "Throttle: " << mThrottle << ", Steering: " << mSteering;
+                mThrottle = -mJoystick->axisLeftY();
+                deadband(mThrottle,0.1, 1.0);
+                mSteering = mJoystick->axisRightX();
+                // qDebug () << "Throttle: " << mThrottle << ", Steering: " << mSteering;
 
-	            js_mr_thr = -mJoystick->axisLeftY();
-	            js_mr_roll = mJoystick->axisRightX();
-	            js_mr_pitch = 0; // mJoystick->getAxis(4) / 32768.0; // GL - not sure which controller this corresponds to
-	            js_mr_yaw = 0; //mJoystick->getAxis(0) / 32768.0;   // GL - not sure which controller this corresponds to
-	            utility::truncate_number(&js_mr_thr, 0.0, 1.0);
-	            utility::truncate_number_abs(&js_mr_roll, 1.0);
-	            utility::truncate_number_abs(&js_mr_pitch, 1.0);
-	            utility::truncate_number_abs(&js_mr_yaw, 1.0);
-	#ifdef DEBUG_FUNCTIONS
-	            if (mThrottle !=0 || mSteering !=0)
-	            {
-	            	qDebug() << QDateTime::currentDateTime().toString() << " - JOYSTICK (timerslot), mThrottle: " << mThrottle << ", mSteering: " << mSteering;
-	            }
-	#endif
+                js_mr_thr = -mJoystick->axisLeftY();
+                js_mr_roll = mJoystick->axisRightX();
+                js_mr_pitch = 0; // mJoystick->getAxis(4) / 32768.0; // GL - not sure which controller this corresponds to
+                js_mr_yaw = 0; //mJoystick->getAxis(0) / 32768.0;   // GL - not sure which controller this corresponds to
+                utility::truncate_number(&js_mr_thr, 0.0, 1.0);
+                utility::truncate_number_abs(&js_mr_roll, 1.0);
+                utility::truncate_number_abs(&js_mr_pitch, 1.0);
+                utility::truncate_number_abs(&js_mr_yaw, 1.0);
+//#ifdef DEBUG_FUNCTIONS
+                if (mThrottle !=0 || mSteering !=0)
+                {
+                    qDebug() << QDateTime::currentDateTime().toString() << " - JOYSTICK (timerslot), mThrottle: " << mThrottle << ", mSteering: " << mSteering;
+                }
+  //  #endif
+            //mSteering /= 2.0;
+        } else {
+            qDebug () << "NOT CONNECTED!!!!!!!!!!";
+            if (mKeyUp) {
+                stepTowards(mThrottle, 1.0, ui->throttleGainBox->value());
+            } else if (mKeyDown) {
+                stepTowards(mThrottle, -1.0, ui->throttleGainBox->value());
+            } else {
+                stepTowards(mThrottle, 0.0, ui->throttleGainBox->value());
+            }
 
-	        //mSteering /= 2.0;
-	    } else {
-	    	qDebug () << "NOT CONNECTED!!!!!!!!!!";
-	        if (mKeyUp) {
-	            stepTowards(mThrottle, 1.0, ui->throttleGainBox->value());
-	        } else if (mKeyDown) {
-	            stepTowards(mThrottle, -1.0, ui->throttleGainBox->value());
-	        } else {
-	            stepTowards(mThrottle, 0.0, ui->throttleGainBox->value());
-	        }
+            if (mKeyRight) {
+                stepTowards(mSteering, 1.0, ui->steeringGainBox->value());
+            } else if (mKeyLeft) {
+                stepTowards(mSteering, -1.0, ui->steeringGainBox->value());
+            } else {
+                stepTowards(mSteering, 0.0, ui->steeringGainBox->value());
+            }
+        }
 
-	        if (mKeyRight) {
-	            stepTowards(mSteering, 1.0, ui->steeringGainBox->value());
-	        } else if (mKeyLeft) {
-	            stepTowards(mSteering, -1.0, ui->steeringGainBox->value());
-	        } else {
-	            stepTowards(mSteering, 0.0, ui->steeringGainBox->value());
-	        }
-	    }
+        ui->mrThrottleBar->setValue(js_mr_thr * 100.0);
+        ui->mrRollBar->setValue(js_mr_roll * 100.0);
+        ui->mrPitchBar->setValue(js_mr_pitch * 100.0);
+        ui->mrYawBar->setValue(js_mr_yaw * 100.0);
 
-	    ui->mrThrottleBar->setValue(js_mr_thr * 100.0);
-	    ui->mrRollBar->setValue(js_mr_roll * 100.0);
-	    ui->mrPitchBar->setValue(js_mr_pitch * 100.0);
-	    ui->mrYawBar->setValue(js_mr_yaw * 100.0);
-
-	    ui->throttleBar->setValue(mThrottle * 100.0);
-	    ui->steeringBar->setValue(mSteering * 100.0);
-
+        ui->throttleBar->setValue(mThrottle * 100.0);
+        ui->steeringBar->setValue(mSteering * 100.0);
+#endif
 
     // Notify about key events
     for(QList<CarInterface*>::Iterator it_car = mCars.begin();it_car < mCars.end();it_car++) {
         CarInterface *car = *it_car;
         car->setControlValues(mThrottle, mSteering, ui->throttleMaxBox->value(), ui->throttleCurrentButton->isChecked());
     }
-
+#ifdef HAS_JOYSTICK
     // Notify about joystick events
     for(QList<CopterInterface*>::Iterator it_copter = mCopters.begin();it_copter < mCopters.end();it_copter++) {
         CopterInterface *copter = *it_copter;
         copter->setControlValues(js_mr_thr, js_mr_roll, js_mr_pitch, js_mr_yaw);
     }
-
+#endif
     // Update status label
     if (mStatusInfoTime) {
         mStatusInfoTime--;
@@ -661,6 +661,7 @@ void MainWindow::packetDataToSend(QByteArray &data)
 
 void MainWindow::stateReceived(quint8 id, CAR_STATE state)
 {
+
     if (!mSupportedFirmwares.contains(qMakePair(state.fw_major, state.fw_minor))) {
         on_disconnectButton_clicked();
         QMessageBox::warning(this, "Unsupported Firmware",
@@ -874,58 +875,59 @@ void MainWindow::infoTraceChanged(int traceNow)
 
 void MainWindow::jsButtonChanged(int button, bool pressed)
 {
-	//    qDebug() << "JS BT:" << button << pressed;
+        qDebug() << "JS BT:" << button << pressed;
 
-	#ifdef HAS_JOYSTICK
-	    if (1) {
-	        // 5: Front Up
-	        // 7: Front Down
-	        // 4: Rear up
-	        // 6: Rear down
-	        // 1: Extra out
-	        // 3: Extra in
+    #ifdef HAS_JOYSTICK
+        if (1) {
+            // 5: Front Up
+            // 7: Front Down
+            // 4: Rear up
+            // 6: Rear down
+            // 1: Extra out
+            // 3: Extra in
 
-	        if (button == 5 || button == 7 || button == 1 ||
-	                button == 3 || button == 4 || button == 6) {
-	            for(QList<CarInterface*>::Iterator it_car = mCars.begin();it_car < mCars.end();it_car++) {
-	                CarInterface *car = *it_car;
-	                if (car->getCtrlKb()) {
-	                    if (button == 5 || button == 7) {
-	                        if (pressed) {
-	                            if (button == 5) {
-	                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_UP);
-	                            } else {
-	                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_DOWN);
-	                            }
-	                        } else {
-	                            mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_STOP);
-	                        }
-	                    } else if (button == 4 || button == 6) {
-	                        if (pressed) {
-	                            if (button == 4) {
-	                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_UP);
-	                            } else {
-	                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
-	                            }
-	                        } else {
-	                            mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_STOP);
-	                        }
-	                    } else if (button == 1 || button == 3) {
-	                        if (pressed) {
-	                            if (button == 1) {
-	                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_OUT);
-	                            } else {
-	                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_IN);
-	                            }
-	                        } else {
-	                            mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_STOP);
-	                        }
-	                    }
-	                }
-	            }
-	        }
-	    }
-	#endif
+            if (button == 5 || button == 7 || button == 1 ||
+                    button == 3 || button == 4 || button == 6) {
+                for(QList<CarInterface*>::Iterator it_car = mCars.begin();it_car < mCars.end();it_car++) {
+                    CarInterface *car = *it_car;
+                    if (car->getCtrlKb()) {
+                        if (button == 5 || button == 7) {
+                            if (pressed) {
+                                if (button == 5) {
+                                    qDebug() << "Hydraulic, front up";
+                                    mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_UP);
+                                } else {
+                                    mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_DOWN);
+                                }
+                            } else {
+                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_STOP);
+                            }
+                        } else if (button == 4 || button == 6) {
+                            if (pressed) {
+                                if (button == 4) {
+                                    mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_UP);
+                                } else {
+                                    mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
+                                }
+                            } else {
+                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_STOP);
+                            }
+                        } else if (button == 1 || button == 3) {
+                            if (pressed) {
+                                if (button == 1) {
+                                    mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_OUT);
+                                } else {
+                                    mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_IN);
+                                }
+                            } else {
+                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_STOP);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    #endif
 }
 
 void MainWindow::on_carAddButton_clicked()
@@ -976,7 +978,9 @@ void MainWindow::on_MapRemovePixmapsButton_clicked()
 
 void MainWindow::on_tcpConnectButton_clicked()
 {
+
     mTcpClientMulti->disconnectAll();
+
     QStringList conns = ui->tcpConnEdit->toPlainText().split("\n");
 
     for (QString c: conns) {
@@ -990,6 +994,7 @@ void MainWindow::on_tcpConnectButton_clicked()
                                            ipPort.at(1).toInt());
         }
     }
+
 }
 
 void MainWindow::on_tcpPingButton_clicked()
@@ -1656,6 +1661,7 @@ void MainWindow::on_actionAbout_triggered()
 
 void MainWindow::on_actionAboutLibrariesUsed_triggered()
 {
+
     QMessageBox::about(this, "Libraries Used",
                        tr("<b>Icons<br>"
                           "<a href=\"https://icons8.com/\">https://icons8.com/</a><br><br>"
@@ -2173,6 +2179,7 @@ void MainWindow::on_WgConnectPushButton_clicked()
 }
 
 void MainWindow::on_WgDisconnectPushButton_clicked()
+
 {
     system("pkexec wg-quick down wg_sdvp");
     QList<QNetworkInterface> interfaces = QNetworkInterface::allInterfaces();
