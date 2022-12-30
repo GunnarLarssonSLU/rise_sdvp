@@ -29,6 +29,8 @@
 #include <QStringList>
 #include <QElapsedTimer>
 #include <QNetworkInterface>
+#include <QGamepad>
+#include <QLoggingCategory>
 
 #include "utility.h"
 #include "routemagic.h"
@@ -95,12 +97,76 @@ MainWindow::MainWindow(QWidget *parent) :
     qDebug() << "Start";
 
 #ifdef HAS_JOYSTICK
-    mJoystick = new Joystick(this);
-    mJsType = JS_TYPE_HK;
+
+    auto gamepads = QGamepadManager::instance()->connectedGamepads();
+    if (gamepads.isEmpty()) {
+        qDebug() << "Did not find any connected gamepads";
+//        return;
+    }
+
+    mJoystick = new QGamepad(*gamepads.begin(), this);
 
     connect(mJoystick, SIGNAL(buttonChanged(int,bool)),
             this, SLOT(jsButtonChanged(int,bool)));
-#endif
+
+
+    connect(mJoystick, &QGamepad::axisLeftXChanged, this, [](double value){
+            qDebug() << "Left X" << value;
+        });
+        connect(mJoystick, &QGamepad::axisLeftYChanged, this, [](double value){
+            qDebug() << "Left Y" << value;
+        });
+        connect(mJoystick, &QGamepad::axisRightXChanged, this, [](double value){
+            qDebug() << "Right X" << value;
+        });
+        connect(mJoystick, &QGamepad::axisRightYChanged, this, [](double value){
+            qDebug() << "Right Y" << value;
+        });
+    /*	These buttons are not used
+        connect(mJoystick, &QGamepad::buttonAChanged, this, [](bool pressed){
+            qDebug() << "Button A" << pressed;
+           jsButtonChanged(int button, bool pressed);
+        });
+        connect(mJoystick, &QGamepad::buttonBChanged, this, [](bool pressed){
+            qDebug() << "Button B" << pressed;
+        });
+        connect(mJoystick, &QGamepad::buttonXChanged, this, [](bool pressed){
+            qDebug() << "Button X" << pressed;
+        });
+        connect(mJoystick, &QGamepad::buttonYChanged, this, [](bool pressed){
+            qDebug() << "Button Y" << pressed;
+        });
+    */
+        static MainWindow *mThis=this;          // Just to be able to get the lambdas to work
+        connect(mJoystick, &QGamepad::buttonL1Changed, this, [](bool pressed){
+            qDebug() << "Button L1" << pressed;
+            mThis->jsButtonChanged(4, pressed);
+        });
+        connect(mJoystick, &QGamepad::buttonR1Changed, this, [](bool pressed){
+            qDebug() << "Button R1" << pressed;
+            mThis->jsButtonChanged(5, pressed);
+        });
+        connect(mJoystick, &QGamepad::buttonL2Changed, this, [](double value){
+            qDebug() << "Button L2: " << value;
+            mThis->jsButtonChanged(6, value>0);
+        });
+
+        connect(mJoystick, &QGamepad::buttonR2Changed, this, [](double value){
+            qDebug() << "Button R2: " << value;
+            mThis->jsButtonChanged(7, value>0);
+        });
+    /*    These buttons are not used
+        connect(mJoystick, &QGamepad::buttonSelectChanged, this, [](bool pressed){
+            qDebug() << "Button Select" << pressed;
+        });
+        connect(mJoystick, &QGamepad::buttonStartChanged, this, [](bool pressed){
+            qDebug() << "Button Start" << pressed;
+        });
+        connect(mJoystick, &QGamepad::buttonGuideChanged, this, [](bool pressed){
+            qDebug() << "Button Guide" << pressed;
+        });
+    */
+	#endif
 
     mPing = new Ping(this);
     mNmea = new NmeaServer(this);
@@ -198,11 +264,9 @@ MainWindow::MainWindow(QWidget *parent) :
     bool connectJs = false;
 
     {
-        Joystick js;
-        if (js.init(ui->jsPortEdit->text()) == 0) {
-            if (js.getName().contains("micronav one", Qt::CaseInsensitive)) {
-                connectJs = true;
-            }
+    	 QGamepad js;
+    	    if (js.isConnected()) {
+    	            connectJs = true;
         }
     }
 
@@ -224,7 +288,7 @@ MainWindow::MainWindow(QWidget *parent) :
     on_WgConnectPushButton_clicked();
     on_tcpConnectButton_clicked();
  //   on_jsConnectButton_clicked();
-    on_carAddButton_clicked();
+ //   on_carAddButton_clicked();
 
 
     qApp->installEventFilter(this);
@@ -335,40 +399,6 @@ void MainWindow::addCar(int id, bool pollData)
 
 void MainWindow::connectJoystick(QString dev)
 {
-#ifdef HAS_JOYSTICK
-    if (mJoystick->init(dev) == 0) {
-        qDebug() << "JS Axes:" << mJoystick->numAxes();
-        qDebug() << "JS Buttons:" << mJoystick->numButtons();
-        qDebug() << "JS Name:" << mJoystick->getName();
-
-        if (mJoystick->getName().contains("Sony PLAYSTATION(R)3")) {
-            mJsType = JS_TYPE_PS3;
-            qDebug() << "Treating joystick as PS3 USB controller.";
-            showStatusInfo("PS3 USB joystick connected!", true);
-        } else if (mJoystick->getName().contains("sony", Qt::CaseInsensitive) ||
-                   mJoystick->getName().contains("wireless controller", Qt::CaseInsensitive)) {
-            mJsType = JS_TYPE_PS4;
-            qDebug() << "Treating joystick as PS4 USB controller.";
-            showStatusInfo("PS4 USB joystick connected!", true);
-        } else if (mJoystick->getName().contains("micronav one", Qt::CaseInsensitive)) {
-            mJsType = JS_TYPE_MICRONAV_ONE;
-            qDebug() << "Treating joystick as Micronav One.";
-            showStatusInfo("Micronav One joystick connected!", true);
-            mJoystick->setRepeats(10, true);
-            mJoystick->setRepeats(14, true);
-        } else {
-            mJsType = JS_TYPE_HK;
-            qDebug() << "Treating joystick as hobbyking simulator.";
-            showStatusInfo("HK joystick connected!", true);
-        }
-    } else {
-        qWarning() << "Opening joystick failed.";
-        showStatusInfo("Opening joystick failed.", false);
-    }
-#else
-    QMessageBox::warning(this, "Joystick",
-                         "This build does not have joystick support.");
-#endif
 }
 
 void MainWindow::addTcpConnection(QString ip, int port)
@@ -422,87 +452,65 @@ void MainWindow::serialPortError(QSerialPort::SerialPortError error)
 
 void MainWindow::timerSlot()
 {
-    bool js_connected = false;
-    double js_mr_thr = 0.0;
-    double js_mr_roll = 0.0;
-    double js_mr_pitch = 0.0;
-    double js_mr_yaw = 0.0;
+	// Nothing to qDebug, as the function is called frequently
 
-#ifdef HAS_JOYSTICK
-    js_connected = mJoystick->isConnected();
-#endif
+		bool js_connected = false;
+	    double js_mr_thr = 0.0;
+	    double js_mr_roll = 0.0;
+	    double js_mr_pitch = 0.0;
+	    double js_mr_yaw = 0.0;
 
-    // Update throttle and steering from keys.
-    if (js_connected) {
-#ifdef HAS_JOYSTICK
-        if (mJsType == JS_TYPE_HK) {
-            mThrottle = -(double)mJoystick->getAxis(4) / 32768.0;
-            deadband(mThrottle,0.1, 1.0);
-            mSteering = -(double)mJoystick->getAxis(0) / 32768.0;
+	    // Update throttle and steering from keys.
+	    if (mJoystick->isConnected()) {
 
-            js_mr_thr = (((double)mJoystick->getAxis(2) / 32768.0) + 0.85) / 1.7;
-            js_mr_roll = -(double)mJoystick->getAxis(0) / 32768.0;
-            js_mr_pitch = -(double)mJoystick->getAxis(1) / 32768.0;
-            js_mr_yaw = -(double)mJoystick->getAxis(4) / 32768.0;
-            utility::truncate_number(&js_mr_thr, 0.0, 1.0);
-            utility::truncate_number_abs(&js_mr_roll, 1.0);
-            utility::truncate_number_abs(&js_mr_pitch, 1.0);
-            utility::truncate_number_abs(&js_mr_yaw, 1.0);
-        } else if (mJsType == JS_TYPE_MICRONAV_ONE) {
-            mThrottle = -(double)mJoystick->getAxis(1) / 32768.0;
-            deadband(mThrottle,0.1, 1.0);
-            mSteering = (double)mJoystick->getAxis(2) / 32768.0;
+	            mThrottle = -mJoystick->axisLeftY();
+	            deadband(mThrottle,0.1, 1.0);
+	            mSteering = mJoystick->axisRightX();
+	            // qDebug () << "Throttle: " << mThrottle << ", Steering: " << mSteering;
 
-            js_mr_thr = ((-(double)mJoystick->getAxis(1) / 32768.0) + 0.85) / 1.7;
-            js_mr_roll = (double)mJoystick->getAxis(2) / 32768.0;
-            js_mr_pitch = (double)mJoystick->getAxis(3) / 32768.0;
-            js_mr_yaw = (double)mJoystick->getAxis(0) / 32768.0;
-            utility::truncate_number(&js_mr_thr, 0.0, 1.0);
-            utility::truncate_number_abs(&js_mr_roll, 1.0);
-            utility::truncate_number_abs(&js_mr_pitch, 1.0);
-            utility::truncate_number_abs(&js_mr_yaw, 1.0);
-        } else if (mJsType == JS_TYPE_PS4 || mJsType == JS_TYPE_PS3) {
-            mThrottle = -(double)mJoystick->getAxis(1) / 32768.0;
-            deadband(mThrottle,0.1, 1.0);
-            mSteering = (double)mJoystick->getAxis(3) / 32768.0;
+	            js_mr_thr = -mJoystick->axisLeftY();
+	            js_mr_roll = mJoystick->axisRightX();
+	            js_mr_pitch = 0; // mJoystick->getAxis(4) / 32768.0; // GL - not sure which controller this corresponds to
+	            js_mr_yaw = 0; //mJoystick->getAxis(0) / 32768.0;   // GL - not sure which controller this corresponds to
+	            utility::truncate_number(&js_mr_thr, 0.0, 1.0);
+	            utility::truncate_number_abs(&js_mr_roll, 1.0);
+	            utility::truncate_number_abs(&js_mr_pitch, 1.0);
+	            utility::truncate_number_abs(&js_mr_yaw, 1.0);
+	#ifdef DEBUG_FUNCTIONS
+	            if (mThrottle !=0 || mSteering !=0)
+	            {
+	            	qDebug() << QDateTime::currentDateTime().toString() << " - JOYSTICK (timerslot), mThrottle: " << mThrottle << ", mSteering: " << mSteering;
+	            }
+	#endif
 
-            js_mr_thr = -(double)mJoystick->getAxis(1) / 32768.0;
-            js_mr_roll = (double)mJoystick->getAxis(3) / 32768.0;
-            js_mr_pitch = (double)mJoystick->getAxis(4) / 32768.0;
-            js_mr_yaw = (double)mJoystick->getAxis(0) / 32768.0;
-            utility::truncate_number(&js_mr_thr, 0.0, 1.0);
-            utility::truncate_number_abs(&js_mr_roll, 1.0);
-            utility::truncate_number_abs(&js_mr_pitch, 1.0);
-            utility::truncate_number_abs(&js_mr_yaw, 1.0);
-        }
+	        //mSteering /= 2.0;
+	    } else {
+	    	qDebug () << "NOT CONNECTED!!!!!!!!!!";
+	        if (mKeyUp) {
+	            stepTowards(mThrottle, 1.0, ui->throttleGainBox->value());
+	        } else if (mKeyDown) {
+	            stepTowards(mThrottle, -1.0, ui->throttleGainBox->value());
+	        } else {
+	            stepTowards(mThrottle, 0.0, ui->throttleGainBox->value());
+	        }
 
-        //mSteering /= 2.0;
-#endif
-    } else {
-        if (mKeyUp) {
-            stepTowards(mThrottle, 1.0, ui->throttleGainBox->value());
-        } else if (mKeyDown) {
-            stepTowards(mThrottle, -1.0, ui->throttleGainBox->value());
-        } else {
-            stepTowards(mThrottle, 0.0, ui->throttleGainBox->value());
-        }
+	        if (mKeyRight) {
+	            stepTowards(mSteering, 1.0, ui->steeringGainBox->value());
+	        } else if (mKeyLeft) {
+	            stepTowards(mSteering, -1.0, ui->steeringGainBox->value());
+	        } else {
+	            stepTowards(mSteering, 0.0, ui->steeringGainBox->value());
+	        }
+	    }
 
-        if (mKeyRight) {
-            stepTowards(mSteering, 1.0, ui->steeringGainBox->value());
-        } else if (mKeyLeft) {
-            stepTowards(mSteering, -1.0, ui->steeringGainBox->value());
-        } else {
-            stepTowards(mSteering, 0.0, ui->steeringGainBox->value());
-        }
-    }
+	    ui->mrThrottleBar->setValue(js_mr_thr * 100.0);
+	    ui->mrRollBar->setValue(js_mr_roll * 100.0);
+	    ui->mrPitchBar->setValue(js_mr_pitch * 100.0);
+	    ui->mrYawBar->setValue(js_mr_yaw * 100.0);
 
-    ui->mrThrottleBar->setValue(js_mr_thr * 100.0);
-    ui->mrRollBar->setValue(js_mr_roll * 100.0);
-    ui->mrPitchBar->setValue(js_mr_pitch * 100.0);
-    ui->mrYawBar->setValue(js_mr_yaw * 100.0);
+	    ui->throttleBar->setValue(mThrottle * 100.0);
+	    ui->steeringBar->setValue(mSteering * 100.0);
 
-    ui->throttleBar->setValue(mThrottle * 100.0);
-    ui->steeringBar->setValue(mSteering * 100.0);
 
     // Notify about key events
     for(QList<CarInterface*>::Iterator it_car = mCars.begin();it_car < mCars.end();it_car++) {
@@ -866,90 +874,58 @@ void MainWindow::infoTraceChanged(int traceNow)
 
 void MainWindow::jsButtonChanged(int button, bool pressed)
 {
-//    qDebug() << "JS BT:" << button << pressed;
+	//    qDebug() << "JS BT:" << button << pressed;
 
-#ifdef HAS_JOYSTICK
-    if (mJsType == JS_TYPE_MICRONAV_ONE) {
-        QWidget *fw = QApplication::focusWidget();
+	#ifdef HAS_JOYSTICK
+	    if (1) {
+	        // 5: Front Up
+	        // 7: Front Down
+	        // 4: Rear up
+	        // 6: Rear down
+	        // 1: Extra out
+	        // 3: Extra in
 
-        if (button == 1 && pressed) {
-            on_actionToggleFullscreen_triggered();
-        } else if (button == 3 && pressed) {
-            on_actionToggleCameraFullscreen_triggered();
-        } else if (button == 14 && pressed) {
-            if (fw) {
-                QKeyEvent *event = new QKeyEvent(
-                            QEvent::KeyPress, Qt::Key_Up, Qt::NoModifier);
-                QCoreApplication::postEvent(fw, event);
-            }
-        } else if (button == 10 && pressed) {
-            if (fw) {
-                QKeyEvent *event = new QKeyEvent(
-                            QEvent::KeyPress, Qt::Key_Down, Qt::NoModifier);
-                QCoreApplication::postEvent(fw, event);
-            }
-        } else  if (button == 13 && pressed) {
-            ui->mapWidget->removeLastRoutePoint();
-        }
-
-        if (mJoystick->getButton(12)) {
-            ui->mapWidget->setInteractionMode(MapWidget::InteractionModeShiftDown);
-        } else if (mJoystick->getButton(5)) {
-            ui->mapWidget->setInteractionMode(MapWidget::InteractionModeCtrlDown);
-        } else if (mJoystick->getButton(6)) {
-            ui->mapWidget->setInteractionMode(MapWidget::InteractionModeCtrlShiftDown);
-        } else {
-            ui->mapWidget->setInteractionMode(MapWidget::InteractionModeDefault);
-        }
-    } else if (mJsType == JS_TYPE_PS4) {
-        // 5: Front Up
-        // 7: Front Down
-        // 4: Rear up
-        // 6: Rear down
-        // 1: Extra out
-        // 3: Extra in
-
-        if (button == 5 || button == 7 || button == 1 ||
-                button == 3 || button == 4 || button == 6) {
-            for(QList<CarInterface*>::Iterator it_car = mCars.begin();it_car < mCars.end();it_car++) {
-                CarInterface *car = *it_car;
-                if (car->getCtrlKb()) {
-                    if (button == 5 || button == 7) {
-                        if (pressed) {
-                            if (button == 5) {
-                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_UP);
-                            } else {
-                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_DOWN);
-                            }
-                        } else {
-                            mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_STOP);
-                        }
-                    } else if (button == 4 || button == 6) {
-                        if (pressed) {
-                            if (button == 4) {
-                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_UP);
-                            } else {
-                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
-                            }
-                        } else {
-                            mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_STOP);
-                        }
-                    } else if (button == 1 || button == 3) {
-                        if (pressed) {
-                            if (button == 1) {
-                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_OUT);
-                            } else {
-                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_IN);
-                            }
-                        } else {
-                            mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_STOP);
-                        }
-                    }
-                }
-            }
-        }
-    }
-#endif
+	        if (button == 5 || button == 7 || button == 1 ||
+	                button == 3 || button == 4 || button == 6) {
+	            for(QList<CarInterface*>::Iterator it_car = mCars.begin();it_car < mCars.end();it_car++) {
+	                CarInterface *car = *it_car;
+	                if (car->getCtrlKb()) {
+	                    if (button == 5 || button == 7) {
+	                        if (pressed) {
+	                            if (button == 5) {
+	                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_UP);
+	                            } else {
+	                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_DOWN);
+	                            }
+	                        } else {
+	                            mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_STOP);
+	                        }
+	                    } else if (button == 4 || button == 6) {
+	                        if (pressed) {
+	                            if (button == 4) {
+	                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_UP);
+	                            } else {
+	                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
+	                            }
+	                        } else {
+	                            mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_STOP);
+	                        }
+	                    } else if (button == 1 || button == 3) {
+	                        if (pressed) {
+	                            if (button == 1) {
+	                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_OUT);
+	                            } else {
+	                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_IN);
+	                            }
+	                        } else {
+	                            mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_STOP);
+	                        }
+	                    }
+	                }
+	            }
+	        }
+	    }
+	#endif
 }
 
 void MainWindow::on_carAddButton_clicked()
@@ -1053,9 +1029,6 @@ void MainWindow::on_jsConnectButton_clicked()
 
 void MainWindow::on_jsDisconnectButton_clicked()
 {
-#ifdef HAS_JOYSTICK
-    mJoystick->stop();
-#endif
 }
 
 void MainWindow::on_mapAntialiasBox_toggled(bool checked)

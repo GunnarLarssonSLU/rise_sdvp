@@ -24,6 +24,7 @@
 #include <QSerialPort>
 #include <QLabel>
 #include <QTcpSocket>
+#include <QGamepad>
 #include "carinterface.h"
 #include "copterinterface.h"
 #include "packetinterface.h"
@@ -224,11 +225,8 @@ private:
     std::unique_ptr<WireGuard> mWireGuard;
     QString mLastImgFileName;
     QList<QPair<int, int> > mSupportedFirmwares;
+    QGamepad *mJoystick;
 
-#ifdef HAS_JOYSTICK
-    Joystick *mJoystick;
-    JS_TYPE mJsType;
-#endif
 
 #ifdef HAS_LIME_SDR
     GpsSim *mGpsSim;
