@@ -58,15 +58,10 @@ CarInterface::CarInterface(QWidget *parent) :
 
     memset(&mLastCarState, 0, sizeof(CAR_STATE));
 
-    // Plots
-    ui->experimentPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
-
     mMap = 0;
     mPacketInterface = 0;
     mId = 0;
     resetApOnEmergencyStop = true;
-    mExperimentReplot = false;
-    mExperimentPlotNow = 0;
     mSettingsReadDone = false;
     mImageByteCnt = 0;
     mImageCnt = 0;
@@ -90,20 +85,6 @@ CarInterface::CarInterface(QWidget *parent) :
             this, SLOT(loadMagCal()));
 
     mTcpServer->setUsePacket(true);
-
-    ui->experimentPlot->xAxis->grid()->setSubGridVisible(true);
-    ui->experimentPlot->yAxis->grid()->setSubGridVisible(true);
-
-    connect(ui->experimentGraph1Button, &QPushButton::toggled,
-            [=]() {mExperimentReplot = true;});
-    connect(ui->experimentGraph2Button, &QPushButton::toggled,
-            [=]() {mExperimentReplot = true;});
-    connect(ui->experimentGraph3Button, &QPushButton::toggled,
-            [=]() {mExperimentReplot = true;});
-    connect(ui->experimentGraph4Button, &QPushButton::toggled,
-            [=]() {mExperimentReplot = true;});
-    connect(ui->experimentGraph5Button, &QPushButton::toggled,
-            [=]() {mExperimentReplot = true;});
 }
 
 CarInterface::~CarInterface()
@@ -439,37 +420,6 @@ void CarInterface::setFirmwareVersion(QPair<int,int> firmwareVersion)
 
 void CarInterface::timerSlot()
 {   
-    if (mExperimentReplot) {
-        ui->experimentPlot->clearGraphs();
-
-        for (int i = 0;i < mExperimentPlots.size();i++) {
-            switch (i) {
-            case 0: if (!ui->experimentGraph1Button->isChecked()) {continue;} break;
-            case 1: if (!ui->experimentGraph2Button->isChecked()) {continue;} break;
-            case 2: if (!ui->experimentGraph3Button->isChecked()) {continue;} break;
-            case 3: if (!ui->experimentGraph4Button->isChecked()) {continue;} break;
-            case 4: if (!ui->experimentGraph5Button->isChecked()) {continue;} break;
-            default: break;
-            }
-
-            ui->experimentPlot->addGraph();
-            ui->experimentPlot->graph()->setData(mExperimentPlots.at(i).xData, mExperimentPlots.at(i).yData);
-            ui->experimentPlot->graph()->setName(mExperimentPlots.at(i).label);
-            ui->experimentPlot->graph()->setPen(QPen(mExperimentPlots.at(i).color));
-            if (ui->experimentScatterButton->isChecked()) {
-                ui->experimentPlot->graph()->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 5));
-            }
-        }
-
-        ui->experimentPlot->legend->setVisible(mExperimentPlots.size() > 1);
-
-        if (ui->experimentAutoScaleButton->isChecked()) {
-            ui->experimentPlot->rescaleAxes();
-        }
-
-        ui->experimentPlot->replot();
-        mExperimentReplot = false;
-    }
 }
 
 void CarInterface::udpReadReady()
@@ -568,63 +518,6 @@ void CarInterface::configurationReceived(quint8 id, MAIN_CONFIG config)
         QString str;
         str.sprintf("Car %d: Configuration Received", id);
         emit showStatusInfo(str, true);
-    }
-}
-
-void CarInterface::plotInitReceived(quint8 id, QString xLabel, QString yLabel)
-{
-    if (id == mId) {
-        mExperimentPlots.clear();
-
-        ui->experimentPlot->clearGraphs();
-        ui->experimentPlot->xAxis->setLabel(xLabel);
-        ui->experimentPlot->yAxis->setLabel(yLabel);
-
-        mExperimentReplot = true;
-    }
-}
-
-void CarInterface::plotDataReceived(quint8 id, double x, double y)
-{
-    if (id == mId) {
-        if (mExperimentPlots.size() <= mExperimentPlotNow) {
-            mExperimentPlots.resize(mExperimentPlotNow + 1);
-        }
-
-        mExperimentPlots[mExperimentPlotNow].xData.append(x);
-        mExperimentPlots[mExperimentPlotNow].yData.append(y);
-        mExperimentReplot = true;
-    }
-}
-
-void CarInterface::plotAddGraphReceived(quint8 id, QString name)
-{
-    if (id == mId) {
-        mExperimentPlots.resize(mExperimentPlots.size() + 1);
-        mExperimentPlots.last().label = name;
-
-        if (mExperimentPlots.size() == 1) {
-            mExperimentPlots.last().color = "blue";
-        } else if (mExperimentPlots.size() == 2) {
-            mExperimentPlots.last().color = "red";
-        } else if (mExperimentPlots.size() == 3) {
-            mExperimentPlots.last().color = "magenta";
-        } else if (mExperimentPlots.size() == 4) {
-            mExperimentPlots.last().color = "darkgreen";
-        } else if (mExperimentPlots.size() == 5) {
-            mExperimentPlots.last().color = "cyan";
-        } else {
-            mExperimentPlots.last().color = "blue";
-        }
-
-        mExperimentReplot = true;
-    }
-}
-
-void CarInterface::plotSetGraphReceived(quint8 id, int graph)
-{
-    if (id == mId) {
-        mExperimentPlotNow = graph;
     }
 }
 
@@ -853,14 +746,6 @@ void CarInterface::setConfGui(MAIN_CONFIG &conf)
     ui->confCommonWidget->setConfGui(conf);
 }
 
-void CarInterface::updateExperimentZoom()
-{
-    Qt::Orientations plotOrientations = (Qt::Orientations)
-            ((ui->experimentHZoomButton->isChecked() ? Qt::Horizontal : 0) |
-             (ui->experimentVZoomButton->isChecked() ? Qt::Vertical : 0));
-    ui->experimentPlot->axisRect()->setRangeZoom(plotOrientations);
-}
-
 void CarInterface::on_setClockButton_clicked()
 {
     if (mPacketInterface) {
@@ -905,188 +790,6 @@ void CarInterface::on_shutdownPiButton_clicked()
                                  "connection works.");
         }
     }
-}
-
-void CarInterface::on_experimentSavePngButton_clicked()
-{
-    QString fileName = QFileDialog::getSaveFileName(this,
-                                                    tr("Save Image"), "",
-                                                    tr("PNG Files (*.png)"));
-
-    if (!fileName.isEmpty()) {
-        if (!fileName.toLower().endsWith(".png")) {
-            fileName.append(".png");
-        }
-
-        ui->experimentPlot->savePng(fileName,
-                                    ui->experimentWBox->value(),
-                                    ui->experimentHBox->value(),
-                                    ui->experimentScaleBox->value());
-    }
-}
-
-void CarInterface::on_experimentSavePdfButton_clicked()
-{
-    QString fileName = QFileDialog::getSaveFileName(this,
-                                                    tr("Save PDF"), "",
-                                                    tr("PDF Files (*.pdf)"));
-
-    if (!fileName.isEmpty()) {
-        if (!fileName.toLower().endsWith(".pdf")) {
-            fileName.append(".pdf");
-        }
-
-        ui->experimentPlot->savePdf(fileName,
-                                    ui->experimentWBox->value(),
-                                    ui->experimentHBox->value());
-    }
-}
-
-void CarInterface::on_experimentSaveXmlButton_clicked()
-{
-    QString filename = QFileDialog::getSaveFileName(this,
-                                                    tr("Save Plot"), "",
-                                                    tr("Xml files (*.xml)"));
-
-    if (filename.isEmpty()) {
-        return;
-    }
-
-    if (!filename.toLower().endsWith(".xml")) {
-        filename.append(".xml");
-    }
-
-    QFile file(filename);
-    if (!file.open(QIODevice::WriteOnly)) {
-        QMessageBox::critical(this, "Save Plot",
-                              "Could not open\n" + filename + "\nfor writing");
-        return;
-    }
-
-    QXmlStreamWriter stream(&file);
-    stream.setCodec("UTF-8");
-    stream.setAutoFormatting(true);
-    stream.writeStartDocument();
-
-    stream.writeStartElement("plot");
-    stream.writeTextElement("xlabel", ui->experimentPlot->xAxis->label());
-    stream.writeTextElement("ylabel", ui->experimentPlot->yAxis->label());
-
-    for (EXPERIMENT_PLOT p: mExperimentPlots) {
-        stream.writeStartElement("graph");
-        stream.writeTextElement("label", p.label);
-        stream.writeTextElement("color", p.color);
-        for (int i = 0;i < p.xData.size();i++) {
-            stream.writeStartElement("point");
-            stream.writeTextElement("x", QString::number(p.xData.at(i)));
-            stream.writeTextElement("y", QString::number(p.yData.at(i)));
-            stream.writeEndElement();
-        }
-        stream.writeEndElement();
-    }
-
-    stream.writeEndDocument();
-    file.close();
-}
-
-void CarInterface::on_experimentLoadXmlButton_clicked()
-{
-    QString filename = QFileDialog::getOpenFileName(this,
-                                                    tr("Load Plot"), "",
-                                                    tr("Xml files (*.xml)"));
-
-    if (!filename.isEmpty()) {
-        QFile file(filename);
-        if (!file.open(QIODevice::ReadOnly)) {
-            QMessageBox::critical(this, "Load Plot",
-                                  "Could not open\n" + filename + "\nfor reading");
-            return;
-        }
-
-        QXmlStreamReader stream(&file);
-
-        // Look for plot tag
-        bool plots_found = false;
-        while (stream.readNextStartElement()) {
-            if (stream.name() == "plot") {
-                plots_found = true;
-                break;
-            }
-        }
-
-        if (plots_found) {
-            mExperimentPlots.clear();
-
-            while (stream.readNextStartElement()) {
-                QString name = stream.name().toString();
-
-                if (name == "xlabel") {
-                    ui->experimentPlot->xAxis->setLabel(stream.readElementText());
-                } else if (name == "ylabel") {
-                    ui->experimentPlot->yAxis->setLabel(stream.readElementText());
-                } else if (name == "graph") {
-                    EXPERIMENT_PLOT p;
-
-                    while (stream.readNextStartElement()) {
-                        QString name2 = stream.name().toString();
-
-                        if (name2 == "label") {
-                            p.label = stream.readElementText();
-                        } else if (name2 == "color") {
-                            p.color = stream.readElementText();
-                        } else if (name2 == "point") {
-                            while (stream.readNextStartElement()) {
-                                QString name3 = stream.name().toString();
-
-                                if (name3 == "x") {
-                                    p.xData.append(stream.readElementText().toDouble());
-                                } else if (name3 == "y") {
-                                    p.yData.append(stream.readElementText().toDouble());
-                                } else {
-                                    qWarning() << ": Unknown XML element :" << name2;
-                                    stream.skipCurrentElement();
-                                }
-                            }
-                        } else {
-                            qWarning() << ": Unknown XML element :" << name2;
-                            stream.skipCurrentElement();
-                        }
-
-                        if (stream.hasError()) {
-                            qWarning() << " : XML ERROR :" << stream.errorString();
-                        }
-                    }
-
-                    mExperimentPlots.append(p);
-                }
-
-                if (stream.hasError()) {
-                    qWarning() << "XML ERROR :" << stream.errorString();
-                    qWarning() << stream.lineNumber() << stream.columnNumber();
-                }
-            }
-
-            mExperimentReplot = true;
-
-            file.close();
-            showStatusInfo("Loaded plot", true);
-        } else {
-            QMessageBox::critical(this, "Load Plot",
-                                  "plot tag not found in " + filename);
-        }
-    }
-}
-
-void CarInterface::on_experimentHZoomButton_toggled(bool checked)
-{
-    (void)checked;
-    updateExperimentZoom();
-}
-
-void CarInterface::on_experimentVZoomButton_toggled(bool checked)
-{
-    (void)checked;
-    updateExperimentZoom();
 }
 
 void CarInterface::on_camStartButton_clicked()
