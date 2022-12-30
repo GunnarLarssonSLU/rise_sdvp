@@ -77,9 +77,9 @@
 #define HYDRAULIC_HAS_SPEED_SENSOR
 #define SERVO_VESC_ID				0
 #define SERVO_VESC_INVERTED			0
-#define SERVO_VESC_P_GAIN			3.0
-#define SERVO_VESC_I_GAIN			5.0
-#define SERVO_VESC_D_GAIN			1.0
+//#define SERVO_VESC_P_GAIN			3.0
+//#define SERVO_VESC_I_GAIN			5.0
+//#define SERVO_VESC_D_GAIN			1.0
 #define SERVO_VESC_DEADBAND_COMP    0.2
 #endif
 

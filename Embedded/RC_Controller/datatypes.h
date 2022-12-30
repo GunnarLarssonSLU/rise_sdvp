@@ -254,6 +254,13 @@ typedef struct {
 	// Distance between front and rear wheels in ackermann mode, distance between drive wheels
 	// in differential mode.
 	float axis_distance;
+	float vesc_p_gain;
+	float vesc_i_gain;
+	float vesc_d_gain;
+    float anglemin;
+    float anglemax;
+    float angledegrees;
+
 } MAIN_CONFIG_CAR;
 
 typedef struct {

@@ -227,6 +227,13 @@ static THD_FUNCTION(hydro_thread, arg) {
 		} else if (comm_can_io_board_lim_sw(1) && m_move_front == HYDRAULIC_MOVE_UP) {
 			m_move_front = HYDRAULIC_MOVE_STOP;
 		}
+// var x1 och x2 istf 0 och 1
+		if (comm_can_io_board_lim_sw(0) && m_move_rear == HYDRAULIC_MOVE_DOWN) {
+			m_move_rear = HYDRAULIC_MOVE_STOP;
+		} else if (comm_can_io_board_lim_sw(1) && m_move_rear == HYDRAULIC_MOVE_UP) {
+			m_move_rear = HYDRAULIC_MOVE_STOP;
+		}
+
 
 		if (move_last_front != m_move_front) {
 			move_last_front = m_move_front;
