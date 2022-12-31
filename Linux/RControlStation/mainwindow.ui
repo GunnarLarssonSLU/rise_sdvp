@@ -657,6 +657,15 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="tab_16">
+       <attribute name="icon">
+        <iconset resource="resources.qrc">
+         <normaloff>:/models/Icons/Settings-96.png</normaloff>:/models/Icons/Settings-96.png</iconset>
+       </attribute>
+       <attribute name="title">
+        <string/>
+       </attribute>
+      </widget>
       <widget class="QWidget" name="tab_2">
        <attribute name="icon">
         <iconset resource="resources.qrc">
