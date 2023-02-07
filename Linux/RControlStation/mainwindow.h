@@ -91,7 +91,7 @@ private slots:
     void jsButtonChanged(int button, bool pressed);
 
     void on_carAddButton_clicked();
-    void on_copterAddButton_clicked();
+//    void on_copterAddButton_clicked();
     void on_disconnectButton_clicked();
     void on_mapRemoveTraceButton_clicked();
     void on_MapRemovePixmapsButton_clicked();

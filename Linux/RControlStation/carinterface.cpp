@@ -296,14 +296,14 @@ void CarInterface::setPacketInterface(PacketInterface *packetInterface)
             this, SLOT(nmeaReceived(quint8,QByteArray)));
     connect(mPacketInterface, SIGNAL(configurationReceived(quint8,MAIN_CONFIG)),
             this, SLOT(configurationReceived(quint8,MAIN_CONFIG)));
-    connect(mPacketInterface, SIGNAL(plotInitReceived(quint8,QString,QString)),
+/*    connect(mPacketInterface, SIGNAL(plotInitReceived(quint8,QString,QString)),
             this, SLOT(plotInitReceived(quint8,QString,QString)));
     connect(mPacketInterface, SIGNAL(plotDataReceived(quint8,double,double)),
             SLOT(plotDataReceived(quint8,double,double)));
     connect(mPacketInterface, SIGNAL(plotAddGraphReceived(quint8,QString)),
             this, SLOT(plotAddGraphReceived(quint8,QString)));
     connect(mPacketInterface, SIGNAL(plotSetGraphReceived(quint8,int)),
-            this, SLOT(plotSetGraphReceived(quint8,int)));
+            this, SLOT(plotSetGraphReceived(quint8,int)));*/
     connect(mPacketInterface, SIGNAL(cameraImageReceived(quint8,QImage,int)),
             this, SLOT(cameraImageReceived(quint8,QImage,int)));
     connect(this, SIGNAL(ioBoardSetPwm(quint8,quint8,double)),

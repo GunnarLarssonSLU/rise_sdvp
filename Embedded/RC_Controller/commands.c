@@ -868,22 +868,17 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				buffer_append_float32(m_send_buffer, pos.py, 1e4, &send_index); // 60
 			}
 			buffer_append_float32(m_send_buffer, pos.speed, 1e6, &send_index); // 64
-#ifdef USE_ADCONV_FOR_VIN
-//			buffer_append_float32(m_send_buffer, adconv_get_vin(), 1e6, &send_index); // 68
-			//			float tot = comm_can_io_board_adc_voltage(4)+comm_can_io_board_adc_voltage(5);
-						float tot = comm_can_io_board_as5047_angle();
-						buffer_append_float32(m_send_buffer, tot, 1e6, &send_index); // 68
+			#ifdef USE_ADCONV_FOR_VIN
+						buffer_append_float32(m_send_buffer, adconv_get_vin(), 1e6, &send_index); // 68
+//						buffer_append_float32(m_send_buffer, 99.0, 1e6, &send_index); // 68
+			// //			float tot = comm_can_io_board_adc_voltage(4)+comm_can_io_board_adc_voltage(5);
+
+			//			float tot = comm_can_io_board_as5047_angle();
+			//			buffer_append_float32(m_send_buffer, tot, 1e6, &send_index); // 68
 
 			#else
-			buffer_append_float32(m_send_buffer, mcval.v_in, 1e6, &send_index); // 68
-/*			float tot = comm_can_io_board_adc_voltage(0)+comm_can_io_board_adc_voltage(1);
-			tot = tot + comm_can_io_board_adc_voltage(2)+comm_can_io_board_adc_voltage(3);
-			tot = tot + comm_can_io_board_adc_voltage(4)+comm_can_io_board_adc_voltage(5);
-			tot = tot + comm_can_io_board_adc_voltage(6)+comm_can_io_board_adc_voltage(7);*/
-
-
-
-
+						buffer_append_float32(m_send_buffer, mcval.v_in + 1.0, 1e6, &send_index); // 68
+//						buffer_append_float32(m_send_buffer, adconv_get_vin(), 1e6, &send_index); // 68
 			#endif
 			buffer_append_float32(m_send_buffer, mcval.temp_mos, 1e6, &send_index); // 72
 			m_send_buffer[send_index++] = mcval.fault_code; // 73

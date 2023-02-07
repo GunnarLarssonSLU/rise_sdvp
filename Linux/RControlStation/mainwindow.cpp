@@ -897,6 +897,7 @@ void MainWindow::jsButtonChanged(int button, bool pressed)
                                     qDebug() << "Hydraulic, front up";
                                     mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_UP);
                                 } else {
+                                    qDebug() << "Hydraulic, front down";
                                     mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_DOWN);
                                 }
                             } else {
@@ -935,6 +936,7 @@ void MainWindow::on_carAddButton_clicked()
     addCar(mCars.size() + mCopters.size());
 }
 
+/*
 void MainWindow::on_copterAddButton_clicked()
 {
     CopterInterface *copter = new CopterInterface(this);
@@ -948,7 +950,7 @@ void MainWindow::on_copterAddButton_clicked()
     copter->setPacketInterface(mPacketInterface);
 
     connect(copter, SIGNAL(showStatusInfo(QString,bool)), this, SLOT(showStatusInfo(QString,bool)));
-}
+}*/
 
 
 

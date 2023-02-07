@@ -92,10 +92,10 @@ signals:
     void configurationReceived(quint8 id, MAIN_CONFIG conf);
     void enuRefReceived(quint8 id, double lat, double lon, double height);
     void logLineUsbReceived(quint8 id, QString str);
-    void plotInitReceived(quint8 id, QString xLabel, QString yLabel);
-    void plotDataReceived(quint8 id, double x, double y);
-    void plotAddGraphReceived(quint8 id, QString name);
-    void plotSetGraphReceived(quint8 id, int graph);
+ //   void plotInitReceived(quint8 id, QString xLabel, QString yLabel);
+ //   void plotDataReceived(quint8 id, double x, double y);
+ //   void plotAddGraphReceived(quint8 id, QString name);
+ //   void plotSetGraphReceived(quint8 id, int graph);
     void systemTimeReceived(quint8 id, qint32 sec, qint32 usec);
     void rebootSystemReceived(quint8 id, bool powerOff);
     void routePartReceived(quint8 id, int len, const QList<LocPoint> &route);
