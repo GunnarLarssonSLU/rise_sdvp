@@ -25,7 +25,7 @@
         <enum>QTabWidget::Triangular</enum>
        </property>
        <property name="currentIndex">
-        <number>6</number>
+        <number>3</number>
        </property>
        <property name="tabsClosable">
         <bool>false</bool>
@@ -121,6 +121,11 @@
           </layout>
          </item>
         </layout>
+       </widget>
+       <widget class="QWidget" name="tab">
+        <attribute name="title">
+         <string>Page</string>
+        </attribute>
        </widget>
        <widget class="QWidget" name="tab_2">
         <attribute name="icon">
@@ -1281,22 +1286,6 @@
  </resources>
  <connections>
   <connection>
-   <sender>terminalEdit</sender>
-   <signal>returnPressed()</signal>
-   <receiver>terminalSendButton</receiver>
-   <slot>click()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>172</x>
-     <y>453</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>608</x>
-     <y>454</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>terminalEditVesc</sender>
    <signal>returnPressed()</signal>
    <receiver>terminalSendVescButton</receiver>
@@ -1309,6 +1298,22 @@
     <hint type="destinationlabel">
      <x>327</x>
      <y>486</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>terminalEdit</sender>
+   <signal>returnPressed()</signal>
+   <receiver>terminalSendButton</receiver>
+   <slot>click()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>172</x>
+     <y>453</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>608</x>
+     <y>454</y>
     </hint>
    </hints>
   </connection>
