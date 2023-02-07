@@ -152,6 +152,15 @@ void CarInterface::setStateData(CAR_STATE data)
     ui->fwLabel->setText(fwStr);
     setFirmwareVersion(qMakePair(data.fw_major, data.fw_minor));
 
+    QString fwStr2;
+    fwStr2.sprintf("ZZ %d.%d", data.fw_major, data.fw_minor);
+    ui->fwLabel->setText(fwStr2);
+
+    QString fwStrLog1;
+    fwStrLog1.sprintf("ZZ %d.%d", data.fw_major, data.fw_minor);
+    ui->fwLabel->setText(fwStrLog1);
+
+
     // Speed bar
     QString speedTxt;
     speedTxt.sprintf("Speed: %.2f km/h", data.speed * 3.6);

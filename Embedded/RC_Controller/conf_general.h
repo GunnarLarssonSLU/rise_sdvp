@@ -72,6 +72,8 @@
 #define HAS_HYDRAULIC_DRIVE			1
 #define SERVO_VESC_S1				178.0 // Left
 #define SERVO_VESC_S2				240.0 // Right
+//#define SERVO_VESC_S1				-20.0 // Left
+//#define SERVO_VESC_S2				40.0 // Right
 #define USE_ADCONV_FOR_VIN
 #define SERVO_VESC_HYDRAULIC
 #define HYDRAULIC_HAS_SPEED_SENSOR

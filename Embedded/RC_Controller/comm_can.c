@@ -573,15 +573,22 @@ float comm_can_io_board_adc_voltage(int ch) {
 
 float comm_can_io_board_as5047_angle(void) {
 //	return io_board_as5047_angle;
-//	float maxvolt=5.7;
-//	float minvolt=0.7;
+	float maxVoltage_right=5.99;
+	float maxVoltage_left=0.785;
+	float voltagespan=maxVoltage_right-maxVoltage_left;
 //	float totanglevariation=90;
 
 //main_config.car.vesc_p_gaincomm_can_io_board_as5047_angle(void)
+	float maxangleleft=main_config.car.anglemin;
+	float maxangleright=main_config.car.anglemax;
+	float anglespan=maxangleright-maxangleleft;
 	float voltage_read=comm_can_io_board_adc_voltage(4)+comm_can_io_board_adc_voltage(5);
-	float angle=main_config.car.angledegrees*(voltage_read-main_config.car.anglemin)/(main_config.car.anglemax-main_config.car.anglemin)-main_config.car.angledegrees/2;
-//	float angle=voltage_read;
-	return -angle;
+	float voltage_relativeleft=voltage_read-maxVoltage_left;
+	float degreespervolt=anglespan/voltagespan;
+	//	float angle=main_config.car.angledegrees*(voltage_read-main_config.car.anglemin)/(main_config.car.anglemax-main_config.car.anglemin)-main_config.car.angledegrees/2;
+	float angle=voltage_relativeleft*degreespervolt+maxangleleft;
+	angle+=200.0;
+	return angle;
 }
 
 bool comm_can_io_board_lim_sw(int sw) {

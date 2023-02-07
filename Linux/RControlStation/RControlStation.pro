@@ -27,6 +27,11 @@ DEFINES += HAS_JOYSTICK
 !android: DEFINES += HAS_OPENGL
 win32: LIBS += -lopengl32
 
+#win32:QMAKE_LIBS_QT_ENGTRY -= -lqtmain
+#win32-g++:DEFINES -= QT_NEEDS_QMAIN
+CONFIG-= windows
+QMAKE_LFLAGS += $$QMAKE_LFLAGS_WINDOWS
+
 # Lime SDR support
 #DEFINES += HAS_LIME_SDR
 
