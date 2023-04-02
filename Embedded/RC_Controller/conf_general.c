@@ -268,22 +268,35 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 #if HAS_DIFF_STEERING
 	conf->car.gear_ratio = 1.0;
 	conf->car.axis_distance = 0.5;
-	conf->car.wheel_diam = 0.3;
+//	conf->car.wheel_diam = 0.3;
 	conf->car.motor_poles = 22.0;
-	conf->gps_ant_x = 0.5;
+//	conf->gps_ant_x = 0.5;
 #endif
 
 #ifdef IS_DRANGEN
-	conf->car.steering_center = 0.5;
-	conf->car.steering_range = -0.9;
-	conf->car.axis_distance = 1.0;
+//	conf->car.steering_center = 0.5;
+//	conf->car.steering_range = -0.9;
+//	conf->car.axis_distance = 1.0;
+		conf->car.steering_center = 0;
+//		conf->car.steering_range = 0;
+		conf->car.axis_distance = 1.45;
 	conf->car.steering_max_angle_rad = atanf(conf->car.axis_distance / 1.5);
+
+	conf->car.wheel_diam = 0.47;
+	conf->car.wheel_diam = 0.8;
+	conf->gps_ant_x = 0; // TODO: IMU_ROT_180 sign?
+	conf->gps_ant_y = 0.25;
+
+	// Mellan hjul fram back 145 cm
+	// Mellan hjul höger vänster 122 cm
+
 #endif
 
 #ifdef IS_MACTRAC
 	conf->car.steering_center = 0.5;
 	conf->car.steering_range = -1.0;
 	conf->car.axis_distance = 1.7;
+	conf->car.wheel_diam = 0.66;
 	conf->car.steering_max_angle_rad = atanf(conf->car.axis_distance / 1.5);
 	conf->gps_corr_gain_yaw = 2.0;
 	conf->ap_base_rad = 4.0;

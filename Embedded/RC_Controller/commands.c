@@ -64,8 +64,6 @@ static void rtcm_base_rx(rtcm_ref_sta_pos_t *pos);
 // Private variables
 static rtcm3_state m_rtcm_state;
 
-float showData=1.0;
-
 void commands_init(void) {
 	m_send_func = 0;
 	chMtxObjectInit(&m_print_gps);
@@ -871,14 +869,19 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			}
 			buffer_append_float32(m_send_buffer, pos.speed, 1e6, &send_index); // 64
 			#ifdef USE_ADCONV_FOR_VIN
-			//			buffer_append_float32(m_send_buffer, adconv_get_vin(), 1e6, &send_index); // 68
+						buffer_append_float32(m_send_buffer, adconv_get_vin(), 1e6, &send_index); // 68
 
 //						float tot = comm_can_io_board_as5047_angle();
-//						buffer_append_float32(m_send_buffer, tot, 1e6, &send_index); // 68
-						buffer_append_float32(m_send_buffer, showData, 1e6, &send_index); // 68
+	//					buffer_append_float32(m_send_buffer, showData, 1e6, &send_index); // 68
 
 			#else
+
+				#if IS_DRANGEN
 						buffer_append_float32(m_send_buffer, mcval.v_in, 1e6, &send_index); // 68
+//						buffer_append_float32(m_send_buffer, showData, 1e6, &send_index); // 68
+				#else
+						buffer_append_float32(m_send_buffer, mcval.v_in, 1e6, &send_index); // 68
+				#endif
 //						buffer_append_float32(m_send_buffer, adconv_get_vin(), 1e6, &send_index); // 68
 			#endif
 			buffer_append_float32(m_send_buffer, mcval.temp_mos, 1e6, &send_index); // 72
@@ -924,9 +927,22 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 
 			autopilot_set_active(false);
 
+	//		mode=RC_MODE_DUTY;
 			switch (mode) {
 			case RC_MODE_CURRENT:
 				if (!main_config.car.disable_motor) {
+//					#if IS_DRANGEN
+		//				comm_can_lock_vesc();
+		//				comm_can_set_vesc_id(0);
+		//				throttle*=50.0;
+//						comm_can_set_vesc_id(VESC_THROTTLE_ID);
+//						showData=10+throttle;
+		//				bldc_interface_set_current(steering);
+		//				comm_can_set_vesc_id(VESC_STEERING_ID);
+		//				bldc_interface_set_current(steering);
+		//				comm_can_unlock_vesc();
+//					#endif
+
 					#if HAS_DIFF_STEERING
 						comm_can_lock_vesc();
 						comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
@@ -938,8 +954,17 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 						#if HAS_HYDRAULIC_DRIVE
 							hydraulic_set_speed(throttle / 10);
 						#else
-							comm_can_set_vesc_id(VESC_ID);
+							comm_can_lock_vesc();
+							comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
 							bldc_interface_set_current(throttle);
+							comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
+							//bldc_interface_set_current(steering);
+//							steering+=0.2;
+							bldc_interface_set_duty_cycle(steering);
+							//showData=steering;
+							comm_can_unlock_vesc();
+//							comm_can_set_vesc_id(VESC_ID);
+//							bldc_interface_set_current(throttle);
 						#endif
 					#endif
 				}
@@ -948,6 +973,18 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			case RC_MODE_DUTY:
 				utils_truncate_number(&throttle, -1.0, 1.0);
 				if (!main_config.car.disable_motor) {
+/*					#if IS_DRANGEN
+						comm_can_lock_vesc();
+						comm_can_set_vesc_id(VESC_ID);
+						throttle*=1.0;
+						showData=throttle;
+
+						bldc_interface_set_duty_cycle(throttle);
+//						comm_can_set_vesc_id(VESC_STEERING_ID);
+//						bldc_interface_set_duty_cycle(steering);
+						comm_can_unlock_vesc();
+					#endif
+*/
 					#if HAS_DIFF_STEERING
 						comm_can_lock_vesc();
 						comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
@@ -964,8 +1001,15 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 								hydraulic_set_throttle_raw(throttle / 0.15);
 							#endif
 						#else
-							comm_can_set_vesc_id(VESC_ID);
+							comm_can_lock_vesc();
+							comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
 							bldc_interface_set_duty_cycle(throttle);
+							comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
+							bldc_interface_set_duty_cycle(steering);
+							comm_can_unlock_vesc();
+//							comm_can_set_vesc_id(VESC_ID);
+//							bldc_interface_set_duty_cycle(throttle);
+//							bldc_interface_set_rpm((int)throttle);
 						#endif
 					#endif
 				}
@@ -1008,7 +1052,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				steering = utils_map(steering, -1.0, 1.0,
 						main_config.car.steering_center + (main_config.car.steering_range / 2.0),
 						main_config.car.steering_center - (main_config.car.steering_range / 2.0));
-				showData=steering;
+				// showData=steering;
 				servo_simple_set_pos_ramp(steering);
 			#endif
 		} break;

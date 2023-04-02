@@ -185,7 +185,8 @@ static THD_FUNCTION(servo_thread, arg) {
 			m_out_last = SERVO_VESC_INVERTED ? output : -output;
 			bldc_interface_set_duty_cycle(m_out_last);
 		} else {
-			bldc_interface_set_current(0.0);
+//			bldc_interface_set_current(0.0);
+//			bldc_interface_set_current(0.1);
 		}
 #endif
 
