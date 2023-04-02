@@ -1,3 +1,4 @@
+
 /*
 	Copyright 2016 - 2017 Benjamin Vedder	benjamin@vedder.se
 
@@ -19,11 +20,6 @@
 #define CONF_GENERAL_H_
 
 #include "datatypes.h"
-
-// Board
-#ifndef IS_F9_BOARD
-#define IS_F9_BOARD					1
-#endif
 
 #define MAIN_MODE_CAR 				0
 #define MAIN_MODE_MOTE_2400			1
@@ -51,19 +47,10 @@
 //#define CAR_TERO // Benjamins tero car
 //#define EBIKE_BENJAMIN // Benjamins ebike
 
-// Differential steering
-#ifndef HAS_DIFF_STEERING
-#define HAS_DIFF_STEERING			0
-#endif
-#ifndef DIFF_STEERING_VESC_LEFT
-#define DIFF_STEERING_VESC_LEFT		0
-#endif
-#ifndef DIFF_STEERING_VESC_RIGHT
-#define DIFF_STEERING_VESC_RIGHT	1
-#endif
 
-//#define IS_DRANGEN
-#define IS_MACTRAC
+#define IS_DRANGEN 1
+
+//#define IS_MACTRAC
 
 // MacTrac
 // Steering Center: 210
@@ -83,13 +70,32 @@
 //#define SERVO_VESC_I_GAIN			5.0
 //#define SERVO_VESC_D_GAIN			1.0
 #define SERVO_VESC_DEADBAND_COMP    0.2
+#define IS_F9_BOARD					1
+
 #endif
 
 #ifdef IS_DRANGEN
-#define HAS_HYDRAULIC_DRIVE			1
-#define SERVO_VESC_ID				41
+#define HAS_HYDRAULIC_DRIVE			0
+#define HAS_DIFF_STEERING            0
+#define VESC_THROTTLE_ID		76
+#define VESC_STEERING_ID		113
+#define SERVO_VESC_ID				0
+#define DIFF_STEERING_VESC_LEFT      76
+#define DIFF_STEERING_VESC_RIGHT      113
 #define IS_F9_BOARD					0
 #endif
+
+// Differential steering
+#ifndef HAS_DIFF_STEERING
+#define HAS_DIFF_STEERING			0
+#endif
+#ifndef DIFF_STEERING_VESC_LEFT
+#define DIFF_STEERING_VESC_LEFT		0
+#endif
+#ifndef DIFF_STEERING_VESC_RIGHT
+#define DIFF_STEERING_VESC_RIGHT	1
+#endif
+
 
 // Hydraulic drive
 #ifndef HAS_HYDRAULIC_DRIVE

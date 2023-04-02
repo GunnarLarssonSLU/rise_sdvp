@@ -23,9 +23,6 @@
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
        <widget class="QToolBox" name="toolBox">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
         <property name="sizePolicy">
          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
           <horstretch>0</horstretch>
@@ -39,7 +36,7 @@
          </size>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="page_3">
          <property name="geometry">
@@ -109,7 +106,7 @@
                <enum>QPlainTextEdit::NoWrap</enum>
               </property>
               <property name="plainText">
-               <string>192.168.1.147</string>
+               <string>192.168.200.100</string>
               </property>
              </widget>
             </item>
@@ -266,6 +263,20 @@
          <property name="bottomMargin">
           <number>5</number>
          </property>
+         <item>
+          <widget class="QPushButton" name="copterAddButton">
+           <property name="toolTip">
+            <string>Add copter</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="resources.qrc">
+             <normaloff>:/models/Icons/Drone-96.png</normaloff>:/models/Icons/Drone-96.png</iconset>
+           </property>
+          </widget>
+         </item>
          <item>
           <widget class="QPushButton" name="carAddButton">
            <property name="toolTip">
@@ -515,7 +526,7 @@
             <double>0.010000000000000</double>
            </property>
            <property name="value">
-            <double>0.150000000000000</double>
+            <double>0.600000000000000</double>
            </property>
           </widget>
          </item>
@@ -599,6 +610,7 @@
         <property name="font">
          <font>
           <pointsize>15</pointsize>
+          <weight>75</weight>
           <bold>true</bold>
          </font>
         </property>
@@ -631,7 +643,7 @@
        <enum>QTabWidget::North</enum>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -987,7 +999,7 @@
                <enum>QTabWidget::Rounded</enum>
               </property>
               <property name="currentIndex">
-               <number>0</number>
+               <number>1</number>
               </property>
               <property name="usesScrollButtons">
                <bool>false</bool>
@@ -1025,9 +1037,6 @@
                    <string>Autopilot</string>
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_33">
-                   <property name="rightMargin">
-                    <number>9</number>
-                   </property>
                    <item>
                     <layout class="QHBoxLayout" name="horizontalLayout_20">
                      <item>
@@ -1102,32 +1111,6 @@
                      </property>
                     </widget>
                    </item>
-                   <item>
-                    <widget class="QGroupBox" name="ap_modes">
-                     <property name="title">
-                      <string/>
-                     </property>
-                     <layout class="QHBoxLayout" name="horizontalLayout_19">
-                      <item>
-                       <widget class="QRadioButton" name="radioButton_followRoute">
-                        <property name="text">
-                         <string>Follow route</string>
-                        </property>
-                        <property name="checked">
-                         <bool>true</bool>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QRadioButton" name="radioButton_followMe">
-                        <property name="text">
-                         <string>Follow Me</string>
-                        </property>
-                       </widget>
-                      </item>
-                     </layout>
-                    </widget>
-                   </item>
                   </layout>
                  </widget>
                 </item>
@@ -1152,7 +1135,7 @@
                    <property name="spacing">
                     <number>2</number>
                    </property>
-                   <item row="3" column="0">
+                   <item row="1" column="0">
                     <widget class="QPushButton" name="mapGetEnuButton">
                      <property name="toolTip">
                       <string>Get enu reference point from car and use it</string>
@@ -1166,7 +1149,7 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="3" column="1">
+                   <item row="1" column="1">
                     <widget class="QPushButton" name="mapSetEnuButton">
                      <property name="toolTip">
                       <string>Set current ENU reference point</string>
@@ -1180,7 +1163,7 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="2" column="0" colspan="2">
+                   <item row="0" column="0" colspan="2">
                     <widget class="QCheckBox" name="mapEnuBaseBox">
                      <property name="toolTip">
                       <string>Use base station position from RTCM as ENU reference</string>
@@ -1305,8 +1288,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>213</width>
-                     <height>749</height>
+                     <width>332</width>
+                     <height>974</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_23">
@@ -1436,6 +1419,13 @@
                         <widget class="QProgressBar" name="mapUploadRouteProgressBar">
                          <property name="value">
                           <number>0</number>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QPushButton" name="pushButton">
+                         <property name="text">
+                          <string>Fence</string>
                          </property>
                         </widget>
                        </item>
@@ -1618,7 +1608,7 @@
                           <double>120.000000000000000</double>
                          </property>
                          <property name="value">
-                          <double>3.000000000000000</double>
+                          <double>5.000000000000000</double>
                          </property>
                         </widget>
                        </item>
@@ -2215,7 +2205,7 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>202</width>
+                     <width>210</width>
                      <height>783</height>
                     </rect>
                    </property>
@@ -3360,19 +3350,6 @@
     <addaction name="actionAboutLibrariesUsed"/>
     <addaction name="actionAboutQt"/>
    </widget>
-   <widget class="QMenu" name="menuFile">
-    <property name="title">
-     <string>Fi&amp;le</string>
-    </property>
-    <addaction name="actionSaveRoutes"/>
-    <addaction name="actionSaveRouteswithIDs"/>
-    <addaction name="actionLoadRoutes"/>
-    <addaction name="separator"/>
-    <addaction name="actionToggleFullscreen"/>
-    <addaction name="actionToggleCameraFullscreen"/>
-    <addaction name="separator"/>
-    <addaction name="actionExit"/>
-   </widget>
    <widget class="QMenu" name="menuTests">
     <property name="title">
      <string>Tests</string>
@@ -3387,7 +3364,6 @@
     <addaction name="actionSaveSelectedRouteAsDriveFile"/>
     <addaction name="actionLoadDriveFile"/>
    </widget>
-   <addaction name="menuFile"/>
    <addaction name="menuTests"/>
    <addaction name="menuChronos"/>
    <addaction name="menuHelp"/>

@@ -72,6 +72,7 @@ static THD_FUNCTION(timeout_thread, arg) {
 #if MAIN_MODE == MAIN_MODE_CAR
 			autopilot_set_active(false);
 			if (!main_config.car.disable_motor && fabsf(pos_get_speed() * 3.6) > 2.0) {
+//				bldc_interface_set_current_brake(m_timeout_brake_current);
 				bldc_interface_set_current_brake(m_timeout_brake_current);
 			}
 #endif

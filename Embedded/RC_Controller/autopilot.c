@@ -399,6 +399,16 @@ void autopilot_set_speed_override(bool is_override, float speed) {
  */
 void autopilot_set_motor_speed(float speed) {
 	if (!main_config.car.disable_motor) {
+#if IS_DRANGEN
+		// TODO
+		comm_can_lock_vesc();
+//		showData=speed;
+		comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
+		bldc_interface_set_rpm((int)speed);
+//		comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
+//		bldc_interface_set_rpm((int)rpm_r);
+		comm_can_unlock_vesc();
+#endif
 #if HAS_DIFF_STEERING
 		float diff_speed_half = 0.0;
 
