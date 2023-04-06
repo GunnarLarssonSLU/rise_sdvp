@@ -504,12 +504,6 @@ void MainWindow::timerSlot()
                 stepTowards(mSteering, 0.0, steeringGain);
             }
         }
-
-        ui->mrThrottleBar->setValue(js_mr_thr * 100.0);
-        ui->mrRollBar->setValue(js_mr_roll * 100.0);
-        ui->mrPitchBar->setValue(js_mr_pitch * 100.0);
-        ui->mrYawBar->setValue(js_mr_yaw * 100.0);
-
         ui->throttleBar->setValue(mThrottle * 100.0);
         ui->steeringBar->setValue(mSteering * 100.0);
 #endif
