@@ -25,7 +25,7 @@
         <enum>QTabWidget::Triangular</enum>
        </property>
        <property name="currentIndex">
-        <number>6</number>
+        <number>1</number>
        </property>
        <property name="tabsClosable">
         <bool>false</bool>
@@ -121,24 +121,6 @@
           </layout>
          </item>
         </layout>
-       </widget>
-       <widget class="QWidget" name="tab">
-        <attribute name="title">
-         <string>Log</string>
-        </attribute>
-        <widget class="QLabel" name="label_log1">
-         <property name="geometry">
-          <rect>
-           <x>20</x>
-           <y>10</y>
-           <width>67</width>
-           <height>17</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>TextLabel</string>
-         </property>
-        </widget>
        </widget>
        <widget class="QWidget" name="tab_2">
         <attribute name="icon">

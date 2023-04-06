@@ -273,6 +273,8 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 //	conf->gps_ant_x = 0.5;
 #endif
 
+
+
 #ifdef IS_DRANGEN
 //	conf->car.steering_center = 0.5;
 //	conf->car.steering_range = -0.9;
