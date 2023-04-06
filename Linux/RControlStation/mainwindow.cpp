@@ -486,20 +486,22 @@ void MainWindow::timerSlot()
             //mSteering /= 2.0;
         } else {
             qDebug () << "NOT CONNECTED!!!!!!!!!!";
+            float throttleGain=0.03;
+            float steeringGain=0.08;
             if (mKeyUp) {
-                stepTowards(mThrottle, 1.0, ui->throttleGainBox->value());
+                stepTowards(mThrottle, 1.0, throttleGain);
             } else if (mKeyDown) {
-                stepTowards(mThrottle, -1.0, ui->throttleGainBox->value());
+                stepTowards(mThrottle, -1.0, throttleGain);
             } else {
-                stepTowards(mThrottle, 0.0, ui->throttleGainBox->value());
+                stepTowards(mThrottle, 0.0, throttleGain);
             }
 
             if (mKeyRight) {
-                stepTowards(mSteering, 1.0, ui->steeringGainBox->value());
+                stepTowards(mSteering, 1.0, steeringGain);
             } else if (mKeyLeft) {
-                stepTowards(mSteering, -1.0, ui->steeringGainBox->value());
+                stepTowards(mSteering, -1.0, steeringGain);
             } else {
-                stepTowards(mSteering, 0.0, ui->steeringGainBox->value());
+                stepTowards(mSteering, 0.0, steeringGain);
             }
         }
 
