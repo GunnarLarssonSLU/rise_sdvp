@@ -296,6 +296,17 @@
          <property name="spacing">
           <number>2</number>
          </property>
+         <item row="1" column="1">
+          <widget class="QPushButton" name="jsConnectButton">
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="resources.qrc">
+             <normaloff>:/models/Icons/Connected-96.png</normaloff>:/models/Icons/Connected-96.png</iconset>
+           </property>
+          </widget>
+         </item>
          <item row="2" column="0" colspan="2">
           <widget class="QLabel" name="jsConnectedLabel">
            <property name="text">
@@ -303,34 +314,11 @@
            </property>
           </widget>
          </item>
-         <item row="4" column="0">
-          <widget class="QProgressBar" name="mrYawBar">
-           <property name="minimum">
-            <number>-100</number>
-           </property>
-           <property name="value">
-            <number>0</number>
-           </property>
-           <property name="format">
-            <string>Yaw: %v%</string>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="1">
-          <widget class="QProgressBar" name="mrRollBar">
-           <property name="minimum">
-            <number>-100</number>
-           </property>
-           <property name="value">
-            <number>0</number>
-           </property>
-           <property name="format">
-            <string>Roll: %v%</string>
-           </property>
-          </widget>
-         </item>
          <item row="0" column="0" colspan="2">
           <widget class="QLineEdit" name="jsPortEdit">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <property name="text">
             <string>/dev/input/js0</string>
            </property>
@@ -344,43 +332,6 @@
            <property name="icon">
             <iconset resource="resources.qrc">
              <normaloff>:/models/Icons/Disconnected-96.png</normaloff>:/models/Icons/Disconnected-96.png</iconset>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QPushButton" name="jsConnectButton">
-           <property name="text">
-            <string/>
-           </property>
-           <property name="icon">
-            <iconset resource="resources.qrc">
-             <normaloff>:/models/Icons/Connected-96.png</normaloff>:/models/Icons/Connected-96.png</iconset>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
-          <widget class="QProgressBar" name="mrThrottleBar">
-           <property name="minimum">
-            <number>0</number>
-           </property>
-           <property name="value">
-            <number>0</number>
-           </property>
-           <property name="format">
-            <string>Thr: %v%</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="1">
-          <widget class="QProgressBar" name="mrPitchBar">
-           <property name="minimum">
-            <number>-100</number>
-           </property>
-           <property name="value">
-            <number>0</number>
-           </property>
-           <property name="format">
-            <string>Pitch: %v%</string>
            </property>
           </widget>
          </item>
@@ -416,12 +367,6 @@
          </property>
          <item row="3" column="0">
           <widget class="QProgressBar" name="steeringBar">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
            <property name="minimum">
             <number>-100</number>
            </property>
@@ -482,12 +427,6 @@
          </item>
          <item row="2" column="0" colspan="2">
           <widget class="QProgressBar" name="throttleBar">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
            <property name="minimum">
             <number>-100</number>
            </property>
@@ -567,7 +506,7 @@
        <enum>QTabWidget::North</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>7</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
