@@ -506,8 +506,40 @@
        <enum>QTabWidget::North</enum>
       </property>
       <property name="currentIndex">
-       <number>7</number>
+       <number>0</number>
       </property>
+      <widget class="QWidget" name="tab_16">
+       <attribute name="icon">
+        <iconset resource="resources.qrc">
+         <normaloff>:/models/Icons/Hashtag-96.png</normaloff>:/models/Icons/Hashtag-96.png</iconset>
+       </attribute>
+       <attribute name="title">
+        <string/>
+       </attribute>
+       <attribute name="toolTip">
+        <string>Farm level settings</string>
+       </attribute>
+       <widget class="QTabWidget" name="tabWidget">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>16777215</width>
+          <height>16777215</height>
+         </rect>
+        </property>
+        <widget class="QWidget" name="tab_17">
+         <attribute name="title">
+          <string>Tab 1</string>
+         </attribute>
+        </widget>
+        <widget class="QWidget" name="tab_18">
+         <attribute name="title">
+          <string>Tab 2</string>
+         </attribute>
+        </widget>
+       </widget>
+      </widget>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
         <iconset resource="resources.qrc">
