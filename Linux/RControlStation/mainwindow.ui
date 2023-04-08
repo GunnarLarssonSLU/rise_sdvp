@@ -519,6 +519,9 @@
        <attribute name="toolTip">
         <string>Farm level settings</string>
        </attribute>
+       <attribute name="whatsThis">
+        <string>RTCM client</string>
+       </attribute>
        <widget class="QTabWidget" name="tabWidget">
         <property name="geometry">
          <rect>
@@ -529,9 +532,23 @@
          </rect>
         </property>
         <widget class="QWidget" name="tab_17">
-         <attribute name="title">
-          <string>Tab 1</string>
+         <attribute name="icon">
+          <iconset resource="resources.qrc">
+           <normaloff>:/models/Icons/Satellite-96.png</normaloff>:/models/Icons/Satellite-96.png</iconset>
          </attribute>
+         <attribute name="title">
+          <string/>
+         </attribute>
+         <widget class="RtcmWidget" name="rtcmWidget" native="true">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>1332</width>
+            <height>1175</height>
+           </rect>
+          </property>
+         </widget>
         </widget>
         <widget class="QWidget" name="tab_18">
          <attribute name="title">
@@ -3111,11 +3128,7 @@
        <attribute name="toolTip">
         <string>RTCM Client</string>
        </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_4">
-        <item>
-         <widget class="RtcmWidget" name="rtcmWidget" native="true"/>
-        </item>
-       </layout>
+       <layout class="QVBoxLayout" name="verticalLayout_4"/>
       </widget>
       <widget class="QWidget" name="tab_4">
        <attribute name="icon">
