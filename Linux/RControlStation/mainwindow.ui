@@ -511,7 +511,7 @@
       <widget class="QWidget" name="tab_16">
        <attribute name="icon">
         <iconset resource="resources.qrc">
-         <normaloff>:/models/Icons/Hashtag-96.png</normaloff>:/models/Icons/Hashtag-96.png</iconset>
+         <normaloff>:/models/Icons/Settings-96.png</normaloff>:/models/Icons/Settings-96.png</iconset>
        </attribute>
        <attribute name="title">
         <string/>
@@ -520,7 +520,7 @@
         <string>Farm level settings</string>
        </attribute>
        <attribute name="whatsThis">
-        <string>RTCM client</string>
+        <string>Settings</string>
        </attribute>
        <widget class="QTabWidget" name="tabWidget">
         <property name="geometry">
@@ -531,6 +531,116 @@
           <height>16777215</height>
          </rect>
         </property>
+        <property name="currentIndex">
+         <number>0</number>
+        </property>
+        <widget class="QWidget" name="tab_4">
+         <attribute name="icon">
+          <iconset>
+           <normaloff>../../../Downloads/farm-icon-original.svg</normaloff>../../../Downloads/farm-icon-original.svg</iconset>
+         </attribute>
+         <attribute name="title">
+          <string/>
+         </attribute>
+         <attribute name="toolTip">
+          <string>Farm</string>
+         </attribute>
+         <widget class="QWidget" name="gridLayoutWidget_2">
+          <property name="geometry">
+           <rect>
+            <x>20</x>
+            <y>30</y>
+            <width>591</width>
+            <height>311</height>
+           </rect>
+          </property>
+          <layout class="QGridLayout" name="gridlayout_2">
+           <item row="0" column="0">
+            <widget class="QLabel" name="labelBaseStation_2">
+             <property name="text">
+              <string>Base station ip</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="QLineEdit" name="ipBasestationEdit_2"/>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_7">
+             <property name="text">
+              <string>Location</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </widget>
+        <widget class="QWidget" name="tab_18">
+         <attribute name="icon">
+          <iconset>
+           <normaloff>../../../1401952054.png</normaloff>../../../1401952054.png</iconset>
+         </attribute>
+         <attribute name="title">
+          <string/>
+         </attribute>
+         <attribute name="toolTip">
+          <string>Vehicles</string>
+         </attribute>
+         <widget class="QWidget" name="gridLayoutWidget">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>10</y>
+            <width>591</width>
+            <height>311</height>
+           </rect>
+          </property>
+          <layout class="QGridLayout" name="gridlayout">
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_4">
+             <property name="text">
+              <string>Vehicle IP</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>Vehicles</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Vehicle name</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="QTableView" name="tableView"/>
+           </item>
+           <item row="2" column="2">
+            <widget class="QLineEdit" name="lineEdit"/>
+           </item>
+           <item row="1" column="2">
+            <widget class="QLineEdit" name="lineEdit_2"/>
+           </item>
+          </layout>
+         </widget>
+        </widget>
+        <widget class="QWidget" name="tab_3">
+         <attribute name="icon">
+          <iconset>
+           <normaloff>../../../512px-Font_Awesome_5_solid_seedling.svg.png</normaloff>../../../512px-Font_Awesome_5_solid_seedling.svg.png</iconset>
+         </attribute>
+         <attribute name="title">
+          <string/>
+         </attribute>
+         <attribute name="toolTip">
+          <string>Fields</string>
+         </attribute>
+        </widget>
         <widget class="QWidget" name="tab_17">
          <attribute name="icon">
           <iconset resource="resources.qrc">
@@ -538,6 +648,9 @@
          </attribute>
          <attribute name="title">
           <string/>
+         </attribute>
+         <attribute name="toolTip">
+          <string>RTCM client</string>
          </attribute>
          <widget class="RtcmWidget" name="rtcmWidget" native="true">
           <property name="geometry">
@@ -550,10 +663,27 @@
           </property>
          </widget>
         </widget>
-        <widget class="QWidget" name="tab_18">
-         <attribute name="title">
-          <string>Tab 2</string>
+        <widget class="QWidget" name="tab_19">
+         <attribute name="icon">
+          <iconset resource="resources.qrc">
+           <normaloff>:/models/Icons/GPS Receiving-96.png</normaloff>:/models/Icons/GPS Receiving-96.png</iconset>
          </attribute>
+         <attribute name="title">
+          <string/>
+         </attribute>
+         <attribute name="toolTip">
+          <string>Base station</string>
+         </attribute>
+         <widget class="BaseStation" name="baseStationWidget" native="true">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>1332</width>
+            <height>1175</height>
+           </rect>
+          </property>
+         </widget>
         </widget>
        </widget>
       </widget>
@@ -3117,53 +3247,6 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_3">
-       <attribute name="icon">
-        <iconset resource="resources.qrc">
-         <normaloff>:/models/Icons/Satellite-96.png</normaloff>:/models/Icons/Satellite-96.png</iconset>
-       </attribute>
-       <attribute name="title">
-        <string/>
-       </attribute>
-       <attribute name="toolTip">
-        <string>RTCM Client</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_4"/>
-      </widget>
-      <widget class="QWidget" name="tab_4">
-       <attribute name="icon">
-        <iconset resource="resources.qrc">
-         <normaloff>:/models/Icons/GPS Receiving-96.png</normaloff>:/models/Icons/GPS Receiving-96.png</iconset>
-       </attribute>
-       <attribute name="title">
-        <string/>
-       </attribute>
-       <attribute name="toolTip">
-        <string>Base Station</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_6">
-        <item>
-         <widget class="BaseStation" name="baseStationWidget" native="true"/>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="tab_7">
-       <attribute name="icon">
-        <iconset resource="resources.qrc">
-         <normaloff>:/models/Icons/VPN-96.png</normaloff>:/models/Icons/VPN-96.png</iconset>
-       </attribute>
-       <attribute name="title">
-        <string/>
-       </attribute>
-       <attribute name="toolTip">
-        <string>Network Interface</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_14">
-        <item>
-         <widget class="NetworkInterface" name="networkInterface" native="true"/>
-        </item>
-       </layout>
-      </widget>
       <widget class="QWidget" name="tab_11">
        <attribute name="icon">
         <iconset resource="resources.qrc">
@@ -3256,6 +3339,23 @@
            </layout>
           </widget>
          </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_7">
+       <attribute name="icon">
+        <iconset resource="resources.qrc">
+         <normaloff>:/models/Icons/VPN-96.png</normaloff>:/models/Icons/VPN-96.png</iconset>
+       </attribute>
+       <attribute name="title">
+        <string/>
+       </attribute>
+       <attribute name="toolTip">
+        <string>Network Interface</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_14">
+        <item>
+         <widget class="NetworkInterface" name="networkInterface" native="true"/>
         </item>
        </layout>
       </widget>
