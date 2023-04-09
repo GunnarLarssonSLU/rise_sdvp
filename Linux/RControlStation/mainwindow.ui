@@ -532,7 +532,7 @@
          </rect>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>2</number>
         </property>
         <widget class="QWidget" name="tab_4">
          <attribute name="icon">
@@ -596,35 +596,55 @@
            </rect>
           </property>
           <layout class="QGridLayout" name="gridlayout">
-           <item row="2" column="0">
-            <widget class="QLabel" name="label_4">
-             <property name="text">
-              <string>Vehicle IP</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="0">
+           <item row="1" column="0" rowspan="5">
             <widget class="QLabel" name="label">
              <property name="text">
               <string>Vehicles</string>
              </property>
             </widget>
            </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_2">
+           <item row="1" column="3">
+            <widget class="QLabel" name="label_9">
              <property name="text">
-              <string>Vehicle name</string>
+              <string>Name</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="2">
+           <item row="1" column="4">
+            <widget class="QLineEdit" name="lineEdit_2"/>
+           </item>
+           <item row="1" column="2" rowspan="5">
             <widget class="QTableView" name="tableView"/>
            </item>
-           <item row="2" column="2">
+           <item row="3" column="3">
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Length</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="3">
+            <widget class="QLabel" name="label_4">
+             <property name="text">
+              <string>Vehicle IP</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="3">
+            <widget class="QLabel" name="label_10">
+             <property name="text">
+              <string>Width</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="4">
             <widget class="QLineEdit" name="lineEdit"/>
            </item>
-           <item row="1" column="2">
-            <widget class="QLineEdit" name="lineEdit_2"/>
+           <item row="3" column="4">
+            <widget class="QLineEdit" name="lineEdit_3"/>
+           </item>
+           <item row="2" column="4">
+            <widget class="QLineEdit" name="lineEdit_5"/>
            </item>
           </layout>
          </widget>
@@ -640,6 +660,66 @@
          <attribute name="toolTip">
           <string>Fields</string>
          </attribute>
+         <widget class="QWidget" name="gridLayoutWidget_3">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>591</width>
+            <height>311</height>
+           </rect>
+          </property>
+          <layout class="QGridLayout" name="gridlayout_3">
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_5">
+             <property name="text">
+              <string>Use electronic fence</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QLineEdit" name="lineEdit_4"/>
+           </item>
+           <item row="3" column="2">
+            <widget class="QRadioButton" name="radioButton">
+             <property name="text">
+              <string>Yes</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="QTableView" name="tableView_2"/>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_6">
+             <property name="text">
+              <string>Fields</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="2">
+            <widget class="QRadioButton" name="radioButton_2">
+             <property name="text">
+              <string>No</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_8">
+             <property name="text">
+              <string>Field name</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QLabel" name="label_11">
+             <property name="text">
+              <string>Boundary</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
         </widget>
         <widget class="QWidget" name="tab_17">
          <attribute name="icon">
@@ -3246,6 +3326,18 @@
          </widget>
         </item>
        </layout>
+      </widget>
+      <widget class="QWidget" name="tab_20">
+       <attribute name="icon">
+        <iconset resource="resources.qrc">
+         <normaloff>:/models/Icons/Align Justify-96.png</normaloff>:/models/Icons/Align Justify-96.png</iconset>
+       </attribute>
+       <attribute name="title">
+        <string/>
+       </attribute>
+       <attribute name="toolTip">
+        <string>Logs</string>
+       </attribute>
       </widget>
       <widget class="QWidget" name="tab_11">
        <attribute name="icon">

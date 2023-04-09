@@ -56,6 +56,9 @@ CarInterface::CarInterface(QWidget *parent) :
     ui->orientationLayout->insertWidget(0, mOrientationWidget, 1);
 #endif
 
+    ui->tabWidget->removeTab(6);
+    ui->tabWidget->removeTab(5);
+
     memset(&mLastCarState, 0, sizeof(CAR_STATE));
 
     mMap = 0;
