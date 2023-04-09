@@ -969,11 +969,11 @@ void MainWindow::on_tcpConnectButton_clicked()
         if (ipPort.size() == 1) {
             mTcpClientMulti->addConnection(ipPort.at(0),
                                            8300);
-            on_carAddButton_clicked()
+            on_carAddButton_clicked();
         } else if (ipPort.size() == 2) {
             mTcpClientMulti->addConnection(ipPort.at(0),
                                            ipPort.at(1).toInt());
-            on_carAddButton_clicked()
+            on_carAddButton_clicked();
         }
     }
 
