@@ -199,7 +199,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->networkInterface->setCars(&mCars);
     ui->moteWidget->setPacketInterface(mPacketInterface);
     ui->nComWidget->setMap(ui->mapWidget);
-    ui->baseStationWidget->setMap(ui->mapWidget);
+//    ui->baseStationWidget->setMap(ui->mapWidget);
+    ui->baseStationWidget->setMap(ui->mapWidgetFarm);
 
     connect(mTimer, SIGNAL(timeout()), this, SLOT(timerSlot()));
     connect(mSerialPort, SIGNAL(readyRead()),
@@ -258,7 +259,6 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->wgStatusLabel->setText("Status: Not installed");
         ui->wgGroupBox->setEnabled(false);
     }
-
 
 #ifdef HAS_JOYSTICK
     // Connect micronav joystick by default
