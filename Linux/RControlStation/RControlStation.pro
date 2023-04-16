@@ -13,6 +13,7 @@ QT       += opengl
 QT       += quick
 QT       += quickcontrols2
 QT		 += gamepad
+QT       +=sql
 
 CONFIG   += c++11
 

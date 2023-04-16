@@ -25,6 +25,8 @@
 #include <QLabel>
 #include <QTcpSocket>
 #include <QGamepad>
+#include <QtWidgets>
+#include <QtSql>
 
 #include "carinterface.h"
 #include "copterinterface.h"
@@ -241,6 +243,22 @@ private:
 
     void saveRoutes(bool withId);
 
+protected:
+//    bool eventFilter(QObject *object, QEvent *event) override;
+
+private:
+    void showError(const QSqlError &err);
+    void handleFieldButton();
+    void handleLocationButton();
+    QSqlRelationalTableModel *modelField;
+    QSqlRelationalTableModel *modelFarm;
+    QSqlRelationalTableModel *modelVehicle;
+    int locationIdx;
 };
+
+void addField(QSqlQuery &q, const QString &title, const QVariant &locationId);
+QVariant addLocation(QSqlQuery &q, const QString &name, QDate birthdate);
+QSqlError initDb();
+
 
 #endif // MAINWINDOW_H
