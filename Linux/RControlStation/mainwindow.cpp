@@ -31,6 +31,7 @@
 #include <QNetworkInterface>
 #include <QGamepad>
 #include <QLoggingCategory>
+#include <QtSql>
 
 #include "utility.h"
 #include "routemagic.h"
@@ -195,12 +196,14 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->mapWidget->setRoutePointSpeed(ui->mapRouteSpeedBox->value() / 3.6);
     ui->networkLoggerWidget->setMap(ui->mapWidget);
     ui->networkInterface->setMap(ui->mapWidget);
+//    ui->networkInterface->setMap(ui->mapWidgetFarm);
     ui->networkInterface->setPacketInterface(mPacketInterface);
     ui->networkInterface->setCars(&mCars);
     ui->moteWidget->setPacketInterface(mPacketInterface);
     ui->nComWidget->setMap(ui->mapWidget);
-//    ui->baseStationWidget->setMap(ui->mapWidget);
-    ui->baseStationWidget->setMap(ui->mapWidgetFarm);
+//    ui->nComWidget->setMap(ui->mapWidgetFarm);
+    ui->baseStationWidget->setMap(ui->mapWidget);
+//    ui->baseStationWidget->setMap(ui->mapWidgetFarm);
 
     connect(mTimer, SIGNAL(timeout()), this, SLOT(timerSlot()));
     connect(mSerialPort, SIGNAL(readyRead()),
@@ -286,9 +289,174 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
     //Initialize
-//    on_WgConnectPushButton_clicked();
+    on_WgConnectPushButton_clicked();
 //    on_tcpConnectButton_clicked();
 //    on_carAddButton_clicked();
+
+
+
+    if (!QSqlDatabase::drivers().contains("QSQLITE"))
+        QMessageBox::critical(
+                    this,
+                    "Unable to load database",
+                    "This demo needs the SQLITE driver"
+                    );
+
+    // Initialize the database:
+    QSqlError err = initDb();
+    if (err.type() != QSqlError::NoError) {
+        showError(err);
+        return;
+    }
+
+    // Create the data model:
+    modelField = new QSqlRelationalTableModel(ui->fieldTable);
+//    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
+    modelField->setEditStrategy(QSqlTableModel::OnFieldChange);
+    modelField->setTable("fields");
+
+    // Remember the indexes of the columns:
+    locationIdx = modelField->fieldIndex("location");
+
+    // Set the relations to the other database tables:
+    modelField->setRelation(locationIdx, QSqlRelation("locations", "id", "name"));
+
+    // Set the localized header captions:
+    modelField->setHeaderData(locationIdx, Qt::Horizontal, tr("Location"));
+    modelField->setHeaderData(modelField->fieldIndex("title"),
+                         Qt::Horizontal, tr("Field name"));
+    // Populate the model:
+    if (!modelField->select()) {
+        showError(modelField->lastError());
+        return;
+    }
+
+    // Create the data model:
+    modelFarm = new QSqlRelationalTableModel(ui->farmTable);
+//    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
+    modelFarm->setEditStrategy(QSqlTableModel::OnFieldChange);
+    modelFarm->setTable("locations");
+
+    // Set the localized header captions:
+ //   modelFarm->setHeaderData(locationIdx, Qt::Horizontal, tr("Location"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("name"),
+                         Qt::Horizontal, tr("Name"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("longitude"),
+                         Qt::Horizontal, tr("Longitude"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("latitude"),
+                         Qt::Horizontal, tr("Latitude"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("ip"),
+                         Qt::Horizontal, tr("ip"));
+
+    // Populate the model:
+    if (!modelFarm->select()) {
+        showError(modelFarm->lastError());
+        return;
+    }
+
+    // Create the data model:
+    modelVehicle = new QSqlRelationalTableModel(ui->vehicleTable);
+//    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
+    modelVehicle->setEditStrategy(QSqlTableModel::OnFieldChange);
+    modelVehicle->setTable("vehicles");
+
+    // Set the localized header captions:
+ //   modelFarm->setHeaderData(locationIdx, Qt::Horizontal, tr("Location"));
+    modelVehicle->setHeaderData(modelVehicle->fieldIndex("name"),
+                         Qt::Horizontal, tr("Name"));
+    modelVehicle->setHeaderData(modelVehicle->fieldIndex("ip"),
+                         Qt::Horizontal, tr("IP"));
+    modelVehicle->setHeaderData(modelVehicle->fieldIndex("steering_type"),
+                         Qt::Horizontal, tr("Steering type"));
+    modelVehicle->setHeaderData(modelVehicle->fieldIndex("length"),
+                         Qt::Horizontal, tr("Length"));
+
+    // Populate the model:
+    if (!modelVehicle->select()) {
+        showError(modelVehicle->lastError());
+        return;
+    }
+
+
+    // Set the model and hide the ID column:
+    ui->fieldTable->setModel(modelField);
+    //ui.fieldTable->setItemDelegate(new BookDelegate(ui.fieldTable));
+    ui->fieldTable->setColumnHidden(modelField->fieldIndex("id"), true);
+    ui->fieldTable->setSelectionMode(QAbstractItemView::SingleSelection);
+
+    // Initialize the Author combo box:
+    ui->locationEdit->setModel(modelField->relationModel(locationIdx));
+    ui->locationEdit->setModelColumn(
+                modelField->relationModel(locationIdx)->fieldIndex("name"));
+
+
+    // Set the model and hide the ID column:
+    ui->farmTable->setModel(modelFarm);
+    //ui.locationTable->setItemDelegate(new BookDelegate(ui.locationTable));
+    ui->farmTable->setColumnHidden(modelFarm->fieldIndex("id"), true);
+    ui->farmTable->setSelectionMode(QAbstractItemView::SingleSelection);
+
+    // Set the model and hide the ID column:
+    ui->vehicleTable->setModel(modelVehicle);
+    //ui.locationTable->setItemDelegate(new BookDelegate(ui.locationTable));
+    ui->vehicleTable->setColumnHidden(modelVehicle->fieldIndex("id"), true);
+    ui->vehicleTable->setSelectionMode(QAbstractItemView::SingleSelection);
+
+    QDataWidgetMapper *mapperField = new QDataWidgetMapper(this);
+    mapperField->setModel(modelField);
+    mapperField->addMapping(ui->fieldnameEdit, modelField->fieldIndex("title"));
+    mapperField->addMapping(ui->locationEdit, locationIdx);
+
+    connect(ui->fieldTable->selectionModel(),
+            &QItemSelectionModel::currentRowChanged,
+            mapperField,
+            &QDataWidgetMapper::setCurrentModelIndex
+            );
+
+    ui->fieldTable->setCurrentIndex(modelField->index(0, 0));
+
+    QDataWidgetMapper *mapperFarm = new QDataWidgetMapper(this);
+    mapperFarm->setModel(modelFarm);
+    mapperFarm->addMapping(ui->locationnameEdit, modelFarm->fieldIndex("name"));
+    mapperFarm->addMapping(ui->longitudeEdit, modelFarm->fieldIndex("longitude"));
+    mapperFarm->addMapping(ui->latitudeEdit, modelFarm->fieldIndex("latitude"));
+    mapperFarm->addMapping(ui->ipFarmBasestationEdit, modelFarm->fieldIndex("ip"));
+
+    connect(ui->farmTable->selectionModel(),
+            &QItemSelectionModel::currentRowChanged,
+            mapperFarm
+            ,
+            &QDataWidgetMapper::setCurrentModelIndex
+            );
+
+    ui->farmTable->setCurrentIndex(modelFarm->index(0, 0));
+
+    QDataWidgetMapper *mapperVehicle = new QDataWidgetMapper(this);
+    mapperVehicle->setModel(modelVehicle);
+    mapperVehicle->addMapping(ui->namevehicleEdit, modelVehicle->fieldIndex("name"));
+    mapperVehicle->addMapping(ui->ipvehicleEdit, modelVehicle->fieldIndex("ip"));
+    mapperVehicle->addMapping(ui->lengthvehicleEdit, modelVehicle->fieldIndex("length"));
+    mapperVehicle->addMapping(ui->widthvehicleEdit, modelVehicle->fieldIndex("width"));
+
+    connect(ui->vehicleTable->selectionModel(),
+            &QItemSelectionModel::currentRowChanged,
+            mapperVehicle
+            ,
+            &QDataWidgetMapper::setCurrentModelIndex
+            );
+
+    ui->vehicleTable->setCurrentIndex(modelVehicle->index(0, 0));
+
+
+
+    connect(ui->pushButton_field, &QPushButton::released, this, &MainWindow::handleFieldButton);
+    connect(ui->pushButton_location, &QPushButton::released, this, &MainWindow::handleLocationButton);
+
+    ui->fieldTable->installEventFilter(this);
+    ui->farmTable->installEventFilter(this);
+
+
+
 
 
     qApp->installEventFilter(this);
@@ -341,16 +509,7 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
         }
     }
 
-#ifdef HAS_JOYSTICK
-    if (mJoystick->isConnected()) {
-        return false;
-    }
-#endif
-
-    if (ui->throttleOffButton->isChecked()) {
-        return false;
-    }
-
+/*
     if (e->type() == QEvent::KeyPress || e->type() == QEvent::KeyRelease) {
         QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
         bool isPress = e->type() == QEvent::KeyPress;
@@ -379,6 +538,110 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
         // Return true to not pass the key event on
         return true;
     }
+*/
+
+    if ( object == ui->fieldTable &&  (e->type() == QEvent::HoverLeave )  ) {
+        qDebug() << "OUT";
+    }
+    if ( object->objectName() == "fieldTable")
+    {
+        switch (e->type())
+        {
+            case QEvent::KeyPress:
+                {
+                    QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
+//                    qDebug("Ate key press (field) %d", keyEvent->key());
+                    switch ( keyEvent->key() )
+                    {
+                        case Qt::Key_Up:
+                            qDebug() << "UP";
+                            break;
+                        case Qt::Key_Down:
+                            qDebug() << "DOWN";
+                            break;
+                        case Qt::Key_Left:
+                            qDebug() << "LEFT";
+                            break;
+                        case Qt::Key_Right:
+                            qDebug() << "RIGHT";
+                            break;
+                    case Qt::Key_Delete:
+                        qDebug() << "DELETE";
+       /*                 QModelIndexList selection = object->selectionModel()->selectedRows();
+
+                        // Multiple rows can be selected
+                        for(int i=0; i< selection.count(); i++)
+                        {
+                            QModelIndex index = selection.at(i);
+                            qDebug() << index.row();
+                        }
+                        */
+                        break;
+                    }
+                    return true;
+                }
+            default:
+                {
+                    //         qDebug() << object;
+                    //         qDebug() << event;
+                     return QObject::eventFilter(object, e);
+                }
+        }
+    }
+    if ( object->objectName() == "locationTable")
+    {
+        switch (e->type())
+        {
+            case QEvent::KeyPress:
+                {
+                    QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
+                    qDebug("Ate key press (location) %d", keyEvent->key());
+                    return true;
+                }
+            default:
+                {
+                    //         qDebug() << object;
+                    //         qDebug() << e;
+                     return QObject::eventFilter(object, e);
+                }
+        }
+    }
+
+    /*
+    ////////////////////////////////////
+    switch ( e->key() )
+    {
+        case Qt::Key_Up:
+            qDebug() << "UP";
+            break;
+        case Qt::Key_Down:
+            qDebug() << "DOWN";
+            break;
+        case Qt::Key_Left:
+            qDebug() << "LEFT";
+            break;
+        case Qt::Key_Right:
+            qDebug() << "RIGHT";
+            break;
+    default:
+            qDebug() << e->key() << Qt::endl;
+            break;
+    }
+/////////////////
+    */
+    // false means it should be send to target also. as in , we dont remove it.
+    // if you return true , you will take the event and widget never sees it so be carefull with that.
+
+#ifdef HAS_JOYSTICK
+    if (mJoystick->isConnected()) {
+        return false;
+    }
+#endif
+
+    if (ui->throttleOffButton->isChecked()) {
+        return false;
+    }
+
 
     return false;
 }
@@ -484,7 +747,8 @@ void MainWindow::timerSlot()
   //  #endif
             //mSteering /= 2.0;
         } else {
-            qDebug () << "NOT CONNECTED!!!!!!!!!!";
+
+            //qDebug () << "NOT CONNECTED!!!!!!!!!!";
             float throttleGain=0.03;
             float steeringGain=0.08;
             if (mKeyUp) {
@@ -709,6 +973,7 @@ void MainWindow::rtcmReceived(QByteArray data)
             int res = rtcm3_input_data(b, &mRtcmState);
             if (res == 1005 || res == 1006) {
                 ui->mapWidget->setEnuRef(mRtcmState.pos.lat, mRtcmState.pos.lon, mRtcmState.pos.height);
+                ui->mapWidgetFarm->setEnuRef(mRtcmState.pos.lat, mRtcmState.pos.lon, mRtcmState.pos.height);
             }
         }
     }
@@ -2233,3 +2498,198 @@ void MainWindow::on_AutopilotPausePushButton_clicked()
         car->setAp(false, false);
     }
 }
+
+
+
+
+
+
+
+
+/*
+BookWindow::BookWindow()
+{
+    ui.setupUi(this);
+
+}
+*/
+/*
+bool BookWindow::eventFilter(QObject *object, QEvent *event)
+{
+    if ( object == ui.fieldTable &&  (event->type() == QEvent::HoverLeave )  ) {
+        qDebug() << "OUT";
+    }
+    if ( object->objectName() == "fieldTable")
+    {
+        switch (event->type())
+        {
+            case QEvent::KeyPress:
+                {
+                    QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+//                    qDebug("Ate key press (field) %d", keyEvent->key());
+                    switch ( keyEvent->key() )
+                    {
+                        case Qt::Key_Up:
+                            qDebug() << "UP";
+                            break;
+                        case Qt::Key_Down:
+                            qDebug() << "DOWN";
+                            break;
+                        case Qt::Key_Left:
+                            qDebug() << "LEFT";
+                            break;
+                        case Qt::Key_Right:
+                            qDebug() << "RIGHT";
+                            break;
+                    case Qt::Key_Delete:
+                        qDebug() << "DELETE";
+                        break;
+                    }
+                    return true;
+                }
+            default:
+                {
+                    //         qDebug() << object;
+                    //         qDebug() << event;
+                     return QObject::eventFilter(object, event);
+                }
+        }
+    }
+    if ( object->objectName() == "locationTable")
+    {
+        switch (event->type())
+        {
+            case QEvent::KeyPress:
+                {
+                    QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+                    qDebug("Ate key press (location) %d", keyEvent->key());
+                    return true;
+                }
+            default:
+                {
+                    //         qDebug() << object;
+                    //         qDebug() << event;
+                     return QObject::eventFilter(object, event);
+                }
+        }
+    }
+
+    ////////////////////////////////////
+    switch ( event->key() )
+    {
+        case Qt::Key_Up:
+            qDebug() << "UP";
+            break;
+        case Qt::Key_Down:
+            qDebug() << "DOWN";
+            break;
+        case Qt::Key_Left:
+            qDebug() << "LEFT";
+            break;
+        case Qt::Key_Right:
+            qDebug() << "RIGHT";
+            break;
+    default:
+            qDebug() << event->key() << endl;
+            break;
+/////////////////
+
+    // false means it should be send to target also. as in , we dont remove it.
+    // if you return true , you will take the event and widget never sees it so be carefull with that.
+    return false;
+}
+
+*/
+void MainWindow::showError(const QSqlError &err)
+{
+    QMessageBox::critical(this, "Unable to initialize Database",
+                "Error initializing database: " + err.text());
+}
+
+void MainWindow::handleFieldButton()
+{
+    QMessageBox msgBox;
+    msgBox.setText("Button handled: " + ui->fieldnameEdit->text()+', '+QString::number(ui->locationEdit->currentIndex()));
+    msgBox.exec();
+    const auto INSERT_FIELD_SQL = QLatin1String(R"(
+        insert into fields(title, year, location, rating)
+                          values(?, ?, ?, ?)
+        )");
+    QSqlQuery q;
+    if (q.prepare(INSERT_FIELD_SQL))
+    {
+        addField(q, ui->fieldnameEdit->text(), ui->locationEdit->currentIndex());
+    };
+}
+
+void MainWindow::handleLocationButton()
+{
+    QMessageBox msgBox;
+    msgBox.setText("Button handled: " + ui->fieldnameEdit->text()+', '+QString::number(ui->locationEdit->currentIndex()));
+    msgBox.exec();
+    const auto INSERT_LOCATION_SQL = QLatin1String(R"(
+        insert into fields(namw, longitude,latitude)
+                          values(?, ?, ?)
+        )");
+    QSqlQuery q;
+    if (q.prepare(INSERT_LOCATION_SQL))
+    {
+        addField(q, ui->fieldnameEdit->text(), ui->locationEdit->currentIndex());
+    };
+}
+
+
+/*
+void BookWindow::keyPressEvent( QKeyEvent *k )
+{
+    switch ( k->key() )
+    {
+        case Qt::Key_Up:
+            qDebug() << "UP";
+            break;
+        case Qt::Key_Down:
+            qDebug() << "DOWN";
+            break;
+        case Qt::Key_Left:
+            qDebug() << "LEFT";
+            break;
+        case Qt::Key_Right:
+            qDebug() << "RIGHT";
+            break;
+    default:
+            qDebug() << k->key() << endl;
+            break;
+    }
+}
+*/
+
+void addField(QSqlQuery &q, const QString &title, const QVariant &locationId)
+{
+    q.addBindValue(title);
+    q.addBindValue(locationId);
+    q.exec();
+}
+
+QVariant addLocation(QSqlQuery &q, const QString &name, QDate birthdate)
+{
+    q.addBindValue(name);
+    q.addBindValue(birthdate);
+    q.exec();
+    return q.lastInsertId();
+}
+
+QSqlError initDb()
+{
+    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+//    db.setDatabaseName(":memory:");
+    db.setDatabaseName("test.db");
+    if (!db.open())
+        return db.lastError();
+    return QSqlError();
+}
+
+
+
+
+
+

@@ -191,10 +191,10 @@ MapWidget::MapWidget(QWidget *parent) : QWidget(parent)
 //    mRefLon = 12.89134921;
 //    mRefHeight = 219.0;
 
-    // ASTA
-    mRefLat = 57.78100308;
-    mRefLon = 12.76925422;
-    mRefHeight = 253.76;
+    // Ultuna
+    mRefLat = 59.812;
+    mRefLon = 17.658;
+    mRefHeight = 38;
 
     // Home
     //    mRefLat = 57.57848470;
@@ -920,7 +920,8 @@ void MapWidget::wheelEvent(QWheelEvent *e)
             CarInfo &carInfo = mCarInfo[i];
             if (carInfo.getId() == mSelectedCar) {
                 LocPoint pos = carInfo.getLocation();
-                double angle = pos.getYaw() + (double)e->angleDelta().y() * 0.0005;
+//                double angle = pos.getYaw() + (double)e->angleDelta().y() * 0.0005;
+                double angle = pos.getYaw() + (double)e->angleDelta().y() * 0.005;
                 normalizeAngleRad(angle);
                 pos.setYaw(angle);
                 carInfo.setLocation(pos);

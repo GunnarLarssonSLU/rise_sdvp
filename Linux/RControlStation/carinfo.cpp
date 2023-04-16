@@ -24,8 +24,8 @@ CarInfo::CarInfo(int id, Qt::GlobalColor color)
     mName = "";
     mName.sprintf("Car %d", mId);
     mTime = 0;
-    mLength = 0.8;
-    mWidth = 0.335;
+    mLength = 4.0;
+    mWidth = 1.65;
     mCornerRadius = 0.02;
 }
 
