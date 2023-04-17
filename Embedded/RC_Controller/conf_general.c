@@ -276,14 +276,14 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 
 
 #ifdef IS_DRANGEN
-//	conf->car.steering_center = 0.5;
-//	conf->car.steering_range = -0.9;
+	conf->car.steering_center = 0.0;
+	conf->car.steering_range = -2.0;
 //	conf->car.axis_distance = 1.0;
-		conf->car.steering_center = 0;
+		//conf->car.steering_center = 0;
 //		conf->car.steering_range = 0;
 		conf->car.axis_distance = 1.45;
 	conf->car.steering_max_angle_rad = atanf(conf->car.axis_distance / 1.5);
-
+	conf->car.steering_max_angle_rad =
 	conf->car.wheel_diam = 0.47;
 	conf->car.wheel_diam = 0.8;
 	conf->gps_ant_x = 0; // TODO: IMU_ROT_180 sign?
