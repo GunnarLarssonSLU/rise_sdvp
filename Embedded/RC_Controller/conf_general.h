@@ -80,9 +80,11 @@
 #define VESC_THROTTLE_ID		76
 #define VESC_STEERING_ID		113
 #define SERVO_VESC_ID				0
+#define VESC_ID				0                        // NY
 #define DIFF_STEERING_VESC_LEFT      76
 #define DIFF_STEERING_VESC_RIGHT      113
 #define IS_F9_BOARD					0
+#define UBLOX_IS_F9P				0
 #endif
 
 // Differential steering
@@ -208,7 +210,7 @@
 #else
 #define HAS_CC2520					1
 #define HAS_CC1120					1
-#define UBLOX_IS_F9P				0
+//#define UBLOX_IS_F9P				0
 #define LED_RED_GPIO				GPIOE
 #define LED_RED_PIN					0
 #define LED_GREEN_GPIO				GPIOE

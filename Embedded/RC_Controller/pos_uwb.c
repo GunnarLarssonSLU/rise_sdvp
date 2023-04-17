@@ -284,9 +284,9 @@ static void dw_range(uint8_t id, uint8_t dest, float range) {
 			}
 
 			// Tuning parameter, integral term
-			float driftGain = 0.5;
+			float driftGain = 0.0; // 0.5;
 			// Maximum contribution from integral term each step
-			float driftMax = 3.5;
+			float driftMax = 0.0; // 3.5
 
 			m_uwb_state.yaw_drift += driftGain * diffOffset;
 			utils_truncate_number_abs(&m_uwb_state.yaw_drift, driftMax);

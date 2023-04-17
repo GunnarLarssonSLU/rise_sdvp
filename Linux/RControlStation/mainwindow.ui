@@ -28,7 +28,7 @@
        <enum>QTabWidget::North</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tab_16">
        <attribute name="icon">
@@ -54,7 +54,7 @@
          </rect>
         </property>
         <property name="currentIndex">
-         <number>2</number>
+         <number>4</number>
         </property>
         <widget class="QWidget" name="tab_4">
          <attribute name="icon">
@@ -762,8 +762,8 @@
        <widget class="QTabWidget" name="carsWidget">
         <property name="geometry">
          <rect>
-          <x>10</x>
-          <y>80</y>
+          <x>160</x>
+          <y>10</y>
           <width>1531</width>
           <height>891</height>
          </rect>
@@ -809,8 +809,8 @@
         </property>
         <property name="geometry">
          <rect>
-          <x>160</x>
-          <y>10</y>
+          <x>10</x>
+          <y>80</y>
           <width>28</width>
           <height>24</height>
          </rect>
@@ -835,9 +835,9 @@
        <widget class="QPushButton" name="stopButton">
         <property name="geometry">
          <rect>
-          <x>190</x>
-          <y>0</y>
-          <width>60</width>
+          <x>10</x>
+          <y>120</y>
+          <width>141</width>
           <height>71</height>
          </rect>
         </property>
@@ -873,8 +873,8 @@
        <widget class="QPushButton" name="disconnectButton">
         <property name="geometry">
          <rect>
-          <x>160</x>
-          <y>40</y>
+          <x>40</x>
+          <y>80</y>
           <width>28</width>
           <height>24</height>
          </rect>

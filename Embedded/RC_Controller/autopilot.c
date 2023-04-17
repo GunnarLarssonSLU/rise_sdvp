@@ -399,6 +399,7 @@ void autopilot_set_speed_override(bool is_override, float speed) {
  */
 void autopilot_set_motor_speed(float speed) {
 	if (!main_config.car.disable_motor) {
+/*
 #if IS_DRANGEN
 		// TODO
 		comm_can_lock_vesc();
@@ -409,6 +410,7 @@ void autopilot_set_motor_speed(float speed) {
 //		bldc_interface_set_rpm((int)rpm_r);
 		comm_can_unlock_vesc();
 #endif
+*/
 #if HAS_DIFF_STEERING
 		float diff_speed_half = 0.0;
 
@@ -438,8 +440,12 @@ void autopilot_set_motor_speed(float speed) {
 					* (2.0 / main_config.car.motor_poles) * (1.0 / 60.0)
 					* main_config.car.wheel_diam * M_PI);
 
-		comm_can_set_vesc_id(VESC_ID);
-		bldc_interface_set_rpm((int)rpm);
+		comm_can_lock_vesc();
+//		comm_can_set_vesc_id(VESC_ID); //ÄNDRA HÄR
+		comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
+		bldc_interface_set_rpm((int)(100.0*rpm));
+		comm_can_unlock_vesc();
+
 #endif
 #endif
 	}
@@ -916,7 +922,15 @@ static THD_FUNCTION(ap_thread, arg) {
 #if HAS_DIFF_STEERING
 				autopilot_set_turn_rad(circle_radius);
 #else
-				servo_simple_set_pos_ramp(servo_pos);
+	//			servo_simple_set_pos_ramp(servo_pos); //GL - Fixa här!!
+			//	comm_can_lock_vesc();
+//				comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
+//				bldc_interface_set_duty_cycle(throttle);
+				comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
+				bldc_interface_set_duty_cycle(servo_pos);
+//				bldc_interface_set_duty_cycle(-2.0);
+		//		comm_can_unlock_vesc();
+
 #endif
 				autopilot_set_motor_speed(speed);
 			}

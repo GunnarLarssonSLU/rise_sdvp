@@ -224,6 +224,7 @@ void CarInterface::setStateData(CAR_STATE data)
         ap_goal.setXY(data.ap_goal_px, data.ap_goal_py);
         ap_goal.setRadius(data.ap_rad);
         car->setLocation(loc);
+        car->setLocation(loc_gps);  // OBS OBS OBS NÖDLÖSNING!!
         car->setLocationGps(loc_gps);
         car->setLocationUwb(loc_uwb);
         car->setApGoal(ap_goal);

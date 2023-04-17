@@ -921,7 +921,7 @@ void MapWidget::wheelEvent(QWheelEvent *e)
             if (carInfo.getId() == mSelectedCar) {
                 LocPoint pos = carInfo.getLocation();
 //                double angle = pos.getYaw() + (double)e->angleDelta().y() * 0.0005;
-                double angle = pos.getYaw() + (double)e->angleDelta().y() * 0.005;
+                double angle = pos.getYaw() + (double)e->angleDelta().y() * 0.05;
                 normalizeAngleRad(angle);
                 pos.setYaw(angle);
                 carInfo.setLocation(pos);
