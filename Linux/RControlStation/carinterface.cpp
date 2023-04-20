@@ -223,8 +223,12 @@ void CarInterface::setStateData(CAR_STATE data)
         loc_uwb.setXY(data.px_uwb, data.py_uwb);
         ap_goal.setXY(data.ap_goal_px, data.ap_goal_py);
         ap_goal.setRadius(data.ap_rad);
+//        LocPoint locTemporarySolution=loc_gps;
+//        locTemporarySolution.setYaw(data.yaw * M_PI / 180.0);
+//        locTemporarySolution.setXY(data.px, data.py);
+//        locTemporarySolution.setSpeed(data.speed);
         car->setLocation(loc);
-        car->setLocation(loc_gps);  // OBS OBS OBS NÖDLÖSNING!!
+//        car->setLocation(locTemporarySolution);  // OBS OBS OBS NÖDLÖSNING!!
         car->setLocationGps(loc_gps);
         car->setLocationUwb(loc_uwb);
         car->setApGoal(ap_goal);
