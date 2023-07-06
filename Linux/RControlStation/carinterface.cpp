@@ -58,6 +58,7 @@ CarInterface::CarInterface(QWidget *parent) :
 
     ui->tabWidget->removeTab(6);
     ui->tabWidget->removeTab(5);
+    ui->tabWidget->removeTab(4);
 
     memset(&mLastCarState, 0, sizeof(CAR_STATE));
 
@@ -513,6 +514,23 @@ void CarInterface::nmeaReceived(quint8 id, QByteArray nmea_msg)
 {
     if (id == mId) {
         ui->nmeaWidget->inputNmea(nmea_msg);
+        if (ui->calibratingCheckBox->isChecked())
+        {
+//            ui->nmeaTextBrowser->append(QString::fromLocal8Bit(nmea_msg));
+
+            QString nmea_msg_string = QString(nmea_msg);
+            QList<QString> elements = nmea_msg_string.split(',');
+            bool ok;
+            double Xvalue=elements[2].toDouble(&ok);
+   //         Xs.append(Xvalue);
+            double Yvalue=elements[4].toDouble(&ok);
+   //         Ys.append(Yvalue);
+
+//            qDebug() << "X: " << QString("%1").arg(Xvalue,0,'g',13);
+//            qDebug() << "Y: " << QString("%1").arg(Yvalue,0,'g',13);
+            ui->nmeaTextBrowser->append(QString("%1").arg(Xvalue,0,'g',13)+','+QString("%1").arg(Yvalue,0,'g',13));
+        }
+
 
         if (mMap) {
             CarInfo *car = mMap->getCarInfo(mId);
@@ -532,6 +550,17 @@ void CarInterface::configurationReceived(quint8 id, MAIN_CONFIG config)
         mSettingsReadDone = true;
         mConfigLast = config;
         setConfGui(config);
+
+        if (ui->currentCalibrationEdit->text()=="1")
+        {
+            ui->voltage1Edit->setText(QString("%1").arg(config.car.centrevoltage,0,'g',3));
+        };
+
+        if (ui->currentCalibrationEdit->text()=="2")
+        {
+            ui->voltage2Edit->setText(QString("%1").arg(config.car.centrevoltage,0,'g',3));
+        };
+
         QString str;
         str.sprintf("Car %d: Configuration Received", id);
         emit showStatusInfo(str, true);
@@ -728,7 +757,8 @@ void CarInterface::getConfGui(MAIN_CONFIG &conf)
     conf.car.vesc_d_gain = ui->confServoDGainBox->value();
     conf.car.anglemin = ui->confAngleMinBox->value();
     conf.car.anglemax = ui->confAngleMaxBox->value();
-    conf.car.angledegrees = ui->confAngleDegreesBox->value();
+//    conf.car.angledegrees = ui->confAngleDegreesBox->value();
+    conf.car.centrevoltage = ui->confCentreVoltageBox->value();
 
     conf.car.steering_max_angle_rad = atan(ui->confAxisDistanceBox->value() / ui->confTurnRadBox->value());
 
@@ -756,8 +786,8 @@ void CarInterface::setConfGui(MAIN_CONFIG &conf)
     ui->confServoDGainBox->setValue(conf.car.vesc_d_gain);
     ui->confAngleMinBox->setValue(conf.car.anglemin);
     ui->confAngleMaxBox->setValue(conf.car.anglemax);
-    ui->confAngleDegreesBox->setValue(conf.car.angledegrees);
-
+  //  ui->confAngleDegreesBox->setValue(conf.car.angledegrees);
+    ui->confCentreVoltageBox->setValue(conf.car.centrevoltage);
     ui->confTurnRadBox->setValue(conf.car.axis_distance / tan(conf.car.steering_max_angle_rad));
 
     ui->confCommonWidget->setConfGui(conf);
@@ -770,6 +800,146 @@ void CarInterface::on_setClockButton_clicked()
         QTime current = QTime::currentTime().addSecs(-date.offsetFromUtc());
         mPacketInterface->setMsToday(mId, current.msecsSinceStartOfDay());
     }
+}
+
+void CarInterface::on_startCalibration1Button_clicked()
+{
+    ui->calibratingCheckBox->setChecked(true);
+
+//    ui->pollBox->setChecked(poll);
+
+    if (mPacketInterface) {
+        mPacketInterface->getConfiguration(mId);
+    }
+
+    ui->currentCalibrationEdit->setText("1");
+    on_confReadButton_clicked();
+}
+
+void CarInterface::on_startCalibration2Button_clicked()
+{
+    ui->calibratingCheckBox->setChecked(true);
+    ui->currentCalibrationEdit->setText("2");
+    on_confReadButton_clicked();
+}
+
+void CarInterface::on_endCalibration1Button_clicked()
+{
+    ui->calibratingCheckBox->setChecked(false);
+    ui->currentCalibrationEdit->setText("0");
+
+    std::vector<double> time;
+    std::vector<double> velocity;
+
+
+    QList<QString> lines = ui->nmeaTextBrowser->toPlainText().split("\n");
+    int iDatapoints=lines.size();
+
+    qDebug() << "Datapoints: " << QString("%1").arg(lines.size(),0,'g',13);
+    qDebug() << "Datapoints: " << ui->nmeaTextBrowser->toPlainText();
+
+    std::vector<double> alphas;
+
+    bool ok;
+    int c=0;
+    int iWaitSteps=4;
+    double oldalpha=0;
+    //    while (!file.atEnd()) {
+    for (int i=0;i<iDatapoints;i++) {
+        qDebug() << c++;
+        QString line = lines[i];
+        QList<QString> elements = line.split(',');
+        double Xvalue=elements[0].toDouble(&ok);
+        time.push_back(Xvalue);
+        double Yvalue=elements[1].toDouble(&ok);
+        velocity.push_back(Yvalue);
+        if (c>iWaitSteps)
+        {
+           double dy_long=velocity[velocity.size()]-velocity[velocity.size()-iWaitSteps];
+           double dx_long=time[time.size()]-time[time.size()-iWaitSteps];
+           double alpha=atan(dy_long/dx_long);
+           double dy=velocity[velocity.size()]-velocity[velocity.size()-1];
+           double dx=velocity[velocity.size()]-velocity[velocity.size()-1];
+           double stepsize_m=sqrt(dx*dx+dy*dy);
+           double dalpha=(alpha-oldalpha)/stepsize_m;
+           double dalpha2=std::fmod(dalpha+M_PI,2*M_PI)-M_PI;
+           double dalpha3=std::fmod(dalpha2+M_PI/2,M_PI)-M_PI/2;
+           alphas.push_back(dalpha3);
+           oldalpha=alpha;
+           qDebug() << "X: " << QString("%1").arg(Xvalue,0,'g',13);
+           qDebug() << "Y: " << QString("%1").arg(Yvalue,0,'g',13);
+           qDebug() << "alpha: " << QString("%1").arg(alpha,0,'g',13);
+           qDebug() << "dx: " << QString("%1").arg(dx,0,'g',13);
+           qDebug() << "dy: " << QString("%1").arg(dy,0,'g',13);
+           qDebug() << "stepsize_m: " << QString("%1").arg(stepsize_m,0,'g',13);
+           qDebug() << "dalpha: " << QString("%1").arg(dalpha,0,'g',13);
+           qDebug() << "dalpha2: " << QString("%1").arg(dalpha2,0,'g',13);
+           qDebug() << "dalpha3: " << QString("%1").arg(dalpha3,0,'g',13);
+        }
+    }
+    double averageangle = std::accumulate(alphas.begin(), alphas.end(), 0.0) / alphas.size();
+    ui->angle1Edit->setText(QString("%1").arg(averageangle,0,'g',13));
+
+    ui->nmeaTextBrowser->clear();
+}
+
+void CarInterface::on_endCalibration2Button_clicked()
+{
+    ui->calibratingCheckBox->setChecked(false);
+    ui->currentCalibrationEdit->setText("0");
+
+    std::vector<double> time;
+    std::vector<double> velocity;
+
+
+    QList<QString> lines = ui->nmeaTextBrowser->toPlainText().split("\n");
+    int iDatapoints=lines.size();
+
+    qDebug() << "Datapoints: " << QString("%1").arg(lines.size(),0,'g',13);
+    qDebug() << "Datapoints: " << ui->nmeaTextBrowser->toPlainText();
+
+    std::vector<double> alphas;
+
+    bool ok;
+    int c=0;
+    int iWaitSteps=4;
+    double oldalpha=0;
+    //    while (!file.atEnd()) {
+    for (int i=0;i<iDatapoints;i++) {
+        qDebug() << c++;
+        QString line = lines[i];
+        QList<QString> elements = line.split(',');
+        double Xvalue=elements[0].toDouble(&ok);
+        time.push_back(Xvalue);
+        double Yvalue=elements[1].toDouble(&ok);
+        velocity.push_back(Yvalue);
+        if (c>iWaitSteps)
+        {
+           double dy_long=velocity[velocity.size()]-velocity[velocity.size()-iWaitSteps];
+           double dx_long=time[time.size()]-time[time.size()-iWaitSteps];
+           double alpha=atan(dy_long/dx_long);
+           double dy=velocity[velocity.size()]-velocity[velocity.size()-1];
+           double dx=velocity[velocity.size()]-velocity[velocity.size()-1];
+           double stepsize_m=sqrt(dx*dx+dy*dy);
+           double dalpha=(alpha-oldalpha)/stepsize_m;
+           double dalpha2=std::fmod(dalpha+M_PI,2*M_PI)-M_PI;
+           double dalpha3=std::fmod(dalpha2+M_PI/2,M_PI)-M_PI/2;
+           alphas.push_back(dalpha3);
+           oldalpha=alpha;
+           qDebug() << "X: " << QString("%1").arg(Xvalue,0,'g',13);
+           qDebug() << "Y: " << QString("%1").arg(Yvalue,0,'g',13);
+           qDebug() << "alpha: " << QString("%1").arg(alpha,0,'g',13);
+           qDebug() << "dx: " << QString("%1").arg(dx,0,'g',13);
+           qDebug() << "dy: " << QString("%1").arg(dy,0,'g',13);
+           qDebug() << "stepsize_m: " << QString("%1").arg(stepsize_m,0,'g',13);
+           qDebug() << "dalpha: " << QString("%1").arg(dalpha,0,'g',13);
+           qDebug() << "dalpha2: " << QString("%1").arg(dalpha2,0,'g',13);
+           qDebug() << "dalpha3: " << QString("%1").arg(dalpha3,0,'g',13);
+        }
+    }
+    double averageangle = std::accumulate(alphas.begin(), alphas.end(), 0.0) / alphas.size();
+    ui->angle2Edit->setText(QString("%1").arg(averageangle,0,'g',13));
+    ui->nmeaTextBrowser->clear();
 }
 
 void CarInterface::on_setClockPiButton_clicked()

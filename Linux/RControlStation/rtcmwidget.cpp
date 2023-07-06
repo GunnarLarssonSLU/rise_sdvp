@@ -230,8 +230,9 @@ void RtcmWidget::on_resetAllCountersButton_clicked()
 void RtcmWidget::on_ntripBox_toggled(bool checked)
 {
     if (checked) {
-        ui->ntripServerEdit->setText("www.igs-ip.net");
-        ui->ntripPortBox->setValue(80);
+        ui->ntripServerEdit->setText("192.168.200.10");
+        ui->ntripPortBox->setValue(8000);
+        ui->ntripStreamEdit->setText("AB0");
 
         ui->ntripUserEdit->setEnabled(true);
         ui->ntripPasswordEdit->setEnabled(true);

@@ -16,8 +16,10 @@
  */
 
 #include "nmeawidget.h"
+#include "qdatetime.h"
 #include "ui_nmeawidget.h"
 #include "nmeaserver.h"
+
 
 #include <QMessageBox>
 #include <QFileDialog>
@@ -28,10 +30,19 @@ NmeaWidget::NmeaWidget(QWidget *parent) :
     ui(new Ui::NmeaWidget)
 {
     ui->setupUi(this);
+
+
+    QDateTime date = QDateTime::currentDateTime();
+    QString formattedTime = date.toString("dd.MM.yyyy hh:mm:ss");
+    QByteArray formattedTimeMsg = formattedTime.toLocal8Bit();
+
+    ui->nmeaLogEdit->setText(formattedTimeMsg+".txt");
     layout()->setContentsMargins(0, 0, 0, 0);
 
     mNmeaForwardServer = new TcpBroadcast(this);
     mFixType = "Unknown";
+    ui->nmeaServerActiveBox->setCheckState(Qt::Checked);
+    on_nmeaLogActiveBox_toggled(true);
 }
 
 NmeaWidget::~NmeaWidget()
@@ -44,6 +55,8 @@ void NmeaWidget::inputNmea(QByteArray msg)
     if (ui->nmeaPrintBox->isChecked()) {
         ui->nmeaBrowser->append(QString::fromLocal8Bit(msg));
     }
+
+//    ((CarInterface*)(parent()))->ui->
 
     mNmeaForwardServer->broadcastData(msg);
 
