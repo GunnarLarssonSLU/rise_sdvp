@@ -64,6 +64,9 @@ static void rtcm_base_rx(rtcm_ref_sta_pos_t *pos);
 // Private variables
 static rtcm3_state m_rtcm_state;
 
+float showData=0.0;
+
+
 void commands_init(void) {
 	m_send_func = 0;
 	chMtxObjectInit(&m_print_gps);
@@ -542,7 +545,8 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 
 			main_config.car.anglemin = buffer_get_float32_auto(data, &ind);
 			main_config.car.anglemax = buffer_get_float32_auto(data, &ind);
-			main_config.car.angledegrees = buffer_get_float32_auto(data, &ind);
+			main_config.car.voltage_centre = buffer_get_float32_auto(data, &ind);
+//			main_config.car.angledegrees = buffer_get_float32_auto(data, &ind);
 
 
 #if MAIN_MODE == MAIN_MODE_CAR
@@ -701,7 +705,8 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 
 		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.anglemin, &send_index);
 		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.anglemax, &send_index);
-		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.angledegrees, &send_index);
+		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.voltage_centre, &send_index);
+//		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.angledegrees, &send_index);
 
 			// Multirotor settings
 			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.vel_decay_e, &send_index);
@@ -869,16 +874,16 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			}
 			buffer_append_float32(m_send_buffer, pos.speed, 1e6, &send_index); // 64
 			#ifdef USE_ADCONV_FOR_VIN
-						buffer_append_float32(m_send_buffer, adconv_get_vin(), 1e6, &send_index); // 68
+//						buffer_append_float32(m_send_buffer, adconv_get_vin(), 1e6, &send_index); // 68
+				buffer_append_float32(m_send_buffer, showData, 1e6, &send_index); // 68
 
-//						float tot = comm_can_io_board_as5047_angle();
-	//					buffer_append_float32(m_send_buffer, showData, 1e6, &send_index); // 68
+				////						float tot = comm_can_io_board_as5047_angle();
+		//				buffer_append_float32(m_send_buffer, showData, 1e6, &send_index); // 68
 
 			#else
 
-				#if IS_DRANGEN
+				#ifdef IS_DRANGEN
 						buffer_append_float32(m_send_buffer, mcval.v_in, 1e6, &send_index); // 68
-//						buffer_append_float32(m_send_buffer, showData, 1e6, &send_index); // 68
 				#else
 						buffer_append_float32(m_send_buffer, mcval.v_in, 1e6, &send_index); // 68
 				#endif

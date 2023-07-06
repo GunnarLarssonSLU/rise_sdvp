@@ -2170,7 +2170,8 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
 
         // GPS Location
         painter.setBrush(col_gps);
-        painter.drawEllipse(QPointF(x_gps, y_gps), car_w / 15.0, car_w / 15.0);
+//        painter.drawEllipse(QPointF(x_gps, y_gps), car_w / 15.0, car_w / 15.0);
+        painter.drawEllipse(QPointF(x_gps, y_gps), car_w / 3.0, car_w / 3.0);
 
         // Autopilot state
         LocPoint ap_goal = carInfo.getApGoal();

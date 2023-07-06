@@ -202,7 +202,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->moteWidget->setPacketInterface(mPacketInterface);
     ui->nComWidget->setMap(ui->mapWidget);
 //    ui->nComWidget->setMap(ui->mapWidgetFarm);
-    ui->baseStationWidget->setMap(ui->mapWidget);
+
+//    ui->baseStationWidget->setMap(ui->mapWidget);
 //    ui->baseStationWidget->setMap(ui->mapWidgetFarm);
 
     connect(mTimer, SIGNAL(timeout()), this, SLOT(timerSlot()));
@@ -223,8 +224,8 @@ MainWindow::MainWindow(QWidget *parent) :
             this, SLOT(ackReceived(quint8,CMD_PACKET,QString)));
     connect(ui->rtcmWidget, SIGNAL(rtcmReceived(QByteArray)),
             this, SLOT(rtcmReceived(QByteArray)));
-    connect(ui->baseStationWidget, SIGNAL(rtcmOut(QByteArray)),
-            this, SLOT(rtcmReceived(QByteArray)));
+ /*   connect(ui->baseStationWidget, SIGNAL(rtcmOut(QByteArray)),
+            this, SLOT(rtcmReceived(QByteArray)));*/
     connect(ui->rtcmWidget, SIGNAL(refPosGet()), this, SLOT(rtcmRefPosGet()));
     connect(mPing, SIGNAL(pingRx(int,QString)), this, SLOT(pingRx(int,QString)));
     connect(mPing, SIGNAL(pingError(QString,QString)), this, SLOT(pingError(QString,QString)));
@@ -292,8 +293,6 @@ MainWindow::MainWindow(QWidget *parent) :
     on_WgConnectPushButton_clicked();
 //    on_tcpConnectButton_clicked();
 //    on_carAddButton_clicked();
-
-
 
     if (!QSqlDatabase::drivers().contains("QSQLITE"))
         QMessageBox::critical(
@@ -377,10 +376,9 @@ MainWindow::MainWindow(QWidget *parent) :
         return;
     }
 
-
     // Set the model and hide the ID column:
     ui->fieldTable->setModel(modelField);
-    //ui.fieldTable->setItemDelegate(new BookDelegate(ui.fieldTable));
+//    ui->fieldTable->setItemDelegate(new FieldDelegate(ui->fieldTable));
     ui->fieldTable->setColumnHidden(modelField->fieldIndex("id"), true);
     ui->fieldTable->setSelectionMode(QAbstractItemView::SingleSelection);
 
@@ -447,17 +445,26 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->vehicleTable->setCurrentIndex(modelVehicle->index(0, 0));
 
-
-
     connect(ui->pushButton_field, &QPushButton::released, this, &MainWindow::handleFieldButton);
     connect(ui->pushButton_location, &QPushButton::released, this, &MainWindow::handleLocationButton);
 
     ui->fieldTable->installEventFilter(this);
     ui->farmTable->installEventFilter(this);
+    ui->vehicleTable->installEventFilter(this);
 
+//    QWidget* pWidget= ui->mainTabWidget->findChild<QWidget *>("tabSettings")->findChild<QTabWidget *>("tabWidgetSettings")->findChild<QWidget *>("tab_19");
+//    pWidget->close();
 
+    QTabWidget* pWidget= ui->mainTabWidget->findChild<QWidget *>("tabSettings")->findChild<QTabWidget *>("tabWidgetSettings");
+    pWidget->removeTab(4);
+    ui->mainTabWidget->removeTab(8);
+    ui->mainTabWidget->removeTab(7);
+    ui->mainTabWidget->removeTab(6);
+    ui->mainTabWidget->removeTab(5);
 
-
+    //    ui->tab_19->close();
+//    ui->tabWidgetSettings->removeTab(4);
+//  ui->mainTabWidget->removeTab(5);
 
     qApp->installEventFilter(this);
 }

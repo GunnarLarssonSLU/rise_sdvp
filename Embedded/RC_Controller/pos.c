@@ -1353,7 +1353,7 @@ static void mc_values_received(mc_values *val) {
 	float speed = rpm * main_config.car.gear_ratio
 			* (2.0 / main_config.car.motor_poles) * (1.0 / 60.0)
 			* main_config.car.wheel_diam * M_PI;
-
+//	showData=distance;
 	car_update_pos(distance, turn_rad_rear, angle_diff, speed);
 #endif
 }

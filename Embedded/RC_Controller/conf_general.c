@@ -150,11 +150,21 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 	conf->car.gear_ratio = (1.0 / 3.0) * (21.0 / 37.0);
 	conf->car.wheel_diam = 0.11;
 	conf->car.motor_poles = 4.0;
+
 	conf->car.steering_max_angle_rad = 0.42041;
 	conf->car.steering_center = 0.5;
 	conf->car.steering_range = 0.58;
 	conf->car.steering_ramp_time = 0.0;
 	conf->car.axis_distance = 0.475;
+
+	conf->car.vesc_p_gain = 6.0;
+	conf->car.vesc_i_gain = 1.0;
+	conf->car.vesc_d_gain = 0.5;
+
+	conf->car.anglemin = -20;
+	conf->car.anglemax = 40;
+	conf->car.voltage_centre = 3.24;
+
 
 	// Default multirotor settings
 	conf->mr.vel_decay_e = 0.8;
@@ -285,7 +295,7 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 	conf->car.steering_max_angle_rad = atanf(conf->car.axis_distance / 1.5);
 	conf->car.steering_max_angle_rad =
 	conf->car.wheel_diam = 0.47;
-	conf->car.wheel_diam = 0.8;
+//	conf->car.wheel_diam = 0.8;
 	conf->gps_ant_x = 0; // TODO: IMU_ROT_180 sign?
 	conf->gps_ant_y = 0.25;
 

@@ -317,8 +317,8 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
 
         conf.car.anglemin = utility::buffer_get_double32_auto(data, &ind);
         conf.car.anglemax = utility::buffer_get_double32_auto(data, &ind);
-        conf.car.angledegrees = utility::buffer_get_double32_auto(data, &ind);
-
+        conf.car.centrevoltage = utility::buffer_get_double32_auto(data, &ind);
+//        conf.car.angledegrees = utility::buffer_get_double32_auto(data, &ind);
         // Multirotor settings
         conf.mr.vel_decay_e = utility::buffer_get_double32_auto(data, &ind);
         conf.mr.vel_decay_l = utility::buffer_get_double32_auto(data, &ind);
@@ -910,7 +910,8 @@ bool PacketInterface::setConfiguration(quint8 id, MAIN_CONFIG &conf, int retries
 
     utility::buffer_append_double32_auto(mSendBuffer, conf.car.anglemin, &send_index);
     utility::buffer_append_double32_auto(mSendBuffer, conf.car.anglemax, &send_index);
-    utility::buffer_append_double32_auto(mSendBuffer, conf.car.angledegrees, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.car.centrevoltage, &send_index);
+//    utility::buffer_append_double32_auto(mSendBuffer, conf.car.angledegrees, &send_index);
 
     // Multirotor settings
     utility::buffer_append_double32_auto(mSendBuffer, conf.mr.vel_decay_e, &send_index);

@@ -120,6 +120,10 @@ private slots:
     void on_uwbRebootButton_clicked();
     void on_uwbListAnchorsButton_clicked();
     void on_ioBoardPwmSlider_valueChanged(int value);
+    void on_startCalibration1Button_clicked();
+    void on_startCalibration2Button_clicked();
+    void on_endCalibration1Button_clicked();
+    void on_endCalibration2Button_clicked();
 
 private:
 

@@ -259,8 +259,8 @@ typedef struct {
 	float vesc_d_gain;
     float anglemin;
     float anglemax;
-    float angledegrees;
-
+//    float angledegrees;
+    float voltage_centre;
 } MAIN_CONFIG_CAR;
 
 typedef struct {

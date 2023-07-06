@@ -48,15 +48,16 @@
 //#define EBIKE_BENJAMIN // Benjamins ebike
 
 
-#define IS_DRANGEN 1
+//#define IS_DRANGEN
 
-//#define IS_MACTRAC
+#define IS_MACTRAC
 
 // MacTrac
 // Steering Center: 210
 // Valve: Low values: Turn right; high values: turn left
 #ifdef IS_MACTRAC
 #define HAS_HYDRAULIC_DRIVE			1
+
 #define SERVO_VESC_S1				178.0 // Left
 #define SERVO_VESC_S2				240.0 // Right
 //#define SERVO_VESC_S1				-20.0 // Left
@@ -83,8 +84,8 @@
 #define VESC_ID				0                        // NY
 #define DIFF_STEERING_VESC_LEFT      76
 #define DIFF_STEERING_VESC_RIGHT      113
-#define IS_F9_BOARD					0
-#define UBLOX_IS_F9P				0
+#define IS_F9_BOARD					1
+//#define UBLOX_IS_F9P				1
 #endif
 
 // Differential steering

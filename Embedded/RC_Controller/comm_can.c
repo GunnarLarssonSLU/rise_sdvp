@@ -63,6 +63,9 @@ static ADC_CNT_t io_board_adc0_cnt = {0};
  * from abort mode.
  * See section 22.7.7 on the STM32 reference manual.
  */
+
+//extern float showData;
+
 static const CANConfig cancfg = {
 		CAN_MCR_ABOM | CAN_MCR_AWUM | CAN_MCR_TXFP,
 		CAN_BTR_SJW(0) | CAN_BTR_TS2(1) |
@@ -580,23 +583,36 @@ float comm_can_io_board_adc_voltage(int ch) {
 }
 
 float comm_can_io_board_as5047_angle(void) {
-//	return io_board_as5047_angle;
+#ifdef IS_MACTRAC
 	float maxVoltage_right=5.99;
 	float maxVoltage_left=0.785;
+/*
 	float voltagespan=maxVoltage_right-maxVoltage_left;
-//	float totanglevariation=90;
-
-//main_config.car.vesc_p_gaincomm_can_io_board_as5047_angle(void)
 	float maxangleleft=main_config.car.anglemin;
 	float maxangleright=main_config.car.anglemax;
 	float anglespan=maxangleright-maxangleleft;
 	float voltage_read=comm_can_io_board_adc_voltage(4)+comm_can_io_board_adc_voltage(5);
 	float voltage_relativeleft=voltage_read-maxVoltage_left;
 	float degreespervolt=anglespan/voltagespan;
-	//	float angle=main_config.car.angledegrees*(voltage_read-main_config.car.anglemin)/(main_config.car.anglemax-main_config.car.anglemin)-main_config.car.angledegrees/2;
 	float angle=voltage_relativeleft*degreespervolt+maxangleleft;
 	angle+=200.0;
+	*/
+	float voltagespan=maxVoltage_right-maxVoltage_left;
+	float maxangleleft=main_config.car.anglemin;
+	float maxangleright=main_config.car.anglemax;
+	float anglespan=maxangleright-maxangleleft;
+	float degreespervolt=anglespan/voltagespan;
+
+	float voltage_read=comm_can_io_board_adc_voltage(4)+comm_can_io_board_adc_voltage(5);
+//	showData=voltage_read;
+	float voltage_relativecentre=voltage_read-main_config.car.voltage_centre;
+	float angle=voltage_relativecentre*degreespervolt;
+//	showData=angle;
+	angle+=200.0;
 	return angle;
+#else
+	return io_board_as5047_angle;
+#endif
 }
 
 bool comm_can_io_board_lim_sw(int sw) {

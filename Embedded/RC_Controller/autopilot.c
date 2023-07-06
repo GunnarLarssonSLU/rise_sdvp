@@ -441,9 +441,14 @@ void autopilot_set_motor_speed(float speed) {
 					* main_config.car.wheel_diam * M_PI);
 
 		comm_can_lock_vesc();
-//		comm_can_set_vesc_id(VESC_ID); //ÄNDRA HÄR
-		comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
-		bldc_interface_set_rpm((int)(100.0*rpm));
+		#ifdef IS_DRANGEN
+				comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
+				bldc_interface_set_rpm((int)(100.0*rpm));
+			#else
+				comm_can_set_vesc_id(VESC_ID); //ÄNDRA HÄR
+				bldc_interface_set_rpm((int)(rpm));
+
+		#endif
 		comm_can_unlock_vesc();
 
 #endif
@@ -919,19 +924,21 @@ static THD_FUNCTION(ap_thread, arg) {
 
 				utils_truncate_number_abs(&speed, main_config.ap_max_speed);
 
-#if HAS_DIFF_STEERING
-				autopilot_set_turn_rad(circle_radius);
-#else
-	//			servo_simple_set_pos_ramp(servo_pos); //GL - Fixa här!!
-			//	comm_can_lock_vesc();
-//				comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
-//				bldc_interface_set_duty_cycle(throttle);
-				comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
-				bldc_interface_set_duty_cycle(servo_pos);
-//				bldc_interface_set_duty_cycle(-2.0);
-		//		comm_can_unlock_vesc();
-
-#endif
+				#if HAS_DIFF_STEERING
+					autopilot_set_turn_rad(circle_radius);
+				#else
+					#ifdef IS_MACTRAC
+						servo_simple_set_pos_ramp(servo_pos); //GL - Fixa här!!
+					#else
+						//	comm_can_lock_vesc();
+						//	comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
+						//	bldc_interface_set_duty_cycle(throttle);
+							comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
+							bldc_interface_set_duty_cycle(servo_pos);
+						//	bldc_interface_set_duty_cycle(-2.0);
+						//	comm_can_unlock_vesc();
+					#endif
+				#endif
 				autopilot_set_motor_speed(speed);
 			}
 		}
