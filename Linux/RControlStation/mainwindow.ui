@@ -28,7 +28,7 @@
        <enum>QTabWidget::North</enum>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tabSettings">
        <attribute name="icon">
@@ -56,8 +56,14 @@
           <height>16777215</height>
          </rect>
         </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="tab_4">
          <attribute name="icon">
@@ -73,25 +79,19 @@
          <widget class="QWidget" name="gridLayoutWidget_2">
           <property name="geometry">
            <rect>
-            <x>20</x>
-            <y>30</y>
-            <width>981</width>
-            <height>457</height>
+            <x>0</x>
+            <y>0</y>
+            <width>1061</width>
+            <height>351</height>
            </rect>
           </property>
           <layout class="QGridLayout" name="gridlayout_2">
            <item row="2" column="1">
-            <widget class="QLabel" name="label_7">
+            <widget class="QLabel" name="label_16">
              <property name="text">
-              <string>Location</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Name:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
             </widget>
-           </item>
-           <item row="4" column="3">
-            <widget class="QLineEdit" name="latitudeEdit"/>
-           </item>
-           <item row="1" column="3">
-            <widget class="QLineEdit" name="ipFarmBasestationEdit"/>
            </item>
            <item row="3" column="1">
             <widget class="QLabel" name="label_17">
@@ -100,41 +100,70 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="3">
+           <item row="4" column="1">
+            <widget class="QLabel" name="label_17b">
+             <property name="text">
+              <string>Latitude</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="QTableView" name="farmTable">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>600</width>
+               <height>120</height>
+              </size>
+             </property>
+             <property name="selectionBehavior">
+              <enum>QAbstractItemView::SelectRows</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QPushButton" name="pushButton_location">
+             <property name="text">
+              <string>Add location</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="2">
             <widget class="QLineEdit" name="locationnameEdit">
              <property name="enabled">
               <bool>true</bool>
              </property>
             </widget>
            </item>
-           <item row="4" column="1">
-            <widget class="QLabel" name="label_18">
-             <property name="text">
-              <string>Latitude</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QLabel" name="labelBaseStation_2">
-             <property name="text">
-              <string>Base station ip</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QLabel" name="label_16">
-             <property name="text">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Name:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="3">
+           <item row="3" column="2">
             <widget class="QLineEdit" name="longitudeEdit"/>
            </item>
-           <item row="2" column="3">
+           <item row="4" column="2">
+            <widget class="QLineEdit" name="latitudeEdit"/>
+           </item>
+           <item row="5" column="2">
+            <widget class="QCheckBox" name="autoConnectcheckBox">
+             <property name="text">
+              <string>Auto connect</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3" rowspan="6">
+            <widget class="QLabel" name="label_7">
+             <property name="text">
+              <string>Location</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="4" rowspan="6">
             <widget class="MapWidget" name="mapWidgetFarm" native="true">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                <horstretch>1</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
@@ -147,41 +176,15 @@
              </property>
             </widget>
            </item>
-           <item row="5" column="3">
-            <widget class="QPushButton" name="pushButton_location">
-             <property name="text">
-              <string>Add location</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="0" rowspan="6">
-            <widget class="QTableView" name="farmTable">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Minimum">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>400</width>
-               <height>300</height>
-              </size>
-             </property>
-             <property name="selectionBehavior">
-              <enum>QAbstractItemView::SelectRows</enum>
-             </property>
-            </widget>
-           </item>
           </layout>
          </widget>
          <widget class="QGroupBox" name="wgGroupBox">
           <property name="geometry">
            <rect>
-            <x>1140</x>
-            <y>30</y>
-            <width>181</width>
-            <height>93</height>
+            <x>1070</x>
+            <y>100</y>
+            <width>291</width>
+            <height>71</height>
            </rect>
           </property>
           <property name="title">
@@ -189,14 +192,14 @@
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_31">
            <item>
-            <widget class="QLabel" name="wgStatusLabel">
-             <property name="text">
-              <string>Status:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
             <layout class="QHBoxLayout" name="horizontalLayout_18">
+             <item>
+              <widget class="QLabel" name="wgStatusLabel">
+               <property name="text">
+                <string>Status:</string>
+               </property>
+              </widget>
+             </item>
              <item>
               <widget class="QPushButton" name="WgSettingsPushButton">
                <property name="text">
@@ -256,8 +259,8 @@
          <widget class="QComboBox" name="comboBox">
           <property name="geometry">
            <rect>
-            <x>1150</x>
-            <y>150</y>
+            <x>1130</x>
+            <y>50</y>
             <width>171</width>
             <height>25</height>
            </rect>
@@ -266,14 +269,24 @@
          <widget class="QLabel" name="label_12">
           <property name="geometry">
            <rect>
-            <x>1150</x>
-            <y>130</y>
+            <x>1130</x>
+            <y>30</y>
             <width>111</width>
             <height>17</height>
            </rect>
           </property>
           <property name="text">
            <string>Map source</string>
+          </property>
+         </widget>
+         <widget class="RtcmWidget" name="rtcmWidget" native="true">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>350</y>
+            <width>1201</width>
+            <height>700</height>
+           </rect>
           </property>
          </widget>
         </widget>
@@ -372,16 +385,6 @@
          <attribute name="toolTip">
           <string>RTCM client</string>
          </attribute>
-         <widget class="RtcmWidget" name="rtcmWidget" native="true">
-          <property name="geometry">
-           <rect>
-            <x>0</x>
-            <y>0</y>
-            <width>1332</width>
-            <height>1175</height>
-           </rect>
-          </property>
-         </widget>
         </widget>
         <widget class="QWidget" name="tab_3">
          <attribute name="icon">

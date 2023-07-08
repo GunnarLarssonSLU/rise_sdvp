@@ -17,6 +17,7 @@
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "ui_rtcmwidget.h"
 #include <QSerialPortInfo>
 #include <QDebug>
 #include <cmath>
@@ -111,34 +112,15 @@ MainWindow::MainWindow(QWidget *parent) :
             this, SLOT(jsButtonChanged(int,bool)));
 
     connect(mJoystick, &QGamepad::axisLeftXChanged, this, [](double value){
- //           qDebug() << "Left X" << value;
         });
         connect(mJoystick, &QGamepad::axisLeftYChanged, this, [](double value){
- //           qDebug() << "Left Y" << value;
         });
         connect(mJoystick, &QGamepad::axisRightXChanged, this, [](double value){
- //           qDebug() << "Right X" << value;
         });
         connect(mJoystick, &QGamepad::axisRightYChanged, this, [](double value){
- //           qDebug() << "Right Y" << value;
         });
 
 
-    /*	These buttons are not used
-        connect(mJoystick, &QGamepad::buttonAChanged, this, [](bool pressed){
-            qDebug() << "Button A" << pressed;
-           jsButtonChanged(int button, bool pressed);
-        });
-        connect(mJoystick, &QGamepad::buttonBChanged, this, [](bool pressed){
-            qDebug() << "Button B" << pressed;
-        });
-        connect(mJoystick, &QGamepad::buttonXChanged, this, [](bool pressed){
-            qDebug() << "Button X" << pressed;
-        });
-        connect(mJoystick, &QGamepad::buttonYChanged, this, [](bool pressed){
-            qDebug() << "Button Y" << pressed;
-        });
-    */
         static MainWindow *mThis=this;          // Just to be able to get the lambdas to work
         connect(mJoystick, &QGamepad::buttonL1Changed, this, [](bool pressed){
             qDebug() << "Button L1" << pressed;
@@ -157,17 +139,6 @@ MainWindow::MainWindow(QWidget *parent) :
             qDebug() << "Button R2: " << value;
             mThis->jsButtonChanged(7, value>0);
         });
-    /*    These buttons are not used
-        connect(mJoystick, &QGamepad::buttonSelectChanged, this, [](bool pressed){
-            qDebug() << "Button Select" << pressed;
-        });
-        connect(mJoystick, &QGamepad::buttonStartChanged, this, [](bool pressed){
-            qDebug() << "Button Start" << pressed;
-        });
-        connect(mJoystick, &QGamepad::buttonGuideChanged, this, [](bool pressed){
-            qDebug() << "Button Guide" << pressed;
-        });
-    */
     #endif
 
     mPing = new Ping(this);
@@ -182,6 +153,7 @@ MainWindow::MainWindow(QWidget *parent) :
     mIntersectionTest->setPacketInterface(mPacketInterface);
     connect(ui->nComWidget, SIGNAL(dataRx(ncom_data)),
             mIntersectionTest, SLOT(nComRx(ncom_data)));
+
 
 #ifdef HAS_LIME_SDR
     mGpsSim = new GpsSim(this);
@@ -247,6 +219,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(mTcpClientMulti, &TcpClientMulti::stateChanged, [this](QString msg, bool isError) {
         showStatusInfo(msg, !isError);
+
+
 
         if (isError) {
             qWarning() << "TCP Error:" << msg;
@@ -346,6 +320,10 @@ MainWindow::MainWindow(QWidget *parent) :
                          Qt::Horizontal, tr("Latitude"));
     modelFarm->setHeaderData(modelFarm->fieldIndex("ip"),
                          Qt::Horizontal, tr("ip"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("port"),
+                         Qt::Horizontal, tr("port"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("NTRIP"),
+                         Qt::Horizontal, tr("NTRIP"));
 
     // Populate the model:
     if (!modelFarm->select()) {
@@ -418,7 +396,15 @@ MainWindow::MainWindow(QWidget *parent) :
     mapperFarm->addMapping(ui->locationnameEdit, modelFarm->fieldIndex("name"));
     mapperFarm->addMapping(ui->longitudeEdit, modelFarm->fieldIndex("longitude"));
     mapperFarm->addMapping(ui->latitudeEdit, modelFarm->fieldIndex("latitude"));
-    mapperFarm->addMapping(ui->ipFarmBasestationEdit, modelFarm->fieldIndex("ip"));
+
+    mapperFarm->addMapping(this->findChild<QLineEdit*>("ntripServerEdit"), modelFarm->fieldIndex("ip"));
+    mapperFarm->addMapping(this->findChild<QSpinBox*>("ntripPortBox"), modelFarm->fieldIndex("port"));
+    mapperFarm->addMapping(this->findChild<QLineEdit*>("ntripUserEdit"), modelFarm->fieldIndex("user"));
+    mapperFarm->addMapping(this->findChild<QCheckBox*>("ntripBox"), modelFarm->fieldIndex("NTRIP"));
+
+    mapperFarm->addMapping(this->findChild<QLineEdit*>("ntripPasswordEdit"), modelFarm->fieldIndex("password"));
+    mapperFarm->addMapping(this->findChild<QLineEdit*>("ntripStreamEdit"), modelFarm->fieldIndex("stream"));
+//    mapperFarm->addMapping(ui->streamFarmBasestationEdit, modelFarm->fieldIndex("stream"));
 
     connect(ui->farmTable->selectionModel(),
             &QItemSelectionModel::currentRowChanged,

@@ -6,9 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>958</width>
+    <width>764</width>
     <height>772</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
   <property name="windowTitle">
    <string>Form</string>
@@ -72,6 +78,9 @@
         </item>
         <item>
          <widget class="QLineEdit" name="ntripUserEdit">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
           <property name="text">
            <string/>
           </property>
@@ -170,6 +179,9 @@
    </item>
    <item>
     <widget class="QGroupBox" name="groupBox_3">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="title">
       <string>Serial</string>
      </property>
@@ -401,7 +413,7 @@
          <enum>QTabWidget::Triangular</enum>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>4</number>
         </property>
         <widget class="QWidget" name="tab">
          <attribute name="title">
@@ -570,7 +582,6 @@
              <widget class="QLabel" name="label_18">
               <property name="font">
                <font>
-                <weight>50</weight>
                 <bold>false</bold>
                </font>
               </property>
@@ -613,7 +624,6 @@
              <widget class="QLabel" name="label_20">
               <property name="font">
                <font>
-                <weight>50</weight>
                 <bold>false</bold>
                </font>
               </property>
@@ -709,7 +719,6 @@
              <widget class="QLabel" name="label_19">
               <property name="font">
                <font>
-                <weight>50</weight>
                 <bold>false</bold>
                </font>
               </property>
@@ -865,7 +874,6 @@
              <widget class="QLabel" name="label_24">
               <property name="font">
                <font>
-                <weight>50</weight>
                 <bold>false</bold>
                </font>
               </property>
@@ -971,7 +979,6 @@
              <widget class="QLabel" name="label_32">
               <property name="font">
                <font>
-                <weight>50</weight>
                 <bold>false</bold>
                </font>
               </property>
@@ -1057,7 +1064,6 @@
              <widget class="QLabel" name="label_33">
               <property name="font">
                <font>
-                <weight>50</weight>
                 <bold>false</bold>
                </font>
               </property>
@@ -1163,7 +1169,6 @@
              <widget class="QLabel" name="label_34">
               <property name="font">
                <font>
-                <weight>50</weight>
                 <bold>false</bold>
                </font>
               </property>
@@ -1288,7 +1293,6 @@
            <widget class="QLabel" name="label_21">
             <property name="font">
              <font>
-              <weight>50</weight>
               <bold>false</bold>
              </font>
             </property>
