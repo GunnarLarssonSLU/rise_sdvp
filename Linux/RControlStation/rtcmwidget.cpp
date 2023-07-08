@@ -39,26 +39,12 @@ RtcmWidget::RtcmWidget(QWidget *parent) :
             this, SLOT(timerSlot()));
 
     on_rtcmSerialRefreshButton_clicked();
-    on_ntripBox_toggled(ui->ntripBox->isChecked());
     on_gpsOnlyBox_toggled(ui->gpsOnlyBox->isChecked());
 
     // SPT00 default
     ui->refSendLatBox->setValue(57.71495867);
     ui->refSendLonBox->setValue(12.89134921);
     ui->refSendHBox->setValue(219.0);
-
-    // Onsala default
-//    double lon, lat, h;
-//    utility::xyzToLlh(3370667.1982, 711818.7226, 5349787.8784, &lat, &lon, &h);
-//    ui->refSendLatBox->setValue(lat);
-//    ui->refSendLonBox->setValue(lon);
-//    ui->refSendHBox->setValue(h);
-//    qDebug() << fixed << qSetRealNumberPrecision(8) << lat << lon << h;
-
-    // Home
-//    ui->refSendLatBox->setValue(57.57848470);
-//    ui->refSendLonBox->setValue(13.11463205);
-//    ui->refSendHBox->setValue(204.626);
 }
 
 RtcmWidget::~RtcmWidget()
@@ -227,6 +213,7 @@ void RtcmWidget::on_resetAllCountersButton_clicked()
     ui->rtcm1020Number->display(0);
 }
 
+/*
 void RtcmWidget::on_ntripBox_toggled(bool checked)
 {
     if (checked) {
@@ -239,7 +226,6 @@ void RtcmWidget::on_ntripBox_toggled(bool checked)
         ui->ntripStreamEdit->setEnabled(true);
     } else {
         ui->ntripServerEdit->setText("192.168.200.1");
-//        ui->ntripServerEdit->setText("localhost");
         ui->ntripPortBox->setValue(2101);
 //        ui->ntripPortBox->setValue(65300);
 
@@ -248,6 +234,7 @@ void RtcmWidget::on_ntripBox_toggled(bool checked)
         ui->ntripStreamEdit->setEnabled(false);
     }
 }
+*/
 
 void RtcmWidget::on_rtcmSerialRefreshButton_clicked()
 {
