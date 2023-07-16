@@ -42,9 +42,11 @@ RtcmWidget::RtcmWidget(QWidget *parent) :
     on_gpsOnlyBox_toggled(ui->gpsOnlyBox->isChecked());
 
     // SPT00 default
-    ui->refSendLatBox->setValue(57.71495867);
-    ui->refSendLonBox->setValue(12.89134921);
-    ui->refSendHBox->setValue(219.0);
+//    ui->refSendLatBox->setValue(59.81);
+//    ui->refSendLonBox->setValue(17.658);
+//    ui->refSendHBox->setValue(0);
+
+//    on_ntripConnectButton_clicked();
 }
 
 RtcmWidget::~RtcmWidget()
@@ -212,29 +214,6 @@ void RtcmWidget::on_resetAllCountersButton_clicked()
     ui->rtcm1019Number->display(0);
     ui->rtcm1020Number->display(0);
 }
-
-/*
-void RtcmWidget::on_ntripBox_toggled(bool checked)
-{
-    if (checked) {
-        ui->ntripServerEdit->setText("192.168.200.10");
-        ui->ntripPortBox->setValue(8000);
-        ui->ntripStreamEdit->setText("AB0");
-
-        ui->ntripUserEdit->setEnabled(true);
-        ui->ntripPasswordEdit->setEnabled(true);
-        ui->ntripStreamEdit->setEnabled(true);
-    } else {
-        ui->ntripServerEdit->setText("192.168.200.1");
-        ui->ntripPortBox->setValue(2101);
-//        ui->ntripPortBox->setValue(65300);
-
-        ui->ntripUserEdit->setEnabled(false);
-        ui->ntripPasswordEdit->setEnabled(false);
-        ui->ntripStreamEdit->setEnabled(false);
-    }
-}
-*/
 
 void RtcmWidget::on_rtcmSerialRefreshButton_clicked()
 {

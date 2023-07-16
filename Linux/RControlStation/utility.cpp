@@ -454,22 +454,12 @@ bool replaceRouteHelper(PacketInterface *packetInterface, int carId, QList<LocPo
     return ok;
 }
 
-int loadRoutes(QString filename, MapWidget *map)
+bool loadXMLRoute(QXmlStreamReader* stream, MapWidget *map)
 {
-    int res = 0;
-
-    QFile file(filename);
-    if (!file.open(QIODevice::ReadOnly)) {
-        res = -1;
-        return res;
-    }
-
-    QXmlStreamReader stream(&file);
-
     // Look for routes tag
     bool routes_found = false;
-    while (stream.readNextStartElement()) {
-        if (stream.name() == "routes") {
+    while (stream->readNextStartElement()) {
+        if (stream->name() == "routes") {
             routes_found = true;
             break;
         }
@@ -479,91 +469,91 @@ int loadRoutes(QString filename, MapWidget *map)
         QList<QPair<int, QList<LocPoint> > > routes;
         QList<LocPoint> anchors;
 
-        while (stream.readNextStartElement()) {
-            QString name = stream.name().toString();
+        while (stream->readNextStartElement()) {
+            QString name = stream->name().toString();
 
             if (name == "route") {
                 int id = -1;
                 QList<LocPoint> route;
 
-                while (stream.readNextStartElement()) {
-                    QString name2 = stream.name().toString();
+                while (stream->readNextStartElement()) {
+                    QString name2 = stream->name().toString();
 
                     if (name2 == "id") {
-                        id = stream.readElementText().toInt();
+                        id = stream->readElementText().toInt();
                     } else if (name2 == "point") {
                         LocPoint p;
 
-                        while (stream.readNextStartElement()) {
-                            QString name3 = stream.name().toString();
+                        while (stream->readNextStartElement()) {
+                            QString name3 = stream->name().toString();
 
                             if (name3 == "x") {
-                                p.setX(stream.readElementText().toDouble());
+                                p.setX(stream->readElementText().toDouble());
                             } else if (name3 == "y") {
-                                p.setY(stream.readElementText().toDouble());
+                                p.setY(stream->readElementText().toDouble());
                             } else if (name3 == "speed") {
-                                p.setSpeed(stream.readElementText().toDouble());
+                                p.setSpeed(stream->readElementText().toDouble());
                             } else if (name3 == "time") {
-                                p.setTime(stream.readElementText().toInt());
+                                p.setTime(stream->readElementText().toInt());
                             } else if (name3 == "attributes") {
-                                p.setAttributes(stream.readElementText().toInt());
+                                p.setAttributes(stream->readElementText().toInt());
                             } else {
                                 qWarning() << ": Unknown XML element :" << name2;
-                                stream.skipCurrentElement();
+                                stream->skipCurrentElement();
                             }
                         }
 
                         route.append(p);
                     } else {
                         qWarning() << ": Unknown XML element :" << name2;
-                        stream.skipCurrentElement();
+                        stream->skipCurrentElement();
                     }
 
-                    if (stream.hasError()) {
-                        qWarning() << " : XML ERROR :" << stream.errorString();
+                    if (stream->hasError()) {
+                        qWarning() << " : XML ERROR :" << stream->errorString();
                     }
                 }
 
                 routes.append(QPair<int, QList<LocPoint> >(id, route));
             } else if (name == "anchors") {
-                while (stream.readNextStartElement()) {
-                    QString name2 = stream.name().toString();
+                while (stream->readNextStartElement()) {
+                    QString name2 = stream->name().toString();
 
                     if (name2 == "anchor") {
                         LocPoint p;
 
-                        while (stream.readNextStartElement()) {
-                            QString name3 = stream.name().toString();
+                        while (stream->readNextStartElement()) {
+                            QString name3 = stream->name().toString();
 
                             if (name3 == "x") {
-                                p.setX(stream.readElementText().toDouble());
+                                p.setX(stream->readElementText().toDouble());
                             } else if (name3 == "y") {
-                                p.setY(stream.readElementText().toDouble());
+                                p.setY(stream->readElementText().toDouble());
                             } else if (name3 == "height") {
-                                p.setHeight(stream.readElementText().toDouble());
+                                p.setHeight(stream->readElementText().toDouble());
                             } else if (name3 == "id") {
-                                p.setId(stream.readElementText().toInt());
+                                p.setId(stream->readElementText().toInt());
                             } else {
                                 qWarning() << ": Unknown XML element :" << name2;
-                                stream.skipCurrentElement();
+                                stream->skipCurrentElement();
                             }
                         }
 
                         anchors.append(p);
                     } else {
                         qWarning() << ": Unknown XML element :" << name2;
-                        stream.skipCurrentElement();
+                        stream->skipCurrentElement();
                     }
 
-                    if (stream.hasError()) {
-                        qWarning() << " : XML ERROR :" << stream.errorString();
+                    if (stream->hasError()) {
+                        qWarning() << " : XML ERROR :" << stream->errorString();
                     }
                 }
             }
 
-            if (stream.hasError()) {
-                qWarning() << "XML ERROR :" << stream.errorString();
-                qWarning() << stream.lineNumber() << stream.columnNumber();
+            if (stream->hasError()) {
+                qWarning() << "XML ERROR :" << stream->errorString();
+                qWarning() << stream->lineNumber() << stream->columnNumber();
             }
         }
 
@@ -581,12 +571,33 @@ int loadRoutes(QString filename, MapWidget *map)
         for (LocPoint p: anchors) {
             map->addAnchor(p);
         }
-
-        file.close();
-    } else {
-        res = -2;
     }
 
+    return routes_found;
+
+}
+
+
+int loadRoutes(QString filename, MapWidget *map)
+{
+    int res = 0;
+
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadOnly)) {
+        res = -1;
+        return res;
+    }
+
+    QXmlStreamReader stream(&file);
+    bool routes_found=loadXMLRoute(&stream, map);
+
+    if (routes_found)
+    {
+        file.close();
+    } else
+    {
+        res = -2;
+    }
     return res;
 }
 

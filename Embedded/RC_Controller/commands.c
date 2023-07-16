@@ -875,6 +875,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			buffer_append_float32(m_send_buffer, pos.speed, 1e6, &send_index); // 64
 			#ifdef USE_ADCONV_FOR_VIN
 //						buffer_append_float32(m_send_buffer, adconv_get_vin(), 1e6, &send_index); // 68
+//				showData=pos.speed;
 				buffer_append_float32(m_send_buffer, showData, 1e6, &send_index); // 68
 
 				////						float tot = comm_can_io_board_as5047_angle();
@@ -957,6 +958,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 						comm_can_unlock_vesc();
 					#else
 						#if HAS_HYDRAULIC_DRIVE
+//							showData=throttle+10.0;
 							hydraulic_set_speed(throttle / 10);
 						#else
 							comm_can_lock_vesc();
@@ -982,7 +984,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 						comm_can_lock_vesc();
 						comm_can_set_vesc_id(VESC_ID);
 						throttle*=1.0;
-						showData=throttle;
 
 						bldc_interface_set_duty_cycle(throttle);
 //						comm_can_set_vesc_id(VESC_STEERING_ID);
@@ -1001,6 +1002,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 						#if HAS_HYDRAULIC_DRIVE
 						//					hydraulic_set_speed(throttle * 10);
 							#ifdef IS_MACTRAC
+								showData=throttle+20.0;
 								hydraulic_set_throttle_raw(throttle);
 							#else
 								hydraulic_set_throttle_raw(throttle / 0.15);

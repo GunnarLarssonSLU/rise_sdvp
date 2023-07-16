@@ -115,7 +115,7 @@ static THD_FUNCTION(servo_thread, arg) {
 		m_pos_now_raw = as5047_read(&ok);
 #endif
 
-		showData=pos_io_board;
+//		showData=pos_io_board;
 
 		float pos = m_pos_now_raw;
 		pos -= SERVO_VESC_S1;
