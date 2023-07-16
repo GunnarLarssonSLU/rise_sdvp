@@ -604,10 +604,8 @@ float comm_can_io_board_as5047_angle(void) {
 	float degreespervolt=anglespan/voltagespan;
 
 	float voltage_read=comm_can_io_board_adc_voltage(4)+comm_can_io_board_adc_voltage(5);
-//	showData=voltage_read;
 	float voltage_relativecentre=voltage_read-main_config.car.voltage_centre;
 	float angle=voltage_relativecentre*degreespervolt;
-//	showData=angle;
 	angle+=200.0;
 	return angle;
 #else

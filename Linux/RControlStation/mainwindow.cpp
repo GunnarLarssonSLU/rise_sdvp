@@ -282,27 +282,6 @@ MainWindow::MainWindow(QWidget *parent) :
         return;
     }
 
-    // Create the data model:
-    modelField = new QSqlRelationalTableModel(ui->fieldTable);
-//    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
-    modelField->setEditStrategy(QSqlTableModel::OnFieldChange);
-    modelField->setTable("fields");
-
-    // Remember the indexes of the columns:
-    locationIdx = modelField->fieldIndex("location");
-
-    // Set the relations to the other database tables:
-    modelField->setRelation(locationIdx, QSqlRelation("locations", "id", "name"));
-
-    // Set the localized header captions:
-    modelField->setHeaderData(locationIdx, Qt::Horizontal, tr("Location"));
-    modelField->setHeaderData(modelField->fieldIndex("title"),
-                         Qt::Horizontal, tr("Field name"));
-    // Populate the model:
-    if (!modelField->select()) {
-        showError(modelField->lastError());
-        return;
-    }
 
     // Create the data model:
     modelFarm = new QSqlRelationalTableModel(ui->farmTable);
@@ -331,6 +310,118 @@ MainWindow::MainWindow(QWidget *parent) :
         return;
     }
 
+    // Set the model and hide the ID column:
+    ui->farmTable->setModel(modelFarm);
+    //ui.locationTable->setItemDelegate(new BookDelegate(ui.locationTable));
+    ui->farmTable->setColumnHidden(modelFarm->fieldIndex("id"), true);
+    ui->farmTable->setSelectionMode(QAbstractItemView::SingleSelection);
+
+    QDataWidgetMapper *mapperFarm = new QDataWidgetMapper(this);
+    mapperFarm->setModel(modelFarm);
+    mapperFarm->addMapping(ui->locationnameEdit, modelFarm->fieldIndex("name"));
+
+    mapperFarm->addMapping(this->findChild<QLineEdit*>("ntripServerEdit"), modelFarm->fieldIndex("ip"));
+    mapperFarm->addMapping(this->findChild<QSpinBox*>("ntripPortBox"), modelFarm->fieldIndex("port"));
+    mapperFarm->addMapping(this->findChild<QLineEdit*>("ntripUserEdit"), modelFarm->fieldIndex("user"));
+    mapperFarm->addMapping(this->findChild<QCheckBox*>("ntripBox"), modelFarm->fieldIndex("NTRIP"));
+    mapperFarm->addMapping(this->findChild<QLineEdit*>("ntripPasswordEdit"), modelFarm->fieldIndex("password"));
+    mapperFarm->addMapping(this->findChild<QLineEdit*>("ntripStreamEdit"), modelFarm->fieldIndex("stream"));
+    mapperFarm->addMapping(this->findChild<QDoubleSpinBox*>("refSendLatBox"), modelFarm->fieldIndex("latitude"));
+    mapperFarm->addMapping(this->findChild<QDoubleSpinBox*>("refSendLonBox"), modelFarm->fieldIndex("longitude"));
+
+//    mapperFarm->addMapping(ui->streamFarmBasestationEdit, modelFarm->fieldIndex("stream"));
+
+    connect(ui->farmTable->selectionModel(),
+            &QItemSelectionModel::currentRowChanged,
+            mapperFarm
+            ,
+            &QDataWidgetMapper::setCurrentModelIndex
+            );
+
+    ui->farmTable->setCurrentIndex(modelFarm->index(0, 0));
+
+
+    // Create the data model:
+    modelField = new QSqlRelationalTableModel(ui->fieldTable);
+    modelField->setEditStrategy(QSqlTableModel::OnManualSubmit);
+//    modelField->setEditStrategy(QSqlTableModel::OnFieldChange);
+    modelField->setTable("fields");
+
+    // Remember the indexes of the columns:
+    locationIdx = modelField->fieldIndex("location");
+
+    // Set the relations to the other database tables:
+    modelField->setRelation(locationIdx, QSqlRelation("locations", "id", "name"));
+
+    // Set the localized header captions:
+    modelField->setHeaderData(locationIdx, Qt::Horizontal, tr("Location"));
+    modelField->setHeaderData(modelField->fieldIndex("name"),
+                         Qt::Horizontal, tr("Field name"));
+    // Populate the model:
+    if (!modelField->select()) {
+        showError(modelField->lastError());
+        return;
+    }
+
+    // Set the model and hide the ID column:
+    ui->fieldTable->setModel(modelField);
+    ui->fieldTable->setColumnHidden(modelField->fieldIndex("id"), true);
+    ui->fieldTable->setSelectionMode(QAbstractItemView::SingleSelection);
+
+    QTableView* tableShort=ui->fieldTable;
+    QSqlRelationalTableModel *modelShort=this->modelField;
+
+    MapWidget *mapShort=ui->mapWidgetFields;
+
+    QObject::connect(ui->fieldTable->selectionModel(), &QItemSelectionModel::selectionChanged,
+                     [tableShort, modelShort,mapShort](const QItemSelection& selected, const QItemSelection&)
+                     {
+                         QModelIndexList selectedIndexes = selected.indexes();
+                         if (selectedIndexes.isEmpty()) {
+                             qDebug() << "No selection";
+                             return;
+                         }
+
+                         int row = selectedIndexes.first().row();
+                         qDebug() << "Selected Row: " << row;
+
+                         // Retrieve the data of the selected row if needed
+                         QString name = modelShort->data(modelShort->index(row, 1)).toString();
+                         QString xmlText = modelShort->data(modelShort->index(row, 4)).toString();
+                         qDebug() << "Name: " << name << ", xml: " << xmlText;
+                         QXmlStreamReader xmlData(xmlText);
+                         bool routes_found=utility::loadXMLRoute(&xmlData, mapShort);
+                     });
+
+
+
+
+    // Initialize the Author combo box:
+    ui->locationEdit->setModel(modelField->relationModel(locationIdx));
+    ui->locationEdit->setModelColumn(
+                modelField->relationModel(locationIdx)->fieldIndex("name"));
+
+
+    QDataWidgetMapper *mapperField = new QDataWidgetMapper(this);
+    mapperField->setModel(modelField);
+    mapperField->addMapping(ui->fieldnameEdit, modelField->fieldIndex("name"));
+    mapperField->addMapping(ui->locationEdit, locationIdx);
+//    mapperField->addMapping(ui->locationEdit, locationIdx);
+//    mapperFarm->addMapping(this->findChild<QLineEdit*>("ntripPasswordEdit"), modelFarm->fieldIndex("password"));
+
+    connect(ui->fieldTable->selectionModel(),
+            &QItemSelectionModel::currentRowChanged,
+            mapperField,
+            &QDataWidgetMapper::setCurrentModelIndex
+            );
+
+    ui->fieldTable->setCurrentIndex(modelField->index(0, 0));
+
+    // Initialize the Author combo box:
+    ui->locationEdit->setModel(modelField->relationModel(locationIdx));
+    ui->locationEdit->setModelColumn(
+                modelField->relationModel(locationIdx)->fieldIndex("name"));
+
     // Create the data model:
     modelVehicle = new QSqlRelationalTableModel(ui->vehicleTable);
 //    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
@@ -355,65 +446,10 @@ MainWindow::MainWindow(QWidget *parent) :
     }
 
     // Set the model and hide the ID column:
-    ui->fieldTable->setModel(modelField);
-//    ui->fieldTable->setItemDelegate(new FieldDelegate(ui->fieldTable));
-    ui->fieldTable->setColumnHidden(modelField->fieldIndex("id"), true);
-    ui->fieldTable->setSelectionMode(QAbstractItemView::SingleSelection);
-
-    // Initialize the Author combo box:
-    ui->locationEdit->setModel(modelField->relationModel(locationIdx));
-    ui->locationEdit->setModelColumn(
-                modelField->relationModel(locationIdx)->fieldIndex("name"));
-
-
-    // Set the model and hide the ID column:
-    ui->farmTable->setModel(modelFarm);
-    //ui.locationTable->setItemDelegate(new BookDelegate(ui.locationTable));
-    ui->farmTable->setColumnHidden(modelFarm->fieldIndex("id"), true);
-    ui->farmTable->setSelectionMode(QAbstractItemView::SingleSelection);
-
-    // Set the model and hide the ID column:
     ui->vehicleTable->setModel(modelVehicle);
     //ui.locationTable->setItemDelegate(new BookDelegate(ui.locationTable));
     ui->vehicleTable->setColumnHidden(modelVehicle->fieldIndex("id"), true);
     ui->vehicleTable->setSelectionMode(QAbstractItemView::SingleSelection);
-
-    QDataWidgetMapper *mapperField = new QDataWidgetMapper(this);
-    mapperField->setModel(modelField);
-    mapperField->addMapping(ui->fieldnameEdit, modelField->fieldIndex("title"));
-    mapperField->addMapping(ui->locationEdit, locationIdx);
-
-    connect(ui->fieldTable->selectionModel(),
-            &QItemSelectionModel::currentRowChanged,
-            mapperField,
-            &QDataWidgetMapper::setCurrentModelIndex
-            );
-
-    ui->fieldTable->setCurrentIndex(modelField->index(0, 0));
-
-    QDataWidgetMapper *mapperFarm = new QDataWidgetMapper(this);
-    mapperFarm->setModel(modelFarm);
-    mapperFarm->addMapping(ui->locationnameEdit, modelFarm->fieldIndex("name"));
-    mapperFarm->addMapping(ui->longitudeEdit, modelFarm->fieldIndex("longitude"));
-    mapperFarm->addMapping(ui->latitudeEdit, modelFarm->fieldIndex("latitude"));
-
-    mapperFarm->addMapping(this->findChild<QLineEdit*>("ntripServerEdit"), modelFarm->fieldIndex("ip"));
-    mapperFarm->addMapping(this->findChild<QSpinBox*>("ntripPortBox"), modelFarm->fieldIndex("port"));
-    mapperFarm->addMapping(this->findChild<QLineEdit*>("ntripUserEdit"), modelFarm->fieldIndex("user"));
-    mapperFarm->addMapping(this->findChild<QCheckBox*>("ntripBox"), modelFarm->fieldIndex("NTRIP"));
-
-    mapperFarm->addMapping(this->findChild<QLineEdit*>("ntripPasswordEdit"), modelFarm->fieldIndex("password"));
-    mapperFarm->addMapping(this->findChild<QLineEdit*>("ntripStreamEdit"), modelFarm->fieldIndex("stream"));
-//    mapperFarm->addMapping(ui->streamFarmBasestationEdit, modelFarm->fieldIndex("stream"));
-
-    connect(ui->farmTable->selectionModel(),
-            &QItemSelectionModel::currentRowChanged,
-            mapperFarm
-            ,
-            &QDataWidgetMapper::setCurrentModelIndex
-            );
-
-    ui->farmTable->setCurrentIndex(modelFarm->index(0, 0));
 
     QDataWidgetMapper *mapperVehicle = new QDataWidgetMapper(this);
     mapperVehicle->setModel(modelVehicle);
@@ -442,7 +478,7 @@ MainWindow::MainWindow(QWidget *parent) :
 //    pWidget->close();
 
     QTabWidget* pWidget= ui->mainTabWidget->findChild<QWidget *>("tabSettings")->findChild<QTabWidget *>("tabWidgetSettings");
-    pWidget->removeTab(4);
+    pWidget->removeTab(3);
     ui->mainTabWidget->removeTab(8);
     ui->mainTabWidget->removeTab(7);
     ui->mainTabWidget->removeTab(6);

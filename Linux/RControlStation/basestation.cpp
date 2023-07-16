@@ -198,9 +198,9 @@ void BaseStation::rxRawx(ubx_rxm_rawx rawx)
     if (ui->sendBaseBox->isChecked()) {
         rtcm_ref_sta_pos_t pos;
         pos.ant_height = ui->refSendAntHBox->value();
-        pos.height = ui->refSendHBox->value();
-        pos.lat = ui->refSendLatBox->value();
-        pos.lon = ui->refSendLonBox->value();
+        pos.height = ui->refSendHBox2->value();
+        pos.lat = ui->refSendLatBox2->value();
+        pos.lon = ui->refSendLonBox2->value();
         pos.staid = 0;
         rtcm3_encode_1006(pos, data_ref, &ref_len);
         has_ref = true;
@@ -318,9 +318,9 @@ void BaseStation::rxNavSol(ubx_nav_sol sol)
 
         if (mBasePosSet) {
             double xyz[3];
-            utility::llhToXyz(ui->refSendLatBox->value(),
-                              ui->refSendLonBox->value(),
-                              ui->refSendHBox->value(),
+            utility::llhToXyz(ui->refSendLatBox2->value(),
+                              ui->refSendLonBox2->value(),
+                              ui->refSendHBox2->value(),
                               &xyz[0], &xyz[1], &xyz[2]);
 
             double diff = sqrt(pow(sol.ecef_x - xyz[0], 2.0) +
@@ -336,14 +336,14 @@ void BaseStation::rxNavSol(ubx_nav_sol sol)
                                      .arg(diff));
 
 
-                ui->refSendLatBox->setValue(llh[0]);
-                ui->refSendLonBox->setValue(llh[1]);
-                ui->refSendHBox->setValue(llh[2]);
+                ui->refSendLatBox2->setValue(llh[0]);
+                ui->refSendLonBox2->setValue(llh[1]);
+                ui->refSendHBox2->setValue(llh[2]);
             }
         } else {
-            ui->refSendLatBox->setValue(llh[0]);
-            ui->refSendLonBox->setValue(llh[1]);
-            ui->refSendHBox->setValue(llh[2]);
+            ui->refSendLatBox2->setValue(llh[0]);
+            ui->refSendLonBox2->setValue(llh[1]);
+            ui->refSendHBox2->setValue(llh[2]);
             mBasePosSet = true;
         }
     }
@@ -425,9 +425,9 @@ void BaseStation::rxSvin(ubx_nav_svin svin)
                       &llh[0], &llh[1], &llh[2]);
 
     if (ui->surveyInRadioButton->isChecked()) {
-        ui->refSendLatBox->setValue(llh[0]);
-        ui->refSendLonBox->setValue(llh[1]);
-        ui->refSendHBox->setValue(llh[2]);
+        ui->refSendLatBox2->setValue(llh[0]);
+        ui->refSendLonBox2->setValue(llh[1]);
+        ui->refSendHBox2->setValue(llh[2]);
     }
 
     QString txt = QString(
@@ -716,9 +716,9 @@ void BaseStation::on_ubxSerialConnectButton_clicked()
 
         double surveyInMinAcc = ui->surveyInMinAccBox->value();
 
-        double refSendLat = ui->refSendLatBox->value();
-        double refSendLon = ui->refSendLonBox->value();
-        double refSendH = ui->refSendHBox->value();
+        double refSendLat = ui->refSendLatBox2->value();
+        double refSendLon = ui->refSendLonBox2->value();
+        double refSendH = ui->refSendHBox2->value();
 
         configureUbx(mUblox, ui->ubxSerialBaudBox->value(), 1000/ui->rateMeasBox->value(), ui->rateNavBox->value(), isF9p, isM8p, &mBasePosSet, refSendLat, refSendLon, refSendH, positionMode, surveyInMinAcc, ui->surveyInMinDurationBox->value());
     }

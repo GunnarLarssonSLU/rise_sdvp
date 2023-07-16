@@ -63,7 +63,7 @@
          </sizepolicy>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>2</number>
         </property>
         <widget class="QWidget" name="tab_4">
          <attribute name="icon">
@@ -81,11 +81,18 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>1061</width>
-            <height>351</height>
+            <width>1251</width>
+            <height>302</height>
            </rect>
           </property>
           <layout class="QGridLayout" name="gridlayout_2">
+           <item row="1" column="2">
+            <widget class="QPushButton" name="pushButton_location">
+             <property name="text">
+              <string>Add location</string>
+             </property>
+            </widget>
+           </item>
            <item row="2" column="1">
             <widget class="QLabel" name="label_16">
              <property name="text">
@@ -93,17 +100,40 @@
              </property>
             </widget>
            </item>
-           <item row="3" column="1">
-            <widget class="QLabel" name="label_17">
+           <item row="3" column="2">
+            <widget class="QCheckBox" name="autoConnectcheckBox">
              <property name="text">
-              <string>Longitude</string>
+              <string>Auto connect</string>
              </property>
             </widget>
            </item>
-           <item row="4" column="1">
-            <widget class="QLabel" name="label_17b">
+           <item row="2" column="2">
+            <widget class="QLineEdit" name="locationnameEdit">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="4" rowspan="4">
+            <widget class="MapWidget" name="mapWidgetFarm" native="true">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>1</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>300</width>
+               <height>300</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3" rowspan="4">
+            <widget class="QLabel" name="label_7">
              <property name="text">
-              <string>Latitude</string>
+              <string>Location</string>
              </property>
             </widget>
            </item>
@@ -126,63 +156,13 @@
              </property>
             </widget>
            </item>
-           <item row="1" column="2">
-            <widget class="QPushButton" name="pushButton_location">
-             <property name="text">
-              <string>Add location</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="2">
-            <widget class="QLineEdit" name="locationnameEdit">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="2">
-            <widget class="QLineEdit" name="longitudeEdit"/>
-           </item>
-           <item row="4" column="2">
-            <widget class="QLineEdit" name="latitudeEdit"/>
-           </item>
-           <item row="5" column="2">
-            <widget class="QCheckBox" name="autoConnectcheckBox">
-             <property name="text">
-              <string>Auto connect</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="3" rowspan="6">
-            <widget class="QLabel" name="label_7">
-             <property name="text">
-              <string>Location</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="4" rowspan="6">
-            <widget class="MapWidget" name="mapWidgetFarm" native="true">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>1</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>300</width>
-               <height>300</height>
-              </size>
-             </property>
-            </widget>
-           </item>
           </layout>
          </widget>
          <widget class="QGroupBox" name="wgGroupBox">
           <property name="geometry">
            <rect>
-            <x>1070</x>
-            <y>100</y>
+            <x>1260</x>
+            <y>90</y>
             <width>291</width>
             <height>71</height>
            </rect>
@@ -259,8 +239,8 @@
          <widget class="QComboBox" name="comboBox">
           <property name="geometry">
            <rect>
-            <x>1130</x>
-            <y>50</y>
+            <x>1260</x>
+            <y>60</y>
             <width>171</width>
             <height>25</height>
            </rect>
@@ -269,7 +249,7 @@
          <widget class="QLabel" name="label_12">
           <property name="geometry">
            <rect>
-            <x>1130</x>
+            <x>1260</x>
             <y>30</y>
             <width>111</width>
             <height>17</height>
@@ -283,9 +263,9 @@
           <property name="geometry">
            <rect>
             <x>0</x>
-            <y>350</y>
-            <width>1201</width>
-            <height>700</height>
+            <y>290</y>
+            <width>1451</width>
+            <height>761</height>
            </rect>
           </property>
          </widget>
@@ -373,18 +353,6 @@
            </item>
           </layout>
          </widget>
-        </widget>
-        <widget class="QWidget" name="tab_17">
-         <attribute name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/models/Icons/Satellite-96.png</normaloff>:/models/Icons/Satellite-96.png</iconset>
-         </attribute>
-         <attribute name="title">
-          <string/>
-         </attribute>
-         <attribute name="toolTip">
-          <string>RTCM client</string>
-         </attribute>
         </widget>
         <widget class="QWidget" name="tab_3">
          <attribute name="icon">
@@ -491,8 +459,8 @@
            <rect>
             <x>590</x>
             <y>0</y>
-            <width>641</width>
-            <height>311</height>
+            <width>931</width>
+            <height>571</height>
            </rect>
           </property>
           <property name="sizePolicy">
