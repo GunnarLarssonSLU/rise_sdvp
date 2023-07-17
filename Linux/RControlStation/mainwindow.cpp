@@ -196,8 +196,6 @@ MainWindow::MainWindow(QWidget *parent) :
             this, SLOT(ackReceived(quint8,CMD_PACKET,QString)));
     connect(ui->rtcmWidget, SIGNAL(rtcmReceived(QByteArray)),
             this, SLOT(rtcmReceived(QByteArray)));
- /*   connect(ui->baseStationWidget, SIGNAL(rtcmOut(QByteArray)),
-            this, SLOT(rtcmReceived(QByteArray)));*/
     connect(ui->rtcmWidget, SIGNAL(refPosGet()), this, SLOT(rtcmRefPosGet()));
     connect(mPing, SIGNAL(pingRx(int,QString)), this, SLOT(pingRx(int,QString)));
     connect(mPing, SIGNAL(pingError(QString,QString)), this, SLOT(pingError(QString,QString)));
@@ -434,6 +432,8 @@ MainWindow::MainWindow(QWidget *parent) :
                          Qt::Horizontal, tr("Name"));
     modelVehicle->setHeaderData(modelVehicle->fieldIndex("ip"),
                          Qt::Horizontal, tr("IP"));
+    modelVehicle->setHeaderData(modelVehicle->fieldIndex("port"),
+                         Qt::Horizontal, tr("port"));
     modelVehicle->setHeaderData(modelVehicle->fieldIndex("steering_type"),
                          Qt::Horizontal, tr("Steering type"));
     modelVehicle->setHeaderData(modelVehicle->fieldIndex("length"),
@@ -449,12 +449,13 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->vehicleTable->setModel(modelVehicle);
     //ui.locationTable->setItemDelegate(new BookDelegate(ui.locationTable));
     ui->vehicleTable->setColumnHidden(modelVehicle->fieldIndex("id"), true);
-    ui->vehicleTable->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->vehicleTable->setSelectionMode(QAbstractItemView::ExtendedSelection);
 
     QDataWidgetMapper *mapperVehicle = new QDataWidgetMapper(this);
     mapperVehicle->setModel(modelVehicle);
     mapperVehicle->addMapping(ui->namevehicleEdit, modelVehicle->fieldIndex("name"));
     mapperVehicle->addMapping(ui->ipvehicleEdit, modelVehicle->fieldIndex("ip"));
+    mapperVehicle->addMapping(ui->portvehicleEdit, modelVehicle->fieldIndex("port"));
     mapperVehicle->addMapping(ui->lengthvehicleEdit, modelVehicle->fieldIndex("length"));
     mapperVehicle->addMapping(ui->widthvehicleEdit, modelVehicle->fieldIndex("width"));
 
@@ -464,6 +465,43 @@ MainWindow::MainWindow(QWidget *parent) :
             ,
             &QDataWidgetMapper::setCurrentModelIndex
             );
+
+
+    QTableView* tableShortVeh=ui->vehicleTable;
+    QSqlRelationalTableModel *modelShortVeh=this->modelVehicle;
+/*
+    QObject::connect(ui->vehicleTable->selectionModel(), &QItemSelectionModel::selectionChanged,
+                     [tableShortVeh, modelShortVeh](const QItemSelection& selected, const QItemSelection&)
+                     {
+                         QModelIndexList selectedIndexes = selected.indexes();
+                         if (selectedIndexes.isEmpty()) {
+                             qDebug() << "No selection";
+                             return;
+                         }
+
+                         // Using an iterator
+                         int oldrow=-1;
+                         qDebug() << "Using an iterator:";
+                         for (QList<QModelIndex>::iterator it = selectedIndexes.begin(); it != selectedIndexes.end(); ++it) {
+                             QModelIndex currentrow = *it;
+                             int row = currentrow.row();
+                             if (row!=oldrow)
+                             {
+                                 int column = currentrow.column();
+                                 qDebug() << "Selected Row: " << row;
+                                 qDebug() << "Selected Column: " << column;
+
+                                 // Retrieve the data of the selected row if needed
+                                 QString name = modelShortVeh->data(modelShortVeh->index(row, 0)).toString();
+                                 QString ip = modelShortVeh->data(modelShortVeh->index(row, 1)).toString();
+                                 QString port = modelShortVeh->data(modelShortVeh->index(row, 2)).toString();
+                                 qDebug() << "Name: " << name << ", ip: " << ip << ", port: " << port;
+                                 oldrow=row;
+                             };
+                         }
+
+                   });
+*/
 
     ui->vehicleTable->setCurrentIndex(modelVehicle->index(0, 0));
 
@@ -479,10 +517,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
     QTabWidget* pWidget= ui->mainTabWidget->findChild<QWidget *>("tabSettings")->findChild<QTabWidget *>("tabWidgetSettings");
     pWidget->removeTab(3);
-    ui->mainTabWidget->removeTab(8);
     ui->mainTabWidget->removeTab(7);
     ui->mainTabWidget->removeTab(6);
     ui->mainTabWidget->removeTab(5);
+    ui->mainTabWidget->removeTab(4);
 
     //    ui->tab_19->close();
 //    ui->tabWidgetSettings->removeTab(4);
@@ -675,12 +713,10 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
     return false;
 }
 
-void MainWindow::addCar(int id, bool pollData)
+void MainWindow::addCar(int id, QString name, bool pollData)
 {
     CarInterface *car = new CarInterface(this);
     mCars.append(car);
-    QString name;
-    name.sprintf("Car %d", id);
     car->setID(id);
     ui->carsWidget->addTab(car, name);
     car->setMap(ui->mapWidget);
@@ -1220,12 +1256,6 @@ void MainWindow::jsButtonChanged(int button, bool pressed)
     #endif
 }
 
-void MainWindow::on_carAddButton_clicked()
-{    
-    addCar(mCars.size() + mCopters.size());
-}
-
-
 void MainWindow::on_disconnectButton_clicked()
 {
     if (mSerialPort->isOpen()) {
@@ -1252,29 +1282,110 @@ void MainWindow::on_MapRemovePixmapsButton_clicked()
 
 void MainWindow::on_tcpConnectButton_clicked()
 {
-
     mTcpClientMulti->disconnectAll();
 
+    QModelIndexList selectedIndexes = ui->vehicleTable->selectionModel()->selectedIndexes();
+    for (const QModelIndex& index : selectedIndexes) {
+        QString data = index.data().toString();
+        qDebug() << "Selected Data:" << data;
+    }
+    if (selectedIndexes.isEmpty()) {
+        qDebug() << "No selection";
+        return;
+    }
+
+    // Using an iterator
+    int oldrow=-1;
+    qDebug() << "Button pressed";
+    for (QList<QModelIndex>::iterator it = selectedIndexes.begin(); it != selectedIndexes.end(); ++it) {
+        QModelIndex currentrow = *it;
+        int row = currentrow.row();
+        if (row!=oldrow)
+        {
+/*            int column = currentrow.column();
+            qDebug() << "Selected Row: " << row;
+            qDebug() << "Selected Column: " << column;
+*/
+            // Retrieve the data of the selected row if needed
+            QString name = this->modelVehicle->data(this->modelVehicle->index(row, 0)).toString();
+            QString ip = this->modelVehicle->data(this->modelVehicle->index(row, 1)).toString();
+            QString port = this->modelVehicle->data(this->modelVehicle->index(row, 2)).toString();
+
+            if (port.isEmpty())
+            {
+                QMessageBox msgBox;
+                msgBox.setText(ip);
+                msgBox.exec();
+                mTcpClientMulti->addConnection(ip,8300);
+            } else
+            {
+                QMessageBox msgBox;
+                msgBox.setText(ip + ':' + port);
+                msgBox.exec();
+                mTcpClientMulti->addConnection(ip,port.toInt());
+            };
+            addCar(mCars.size() + mCopters.size(),name);
+            qDebug() << "Name: " << name << ", ip: " << ip << ", port: " << port;
+            oldrow=row;
+
+        };
+    }
+
+
+/*
     QStringList conns = ui->tcpConnEdit->toPlainText().split("\n");
 
     for (QString c: conns) {
         QStringList ipPort = c.split(":");
 
         if (ipPort.size() == 1) {
+            QMessageBox msgBox;
+            msgBox.setText(ipPort.at(0));
+            msgBox.exec();
             mTcpClientMulti->addConnection(ipPort.at(0),
                                            8300);
             on_carAddButton_clicked();
         } else if (ipPort.size() == 2) {
+            QMessageBox msgBox;
+            msgBox.setText(ipPort.at(0));
+            msgBox.exec();
             mTcpClientMulti->addConnection(ipPort.at(0),
                                            ipPort.at(1).toInt());
             on_carAddButton_clicked();
         }
-    }
+    } */
 
 }
 
 void MainWindow::on_tcpPingButton_clicked()
 {
+    QModelIndexList selectedIndexes = ui->vehicleTable->selectionModel()->selectedIndexes();
+    for (const QModelIndex& index : selectedIndexes) {
+        QString data = index.data().toString();
+        qDebug() << "Selected Data:" << data;
+    }
+    if (selectedIndexes.isEmpty()) {
+        qDebug() << "No selection";
+        return;
+    }
+
+    // Using an iterator
+    int oldrow=-1;
+    qDebug() << "Button pressed";
+    for (QList<QModelIndex>::iterator it = selectedIndexes.begin(); it != selectedIndexes.end(); ++it) {
+        QModelIndex currentrow = *it;
+        int row = currentrow.row();
+        if (row!=oldrow)
+        {
+            // Retrieve the data of the selected row if needed
+            QString ip = this->modelVehicle->data(this->modelVehicle->index(row, 1)).toString();
+
+            mPing->pingHost(ip, 64, "TCP Host");
+            oldrow=row;
+
+        };
+    }
+/*
     QStringList conns = ui->tcpConnEdit->toPlainText().split("\n");
 
     for (QString c: conns) {
@@ -1285,6 +1396,7 @@ void MainWindow::on_tcpPingButton_clicked()
             break;
         }
     }
+*/
 }
 
 void MainWindow::on_mapZeroButton_clicked()
@@ -2468,7 +2580,7 @@ void MainWindow::on_WgDisconnectPushButton_clicked()
 
 void MainWindow::on_AutopilotConfigurePushButton_clicked()
 {
-    ui->mainTabWidget->setCurrentIndex(ui->mainTabWidget->indexOf(ui->tab));
+//    ui->mainTabWidget->setCurrentIndex(ui->mainTabWidget->indexOf(ui->tab));
     ui->carsWidget->setCurrentIndex(ui->mapCarBox->value());
 
     QWidget *tmp = ui->carsWidget->widget(ui->mapCarBox->value());

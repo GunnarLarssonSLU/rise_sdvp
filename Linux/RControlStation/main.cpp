@@ -61,11 +61,13 @@ int main(int argc, char *argv[])
 
     struct CarConn {
         QString ip;
+        QString name;
         int port;
     };
 
     struct CarToAdd {
         int id;
+        QString name;
         bool pollData;
     };
 
@@ -214,12 +216,14 @@ int main(int argc, char *argv[])
                     found = true;
                     CarToAdd c;
                     c.id = numbers.at(0).toInt();
+                    c.name=c.id;
                     c.pollData = false;
                     carsToAdd.append(c);
                 } else if (numbers.size() == 2) {
                     found = true;
                     CarToAdd c;
                     c.id = numbers.at(0).toInt();
+                    c.name=c.id;
                     c.pollData = numbers.at(1).toInt();
                     carsToAdd.append(c);
                 }
@@ -352,7 +356,7 @@ int main(int argc, char *argv[])
             }
 
             for (auto c: carsToAdd) {
-                w->addCar(c.id, c.pollData);
+                w->addCar(c.id, c.name,c.pollData);
             }
 
             if (!jsStr.isEmpty()) {
