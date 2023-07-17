@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1561</width>
+    <width>1874</width>
     <height>1286</height>
    </rect>
   </property>
@@ -63,7 +63,7 @@
          </sizepolicy>
         </property>
         <property name="currentIndex">
-         <number>2</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="tab_4">
          <attribute name="icon">
@@ -285,73 +285,198 @@
           <property name="geometry">
            <rect>
             <x>0</x>
-            <y>10</y>
-            <width>591</width>
-            <height>311</height>
+            <y>390</y>
+            <width>351</width>
+            <height>171</height>
            </rect>
           </property>
           <layout class="QGridLayout" name="gridlayout">
-           <item row="3" column="4">
-            <widget class="QLineEdit" name="lengthvehicleEdit"/>
+           <item row="1" column="2">
+            <widget class="QLineEdit" name="namevehicleEdit"/>
            </item>
-           <item row="4" column="3">
-            <widget class="QLabel" name="label_10">
-             <property name="text">
-              <string>Width</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="3">
+           <item row="1" column="1">
             <widget class="QLabel" name="label_9">
              <property name="text">
               <string>Name</string>
              </property>
             </widget>
            </item>
-           <item row="2" column="4">
-            <widget class="QLineEdit" name="ipvehicleEdit"/>
-           </item>
-           <item row="4" column="4">
-            <widget class="QLineEdit" name="widthvehicleEdit"/>
-           </item>
-           <item row="1" column="0" rowspan="5">
-            <widget class="QLabel" name="label">
-             <property name="text">
-              <string>Vehicles</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="3">
-            <widget class="QLabel" name="label_2">
-             <property name="text">
-              <string>Length</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="4">
-            <widget class="QLineEdit" name="namevehicleEdit"/>
-           </item>
-           <item row="2" column="3">
+           <item row="2" column="1">
             <widget class="QLabel" name="label_4">
              <property name="text">
               <string>Vehicle IP</string>
              </property>
             </widget>
            </item>
-           <item row="1" column="2" rowspan="5">
-            <widget class="QTableView" name="vehicleTable">
-             <property name="minimumSize">
-              <size>
-               <width>350</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="selectionBehavior">
-              <enum>QAbstractItemView::SelectRows</enum>
+           <item row="2" column="2">
+            <widget class="QLineEdit" name="ipvehicleEdit"/>
+           </item>
+           <item row="3" column="1">
+            <widget class="QLabel" name="label_13">
+             <property name="text">
+              <string>Vehicle port</string>
              </property>
             </widget>
            </item>
+           <item row="3" column="2">
+            <widget class="QLineEdit" name="portvehicleEdit"/>
+           </item>
+           <item row="4" column="1">
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Length</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="2">
+            <widget class="QLineEdit" name="lengthvehicleEdit"/>
+           </item>
+           <item row="5" column="1">
+            <widget class="QLabel" name="label_10">
+             <property name="text">
+              <string>Width</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="2">
+            <widget class="QLineEdit" name="widthvehicleEdit"/>
+           </item>
           </layout>
+         </widget>
+         <widget class="QTabWidget" name="carsWidget">
+          <property name="geometry">
+           <rect>
+            <x>350</x>
+            <y>10</y>
+            <width>1531</width>
+            <height>701</height>
+           </rect>
+          </property>
+          <property name="currentIndex">
+           <number>-1</number>
+          </property>
+          <property name="tabsClosable">
+           <bool>true</bool>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="tcpConnectButton">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>580</y>
+            <width>121</width>
+            <height>24</height>
+           </rect>
+          </property>
+          <property name="toolTip">
+           <string>Connect</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/models/Icons/Connected-96.png</normaloff>:/models/Icons/Connected-96.png</iconset>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="disconnectButton">
+          <property name="geometry">
+           <rect>
+            <x>130</x>
+            <y>580</y>
+            <width>121</width>
+            <height>31</height>
+           </rect>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>32</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Disconnect</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/models/Icons/Disconnected-96.png</normaloff>:/models/Icons/Disconnected-96.png</iconset>
+          </property>
+         </widget>
+         <widget class="QPushButton" name="stopButton">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>610</y>
+            <width>121</width>
+            <height>50</height>
+           </rect>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>50</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>15</pointsize>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="toolTip">
+           <string>Stop all cars</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/models/Icons/Stop Sign-96.png</normaloff>:/models/Icons/Stop Sign-96.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>48</width>
+            <height>48</height>
+           </size>
+          </property>
+         </widget>
+         <widget class="QLabel" name="label">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>-130</y>
+            <width>56</width>
+            <height>309</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Vehicles</string>
+          </property>
+         </widget>
+         <widget class="QTableView" name="vehicleTable">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>48</y>
+            <width>350</width>
+            <height>321</height>
+           </rect>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>350</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
          </widget>
         </widget>
         <widget class="QWidget" name="tab_3">
@@ -716,137 +841,6 @@
            </property>
            <property name="value">
             <number>40</number>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </widget>
-      <widget class="QWidget" name="tab">
-       <attribute name="icon">
-        <iconset resource="resources.qrc">
-         <normaloff>:/models/Icons/Car-96.png</normaloff>:/models/Icons/Car-96.png</iconset>
-       </attribute>
-       <attribute name="title">
-        <string/>
-       </attribute>
-       <attribute name="toolTip">
-        <string>Cars</string>
-       </attribute>
-       <widget class="QTabWidget" name="carsWidget">
-        <property name="geometry">
-         <rect>
-          <x>170</x>
-          <y>0</y>
-          <width>1531</width>
-          <height>500</height>
-         </rect>
-        </property>
-        <property name="currentIndex">
-         <number>-1</number>
-        </property>
-        <property name="tabsClosable">
-         <bool>true</bool>
-        </property>
-       </widget>
-       <widget class="QWidget" name="verticalLayoutWidget">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>0</y>
-          <width>158</width>
-          <height>183</height>
-         </rect>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout">
-         <item>
-          <widget class="QPlainTextEdit" name="tcpConnEdit">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>157</width>
-             <height>65</height>
-            </size>
-           </property>
-           <property name="lineWrapMode">
-            <enum>QPlainTextEdit::NoWrap</enum>
-           </property>
-           <property name="plainText">
-            <string>192.168.200.101</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="tcpConnectButton">
-           <property name="enabled">
-            <bool>true</bool>
-           </property>
-           <property name="toolTip">
-            <string>Connect</string>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-           <property name="icon">
-            <iconset resource="resources.qrc">
-             <normaloff>:/models/Icons/Connected-96.png</normaloff>:/models/Icons/Connected-96.png</iconset>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="disconnectButton">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>32</height>
-            </size>
-           </property>
-           <property name="toolTip">
-            <string>Disconnect</string>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-           <property name="icon">
-            <iconset resource="resources.qrc">
-             <normaloff>:/models/Icons/Disconnected-96.png</normaloff>:/models/Icons/Disconnected-96.png</iconset>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="stopButton">
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>50</height>
-            </size>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>15</pointsize>
-             <bold>true</bold>
-            </font>
-           </property>
-           <property name="toolTip">
-            <string>Stop all cars</string>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-           <property name="icon">
-            <iconset resource="resources.qrc">
-             <normaloff>:/models/Icons/Stop Sign-96.png</normaloff>:/models/Icons/Stop Sign-96.png</iconset>
-           </property>
-           <property name="iconSize">
-            <size>
-             <width>48</width>
-             <height>48</height>
-            </size>
            </property>
           </widget>
          </item>
@@ -3538,7 +3532,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1561</width>
+     <width>1874</width>
      <height>22</height>
     </rect>
    </property>
