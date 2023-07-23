@@ -86,6 +86,8 @@ public:
     static void saveRoutes(bool, QList<QList<LocPoint> > routes);
     static int  loadRoutes(QString filename, MapWidget *map);
 
+    static double getArea(QList<LocPoint> route);
+
 signals:
 
 public slots:

@@ -370,9 +370,11 @@ MainWindow::MainWindow(QWidget *parent) :
     QSqlRelationalTableModel *modelShort=this->modelField;
 
     MapWidget *mapShort=ui->mapWidgetFields;
+    QLabel *areaLabel=ui->label_area_ha;
+
 
     QObject::connect(ui->fieldTable->selectionModel(), &QItemSelectionModel::selectionChanged,
-                     [tableShort, modelShort,mapShort](const QItemSelection& selected, const QItemSelection&)
+                     [tableShort, modelShort,mapShort,areaLabel](const QItemSelection& selected, const QItemSelection&)
                      {
                          QModelIndexList selectedIndexes = selected.indexes();
                          if (selectedIndexes.isEmpty()) {
@@ -387,8 +389,12 @@ MainWindow::MainWindow(QWidget *parent) :
                          QString name = modelShort->data(modelShort->index(row, 1)).toString();
                          QString xmlText = modelShort->data(modelShort->index(row, 4)).toString();
                          qDebug() << "Name: " << name << ", xml: " << xmlText;
+                         mapShort->clearRoute();
                          QXmlStreamReader xmlData(xmlText);
                          bool routes_found=utility::loadXMLRoute(&xmlData, mapShort);
+                         QList<LocPoint> route=mapShort->getRoute();
+                         double area=RouteMagic::getArea(route);
+                         areaLabel->setText(QString::number(area));
                      });
 
 
