@@ -1854,3 +1854,18 @@ int RouteMagic::loadRoutes(QString filename, MapWidget *map) {
 
     return res;
 }
+
+double RouteMagic::getArea(QList<LocPoint> route)
+{
+    int n = route.size();
+    qDebug() << "Points: " << n;
+    double area = 0.0;
+
+    for (int i = 0; i < n; ++i) {
+        int j = (i + 1) % n;
+        area += route.at(i).getX() * route.at(j).getY();
+        area -= route.at(i).getY() * route.at(j).getX();
+    }
+    area = std::abs(area) * 0.5;
+    return area;
+}
