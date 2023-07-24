@@ -471,43 +471,6 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         emit vescFwdReceived(id, QByteArray::fromRawData((char*)data, len));
         break;
 
-        // Multirotor commands
-    case CMD_MR_GET_STATE: {
-        MULTIROTOR_STATE state;
-        int32_t ind = 0;
-
-        if (len <= 1) {
-            break;
-        }
-
-        state.fw_major = data[ind++];
-        state.fw_minor = data[ind++];
-        state.roll = utility::buffer_get_double32_auto(data, &ind);
-        state.pitch = utility::buffer_get_double32_auto(data, &ind);
-        state.yaw = utility::buffer_get_double32_auto(data, &ind);
-        state.accel[0] = utility::buffer_get_double32_auto(data, &ind);
-        state.accel[1] = utility::buffer_get_double32_auto(data, &ind);
-        state.accel[2] = utility::buffer_get_double32_auto(data, &ind);
-        state.gyro[0] = utility::buffer_get_double32_auto(data, &ind);
-        state.gyro[1] = utility::buffer_get_double32_auto(data, &ind);
-        state.gyro[2] = utility::buffer_get_double32_auto(data, &ind);
-        state.mag[0] = utility::buffer_get_double32_auto(data, &ind);
-        state.mag[1] = utility::buffer_get_double32_auto(data, &ind);
-        state.mag[2] = utility::buffer_get_double32_auto(data, &ind);
-        state.px = utility::buffer_get_double32_auto(data, &ind);
-        state.py = utility::buffer_get_double32_auto(data, &ind);
-        state.pz = utility::buffer_get_double32_auto(data, &ind);
-        state.speed = utility::buffer_get_double32_auto(data, &ind);
-        state.vin = utility::buffer_get_double32_auto(data, &ind);
-        state.px_gps = utility::buffer_get_double32_auto(data, &ind);
-        state.py_gps = utility::buffer_get_double32_auto(data, &ind);
-        state.ap_goal_px = utility::buffer_get_double32_auto(data, &ind);
-        state.ap_goal_py = utility::buffer_get_double32_auto(data, &ind);
-        state.ms_today = utility::buffer_get_int32(data, &ind);
-
-        emit mrStateReceived(id, state);
-    } break;
-
         // Acks
     case CMD_AP_ADD_POINTS:
         emit ackReceived(id, cmd, "CMD_AP_ADD_POINTS");

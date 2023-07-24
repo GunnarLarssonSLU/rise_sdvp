@@ -22,6 +22,8 @@
 #include <QDebug>
 #include <cmath>
 #include <QMessageBox>
+#include <QCheckBox>
+
 #include <QFileDialog>
 #include <QHostInfo>
 #include <QInputDialog>
@@ -39,6 +41,7 @@
 #include "wireguard.h"
 #include "attributes_masks.h"
 #include "datatypes.h"
+#include "checkboxdelegate.h"
 
 namespace {
 void stepTowards(double &value, double goal, double step) {
@@ -96,6 +99,7 @@ MainWindow::MainWindow(QWidget *parent) :
     mThrottle = 0.0;
     mSteering = 0.0;
 
+    checkboxdelegate=new CheckBoxDelegate();
     qDebug() << "Start";
 
 #ifdef HAS_JOYSTICK
@@ -341,8 +345,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Create the data model:
     modelField = new QSqlRelationalTableModel(ui->fieldTable);
-    modelField->setEditStrategy(QSqlTableModel::OnManualSubmit);
-//    modelField->setEditStrategy(QSqlTableModel::OnFieldChange);
+//    modelField->setEditStrategy(QSqlTableModel::OnManualSubmit);
+    modelField->setEditStrategy(QSqlTableModel::OnFieldChange);
     modelField->setTable("fields");
 
     // Remember the indexes of the columns:
@@ -366,6 +370,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->fieldTable->setColumnHidden(modelField->fieldIndex("id"), true);
     ui->fieldTable->setSelectionMode(QAbstractItemView::SingleSelection);
 
+    ui->fieldTable->setItemDelegateForColumn(3, checkboxdelegate);
     QTableView* tableShort=ui->fieldTable;
     QSqlRelationalTableModel *modelShort=this->modelField;
 
@@ -391,14 +396,39 @@ MainWindow::MainWindow(QWidget *parent) :
                          qDebug() << "Name: " << name << ", xml: " << xmlText;
                          mapShort->clearRoute();
                          QXmlStreamReader xmlData(xmlText);
-                         bool routes_found=utility::loadXMLRoute(&xmlData, mapShort);
+                         //bool routes_found=utility::loadXMLRoute(&xmlData, mapShort);
+                         utility::loadXMLRoute(&xmlData, mapShort);
                          QList<LocPoint> route=mapShort->getRoute();
                          double area=RouteMagic::getArea(route);
                          areaLabel->setText(QString::number(area));
                      });
 
 
+    // Connect the signal to the slot
+    QObject::connect(mapShort, &MapWidget::routePointAdded, [mapShort,tableShort,modelShort](){
+        QByteArray byteArray;
+        QXmlStreamWriter stream(&byteArray);
+        utility::saveXMLRoutes(&stream,mapShort,false);
+        QString xmlString = QString::fromUtf8(byteArray);
+        QItemSelectionModel* selectionModel = tableShort->selectionModel();
+        QModelIndexList selectedIndexes = selectionModel->selectedIndexes();
+        if (selectedIndexes.isEmpty()) {
+            qDebug() << "No selection";
+            return;
+        }
 
+        int row = selectedIndexes.first().row();
+        qDebug() << "Selected Row: " << row;
+
+        // Retrieve the data of the selected row if needed
+//        modelShort->data(modelShort->index(row, 4))=xmlString;
+        modelShort->setData(modelShort->index(row,4),xmlString);
+        tableShort->show();
+
+        QMessageBox msgBox;
+        msgBox.setText(xmlString);
+        msgBox.exec();
+    });
 
     // Initialize the Author combo box:
     ui->locationEdit->setModel(modelField->relationModel(locationIdx));
@@ -410,6 +440,7 @@ MainWindow::MainWindow(QWidget *parent) :
     mapperField->setModel(modelField);
     mapperField->addMapping(ui->fieldnameEdit, modelField->fieldIndex("name"));
     mapperField->addMapping(ui->locationEdit, locationIdx);
+    mapperField->addMapping(ui->fencedCheckBox, modelField->fieldIndex("fenced"));
 //    mapperField->addMapping(ui->locationEdit, locationIdx);
 //    mapperFarm->addMapping(this->findChild<QLineEdit*>("ntripPasswordEdit"), modelFarm->fieldIndex("password"));
 
@@ -539,7 +570,7 @@ MainWindow::~MainWindow()
 {
     // Remove all vehicles before this window is destroyed to not get segfaults
     // in their destructors.
-    while (mCars.size() > 0 || mCopters.size() > 0) {
+    while (mCars.size()) {
         QWidget *w = ui->carsWidget->currentWidget();
 
         if (dynamic_cast<CarInterface*>(w) != NULL) {
@@ -548,12 +579,6 @@ MainWindow::~MainWindow()
             ui->carsWidget->removeTab(ui->carsWidget->currentIndex());
             mCars.removeOne(car);
             delete car;
-        } else if (dynamic_cast<CopterInterface*>(w) != NULL) {
-            CopterInterface *copter = (CopterInterface*)w;
-
-            ui->carsWidget->removeTab(ui->carsWidget->currentIndex());
-            mCopters.removeOne(copter);
-            delete copter;
         }
     }
 
@@ -639,16 +664,27 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
                             qDebug() << "RIGHT";
                             break;
                     case Qt::Key_Delete:
-                        qDebug() << "DELETE";
-       /*                 QModelIndexList selection = object->selectionModel()->selectedRows();
+                        QModelIndexList selection = ui->fieldTable->selectionModel()->selectedRows();
 
                         // Multiple rows can be selected
                         for(int i=0; i< selection.count(); i++)
                         {
                             QModelIndex index = selection.at(i);
                             qDebug() << index.row();
+                            QAbstractItemModel* connectedModel = ui->fieldTable->model();
+                            QString fieldid = connectedModel->data(connectedModel->index(index.row(), 0)).toString();
+                            deleteField(fieldid);
+                            QSqlTableModel* model = qobject_cast<QSqlTableModel*>(ui->fieldTable->model());
+                                        if (model) {
+                                            model->select();
+                                        };
+                                        //                     connectedModel->select();
                         }
-                        */
+/*                        QTableView* thisTableView=ui->fieldTable;
+                        // Schedule a repaint after 2 seconds
+                        QTimer::singleShot(2000, [&thisTableView]() {
+                            thisTableView->viewport()->repaint();
+                        });*/
                         break;
                     }
                     return true;
@@ -847,13 +883,7 @@ void MainWindow::timerSlot()
         CarInterface *car = *it_car;
         car->setControlValues(mThrottle, mSteering, ui->throttleMaxBox->value(), ui->throttleCurrentButton->isChecked());
     }
-#ifdef HAS_JOYSTICK
-    // Notify about joystick events
-    for(QList<CopterInterface*>::Iterator it_copter = mCopters.begin();it_copter < mCopters.end();it_copter++) {
-        CopterInterface *copter = *it_copter;
-        copter->setControlValues(js_mr_thr, js_mr_roll, js_mr_pitch, js_mr_yaw);
-    }
-#endif
+
     // Update status label
     if (mStatusInfoTime) {
         mStatusInfoTime--;
@@ -884,22 +914,6 @@ void MainWindow::timerSlot()
         }
 
         if (car->pollData() && ind > largest) {
-            largest = ind;
-        }
-
-        ind++;
-    }
-
-    for(QList<CopterInterface*>::Iterator it_copter = mCopters.begin();it_copter < mCopters.end();it_copter++) {
-        CopterInterface *copter = *it_copter;
-        if ((mSerialPort->isOpen() || mPacketInterface->isUdpConnected() || mTcpClientMulti->isAnyConnected()) &&
-                copter->pollData() && ind >= next_car && !polled) {
-            mPacketInterface->getMrState(copter->getId());
-            next_car = ind + 1;
-            polled = true;
-        }
-
-        if (copter->pollData() && ind > largest) {
             largest = ind;
         }
 
@@ -957,10 +971,6 @@ void MainWindow::sendHeartbeat()
     for(QList<CarInterface*>::Iterator it_car = mCars.begin();it_car < mCars.end();it_car++)
         if ((*it_car)->getFirmwareVersion().first >= 20)
             mPacketInterface->sendHeartbeat((*it_car)->getId());
-
-    for(QList<CopterInterface*>::Iterator it_copter = mCopters.begin();it_copter < mCopters.end();it_copter++)
-        if ((*it_copter)->getFirmwareVersion().first >= 20)
-            mPacketInterface->sendHeartbeat((*it_copter)->getId());
 }
 
 void MainWindow::showStatusInfo(QString info, bool isGood)
@@ -1004,16 +1014,6 @@ void MainWindow::stateReceived(quint8 id, CAR_STATE state)
             if (car->getId() == id) {
                 car->setStateData(state);
             }
-        }
-    }
-}
-
-void MainWindow::mrStateReceived(quint8 id, MULTIROTOR_STATE state)
-{
-    for(QList<CopterInterface*>::Iterator it_copter = mCopters.begin();it_copter < mCopters.end();it_copter++) {
-        CopterInterface *copter = *it_copter;
-        if (copter->getId() == id) {
-            copter->setStateData(state);
         }
     }
 }
@@ -1330,7 +1330,7 @@ void MainWindow::on_tcpConnectButton_clicked()
                 msgBox.exec();
                 mTcpClientMulti->addConnection(ip,port.toInt());
             };
-            addCar(mCars.size() + mCopters.size(),name);
+            addCar(mCars.size(),name);
             qDebug() << "Name: " << name << ", ip: " << ip << ", port: " << port;
             oldrow=row;
 
@@ -1444,10 +1444,6 @@ void MainWindow::on_carsWidget_tabCloseRequested(int index)
         CarInterface *car = (CarInterface*)w;
         mCars.removeOne(car);
         delete car;
-    } else if (dynamic_cast<CopterInterface*>(w) != NULL) {
-        CopterInterface *copter = (CopterInterface*)w;
-        mCopters.removeOne(copter);
-        delete copter;
     }
 }
 
@@ -2378,50 +2374,7 @@ void MainWindow::saveRoutes(bool withId)
 
 
     QXmlStreamWriter stream(&file);
-    stream.setCodec("UTF-8");
-    stream.setAutoFormatting(true);
-    stream.writeStartDocument();
-
-    stream.writeStartElement("routes");
-
-    QList<LocPoint> anchors = ui->mapWidget->getAnchors();
-    QList<QList<LocPoint> > routes = ui->mapWidget->getRoutes();
-
-    if (!anchors.isEmpty()) {
-        stream.writeStartElement("anchors");
-        for (LocPoint p: anchors) {
-            stream.writeStartElement("anchor");
-            stream.writeTextElement("x", QString::number(p.getX()));
-            stream.writeTextElement("y", QString::number(p.getY()));
-            stream.writeTextElement("height", QString::number(p.getHeight()));
-            stream.writeTextElement("id", QString::number(p.getId()));
-            stream.writeEndElement();
-        }
-        stream.writeEndElement();
-    }
-
-    for (int i = 0;i < routes.size();i++) {
-        if (!routes.at(i).isEmpty()) {
-            stream.writeStartElement("route");
-
-            if (withId) {
-                stream.writeTextElement("id", QString::number(i));
-            }
-
-            for (const LocPoint p: routes.at(i)) {
-                stream.writeStartElement("point");
-                stream.writeTextElement("x", QString::number(p.getX()));
-                stream.writeTextElement("y", QString::number(p.getY()));
-                stream.writeTextElement("speed", QString::number(p.getSpeed()));
-                stream.writeTextElement("time", QString::number(p.getTime()));
-                stream.writeTextElement("attributes", QString::number(p.getAttributes()));
-                stream.writeEndElement();
-            }
-            stream.writeEndElement();
-        }
-    }
-
-    stream.writeEndDocument();
+    utility::saveXMLRoutes(&stream,ui->mapWidget,withId);
     file.close();
     showStatusInfo("Saved routes", true);
 }
@@ -2817,6 +2770,21 @@ void addField(QSqlQuery &q, const QString &title, const QVariant &locationId)
     q.exec();
 }
 
+void deleteField(const QVariant &fieldId)
+{
+    const auto DELETE_FIELD_SQL = QLatin1String(R"(DELETE FROM fields WHERE id=:fieldid)");
+    QSqlQuery q;
+    if (q.prepare(DELETE_FIELD_SQL))
+    {
+        q.bindValue(":fieldid",fieldId);
+        q.exec();
+        qDebug() << "DELETE FIELD!!!: " << fieldId;
+    } else {
+        qDebug() << "Oups..";
+    };
+}
+
+
 QVariant addLocation(QSqlQuery &q, const QString &name, QDate birthdate)
 {
     q.addBindValue(name);
@@ -2834,8 +2802,6 @@ QSqlError initDb()
         return db.lastError();
     return QSqlError();
 }
-
-
 
 
 
