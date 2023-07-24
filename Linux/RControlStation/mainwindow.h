@@ -29,7 +29,6 @@
 #include <QtSql>
 
 #include "carinterface.h"
-#include "copterinterface.h"
 #include "packetinterface.h"
 #include "ping.h"
 #include "nmeaserver.h"
@@ -37,6 +36,7 @@
 #include "intersectiontest.h"
 #include "tcpclientmulti.h"
 #include "wireguard.h"
+#include "checkboxdelegate.h"
 #include <memory>
 
 #ifdef HAS_LIME_SDR
@@ -79,7 +79,6 @@ private slots:
     void showStatusInfo(QString info, bool isGood);
     void packetDataToSend(QByteArray &data);
     void stateReceived(quint8 id, CAR_STATE state);
-    void mrStateReceived(quint8 id, MULTIROTOR_STATE state);
     void mapPosSet(quint8 id, LocPoint pos);
     void ackReceived(quint8 id, CMD_PACKET cmd, QString msg);
     void rtcmReceived(QByteArray data);
@@ -93,7 +92,6 @@ private slots:
     void jsButtonChanged(int button, bool pressed);
 
 //    void on_carAddButton_clicked();
-//    void on_copterAddButton_clicked();
     void on_disconnectButton_clicked();
     void on_mapRemoveTraceButton_clicked();
     void on_MapRemovePixmapsButton_clicked();
@@ -209,7 +207,6 @@ private:
     QSerialPort *mSerialPort;
     PacketInterface *mPacketInterface;
     QList<CarInterface*> mCars;
-    QList<CopterInterface*> mCopters;
     QLabel *mStatusLabel;
     int mStatusInfoTime;
     bool mKeyUp;
@@ -228,6 +225,7 @@ private:
     std::unique_ptr<WireGuard> mWireGuard;
     QString mLastImgFileName;
     QList<QPair<int, int> > mSupportedFirmwares;
+    CheckBoxDelegate* checkboxdelegate;
 
 #ifdef HAS_JOYSTICK_CHECK
     QGamepad *mJoystick;
@@ -256,8 +254,12 @@ private:
     int locationIdx;
 };
 
+
+
 void addField(QSqlQuery &q, const QString &title, const QVariant &locationId);
 QVariant addLocation(QSqlQuery &q, const QString &name, QDate birthdate);
+void deleteField(const QVariant &fieldId);
+
 QSqlError initDb();
 
 

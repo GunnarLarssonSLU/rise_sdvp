@@ -64,7 +64,7 @@ bool uploadRouteHelper(PacketInterface *packetInterface, int carId, QList<LocPoi
 bool replaceRouteHelper(PacketInterface *packetInterface, int carId, QList<LocPoint> route);
 bool loadXMLRoute(QXmlStreamReader *stream, MapWidget *map);
 int loadRoutes(QString filename, MapWidget *map);
-
+void saveXMLRoutes(QXmlStreamWriter* stream,MapWidget *map,bool withId);
 }
 
 #endif /* BUFFER_H_ */

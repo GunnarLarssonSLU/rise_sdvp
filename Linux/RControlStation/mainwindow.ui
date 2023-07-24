@@ -507,31 +507,10 @@
              </property>
             </widget>
            </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_8">
-             <property name="text">
-              <string>Field name</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_6">
-             <property name="text">
-              <string>Fields</string>
-             </property>
-            </widget>
-           </item>
            <item row="3" column="2">
             <widget class="QComboBox" name="locationEdit">
              <property name="enabled">
               <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="2">
-            <widget class="QRadioButton" name="radioButton">
-             <property name="text">
-              <string>Yes</string>
              </property>
             </widget>
            </item>
@@ -542,13 +521,6 @@
              </property>
             </widget>
            </item>
-           <item row="4" column="0">
-            <widget class="QLabel" name="label_5">
-             <property name="text">
-              <string>Use electronic fence</string>
-             </property>
-            </widget>
-           </item>
            <item row="1" column="2">
             <widget class="QLineEdit" name="fieldnameEdit">
              <property name="enabled">
@@ -556,14 +528,17 @@
              </property>
             </widget>
            </item>
-           <item row="5" column="2">
-            <widget class="QRadioButton" name="radioButton_2">
+           <item row="6" column="0">
+            <widget class="QLabel" name="label_17">
              <property name="text">
-              <string>No</string>
+              <string>Area:</string>
              </property>
             </widget>
            </item>
            <item row="7" column="2">
+            <widget class="QTableView" name="tableView"/>
+           </item>
+           <item row="6" column="2">
             <widget class="QLabel" name="label_area_ha">
              <property name="text">
               <string/>
@@ -571,23 +546,23 @@
             </widget>
            </item>
            <item row="7" column="0">
-            <widget class="QLabel" name="label_17">
-             <property name="text">
-              <string>Area:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="8" column="0">
             <widget class="QLabel" name="label_15">
              <property name="text">
               <string>Paths</string>
              </property>
             </widget>
            </item>
-           <item row="6" column="2">
-            <widget class="QPushButton" name="pushButton_field">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_6">
              <property name="text">
-              <string>Add field</string>
+              <string>Fields</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_8">
+             <property name="text">
+              <string>Field name</string>
              </property>
             </widget>
            </item>
@@ -598,8 +573,19 @@
              </property>
             </widget>
            </item>
-           <item row="8" column="2">
-            <widget class="QTableView" name="tableView"/>
+           <item row="5" column="2">
+            <widget class="QPushButton" name="pushButton_field">
+             <property name="text">
+              <string>Add field</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="2">
+            <widget class="QCheckBox" name="fencedCheckBox">
+             <property name="text">
+              <string>use electronic fence</string>
+             </property>
+            </widget>
            </item>
           </layout>
          </widget>

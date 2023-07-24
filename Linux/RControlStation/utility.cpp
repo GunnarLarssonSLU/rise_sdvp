@@ -601,4 +601,53 @@ int loadRoutes(QString filename, MapWidget *map)
     return res;
 }
 
+void saveXMLRoutes(QXmlStreamWriter* stream,MapWidget *map,bool withId)
+{
+    stream->setCodec("UTF-8");
+    stream->setAutoFormatting(true);
+    stream->writeStartDocument();
+
+    stream->writeStartElement("routes");
+
+    QList<LocPoint> anchors = map->getAnchors();
+    QList<QList<LocPoint> > routes = map->getRoutes();
+
+    if (!anchors.isEmpty()) {
+        stream->writeStartElement("anchors");
+        for (LocPoint p: anchors) {
+            stream->writeStartElement("anchor");
+            stream->writeTextElement("x", QString::number(p.getX()));
+            stream->writeTextElement("y", QString::number(p.getY()));
+            stream->writeTextElement("height", QString::number(p.getHeight()));
+            stream->writeTextElement("id", QString::number(p.getId()));
+            stream->writeEndElement();
+        }
+        stream->writeEndElement();
+    }
+
+    for (int i = 0;i < routes.size();i++) {
+        if (!routes.at(i).isEmpty()) {
+            stream->writeStartElement("route");
+
+            if (withId) {
+                stream->writeTextElement("id", QString::number(i));
+            }
+
+            for (const LocPoint p: routes.at(i)) {
+                stream->writeStartElement("point");
+                stream->writeTextElement("x", QString::number(p.getX()));
+                stream->writeTextElement("y", QString::number(p.getY()));
+                stream->writeTextElement("speed", QString::number(p.getSpeed()));
+                stream->writeTextElement("time", QString::number(p.getTime()));
+                stream->writeTextElement("attributes", QString::number(p.getAttributes()));
+                stream->writeEndElement();
+            }
+            stream->writeEndElement();
+        }
+    }
+
+    stream->writeEndDocument();
+}
+
+
 }

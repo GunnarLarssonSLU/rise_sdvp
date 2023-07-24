@@ -80,6 +80,7 @@ contains(DEFINES, HAS_ASSIMP) {
 }
 
 SOURCES += main.cpp\
+    checkboxdelegate.cpp \
         mainwindow.cpp \
     qcustomplot.cpp \
     packetinterface.cpp \
@@ -106,7 +107,6 @@ SOURCES += main.cpp\
     magcal.cpp \
     imuplot.cpp \
     copterinfo.cpp \
-    copterinterface.cpp \
     nmeawidget.cpp \
     confcommonwidget.cpp \
     ublox.cpp \
@@ -121,6 +121,7 @@ SOURCES += main.cpp\
     wireguard.cpp
 
 HEADERS  += mainwindow.h \
+    checkboxdelegate.h \
     qcustomplot.h \
     datatypes.h \
     packetinterface.h \
@@ -147,7 +148,6 @@ HEADERS  += mainwindow.h \
     magcal.h \
     imuplot.h \
     copterinfo.h \
-    copterinterface.h \
     nmeawidget.h \
     confcommonwidget.h \
     ublox.h \
@@ -172,7 +172,6 @@ FORMS    += mainwindow.ui \
     moteconfig.ui \
     magcal.ui \
     imuplot.ui \
-    copterinterface.ui \
     nmeawidget.ui \
     confcommonwidget.ui \
     intersectiontest.ui \
