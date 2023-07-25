@@ -425,7 +425,7 @@ void NetworkInterface::processXml(const QByteArray &xml)
             bool mapOnly = false;
             int mapRoute = -1;
 
-            QList<LocPoint> route;
+            MapRoute route;
             LocPoint p;
 
             while (stream.readNextStartElement()) {
@@ -490,13 +490,13 @@ void NetworkInterface::processXml(const QByteArray &xml)
 
             if (!mapOnly && !ui->disableSendCarBox->isChecked() && mPacketInterface) {
                 if (name == "addRoutePoint") {
-                    if (!utility::uploadRouteHelper(mPacketInterface, id, route)) {
+                    if (!utility::uploadRouteHelper(mPacketInterface, id, route.mRoute)) {
                         ok = false;
                         sendError("No ACK received from car. Make sure that the car connection "
                                   "works.", name);
                     }
                 } else {
-                    if (!utility::replaceRouteHelper(mPacketInterface, id, route)) {
+                    if (!utility::replaceRouteHelper(mPacketInterface, id, route.mRoute)) {
                         ok = false;
                         sendError("No ACK received from car. Make sure that the car connection "
                                   "works.", name);
@@ -554,7 +554,7 @@ void NetworkInterface::processXml(const QByteArray &xml)
             }
             if (mapRoute >= 0) {
                 if (mMap) {
-                    sendRoute(id, mMap->getRoute(mapRoute));
+                    sendRoute(id, mMap->getRoute(mapRoute).mRoute);
                 }
             } else {
                 if (!ui->disableSendCarBox->isChecked() && mPacketInterface) {

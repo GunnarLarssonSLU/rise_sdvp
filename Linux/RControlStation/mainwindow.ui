@@ -76,93 +76,11 @@
          <attribute name="toolTip">
           <string>Farm</string>
          </attribute>
-         <widget class="QWidget" name="gridLayoutWidget_2">
-          <property name="geometry">
-           <rect>
-            <x>0</x>
-            <y>0</y>
-            <width>1251</width>
-            <height>302</height>
-           </rect>
-          </property>
-          <layout class="QGridLayout" name="gridlayout_2">
-           <item row="1" column="2">
-            <widget class="QPushButton" name="pushButton_location">
-             <property name="text">
-              <string>Add location</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QLabel" name="label_16">
-             <property name="text">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Name:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="2">
-            <widget class="QCheckBox" name="autoConnectcheckBox">
-             <property name="text">
-              <string>Auto connect</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="2">
-            <widget class="QLineEdit" name="locationnameEdit">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="4" rowspan="4">
-            <widget class="MapWidget" name="mapWidgetFarm" native="true">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>1</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>300</width>
-               <height>300</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="3" rowspan="4">
-            <widget class="QLabel" name="label_7">
-             <property name="text">
-              <string>Location</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="2">
-            <widget class="QTableView" name="farmTable">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>600</width>
-               <height>120</height>
-              </size>
-             </property>
-             <property name="selectionBehavior">
-              <enum>QAbstractItemView::SelectRows</enum>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
          <widget class="QGroupBox" name="wgGroupBox">
           <property name="geometry">
            <rect>
-            <x>1260</x>
-            <y>90</y>
+            <x>660</x>
+            <y>70</y>
             <width>291</width>
             <height>71</height>
            </rect>
@@ -239,8 +157,8 @@
          <widget class="QComboBox" name="comboBox">
           <property name="geometry">
            <rect>
-            <x>1260</x>
-            <y>60</y>
+            <x>660</x>
+            <y>30</y>
             <width>171</width>
             <height>25</height>
            </rect>
@@ -249,24 +167,14 @@
          <widget class="QLabel" name="label_12">
           <property name="geometry">
            <rect>
-            <x>1260</x>
-            <y>30</y>
+            <x>660</x>
+            <y>10</y>
             <width>111</width>
             <height>17</height>
            </rect>
           </property>
           <property name="text">
            <string>Map source</string>
-          </property>
-         </widget>
-         <widget class="RtcmWidget" name="rtcmWidget" native="true">
-          <property name="geometry">
-           <rect>
-            <x>0</x>
-            <y>290</y>
-            <width>1451</width>
-            <height>761</height>
-           </rect>
           </property>
          </widget>
         </widget>
@@ -495,95 +403,149 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>591</width>
-            <height>481</height>
+            <width>756</width>
+            <height>510</height>
            </rect>
           </property>
           <layout class="QGridLayout" name="gridlayout_3">
-           <item row="0" column="3">
-            <widget class="QLabel" name="label_11">
-             <property name="text">
-              <string>Boundary</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="2">
-            <widget class="QComboBox" name="locationEdit">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="2">
-            <widget class="QTableView" name="fieldTable">
-             <property name="selectionBehavior">
-              <enum>QAbstractItemView::SelectRows</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="2">
-            <widget class="QLineEdit" name="fieldnameEdit">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="0">
-            <widget class="QLabel" name="label_17">
-             <property name="text">
-              <string>Area:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="2">
-            <widget class="QTableView" name="tableView"/>
-           </item>
-           <item row="6" column="2">
-            <widget class="QLabel" name="label_area_ha">
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="0">
-            <widget class="QLabel" name="label_15">
-             <property name="text">
-              <string>Paths</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_6">
-             <property name="text">
-              <string>Fields</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_8">
-             <property name="text">
-              <string>Field name</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="0">
-            <widget class="QLabel" name="label_14">
-             <property name="text">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Location:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="2">
+           <item row="9" column="2">
             <widget class="QPushButton" name="pushButton_field">
              <property name="text">
               <string>Add field</string>
              </property>
             </widget>
            </item>
+           <item row="7" column="2">
+            <widget class="QComboBox" name="locationEdit">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QLineEdit" name="locationnameEdit">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="11" column="2">
+            <widget class="QTableView" name="tableView"/>
+           </item>
+           <item row="11" column="0">
+            <widget class="QLabel" name="label_15">
+             <property name="text">
+              <string>Paths</string>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="0">
+            <widget class="QLabel" name="label_14">
+             <property name="text">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Location:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="QTableView" name="farmTable">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>600</width>
+               <height>120</height>
+              </size>
+             </property>
+             <property name="selectionBehavior">
+              <enum>QAbstractItemView::SelectRows</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="2">
+            <widget class="QLineEdit" name="fieldnameEdit">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
            <item row="4" column="2">
+            <widget class="QTableView" name="fieldTable">
+             <property name="selectionBehavior">
+              <enum>QAbstractItemView::SelectRows</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="2">
+            <widget class="QPushButton" name="pushButton_location">
+             <property name="text">
+              <string>Add location</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="label_6">
+             <property name="text">
+              <string>Fields</string>
+             </property>
+            </widget>
+           </item>
+           <item row="8" column="2">
             <widget class="QCheckBox" name="fencedCheckBox">
              <property name="text">
               <string>use electronic fence</string>
+             </property>
+            </widget>
+           </item>
+           <item row="10" column="0">
+            <widget class="QLabel" name="label_17">
+             <property name="text">
+              <string>Area:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="label_8">
+             <property name="text">
+              <string>Field name</string>
+             </property>
+            </widget>
+           </item>
+           <item row="10" column="2">
+            <widget class="QLabel" name="label_area_ha">
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_7">
+             <property name="text">
+              <string>Farm</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="2">
+            <widget class="QCheckBox" name="autoConnectcheckBox">
+             <property name="text">
+              <string>Auto connect</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_16">
+             <property name="text">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Name:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QLabel" name="label_11">
+             <property name="text">
+              <string>Boundary</string>
              </property>
             </widget>
            </item>
@@ -592,7 +554,7 @@
          <widget class="MapWidget" name="mapWidgetFields" native="true">
           <property name="geometry">
            <rect>
-            <x>590</x>
+            <x>760</x>
             <y>0</y>
             <width>931</width>
             <height>571</height>
@@ -603,6 +565,16 @@
             <horstretch>1</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
+          </property>
+         </widget>
+         <widget class="RtcmWidget" name="rtcmWidget" native="true">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>580</y>
+            <width>1451</width>
+            <height>761</height>
+           </rect>
           </property>
          </widget>
         </widget>

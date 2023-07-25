@@ -38,7 +38,8 @@ RtcmWidget::RtcmWidget(QWidget *parent) :
     connect(mTimer, SIGNAL(timeout()),
             this, SLOT(timerSlot()));
 
-    on_rtcmSerialRefreshButton_clicked();
+    //on_rtcmSerialRefreshButton_clicked();
+
     on_gpsOnlyBox_toggled(ui->gpsOnlyBox->isChecked());
 
     // SPT00 default
@@ -75,7 +76,7 @@ void RtcmWidget::timerSlot()
             ui->ntripConnectedLabel->setText("Not connected");
         }
     }
-
+/*
     // Update serial connected label
     static bool wasSerialConnected = false;
     if (wasSerialConnected != mRtcm->isSerialConnected()) {
@@ -87,7 +88,7 @@ void RtcmWidget::timerSlot()
             ui->rtcmSerialConnectedLabel->setText("Not connected");
         }
     }
-
+*/
     // Send reference position every 5s
     if (ui->sendRefPosBox->isChecked()) {
         static int cnt = 0;
@@ -214,7 +215,7 @@ void RtcmWidget::on_resetAllCountersButton_clicked()
     ui->rtcm1019Number->display(0);
     ui->rtcm1020Number->display(0);
 }
-
+/*
 void RtcmWidget::on_rtcmSerialRefreshButton_clicked()
 {
     ui->rtcmSerialPortBox->clear();
@@ -237,7 +238,7 @@ void RtcmWidget::on_rtcmSerialConnectButton_clicked()
     mRtcm->connectSerial(ui->rtcmSerialPortBox->currentData().toString(),
                          ui->rtcmSerialBaudBox->value());
 }
-
+*/
 void RtcmWidget::on_refGetButton_clicked()
 {
     emit refPosGet();

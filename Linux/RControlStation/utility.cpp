@@ -466,7 +466,7 @@ bool loadXMLRoute(QXmlStreamReader* stream, MapWidget *map)
     }
 
     if (routes_found) {
-        QList<QPair<int, QList<LocPoint> > > routes;
+        QList<QPair<int, MapRoute > > routes;
         QList<LocPoint> anchors;
 
         while (stream->readNextStartElement()) {
@@ -474,7 +474,7 @@ bool loadXMLRoute(QXmlStreamReader* stream, MapWidget *map)
 
             if (name == "route") {
                 int id = -1;
-                QList<LocPoint> route;
+                MapRoute route;
 
                 while (stream->readNextStartElement()) {
                     QString name2 = stream->name().toString();
@@ -514,7 +514,7 @@ bool loadXMLRoute(QXmlStreamReader* stream, MapWidget *map)
                     }
                 }
 
-                routes.append(QPair<int, QList<LocPoint> >(id, route));
+                routes.append(QPair<int, MapRoute >(id, route));
             } else if (name == "anchors") {
                 while (stream->readNextStartElement()) {
                     QString name2 = stream->name().toString();
@@ -557,7 +557,7 @@ bool loadXMLRoute(QXmlStreamReader* stream, MapWidget *map)
             }
         }
 
-        for (QPair<int, QList<LocPoint> > r: routes) {
+        for (QPair<int, MapRoute > r: routes) {
             if (r.first >= 0) {
                 int routeLast = map->getRouteNow();
                 map->setRouteNow(r.first);
@@ -610,7 +610,7 @@ void saveXMLRoutes(QXmlStreamWriter* stream,MapWidget *map,bool withId)
     stream->writeStartElement("routes");
 
     QList<LocPoint> anchors = map->getAnchors();
-    QList<QList<LocPoint> > routes = map->getRoutes();
+    QList<MapRoute> routes = map->getRoutes();
 
     if (!anchors.isEmpty()) {
         stream->writeStartElement("anchors");

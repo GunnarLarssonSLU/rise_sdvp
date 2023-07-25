@@ -371,15 +371,38 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->fieldTable->setSelectionMode(QAbstractItemView::SingleSelection);
 
     ui->fieldTable->setItemDelegateForColumn(3, checkboxdelegate);
+    QTableView* tableFarm=ui->farmTable;
     QTableView* tableShort=ui->fieldTable;
     QSqlRelationalTableModel *modelShort=this->modelField;
+    QSqlRelationalTableModel *modelFarm=this->modelFarm;
 
     MapWidget *mapShort=ui->mapWidgetFields;
     QLabel *areaLabel=ui->label_area_ha;
 
+//MapWidget::setEnuRef(double lat, double lon, double height);
+
+    QObject::connect(ui->farmTable->selectionModel(), &QItemSelectionModel::selectionChanged,
+                     [modelFarm,mapShort](const QItemSelection& selected, const QItemSelection&)
+    {
+        QModelIndexList selectedIndexes = selected.indexes();
+        if (selectedIndexes.isEmpty()) {
+            qDebug() << "No selection";
+            return;
+        }
+
+        int row = selectedIndexes.first().row();
+        qDebug() << "Selected Row: " << row;
+
+        // Retrieve the data of the selected row if needed
+        double lon = modelFarm->data(modelFarm->index(row, 2)).toDouble();
+        double lat = modelFarm->data(modelFarm->index(row, 3)).toDouble();
+        qDebug() << "Lon: " << lon << ", lat: " << lat;
+        mapShort->setEnuRef(lat,lon,0);
+        mapShort->clearAllRoutes();
+    });
 
     QObject::connect(ui->fieldTable->selectionModel(), &QItemSelectionModel::selectionChanged,
-                     [tableShort, modelShort,mapShort,areaLabel](const QItemSelection& selected, const QItemSelection&)
+                     [modelShort,mapShort,areaLabel](const QItemSelection& selected, const QItemSelection&)
                      {
                          QModelIndexList selectedIndexes = selected.indexes();
                          if (selectedIndexes.isEmpty()) {
@@ -398,8 +421,8 @@ MainWindow::MainWindow(QWidget *parent) :
                          QXmlStreamReader xmlData(xmlText);
                          //bool routes_found=utility::loadXMLRoute(&xmlData, mapShort);
                          utility::loadXMLRoute(&xmlData, mapShort);
-                         QList<LocPoint> route=mapShort->getRoute();
-                         double area=RouteMagic::getArea(route);
+                         MapRoute route=mapShort->getRoute();
+                         double area=route.getArea();
                          areaLabel->setText(QString::number(area));
                      });
 
@@ -1044,7 +1067,7 @@ void MainWindow::rtcmReceived(QByteArray data)
             int res = rtcm3_input_data(b, &mRtcmState);
             if (res == 1005 || res == 1006) {
                 ui->mapWidget->setEnuRef(mRtcmState.pos.lat, mRtcmState.pos.lon, mRtcmState.pos.height);
-                ui->mapWidgetFarm->setEnuRef(mRtcmState.pos.lat, mRtcmState.pos.lon, mRtcmState.pos.height);
+                ui->mapWidgetFields->setEnuRef(mRtcmState.pos.lat, mRtcmState.pos.lon, mRtcmState.pos.height);
             }
         }
     }
@@ -1476,7 +1499,7 @@ void MainWindow::on_genCircButton_clicked()
         cx = ui->genCircXBox->value();
         cy = ui->genCircYBox->value();
     } else if (type == 4) {
-        QList<LocPoint> r = ui->mapWidget->getRoute();
+        MapRoute r = ui->mapWidget->getRoute();
         int samples = 0;
         cx = 0.0;
         cy = 0.0;
@@ -1493,7 +1516,7 @@ void MainWindow::on_genCircButton_clicked()
         }
     }
 
-    QList<LocPoint> route;
+    MapRoute route;
 
     for (int i = 1;i <= points;i++) {
         int ind = i;
@@ -1594,7 +1617,7 @@ void MainWindow::on_mapUploadRouteButton_clicked()
         return;
     }
 
-    QList<LocPoint> route = ui->mapWidget->getRoute();
+    MapRoute route = ui->mapWidget->getRoute();
     int len = route.size();
     int car = ui->mapCarBox->value();
     bool ok = true;
@@ -1629,7 +1652,7 @@ void MainWindow::on_mapUploadRouteButton_clicked()
             QList<LocPoint> tmpList;
             for (int j = ind;j < (ind + 5);j++) {
                 if (j < len) {
-                    tmpList.append(route.at(j));
+                    tmpList.append(route[j]);
                 }
             }
 
@@ -1666,15 +1689,15 @@ void MainWindow::on_mapGetRouteButton_clicked()
 
     ui->mapGetRouteButton->setEnabled(false);
 
-    QList<LocPoint> route;
+    MapRoute route;
     int routeLen = 0;
-    bool ok = mPacketInterface->getRoutePart(ui->mapCarBox->value(), route.size(), 10, route, routeLen);
+    bool ok = mPacketInterface->getRoutePart(ui->mapCarBox->value(), route.size(), 10, route.mRoute, routeLen);
 
     QElapsedTimer timer;
     timer.start();
 
     while (route.size() < routeLen && ok) {
-        ok = mPacketInterface->getRoutePart(ui->mapCarBox->value(), route.size(), 10, route, routeLen);
+        ok = mPacketInterface->getRoutePart(ui->mapCarBox->value(), route.size(), 10, route.mRoute, routeLen);
         if (timer.elapsed() >= 20) {
             timer.restart();
             ui->mapUploadRouteProgressBar->setValue((100 * route.size()) / routeLen);
@@ -1733,7 +1756,7 @@ void MainWindow::on_mapOffButton_clicked()
 
 void MainWindow::on_mapUpdateSpeedButton_clicked()
 {
-    QList<LocPoint> route = ui->mapWidget->getRoute();
+    MapRoute route = ui->mapWidget->getRoute();
     qint32 timeAcc = 0;
 
     for (int i = 0;i < route.size();i++) {
@@ -1992,7 +2015,7 @@ void MainWindow::on_mapUpdateTimeButton_clicked()
                                    tr("Seconds from now"), 30, 0, 60000, 1, &ok);
 
     if (ok) {
-        QList<LocPoint> route = ui->mapWidget->getRoute();
+        MapRoute route = ui->mapWidget->getRoute();
         QDateTime date = QDateTime::currentDateTime();
         QTime current = QTime::currentTime().addSecs(-date.offsetFromUtc());
         qint32 now = current.msecsSinceStartOfDay() + res * 1000;
@@ -2133,7 +2156,7 @@ void MainWindow::on_actionSaveSelectedRouteAsDriveFile_triggered()
     QTextStream stream(&file);
     stream.setCodec("UTF-8");
 
-    QList<LocPoint> route = ui->mapWidget->getRoute();
+    MapRoute route = ui->mapWidget->getRoute();
 
     QString trajName = fileInfo.fileName();
     trajName.chop(4);
@@ -2175,7 +2198,7 @@ void MainWindow::on_actionLoadDriveFile_triggered()
 
         QTextStream stream(&file);
 
-        QList<LocPoint> route;
+        MapRoute route;
 
         while (!stream.atEnd()) {
             QString line = stream.readLine();
@@ -2202,7 +2225,7 @@ void MainWindow::on_actionLoadDriveFile_triggered()
         }
 
         // Reduce route density
-        QList<LocPoint> routeReduced;
+        MapRoute routeReduced;
         LocPoint pointLast = route.first();
         routeReduced.append(route.first());
 
@@ -2471,24 +2494,26 @@ void MainWindow::on_setBoundsRoutePushButton_clicked()
 
 void MainWindow::on_boundsFillPushButton_clicked()
 {
-    QList<LocPoint> bounds = ui->mapWidget->getRoute(ui->boundsRouteSpinBox->value());
+    MapRoute bounds = ui->mapWidget->getRoute(ui->boundsRouteSpinBox->value());
 
     double spacing = ui->boundsFillSpacingSpinBox->value();
     if (spacing < 0.5) return;
 
-    QList<LocPoint> route;
+    QList<LocPoint> routeLP;
     if (ui->generateFrameCheckBox->isChecked())
-        route = RouteMagic::fillConvexPolygonWithFramedZigZag(bounds, spacing, ui->boundsFillKeepTurnsInBoundsCheckBox->isChecked(), ui->boundsFillSpeedSpinBox->value()/3.6,
+        routeLP = RouteMagic::fillConvexPolygonWithFramedZigZag(bounds.mRoute, spacing, ui->boundsFillKeepTurnsInBoundsCheckBox->isChecked(), ui->boundsFillSpeedSpinBox->value()/3.6,
                                                               ui->boundsFillSpeedInTurnsSpinBox->value()/3.6, ui->stepsForTurningSpinBox->value(), ui->visitEverySpinBox->value(),
                                                               ui->lowerToolsCheckBox->isChecked() ? ATTR_HYDRAULIC_FRONT_DOWN : 0, ui->raiseToolsCheckBox->isChecked() ? ATTR_HYDRAULIC_FRONT_UP : 0,
                                                               ui->lowerToolsDistanceSpinBox->value()*2, ui->raiseToolsDistanceSpinBox->value()*2);
                                                               // attribute changes at half distance
     else
-        route = RouteMagic::fillConvexPolygonWithZigZag(bounds, spacing, ui->boundsFillKeepTurnsInBoundsCheckBox->isChecked(), ui->boundsFillSpeedSpinBox->value()/3.6,
+        routeLP = RouteMagic::fillConvexPolygonWithZigZag(bounds.mRoute, spacing, ui->boundsFillKeepTurnsInBoundsCheckBox->isChecked(), ui->boundsFillSpeedSpinBox->value()/3.6,
                                                         ui->boundsFillSpeedInTurnsSpinBox->value()/3.6, ui->stepsForTurningSpinBox->value(), ui->visitEverySpinBox->value(),
                                                         ui->lowerToolsCheckBox->isChecked() ? ATTR_HYDRAULIC_FRONT_DOWN : 0, ui->raiseToolsCheckBox->isChecked() ? ATTR_HYDRAULIC_FRONT_UP : 0,
                                                         ui->lowerToolsDistanceSpinBox->value()*2, ui->raiseToolsDistanceSpinBox->value()*2);
 
+    MapRoute route;
+    route.mRoute=routeLP;
     ui->mapWidget->addRoute(route);
     int r = ui->mapWidget->getRoutes().size()-1;
     ui->mapWidget->setRouteNow(r);

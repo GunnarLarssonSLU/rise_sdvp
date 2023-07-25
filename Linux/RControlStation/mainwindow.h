@@ -254,8 +254,6 @@ private:
     int locationIdx;
 };
 
-
-
 void addField(QSqlQuery &q, const QString &title, const QVariant &locationId);
 QVariant addLocation(QSqlQuery &q, const QString &name, QDate birthdate);
 void deleteField(const QVariant &fieldId);
