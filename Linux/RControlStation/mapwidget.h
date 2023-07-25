@@ -49,10 +49,13 @@ public:
                               bool leftButton, bool rightButton, double scale) = 0;
 };
 
+class MapRoute;
+
 class MapWidget : public QWidget
 {
     Q_OBJECT
 
+    friend class MapRoute;
 public:
     typedef enum {
         InteractionModeDefault,
@@ -63,7 +66,6 @@ public:
 
     explicit MapWidget(QWidget *parent = 0);
     CarInfo* getCarInfo(int car);
-    CopterInfo* getCopterInfo(int copter);
     void setFollowCar(int car);
     void setTraceCar(int car);
     void setSelectedCar(int car);
@@ -83,10 +85,10 @@ public:
     void moveView(double px, double py);
     void clearTrace();
     void addRoutePoint(double px, double py, double speed = 0.0, qint32 time = 0);
-    QList<LocPoint> getRoute(int ind = -1);
-    QList<QList<LocPoint> > getRoutes();
-    void setRoute(const QList<LocPoint> &route);
-    void addRoute(const QList<LocPoint> &route);
+    MapRoute getRoute(int ind = -1);
+    QList<MapRoute> getRoutes();
+    void setRoute(const MapRoute &route);
+    void addRoute(const MapRoute &route);
     int getRouteNum();
     void clearRoute();
     void clearAllRoutes();
@@ -198,8 +200,9 @@ private:
     QVector<LocPoint> mCarTraceGps;
     QVector<LocPoint> mCarTraceUwb;
     QList<LocPoint> mAnchors;
-    QList<QList<LocPoint> > mRoutes;
-    QList<QList<LocPoint> > mInfoTraces;
+    QList<MapRoute> mRoutes;
+    QList<QList<LocPoint>> mInfoTraces;
+    //    QList<MapRoute> mInfoTraces;
     QList<LocPoint> mVisibleInfoTracePoints;
     QList<PerspectivePixmap> mPerspectivePixmaps;
     double mRoutePointSpeed;
@@ -254,11 +257,43 @@ private:
                         QTransform drawTrans, QTransform txtTrans,
                        double xStart, double xEnd, double yStart, double yEnd,
                        double min_dist);
-    int getClosestPoint(LocPoint p, QList<LocPoint> points, double &dist);
+    int getClosestPoint(LocPoint p, QList<LocPoint> route, double &dist);
     void drawCircleFast(QPainter &painter, QPointF center, double radius, int type = 0);
 
     void paint(QPainter &painter, int width, int height, bool highQuality = false);
     void updateTraces();
 };
+
+class MapRoute
+{
+
+public:
+//    MapRoute(QList<LocPoint> route, QList<LocPoint> infotrace);
+    void append(LocPoint point);
+    void append(const QList<LocPoint> &points);
+    void append(const MapRoute &mr);
+    int size();
+    bool isEmpty() const;
+    void clear();
+    QList<LocPoint>::const_iterator begin() const;
+    QList<LocPoint>::const_iterator end() const;
+    LocPoint&	first();
+    LocPoint&	last();
+    void 	prepend(const LocPoint &value);
+    void 	removeAt(int i);
+    void 	removeLast();
+    LocPoint &	operator[](int i);
+    QList<LocPoint> mRoute;
+    QList<LocPoint> mInfoTrace;
+
+    double getArea();
+    void paint(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawtrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool highQuality = false);
+    void routeinfo(MapWidget* mapWidget, QPainter &painter,double start_txt,const double txtOffset,const double txt_row_h, int width, QString txt);
+
+private:
+
+
+};
+
 
 #endif // MAPWIDGET_H

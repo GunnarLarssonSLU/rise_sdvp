@@ -66,7 +66,8 @@ void IntersectionTest::nComRx(const ncom_data &data)
             LocPoint sync;
             bool syncFound = false;
             if (mMap->getRoute(ui->routeSyncBox->value()).size() > 0) {
-                sync = mMap->getRoute(ui->routeSyncBox->value()).at(0);
+//                sync = mMap->getRoute(ui->routeSyncBox->value()).at(0);
+                sync = mMap->getRoute(ui->routeSyncBox->value())[0];
                 syncFound = true;
             }
 
@@ -142,25 +143,25 @@ void IntersectionTest::on_runButton_clicked()
             int carId = ui->carABox->value();
 
             if (carId == ui->carABox->value()) {
-                QList<LocPoint> route = mMap->getRoute(ui->routeABox->value());
+                MapRoute route = mMap->getRoute(ui->routeABox->value());
 
                 if (!mPacketInterface->clearRoute(carId)) {
                     ok = false;
                 }
 
-                if (!utility::uploadRouteHelper(mPacketInterface, carId, route)) {
+                if (!utility::uploadRouteHelper(mPacketInterface, carId, route.mRoute)) {
                     ok = false;
                 }
             } else if (carId == ui->carBBox->value()) {
                 car->emergencyStop();
 
-                QList<LocPoint> route = mMap->getRoute(ui->routeBBox->value());
+                MapRoute route = mMap->getRoute(ui->routeBBox->value());
 
                 if (!mPacketInterface->clearRoute(carId)) {
                     ok = false;
                 }
 
-                if (!utility::uploadRouteHelper(mPacketInterface, carId, route)) {
+                if (!utility::uploadRouteHelper(mPacketInterface, carId, route.mRoute)) {
                     ok = false;
                 }
             }

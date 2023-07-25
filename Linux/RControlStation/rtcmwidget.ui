@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>764</width>
-    <height>772</height>
+    <width>1007</width>
+    <height>576</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -175,105 +175,6 @@
        </layout>
       </item>
      </layout>
-    </widget>
-   </item>
-   <item>
-    <widget class="QGroupBox" name="groupBox_3">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="title">
-      <string>Serial</string>
-     </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_4">
-      <item>
-       <widget class="QPushButton" name="rtcmSerialRefreshButton">
-        <property name="toolTip">
-         <string>Refresh</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset resource="resources.qrc">
-          <normaloff>:/models/Icons/Refresh-96.png</normaloff>:/models/Icons/Refresh-96.png</iconset>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QComboBox" name="rtcmSerialPortBox"/>
-      </item>
-      <item>
-       <widget class="QSpinBox" name="rtcmSerialBaudBox">
-        <property name="suffix">
-         <string/>
-        </property>
-        <property name="prefix">
-         <string>Baud: </string>
-        </property>
-        <property name="maximum">
-         <number>4000000</number>
-        </property>
-        <property name="value">
-         <number>9600</number>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <spacer name="horizontalSpacer_2">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>17</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item>
-       <widget class="QLabel" name="rtcmSerialConnectedLabel">
-        <property name="text">
-         <string>Not Connected</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="rtcmSerialDisconnectButton">
-        <property name="toolTip">
-         <string>Disconnect</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset resource="resources.qrc">
-          <normaloff>:/models/Icons/Disconnected-96.png</normaloff>:/models/Icons/Disconnected-96.png</iconset>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="rtcmSerialConnectButton">
-        <property name="toolTip">
-         <string>Connect</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset resource="resources.qrc">
-          <normaloff>:/models/Icons/Connected-96.png</normaloff>:/models/Icons/Connected-96.png</iconset>
-        </property>
-       </widget>
-      </item>
-     </layout>
-     <zorder>rtcmSerialPortBox</zorder>
-     <zorder>rtcmSerialDisconnectButton</zorder>
-     <zorder>rtcmSerialConnectButton</zorder>
-     <zorder>rtcmSerialBaudBox</zorder>
-     <zorder>rtcmSerialRefreshButton</zorder>
-     <zorder>rtcmSerialConnectedLabel</zorder>
     </widget>
    </item>
    <item>
