@@ -43,6 +43,9 @@
 #include "datatypes.h"
 #include "checkboxdelegate.h"
 
+#include "ui_mainwindow.h"
+// #include "rtcmwidget.h"
+
 namespace {
 void stepTowards(double &value, double goal, double step) {
     if (value < goal) {
@@ -77,9 +80,13 @@ void deadband(double &value, double tres, double max) {
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    ui(new Ui::MainWindow),
+   fileDialogOpen(false)
 {
+//    rtcmWidget=new RtcmWidget(this);
+
     ui->setupUi(this);
+
 
     mVersion = "0.8";
     mSupportedFirmwares.append(qMakePair(12, 3));
@@ -114,7 +121,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(mJoystick, SIGNAL(buttonChanged(int,bool)),
             this, SLOT(jsButtonChanged(int,bool)));
-
+/*
     connect(mJoystick, &QGamepad::axisLeftXChanged, this, [](double value){
         });
         connect(mJoystick, &QGamepad::axisLeftYChanged, this, [](double value){
@@ -123,7 +130,7 @@ MainWindow::MainWindow(QWidget *parent) :
         });
         connect(mJoystick, &QGamepad::axisRightYChanged, this, [](double value){
         });
-
+*/
 
         static MainWindow *mThis=this;          // Just to be able to get the lambdas to work
         connect(mJoystick, &QGamepad::buttonL1Changed, this, [](bool pressed){
@@ -172,15 +179,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->mapWidget->setRoutePointSpeed(ui->mapRouteSpeedBox->value() / 3.6);
     ui->networkLoggerWidget->setMap(ui->mapWidget);
     ui->networkInterface->setMap(ui->mapWidget);
-//    ui->networkInterface->setMap(ui->mapWidgetFarm);
     ui->networkInterface->setPacketInterface(mPacketInterface);
     ui->networkInterface->setCars(&mCars);
     ui->moteWidget->setPacketInterface(mPacketInterface);
     ui->nComWidget->setMap(ui->mapWidget);
-//    ui->nComWidget->setMap(ui->mapWidgetFarm);
-
-//    ui->baseStationWidget->setMap(ui->mapWidget);
-//    ui->baseStationWidget->setMap(ui->mapWidgetFarm);
 
     connect(mTimer, SIGNAL(timeout()), this, SLOT(timerSlot()));
     connect(mSerialPort, SIGNAL(readyRead()),
@@ -267,8 +269,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //Initialize
     on_WgConnectPushButton_clicked();
-//    on_tcpConnectButton_clicked();
-//    on_carAddButton_clicked();
 
     if (!QSqlDatabase::drivers().contains("QSQLITE"))
         QMessageBox::critical(
@@ -284,7 +284,6 @@ MainWindow::MainWindow(QWidget *parent) :
         return;
     }
 
-
     // Create the data model:
     modelFarm = new QSqlRelationalTableModel(ui->farmTable);
 //    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
@@ -292,7 +291,6 @@ MainWindow::MainWindow(QWidget *parent) :
     modelFarm->setTable("locations");
 
     // Set the localized header captions:
- //   modelFarm->setHeaderData(locationIdx, Qt::Horizontal, tr("Location"));
     modelFarm->setHeaderData(modelFarm->fieldIndex("name"),
                          Qt::Horizontal, tr("Name"));
     modelFarm->setHeaderData(modelFarm->fieldIndex("longitude"),
@@ -320,7 +318,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     QDataWidgetMapper *mapperFarm = new QDataWidgetMapper(this);
     mapperFarm->setModel(modelFarm);
-    mapperFarm->addMapping(ui->locationnameEdit, modelFarm->fieldIndex("name"));
+//    mapperFarm->addMapping(ui->locationnameEdit, modelFarm->fieldIndex("name"));
 
     mapperFarm->addMapping(this->findChild<QLineEdit*>("ntripServerEdit"), modelFarm->fieldIndex("ip"));
     mapperFarm->addMapping(this->findChild<QSpinBox*>("ntripPortBox"), modelFarm->fieldIndex("port"));
@@ -330,8 +328,6 @@ MainWindow::MainWindow(QWidget *parent) :
     mapperFarm->addMapping(this->findChild<QLineEdit*>("ntripStreamEdit"), modelFarm->fieldIndex("stream"));
     mapperFarm->addMapping(this->findChild<QDoubleSpinBox*>("refSendLatBox"), modelFarm->fieldIndex("latitude"));
     mapperFarm->addMapping(this->findChild<QDoubleSpinBox*>("refSendLonBox"), modelFarm->fieldIndex("longitude"));
-
-//    mapperFarm->addMapping(ui->streamFarmBasestationEdit, modelFarm->fieldIndex("stream"));
 
     connect(ui->farmTable->selectionModel(),
             &QItemSelectionModel::currentRowChanged,
@@ -357,81 +353,122 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Set the localized header captions:
     modelField->setHeaderData(locationIdx, Qt::Horizontal, tr("Location"));
-    modelField->setHeaderData(modelField->fieldIndex("name"),
-                         Qt::Horizontal, tr("Field name"));
+    modelField->setHeaderData(modelField->fieldIndex("name"),  Qt::Horizontal, tr("Field name"));
+    modelField->setHeaderData(modelField->fieldIndex("fenced"),  Qt::Horizontal, tr("Is fenced?"));
+    modelField->setHeaderData(modelField->fieldIndex("boundaryXML"),  Qt::Horizontal, tr("boundary"));
+    modelField->setHeaderData(modelField->fieldIndex("location"),  Qt::Horizontal, tr("Location"));
+    modelField->setHeaderData(modelField->fieldIndex("id"),  Qt::Horizontal, tr("Id"));
+    /*
     // Populate the model:
     if (!modelField->select()) {
         showError(modelField->lastError());
         return;
     }
-
+*/
     // Set the model and hide the ID column:
     ui->fieldTable->setModel(modelField);
     ui->fieldTable->setColumnHidden(modelField->fieldIndex("id"), true);
     ui->fieldTable->setSelectionMode(QAbstractItemView::SingleSelection);
 
     ui->fieldTable->setItemDelegateForColumn(3, checkboxdelegate);
-    QTableView* tableFarm=ui->farmTable;
+
+
+    // Connect the signal from the first table view to a custom slot
+//        QObject::connect(ui->farmTable, &QTableView::clicked, [&](const QModelIndex& index) {
+        QObject::connect(ui->farmTable->selectionModel(), &QItemSelectionModel::currentChanged,
+                     [&](const QModelIndex& current, const QModelIndex& previous) {
+            int row = current.row();
+            int id = modelFarm->data(modelFarm->index(row, 0)).toInt();
+
+            double lon = modelFarm->data(modelFarm->index(row, 2)).toDouble();
+            double lat = modelFarm->data(modelFarm->index(row, 3)).toDouble();
+            qDebug() << "Lon: " << lon << ", lat: " << lat;
+            ui->mapWidgetFields->setEnuRef(lat,lon,0);
+            ui->mapWidgetFields->clearAllRoutes();
+
+            // Get the selected value from the first table view
+            QVariant selectedValue = id;
+
+            // Construct a new query based on the selected value
+            QString filter = QString("location = %1").arg(id);
+
+            // Set the new query for the QSqlRelationalTableModel
+            modelField->setFilter(filter);
+            modelField->select();
+
+            // Execute the SQL query
+            QString querystring= QString("SELECT * FROM fields WHERE location = %1").arg(selectedValue.toString());
+            QSqlQuery query(querystring);
+
+            // Loop through the query results
+            while (query.next()) {
+                // Access data for each record
+                int id = query.value("id").toInt();
+                QString boundaryXML= query.value("boundaryXML").toString();
+
+                // Process the data or do whatever you want with it
+                qDebug() << "ID:" << id << ", border:" << boundaryXML;
+                QXmlStreamReader xmlData(boundaryXML);
+                ui->mapWidgetFields->loadXMLRoute(&xmlData,true);
+            }
+            std::array<double, 4> extremes_m=ui->mapWidgetFields->findExtremeValuesFieldBorders();
+            double fieldareawidth_m=extremes_m[2]-extremes_m[0];
+            double fieldareaheight_m=extremes_m[3]-extremes_m[1];
+            double offsetx_m=(extremes_m[2]+extremes_m[0])/2;
+            double offsety_m=(extremes_m[3]+extremes_m[1])/2;
+            double scalex=0.5/(fieldareawidth_m);
+            double scaley=0.5/(fieldareaheight_m);
+            ui->mapWidgetFields->moveView(offsetx_m, offsety_m);
+            ui->mapWidgetFields->setScaleFactor(std::min(scalex,scaley));
+
+        });
+
     QTableView* tableShort=ui->fieldTable;
     QSqlRelationalTableModel *modelShort=this->modelField;
-    QSqlRelationalTableModel *modelFarm=this->modelFarm;
+    QSqlRelationalTableModel *modelField=this->modelFarm;
 
     MapWidget *mapShort=ui->mapWidgetFields;
     QLabel *areaLabel=ui->label_area_ha;
 
-//MapWidget::setEnuRef(double lat, double lon, double height);
 
-    QObject::connect(ui->farmTable->selectionModel(), &QItemSelectionModel::selectionChanged,
-                     [modelFarm,mapShort](const QItemSelection& selected, const QItemSelection&)
-    {
-        QModelIndexList selectedIndexes = selected.indexes();
-        if (selectedIndexes.isEmpty()) {
-            qDebug() << "No selection";
-            return;
-        }
-
-        int row = selectedIndexes.first().row();
-        qDebug() << "Selected Row: " << row;
-
-        // Retrieve the data of the selected row if needed
-        double lon = modelFarm->data(modelFarm->index(row, 2)).toDouble();
-        double lat = modelFarm->data(modelFarm->index(row, 3)).toDouble();
-        qDebug() << "Lon: " << lon << ", lat: " << lat;
-        mapShort->setEnuRef(lat,lon,0);
-        mapShort->clearAllRoutes();
-    });
-
-    QObject::connect(ui->fieldTable->selectionModel(), &QItemSelectionModel::selectionChanged,
-                     [modelShort,mapShort,areaLabel](const QItemSelection& selected, const QItemSelection&)
-                     {
-                         QModelIndexList selectedIndexes = selected.indexes();
-                         if (selectedIndexes.isEmpty()) {
-                             qDebug() << "No selection";
-                             return;
-                         }
-
-                         int row = selectedIndexes.first().row();
-                         qDebug() << "Selected Row: " << row;
-
-                         // Retrieve the data of the selected row if needed
-                         QString name = modelShort->data(modelShort->index(row, 1)).toString();
-                         QString xmlText = modelShort->data(modelShort->index(row, 4)).toString();
-                         qDebug() << "Name: " << name << ", xml: " << xmlText;
-                         mapShort->clearRoute();
-                         QXmlStreamReader xmlData(xmlText);
-                         //bool routes_found=utility::loadXMLRoute(&xmlData, mapShort);
-                         utility::loadXMLRoute(&xmlData, mapShort);
-                         MapRoute route=mapShort->getRoute();
-                         double area=route.getArea();
-                         areaLabel->setText(QString::number(area));
-                     });
+//    QObject::connect(ui->fieldTable->selectionModel(), &QItemSelectionModel::selectionChanged,
+//                     [modelShort,mapShort,areaLabel](const QItemSelection& selected, const QItemSelection&)
 
 
+  QObject::connect(ui->fieldTable->selectionModel(), &QItemSelectionModel::currentChanged,
+             [modelField,mapShort,areaLabel](const QModelIndex& current, const QModelIndex& previous)
+     {
+/*
+         int getRouteNow() const;
+         void setRouteNow(int routeNow);
+*/
+
+         int row = current.row();
+
+         qDebug() << "Selected Row: " << row;
+
+         // Retrieve the data of the selected row if needed
+         QString name = modelField->data(modelField->index(row, 1)).toString();
+         QString xmlText = modelField->data(modelField->index(row, 4)).toString();
+         qDebug() << "Name: " << name << ", xml: " << xmlText;
+         mapShort->clearRoute();
+         QXmlStreamReader xmlData(xmlText);
+         mapShort->loadXMLRoute(&xmlData,true);
+         MapRoute border=mapShort->getRoute();
+         double area=border.getArea();
+         qDebug() << "area: " << area;
+         areaLabel->setText(QString::number(area));
+     });
+
+/*
     // Connect the signal to the slot
     QObject::connect(mapShort, &MapWidget::routePointAdded, [mapShort,tableShort,modelShort](){
+        QMessageBox msg;
+        msg.setText("Point added");
+        msg.exec();
         QByteArray byteArray;
         QXmlStreamWriter stream(&byteArray);
-        utility::saveXMLRoutes(&stream,mapShort,false);
+        mapShort->saveXMLRoutes(&stream,false);
         QString xmlString = QString::fromUtf8(byteArray);
         QItemSelectionModel* selectionModel = tableShort->selectionModel();
         QModelIndexList selectedIndexes = selectionModel->selectedIndexes();
@@ -444,42 +481,11 @@ MainWindow::MainWindow(QWidget *parent) :
         qDebug() << "Selected Row: " << row;
 
         // Retrieve the data of the selected row if needed
-//        modelShort->data(modelShort->index(row, 4))=xmlString;
         modelShort->setData(modelShort->index(row,4),xmlString);
         tableShort->show();
 
-        QMessageBox msgBox;
-        msgBox.setText(xmlString);
-        msgBox.exec();
     });
-
-    // Initialize the Author combo box:
-    ui->locationEdit->setModel(modelField->relationModel(locationIdx));
-    ui->locationEdit->setModelColumn(
-                modelField->relationModel(locationIdx)->fieldIndex("name"));
-
-
-    QDataWidgetMapper *mapperField = new QDataWidgetMapper(this);
-    mapperField->setModel(modelField);
-    mapperField->addMapping(ui->fieldnameEdit, modelField->fieldIndex("name"));
-    mapperField->addMapping(ui->locationEdit, locationIdx);
-    mapperField->addMapping(ui->fencedCheckBox, modelField->fieldIndex("fenced"));
-//    mapperField->addMapping(ui->locationEdit, locationIdx);
-//    mapperFarm->addMapping(this->findChild<QLineEdit*>("ntripPasswordEdit"), modelFarm->fieldIndex("password"));
-
-    connect(ui->fieldTable->selectionModel(),
-            &QItemSelectionModel::currentRowChanged,
-            mapperField,
-            &QDataWidgetMapper::setCurrentModelIndex
-            );
-
-    ui->fieldTable->setCurrentIndex(modelField->index(0, 0));
-
-    // Initialize the Author combo box:
-    ui->locationEdit->setModel(modelField->relationModel(locationIdx));
-    ui->locationEdit->setModelColumn(
-                modelField->relationModel(locationIdx)->fieldIndex("name"));
-
+*/
     // Create the data model:
     modelVehicle = new QSqlRelationalTableModel(ui->vehicleTable);
 //    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
@@ -526,66 +532,47 @@ MainWindow::MainWindow(QWidget *parent) :
             &QDataWidgetMapper::setCurrentModelIndex
             );
 
-
-    QTableView* tableShortVeh=ui->vehicleTable;
-    QSqlRelationalTableModel *modelShortVeh=this->modelVehicle;
-/*
-    QObject::connect(ui->vehicleTable->selectionModel(), &QItemSelectionModel::selectionChanged,
-                     [tableShortVeh, modelShortVeh](const QItemSelection& selected, const QItemSelection&)
-                     {
-                         QModelIndexList selectedIndexes = selected.indexes();
-                         if (selectedIndexes.isEmpty()) {
-                             qDebug() << "No selection";
-                             return;
-                         }
-
-                         // Using an iterator
-                         int oldrow=-1;
-                         qDebug() << "Using an iterator:";
-                         for (QList<QModelIndex>::iterator it = selectedIndexes.begin(); it != selectedIndexes.end(); ++it) {
-                             QModelIndex currentrow = *it;
-                             int row = currentrow.row();
-                             if (row!=oldrow)
-                             {
-                                 int column = currentrow.column();
-                                 qDebug() << "Selected Row: " << row;
-                                 qDebug() << "Selected Column: " << column;
-
-                                 // Retrieve the data of the selected row if needed
-                                 QString name = modelShortVeh->data(modelShortVeh->index(row, 0)).toString();
-                                 QString ip = modelShortVeh->data(modelShortVeh->index(row, 1)).toString();
-                                 QString port = modelShortVeh->data(modelShortVeh->index(row, 2)).toString();
-                                 qDebug() << "Name: " << name << ", ip: " << ip << ", port: " << port;
-                                 oldrow=row;
-                             };
-                         }
-
-                   });
-*/
-
     ui->vehicleTable->setCurrentIndex(modelVehicle->index(0, 0));
 
     connect(ui->pushButton_field, &QPushButton::released, this, &MainWindow::handleFieldButton);
     connect(ui->pushButton_location, &QPushButton::released, this, &MainWindow::handleLocationButton);
 
+    /*
+    // Create a line edit widget
+    QLineEdit* lineEdit = ui->logfileEdit; // Use the lineEdit from the generated UI class
+    lineEdit->setReadOnly(true); // Make the line edit read-only to prevent direct user input
+
+
+    // Function to handle the file selection and update the line edit
+    auto handleFileSelection = [&]() {
+        QString filename = QFileDialog::getOpenFileName(this, "Open File", "", "CSV Files (*.csv);;All Files (*)");
+
+        if (!filename.isEmpty()) {
+            // Set the selected file path to the line edit
+            lineEdit->setText(filename);
+
+            // You can now use the selected file path for further processing
+            qDebug() << "Selected file:" << filename;
+        } else {
+            qDebug() << "No file selected!";
+        }
+    };
+
+
+    // Connect the line edit's focusInSignal to the handleFileSelection function
+    QObject::connect(lineEdit, &QLineEdit::focusIn, handleFileSelection);
+*/
+
+
     ui->fieldTable->installEventFilter(this);
     ui->farmTable->installEventFilter(this);
     ui->vehicleTable->installEventFilter(this);
 
-//    QWidget* pWidget= ui->mainTabWidget->findChild<QWidget *>("tabSettings")->findChild<QTabWidget *>("tabWidgetSettings")->findChild<QWidget *>("tab_19");
-//    pWidget->close();
-
-    QTabWidget* pWidget= ui->mainTabWidget->findChild<QWidget *>("tabSettings")->findChild<QTabWidget *>("tabWidgetSettings");
-    pWidget->removeTab(3);
+    ui->mainTabWidget->removeTab(9);
+    ui->mainTabWidget->removeTab(8);
     ui->mainTabWidget->removeTab(7);
     ui->mainTabWidget->removeTab(6);
     ui->mainTabWidget->removeTab(5);
-    ui->mainTabWidget->removeTab(4);
-
-    //    ui->tab_19->close();
-//    ui->tabWidgetSettings->removeTab(4);
-//  ui->mainTabWidget->removeTab(5);
-
     qApp->installEventFilter(this);
 }
 
@@ -612,155 +599,117 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
 {
     Q_UNUSED(object);
 
-    // Emergency stop on escape
-    if (e->type() == QEvent::KeyPress) {
+    if (e->type() == QEvent::KeyPress)
+    {
         QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
+//        qDebug() << "in eventFilter (key)";
+//        qDebug() << keyEvent->key();
+        // Emergency stop on escape
         if (keyEvent->key() == Qt::Key_Escape) {
             on_stopButton_clicked();
             return true;
         }
-    }
-
-    // Handle F10 here as it won't be detected from the camera window otherwise.
-    if (e->type() == QEvent::KeyPress) {
-        QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
+        // Handle F10 here as it won't be detected from the camera window otherwise.
         if (keyEvent->key() == Qt::Key_F10) {
             on_actionToggleCameraFullscreen_triggered();
             return true;
         }
+        if (object == ui->farmTable)
+          {
+            qDebug() << "in farmtable";
+            switch (keyEvent->key())
+            {
+                case Qt::Key_Delete:
+                    QModelIndexList selectedRows = ui->farmTable->selectionModel()->selectedRows();
+                    QSqlTableModel* model = qobject_cast<QSqlTableModel*>(ui->farmTable->model());
+                    for (const QModelIndex& index : selectedRows) {
+                        model->removeRow(index.row());
+                    }
+                    model->select();
+                    return true; // Event is handled, don't propagate further
+            }
+        }
+        if (object == ui->fieldTable)
+          {
+            qDebug() << "in fieldtable";
+            QItemSelectionModel* selectionModel = ui->fieldTable->selectionModel();
+            QModelIndexList selection = selectionModel->selectedRows();
+            QSqlTableModel* model = qobject_cast<QSqlTableModel*>(ui->fieldTable->model());
+            switch (keyEvent->key())
+            {
+                case Qt::Key_Delete:
+                  // Multiple rows can be selected
+                  for(int i=0; i< selection.count(); i++)
+                  {
+                      QModelIndex index = selection.at(i);
+                      qDebug() << index.row();
+                      QAbstractItemModel* connectedModel = ui->fieldTable->model();
+                      QString fieldid = connectedModel->data(connectedModel->index(index.row(), 0)).toString();
+                      deleteField(fieldid);
+                                  //                     connectedModel->select();
+                  }
+                  if (model) {
+                      model->select();
+                  };
+                  return true;
+                break;
+            case Qt::Key_Return:
+                QByteArray byteArray;
+                QXmlStreamWriter stream(&byteArray);
+                ui->mapWidgetFields->saveXMLRoutes(&stream,false);
+                QString xmlString = QString::fromUtf8(byteArray);
+                QModelIndexList selectedIndexes = selectionModel->selectedIndexes();
+                if (selectedIndexes.isEmpty()) {
+                    qDebug() << "No selection";
+                }
+
+                int row = selectedIndexes.first().row();
+                qDebug() << "Selected Row: " << row;
+
+                // Retrieve the data of the selected row if needed
+                model->setData(model->index(row,4),xmlString);
+                ui->fieldTable->show();
+                return true;
+              }
+      }
+
     }
 
-/*
-    if (e->type() == QEvent::KeyPress || e->type() == QEvent::KeyRelease) {
-        QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
-        bool isPress = e->type() == QEvent::KeyPress;
+    if (object == ui->logfileEdit && e->type() == QEvent::FocusIn)
+    {
+        if (!fileDialogOpen) {
+            // Handle the file selection and update the line edit
+            fileDialogOpen = true;
+            // Handle the file selection and update the line edit
+            QString filename = QFileDialog::getOpenFileName(this, "Open File", "", "CSV Files (*.csv);;All Files (*)");
 
-        switch(keyEvent->key()) {
-        case Qt::Key_Up:
-        case Qt::Key_Down:
-        case Qt::Key_Left:
-        case Qt::Key_Right:
-            break;
+            if (!filename.isEmpty()) {
+                // Set the selected file path to the line edit
+                ui->logfileEdit->setText(filename);
 
-        default:
-            return false;
+                // You can now use the selected file path for further processing
+                qDebug() << "Selected file:" << filename;
+                QFile file(filename);
+
+                if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                    qDebug() << "Failed to open the file:" << file.errorString();
+                    return true;
+                }
+
+                QTextStream in(&file);
+                while (!in.atEnd()) {
+                    QString line = in.readLine();
+                    // Process the line (e.g., split it by commas to get individual fields)
+                }
+
+                file.close();
+            } else {
+                qDebug() << "No file selected!";
+                fileDialogOpen = false;
+            }
         }
-
-        switch(keyEvent->key()) {
-        case Qt::Key_Up: mKeyUp = isPress; break;
-        case Qt::Key_Down: mKeyDown = isPress; break;
-        case Qt::Key_Left: mKeyLeft = isPress; break;
-        case Qt::Key_Right: mKeyRight = isPress; break;
-
-        default:
-            break;
-        }
-
-        // Return true to not pass the key event on
         return true;
     }
-*/
-
-    if ( object == ui->fieldTable &&  (e->type() == QEvent::HoverLeave )  ) {
-        qDebug() << "OUT";
-    }
-    if ( object->objectName() == "fieldTable")
-    {
-        switch (e->type())
-        {
-            case QEvent::KeyPress:
-                {
-                    QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
-//                    qDebug("Ate key press (field) %d", keyEvent->key());
-                    switch ( keyEvent->key() )
-                    {
-                        case Qt::Key_Up:
-                            qDebug() << "UP";
-                            break;
-                        case Qt::Key_Down:
-                            qDebug() << "DOWN";
-                            break;
-                        case Qt::Key_Left:
-                            qDebug() << "LEFT";
-                            break;
-                        case Qt::Key_Right:
-                            qDebug() << "RIGHT";
-                            break;
-                    case Qt::Key_Delete:
-                        QModelIndexList selection = ui->fieldTable->selectionModel()->selectedRows();
-
-                        // Multiple rows can be selected
-                        for(int i=0; i< selection.count(); i++)
-                        {
-                            QModelIndex index = selection.at(i);
-                            qDebug() << index.row();
-                            QAbstractItemModel* connectedModel = ui->fieldTable->model();
-                            QString fieldid = connectedModel->data(connectedModel->index(index.row(), 0)).toString();
-                            deleteField(fieldid);
-                            QSqlTableModel* model = qobject_cast<QSqlTableModel*>(ui->fieldTable->model());
-                                        if (model) {
-                                            model->select();
-                                        };
-                                        //                     connectedModel->select();
-                        }
-/*                        QTableView* thisTableView=ui->fieldTable;
-                        // Schedule a repaint after 2 seconds
-                        QTimer::singleShot(2000, [&thisTableView]() {
-                            thisTableView->viewport()->repaint();
-                        });*/
-                        break;
-                    }
-                    return true;
-                }
-            default:
-                {
-                    //         qDebug() << object;
-                    //         qDebug() << event;
-                     return QObject::eventFilter(object, e);
-                }
-        }
-    }
-    if ( object->objectName() == "locationTable")
-    {
-        switch (e->type())
-        {
-            case QEvent::KeyPress:
-                {
-                    QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
-                    qDebug("Ate key press (location) %d", keyEvent->key());
-                    return true;
-                }
-            default:
-                {
-                    //         qDebug() << object;
-                    //         qDebug() << e;
-                     return QObject::eventFilter(object, e);
-                }
-        }
-    }
-
-    /*
-    ////////////////////////////////////
-    switch ( e->key() )
-    {
-        case Qt::Key_Up:
-            qDebug() << "UP";
-            break;
-        case Qt::Key_Down:
-            qDebug() << "DOWN";
-            break;
-        case Qt::Key_Left:
-            qDebug() << "LEFT";
-            break;
-        case Qt::Key_Right:
-            qDebug() << "RIGHT";
-            break;
-    default:
-            qDebug() << e->key() << Qt::endl;
-            break;
-    }
-/////////////////
-    */
     // false means it should be send to target also. as in , we dont remove it.
     // if you return true , you will take the event and widget never sees it so be carefull with that.
 
@@ -774,8 +723,8 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
         return false;
     }
 
-
-    return false;
+    return QObject::eventFilter(object, e);
+//    return false;
 }
 
 void MainWindow::addCar(int id, QString name, bool pollData)
@@ -2397,7 +2346,7 @@ void MainWindow::saveRoutes(bool withId)
 
 
     QXmlStreamWriter stream(&file);
-    utility::saveXMLRoutes(&stream,ui->mapWidget,withId);
+    ui->mapWidget->saveXMLRoutes(&stream,withId);
     file.close();
     showStatusInfo("Saved routes", true);
 }
@@ -2519,7 +2468,6 @@ void MainWindow::on_boundsFillPushButton_clicked()
     ui->mapWidget->setRouteNow(r);
     ui->mapRouteBox->setValue(r);
     ui->mapWidget->repaint();
-
 }
 
 void MainWindow::on_lowerToolsCheckBox_stateChanged(int arg1)
@@ -2734,33 +2682,46 @@ void MainWindow::showError(const QSqlError &err)
 void MainWindow::handleFieldButton()
 {
     QMessageBox msgBox;
-    msgBox.setText("Button handled: " + ui->fieldnameEdit->text()+', '+QString::number(ui->locationEdit->currentIndex()));
-    msgBox.exec();
-    const auto INSERT_FIELD_SQL = QLatin1String(R"(
-        insert into fields(title, year, location, rating)
-                          values(?, ?, ?, ?)
-        )");
-    QSqlQuery q;
-    if (q.prepare(INSERT_FIELD_SQL))
-    {
-        addField(q, ui->fieldnameEdit->text(), ui->locationEdit->currentIndex());
-    };
+    QModelIndexList selectedIndexes = ui->farmTable->selectionModel()->selectedIndexes();
+    if (!selectedIndexes.isEmpty()) {
+        int rowIndex = selectedIndexes.first().row();
+        int id = modelFarm->record(rowIndex).value("id").toInt();
+        msgBox.setText("Selected ID:" + QString::number(id));
+        msgBox.exec();
+        const auto INSERT_FIELD_SQL = QLatin1String(R"(
+            insert into fields(title, year, location, rating)
+                              values(?, ?, ?, ?)
+            )");
+        QSqlQuery q;
+        if (q.prepare(INSERT_FIELD_SQL))
+        {
+            addField(q, ui->fieldnameEdit->text(), id);
+        };
+    } else {
+        msgBox.setText("No row selected!");
+        msgBox.exec();
+    }
 }
+
 
 void MainWindow::handleLocationButton()
 {
     QMessageBox msgBox;
-    msgBox.setText("Button handled: " + ui->fieldnameEdit->text()+', '+QString::number(ui->locationEdit->currentIndex()));
+    msgBox.setText("Adding location:" + ui->locationnameEdit->text());
     msgBox.exec();
-    const auto INSERT_LOCATION_SQL = QLatin1String(R"(
-        insert into fields(namw, longitude,latitude)
-                          values(?, ?, ?)
+    const auto INSERT_FIELD_SQL = QLatin1String(R"(
+        insert into locations(name)
+                          values(?)
         )");
     QSqlQuery q;
-    if (q.prepare(INSERT_LOCATION_SQL))
+    if (q.prepare(INSERT_FIELD_SQL))
     {
-        addField(q, ui->fieldnameEdit->text(), ui->locationEdit->currentIndex());
+        addLocation(q, ui->locationnameEdit->text());
     };
+    QSqlTableModel *tableModel = qobject_cast<QSqlTableModel*>(ui->farmTable->model());
+    if (tableModel) {
+        tableModel->select(); // Re-fetch the data from the database to update the model
+    }
 }
 
 
@@ -2810,10 +2771,9 @@ void deleteField(const QVariant &fieldId)
 }
 
 
-QVariant addLocation(QSqlQuery &q, const QString &name, QDate birthdate)
+QVariant addLocation(QSqlQuery &q, const QString &name)
 {
     q.addBindValue(name);
-    q.addBindValue(birthdate);
     q.exec();
     return q.lastInsertId();
 }

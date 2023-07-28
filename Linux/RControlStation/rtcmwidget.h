@@ -40,12 +40,14 @@ signals:
     void rtcmReceived(QByteArray data);
     void refPosGet();
 
+public slots:
+    void on_ntripConnectButton_clicked();
+
 private slots:
     void timerSlot();
     void rtcmRx(QByteArray data, int type, bool sync);
     void refPosRx(double lat, double lon, double height, double antenna_height);
 
-    void on_ntripConnectButton_clicked();
     void on_ntripDisconnectButton_clicked();
     void on_resetAllCountersButton_clicked();
 //    void on_ntripBox_toggled(bool checked);

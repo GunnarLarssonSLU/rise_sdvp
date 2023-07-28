@@ -26,6 +26,7 @@ OsmClient::OsmClient(QObject *parent) : QObject(parent)
     mHddTilesLoaded = 0;
     mTilesDownloaded = 0;
     mRamTilesLoaded = 0;
+    type=1;                     // Use ESRI
 
     // Generate status pixmaps
     for (int i = 0;i < 4;i++) {
@@ -119,7 +120,6 @@ bool OsmClient::setCacheDir(QString path)
 
     if (file.isDir()) {
         mCacheDir = path;
-        qDebug() << "Cache folder:" << path;
         return true;
     } else {
         qWarning() << "Invalid cache directory provided.";
@@ -133,7 +133,6 @@ bool OsmClient::setTileServerUrl(QString path)
 
     if (url.isValid()) {
         mTileServer = path;
-        qDebug() << "Tile server:" << path;
         return true;
     } else {
         qWarning() << "Invalid tile server url provided:" << url.errorString();
@@ -238,12 +237,16 @@ int OsmClient::downloadTile(int zoom, int x, int y)
 
             if (!mDownloadingTiles.contains(key)) {
                 // Only add if this tile is not already downloading
-//                QString path = mTileServer + "/" + QString::number(zoom) +
-//                        "/" + QString::number(x) + "/" + QString::number(y) + ".png";
-                QString path = mTileServer + QString::number(zoom) +
-                        "/" + QString::number(y) + "/" + QString::number(x);
-                qDebug() << "Tile server:" << path;
-               // cout << "Tile server:" << path;
+                QString path;
+                switch(type)
+                {
+                    case 1:
+                    path = mTileServer + QString::number(zoom) + "/" + QString::number(y) + "/" + QString::number(x);
+                    break;
+                case 2:
+                    path = mTileServer + "/" + QString::number(zoom) + "/" + QString::number(x) + "/" + QString::number(y) + ".png";
+                    break;
+                }
 
                 QNetworkRequest request(path);
                 request.setRawHeader("User-Agent", "Firefox");
@@ -309,17 +312,35 @@ void OsmClient::fileDownloaded(QNetworkReply *pReply)
 
         // Try to cache tile
         if (!mCacheDir.isEmpty()) {
-// IF ESRI
-            QString path = mCacheDir + "/" + QString::number(zoom) + "/" +
-                    QString::number(y) + "/" + QString::number(x) + ".jpeg";
-// If OpenStreetMap
-//            QString path = mCacheDir + "/" + QString::number(zoom) + "/" +
-//                    QString::number(x) + "/" + QString::number(y) + ".png";
+            QString path;
+            switch(type)
+                 {
+            // IF ESRI
+            case 1:
+                path = mCacheDir + "/" + QString::number(zoom) + "/" +
+                        QString::number(y) + "/" + QString::number(x) + ".jpeg";
+                break;
+                // If OpenStreetMap
+            case 2:
+                path = mCacheDir + "/" + QString::number(zoom) + "/" +
+                        QString::number(x) + "/" + QString::number(y) + ".png";
+                break;
+            }
+
             QFile file;
             file.setFileName(path);
             if (!file.exists()) {
-//                QDir().mkpath(mCacheDir + "/" + QString::number(zoom) + "/" + QString::number(x));
-                QDir().mkpath(mCacheDir + "/" + QString::number(zoom) + "/" + QString::number(y));
+                switch(type)
+                 {
+                // IF ESRI
+                case 1:
+                    QDir().mkpath(mCacheDir + "/" + QString::number(zoom) + "/" + QString::number(y));
+                    break;
+                    // If OpenStreetMap
+                case 2:
+                QDir().mkpath(mCacheDir + "/" + QString::number(zoom) + "/" + QString::number(x));
+                    break;
+                }
                 if (file.open(QIODevice::ReadWrite)) {
                     file.write(data);
                     file.close();
