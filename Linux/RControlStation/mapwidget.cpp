@@ -23,6 +23,7 @@
 #include <QTime>
 
 #include "mapwidget.h"
+#include "qmessagebox.h"
 #include "utility.h"
 #include "attributes_masks.h"
 
@@ -406,6 +407,8 @@ void MapWidget::addRoutePoint(double px, double py, double speed, qint32 time)
 
 MapRoute MapWidget::getRoute(int ind)
 {
+    qDebug() << "Selected route: " << ind;
+    qDebug() << "Total no. of routes: " << mRoutes.size();
     if (ind < 0) {
         return mRoutes[mRouteNow];
     } else {
@@ -1908,7 +1911,7 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
         }
     }
 
-    // Draw routes
+    // Draw routes & borders
     for (int rn = 0;rn < mRoutes.size();rn++) {
         MapRoute &routeNow = mRoutes[rn];
 
@@ -2156,6 +2159,181 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
     painter.end();
 }
 
+bool MapWidget::loadXMLRoute(QXmlStreamReader* stream,bool isBorder)
+{
+    // Look for routes tag
+    bool routes_found = false;
+    while (stream->readNextStartElement()) {
+        if (stream->name() == "routes") {
+            routes_found = true;
+            break;
+        }
+    }
+
+    if (routes_found) {
+        QList<QPair<int, MapRoute > > routes;
+        QList<LocPoint> anchors;
+
+        while (stream->readNextStartElement()) {
+            QString name = stream->name().toString();
+
+            if (name == "route") {
+                int id = -1;
+                MapRoute route;
+
+                while (stream->readNextStartElement()) {
+                    QString name2 = stream->name().toString();
+
+                    if (name2 == "id") {
+                        id = stream->readElementText().toInt();
+                    } else if (name2 == "point") {
+                        LocPoint p;
+
+                        while (stream->readNextStartElement()) {
+                            QString name3 = stream->name().toString();
+
+                            if (name3 == "x") {
+                                p.setX(stream->readElementText().toDouble());
+                            } else if (name3 == "y") {
+                                p.setY(stream->readElementText().toDouble());
+                            } else if (name3 == "speed") {
+                                p.setSpeed(stream->readElementText().toDouble());
+                            } else if (name3 == "time") {
+                                p.setTime(stream->readElementText().toInt());
+                            } else if (name3 == "attributes") {
+                                p.setAttributes(stream->readElementText().toInt());
+                            } else {
+                                qWarning() << ": Unknown XML element :" << name2;
+                                stream->skipCurrentElement();
+                            }
+                        }
+
+                        route.append(p);
+                    } else {
+                        qWarning() << ": Unknown XML element :" << name2;
+                        stream->skipCurrentElement();
+                    }
+
+                    if (stream->hasError()) {
+                        qWarning() << " : XML ERROR :" << stream->errorString();
+                    }
+                }
+
+                routes.append(QPair<int, MapRoute >(id, route));
+            } else if (name == "anchors") {
+                while (stream->readNextStartElement()) {
+                    QString name2 = stream->name().toString();
+
+                    if (name2 == "anchor") {
+                        LocPoint p;
+
+                        while (stream->readNextStartElement()) {
+                            QString name3 = stream->name().toString();
+
+                            if (name3 == "x") {
+                                p.setX(stream->readElementText().toDouble());
+                            } else if (name3 == "y") {
+                                p.setY(stream->readElementText().toDouble());
+                            } else if (name3 == "height") {
+                                p.setHeight(stream->readElementText().toDouble());
+                            } else if (name3 == "id") {
+                                p.setId(stream->readElementText().toInt());
+                            } else {
+                                qWarning() << ": Unknown XML element :" << name2;
+                                stream->skipCurrentElement();
+                            }
+                        }
+
+                        anchors.append(p);
+                    } else {
+                        qWarning() << ": Unknown XML element :" << name2;
+                        stream->skipCurrentElement();
+                    }
+
+                    if (stream->hasError()) {
+                        qWarning() << " : XML ERROR :" << stream->errorString();
+                    }
+                }
+            }
+
+            if (stream->hasError()) {
+                qWarning() << "XML ERROR :" << stream->errorString();
+                qWarning() << stream->lineNumber() << stream->columnNumber();
+            }
+        }
+    QMessageBox msg;
+        for (QPair<int, MapRoute > r: routes) {
+            if (r.first >= 0) {
+                int routeLast = this->getRouteNow();
+                msg.setText(QString::number(routeLast));
+                msg.exec();
+                this->setRouteNow(r.first);
+                r.second.setIsBorder(isBorder);
+                this->setRoute(r.second);
+                this->setRouteNow(routeLast);
+            } else {
+                this->addRoute(r.second);
+            }
+        }
+
+        for (LocPoint p: anchors) {
+            this->addAnchor(p);
+        }
+    }
+
+    return routes_found;
+
+}
+
+void MapWidget::saveXMLRoutes(QXmlStreamWriter* stream, bool withId)
+{
+    stream->setCodec("UTF-8");
+    stream->setAutoFormatting(true);
+    stream->writeStartDocument();
+
+    stream->writeStartElement("routes");
+
+    QList<LocPoint> anchors = this->getAnchors();
+    QList<MapRoute> routes = this->getRoutes();
+
+    if (!anchors.isEmpty()) {
+        stream->writeStartElement("anchors");
+        for (LocPoint p: anchors) {
+            stream->writeStartElement("anchor");
+            stream->writeTextElement("x", QString::number(p.getX()));
+            stream->writeTextElement("y", QString::number(p.getY()));
+            stream->writeTextElement("height", QString::number(p.getHeight()));
+            stream->writeTextElement("id", QString::number(p.getId()));
+            stream->writeEndElement();
+        }
+        stream->writeEndElement();
+    }
+
+    for (int i = 0;i < routes.size();i++) {
+        if (!routes.at(i).isEmpty()) {
+            stream->writeStartElement("route");
+
+            if (withId) {
+                stream->writeTextElement("id", QString::number(i));
+            }
+
+            for (const LocPoint p: routes.at(i)) {
+                stream->writeStartElement("point");
+                stream->writeTextElement("x", QString::number(p.getX()));
+                stream->writeTextElement("y", QString::number(p.getY()));
+                stream->writeTextElement("speed", QString::number(p.getSpeed()));
+                stream->writeTextElement("time", QString::number(p.getTime()));
+                stream->writeTextElement("attributes", QString::number(p.getAttributes()));
+                stream->writeEndElement();
+            }
+            stream->writeEndElement();
+        }
+    }
+
+    stream->writeEndDocument();
+}
+
+
 void MapWidget::updateTraces()
 {
     // Store trace for the selected car
@@ -2200,6 +2378,35 @@ void MapWidget::updateTraces()
         mCarTraceUwb.removeFirst();
     }
 }
+
+std::array<double, 4> MapWidget::findExtremeValuesFieldBorders()
+{
+    std::array<double, 4> extremes;
+    extremes[0]=9999999;
+    extremes[1]=9999999;
+    extremes[2]=-9999999;
+    extremes[3]=-9999999;
+
+    QList<LocPoint> allpoints;
+    for (const MapRoute& border : mRoutes)
+    {
+        if (border.getIsBorder())
+        allpoints.append(border.mRoute);
+    }
+    for (const LocPoint& point : allpoints)
+    {
+        double x=point.getX();
+        double y=point.getY();
+
+        if (x<extremes[0]) extremes[0]=x;
+        if (x>extremes[2]) extremes[2]=x;
+        if (y<extremes[1]) extremes[1]=y;
+        if (y>extremes[3]) extremes[3]=y;
+
+    }
+    return extremes;
+}
+
 /*
 MapRoute::MapRoute(QList<LocPoint> route, QList<LocPoint> infotrace)
 {
@@ -2292,7 +2499,28 @@ LocPoint &	MapRoute::operator[](int i)
     return mRoute[i];
 }
 
+void MapRoute::setIsBorder(bool border)
+{
+    isBorder=border;
+}
+
+bool MapRoute::getIsBorder() const
+{
+    return isBorder;
+}
+
 void MapRoute::paint(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawTrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool highQuality)
+{
+    if (isBorder)
+    {
+        paintBorder(painter, pen, isSelected, mScaleFactor, drawTrans);
+    } else
+    {
+        paintPath(mapWidget, painter, pen, isSelected, mScaleFactor, drawTrans, txt, pt_txt, rect_txt, txtTrans, highQuality);
+    }
+}
+
+void MapRoute::paintPath(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawTrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool highQuality)
 {
     Qt::GlobalColor defaultDarkColor = Qt::darkGray;
     Qt::GlobalColor defaultColor = Qt::gray;
@@ -2409,6 +2637,35 @@ void MapRoute::paint(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool is
         }
     }
 
+}
+
+void MapRoute::paintBorder(QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawTrans)
+{
+    pen.setWidthF(5.0 / mScaleFactor);
+    painter.setTransform(drawTrans);
+
+    QPolygon polygon;
+    int nPoints=this->size();
+//    for (int i = 1;i < nPoints;i++) {
+    for (int i = 0;i < nPoints;i++) {
+        double x=mRoute[i].getX() * 1000.0;
+        double y=mRoute[i].getY() * 1000.0;
+
+        polygon << QPoint(x, y);
+        QPointF p = mRoute[i].getPointMm();
+        painter.setPen(QPen(Qt::black, 3.0 / mScaleFactor)); // Set the pen color to blue and width to 2
+        painter.drawEllipse(p, 5.0 / mScaleFactor,
+                            5.0 / mScaleFactor);
+
+    }
+    // Set the brush color for filling the polygon
+    painter.setBrush(QBrush(Qt::yellow));
+    if (!isSelected) painter.setOpacity(0.35);
+    // Set the pen color for drawing the border
+    painter.setPen(QPen(Qt::darkRed, 5.0 / mScaleFactor, Qt::DashDotLine, Qt::RoundCap)); // Set the pen color to blue and width to 2
+
+    // Draw and fill the polygon
+    painter.drawPolygon(polygon);
 }
 
 void MapRoute::routeinfo(MapWidget* mapWidget, QPainter &painter,double start_txt,const double txtOffset,const double txt_row_h, int width, QString txt)

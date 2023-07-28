@@ -38,6 +38,7 @@
 #include "wireguard.h"
 #include "checkboxdelegate.h"
 #include <memory>
+// #include "rtcmwidget.h"
 
 #ifdef HAS_LIME_SDR
 #include "gpssim.h"
@@ -201,6 +202,8 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+//    RtcmWidget *rtcmWidget;
+
     QTimer *mTimer;
     QTimer *mHeartbeatTimer; // periodic heartbeat to vehicles for safety
     const int mHeartbeatMS = 300;
@@ -252,10 +255,12 @@ private:
     QSqlRelationalTableModel *modelFarm;
     QSqlRelationalTableModel *modelVehicle;
     int locationIdx;
+    bool fileDialogOpen;
 };
 
+
 void addField(QSqlQuery &q, const QString &title, const QVariant &locationId);
-QVariant addLocation(QSqlQuery &q, const QString &name, QDate birthdate);
+QVariant addLocation(QSqlQuery &q, const QString &name);
 void deleteField(const QVariant &fieldId);
 
 QSqlError initDb();

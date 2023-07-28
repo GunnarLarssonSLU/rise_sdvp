@@ -125,6 +125,8 @@ private:
     void storeTileMemory(quint64 key, const OsmTile &tile);
     const QPixmap& getStatusPixmap(quint64 key);
 
+    int type; // What format are used on urls etc.
+
 };
 
 #endif // OSMCLIENT_H

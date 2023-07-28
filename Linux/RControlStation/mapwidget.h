@@ -31,6 +31,8 @@
 #include <QPinchGesture>
 #include <QImage>
 #include <QTransform>
+#include <QXmlStreamWriter>
+#include <QXmlStreamReader>
 
 #include "locpoint.h"
 #include "carinfo.h"
@@ -173,6 +175,10 @@ public:
     quint32 getRoutePointAttributes() const;
     void setRoutePointAttributes(const quint32 &routePointAttributes);
 
+    bool loadXMLRoute(QXmlStreamReader* stream,bool isBorder);
+    void saveXMLRoutes(QXmlStreamWriter* stream,bool withId);
+
+    std::array<double, 4> findExtremeValuesFieldBorders();
 signals:
     void scaleChanged(double newScale);
     void offsetChanged(double newXOffset, double newYOffset);
@@ -201,6 +207,7 @@ private:
     QVector<LocPoint> mCarTraceUwb;
     QList<LocPoint> mAnchors;
     QList<MapRoute> mRoutes;
+    QList<MapRoute> mFieldborders;
     QList<QList<LocPoint>> mInfoTraces;
     //    QList<MapRoute> mInfoTraces;
     QList<LocPoint> mVisibleInfoTracePoints;
@@ -287,11 +294,16 @@ public:
     QList<LocPoint> mInfoTrace;
 
     double getArea();
+
     void paint(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawtrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool highQuality = false);
+    void paintPath(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawtrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool highQuality = false);
+    void paintBorder(QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawtrans);
     void routeinfo(MapWidget* mapWidget, QPainter &painter,double start_txt,const double txtOffset,const double txt_row_h, int width, QString txt);
+    void setIsBorder(bool border);
+    bool getIsBorder() const;
 
 private:
-
+    bool isBorder;
 
 };
 
