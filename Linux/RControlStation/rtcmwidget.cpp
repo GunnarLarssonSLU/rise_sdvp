@@ -110,44 +110,7 @@ void RtcmWidget::timerSlot()
 void RtcmWidget::rtcmRx(QByteArray data, int type, bool sync)
 {
     (void)sync;
-
-    switch (type) {
-    case 1001: ui->rtcm1001Number->display(ui->rtcm1001Number->value() + 1); break;
-    case 1002: ui->rtcm1002Number->display(ui->rtcm1002Number->value() + 1); break;
-    case 1003: ui->rtcm1003Number->display(ui->rtcm1003Number->value() + 1); break;
-    case 1004: ui->rtcm1004Number->display(ui->rtcm1004Number->value() + 1); break;
-    case 1074: ui->rtcm1074Number->display(ui->rtcm1074Number->value() + 1); break;
-    case 1075: ui->rtcm1075Number->display(ui->rtcm1075Number->value() + 1); break;
-    case 1077: ui->rtcm1077Number->display(ui->rtcm1077Number->value() + 1); break;
-
-    case 1009: ui->rtcm1009Number->display(ui->rtcm1009Number->value() + 1); break;
-    case 1010: ui->rtcm1010Number->display(ui->rtcm1010Number->value() + 1); break;
-    case 1011: ui->rtcm1011Number->display(ui->rtcm1011Number->value() + 1); break;
-    case 1012: ui->rtcm1012Number->display(ui->rtcm1012Number->value() + 1); break;
-    case 1084: ui->rtcm1084Number->display(ui->rtcm1084Number->value() + 1); break;
-    case 1085: ui->rtcm1085Number->display(ui->rtcm1085Number->value() + 1); break;
-    case 1087: ui->rtcm1087Number->display(ui->rtcm1087Number->value() + 1); break;
-    case 1230: ui->rtcm1230Number->display(ui->rtcm1230Number->value() + 1); break;
-
-    case 1094: ui->rtcm1094Number->display(ui->rtcm1094Number->value() + 1); break;
-    case 1095: ui->rtcm1095Number->display(ui->rtcm1095Number->value() + 1); break;
-    case 1097: ui->rtcm1097Number->display(ui->rtcm1097Number->value() + 1); break;
-
-    case 1115: ui->rtcm1115Number->display(ui->rtcm1115Number->value() + 1); break;
-
-    case 1124: ui->rtcm1124Number->display(ui->rtcm1124Number->value() + 1); break;
-    case 1125: ui->rtcm1125Number->display(ui->rtcm1125Number->value() + 1); break;
-    case 1127: ui->rtcm1127Number->display(ui->rtcm1127Number->value() + 1); break;
-
-    case 1005: ui->rtcm1005Number->display(ui->rtcm1005Number->value() + 1); break;
-    case 1006: ui->rtcm1006Number->display(ui->rtcm1006Number->value() + 1); break;
-
-    case 1019: ui->rtcm1019Number->display(ui->rtcm1019Number->value() + 1); break;
-    case 1020: ui->rtcm1020Number->display(ui->rtcm1020Number->value() + 1); break;
-    default:
-        break;
-    }
-
+    qDebug() << "Type: " << type << ", data:" << data;
     emit rtcmReceived(data);
 }
 
@@ -180,41 +143,6 @@ void RtcmWidget::on_ntripDisconnectButton_clicked()
     mRtcm->disconnectTcpNtrip();
 }
 
-void RtcmWidget::on_resetAllCountersButton_clicked()
-{
-    ui->rtcm1001Number->display(0);
-    ui->rtcm1002Number->display(0);
-    ui->rtcm1003Number->display(0);
-    ui->rtcm1004Number->display(0);
-    ui->rtcm1074Number->display(0);
-    ui->rtcm1075Number->display(0);
-    ui->rtcm1077Number->display(0);
-
-    ui->rtcm1009Number->display(0);
-    ui->rtcm1010Number->display(0);
-    ui->rtcm1011Number->display(0);
-    ui->rtcm1012Number->display(0);
-    ui->rtcm1084Number->display(0);
-    ui->rtcm1085Number->display(0);
-    ui->rtcm1087Number->display(0);
-    ui->rtcm1230Number->display(0);
-
-    ui->rtcm1094Number->display(0);
-    ui->rtcm1095Number->display(0);
-    ui->rtcm1097Number->display(0);
-
-    ui->rtcm1115Number->display(0);
-
-    ui->rtcm1124Number->display(0);
-    ui->rtcm1125Number->display(0);
-    ui->rtcm1127Number->display(0);
-
-    ui->rtcm1005Number->display(0);
-    ui->rtcm1006Number->display(0);
-
-    ui->rtcm1019Number->display(0);
-    ui->rtcm1020Number->display(0);
-}
 /*
 void RtcmWidget::on_rtcmSerialRefreshButton_clicked()
 {
@@ -239,6 +167,7 @@ void RtcmWidget::on_rtcmSerialConnectButton_clicked()
                          ui->rtcmSerialBaudBox->value());
 }
 */
+
 void RtcmWidget::on_refGetButton_clicked()
 {
     emit refPosGet();
