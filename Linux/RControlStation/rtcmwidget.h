@@ -49,7 +49,7 @@ private slots:
     void refPosRx(double lat, double lon, double height, double antenna_height);
 
     void on_ntripDisconnectButton_clicked();
-    void on_resetAllCountersButton_clicked();
+//    void on_resetAllCountersButton_clicked();
 //    void on_ntripBox_toggled(bool checked);
 
 /*

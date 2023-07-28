@@ -28,7 +28,7 @@
        <enum>QTabWidget::North</enum>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tabSettings">
        <attribute name="icon">
@@ -309,17 +309,17 @@
         <property name="geometry">
          <rect>
           <x>0</x>
-          <y>510</y>
-          <width>1451</width>
-          <height>761</height>
+          <y>509</y>
+          <width>1161</width>
+          <height>401</height>
          </rect>
         </property>
        </widget>
        <widget class="QScrollArea" name="scrollArea_4">
         <property name="geometry">
          <rect>
-          <x>1470</x>
-          <y>530</y>
+          <x>1330</x>
+          <y>520</y>
           <width>334</width>
           <height>976</height>
          </rect>
@@ -1763,7 +1763,7 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>332</width>
+                     <width>268</width>
                      <height>974</height>
                     </rect>
                    </property>
@@ -2378,8 +2378,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>332</width>
-                     <height>974</height>
+                     <width>196</width>
+                     <height>436</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -2673,8 +2673,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>332</width>
-                     <height>974</height>
+                     <width>202</width>
+                     <height>783</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_15">
