@@ -106,8 +106,33 @@ MainWindow::MainWindow(QWidget *parent) :
     mThrottle = 0.0;
     mSteering = 0.0;
 
+
+// START RTCM
+    mRtcm = new RtcmClient(this);
+    mTimerRtcm = new QTimer(this);
+    mTimerRtcm->start(20);
+    mTcpServer = new TcpBroadcast(this);
+
+    connect(mRtcm, SIGNAL(rtcmReceived(QByteArray,int,bool)),
+            this, SLOT(rtcmRx(QByteArray,int,bool)));
+    connect(mRtcm, SIGNAL(refPosReceived(double,double,double,double)),
+            this, SLOT(refPosRx(double,double,double,double)));
+    connect(mTimer, SIGNAL(timeout()),
+            this, SLOT(timerSlot()));
+
+
+    on_gpsOnlyBox_toggled(ui->gpsOnlyBox->isChecked());
+
+    // SPT00 default
+//    ui->refSendLatBox->setValue(59.81);
+//    ui->refSendLonBox->setValue(17.658);
+//    ui->refSendHBox->setValue(0);
+
+// END RTCM
+
+
+
     checkboxdelegate=new CheckBoxDelegate();
-    qDebug() << "Start";
 
 #ifdef HAS_JOYSTICK
 
@@ -200,9 +225,8 @@ MainWindow::MainWindow(QWidget *parent) :
             this, SLOT(mapPosSet(quint8,LocPoint)));
     connect(mPacketInterface, SIGNAL(ackReceived(quint8,CMD_PACKET,QString)),
             this, SLOT(ackReceived(quint8,CMD_PACKET,QString)));
-    connect(ui->rtcmWidget, SIGNAL(rtcmReceived(QByteArray)),
-            this, SLOT(rtcmReceived(QByteArray)));
-    connect(ui->rtcmWidget, SIGNAL(refPosGet()), this, SLOT(rtcmRefPosGet()));
+//    connect(ui->rtcmWidget, SIGNAL(rtcmReceived(QByteArray)), this, SLOT(rtcmReceived(QByteArray)));
+    connect(this, SIGNAL(refPosGet()), this, SLOT(rtcmRefPosGet()));
     connect(mPing, SIGNAL(pingRx(int,QString)), this, SLOT(pingRx(int,QString)));
     connect(mPing, SIGNAL(pingError(QString,QString)), this, SLOT(pingError(QString,QString)));
     connect(mPacketInterface, SIGNAL(enuRefReceived(quint8,double,double,double)),
@@ -2791,3 +2815,166 @@ QSqlError initDb()
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void MainWindow::setRefPos(double lat, double lon, double height, double antenna_height)
+{
+    ui->refSendLatBox->setValue(lat);
+    ui->refSendLonBox->setValue(lon);
+    ui->refSendHBox->setValue(height);
+    ui->refSendAntHBox->setValue(antenna_height);
+}
+
+void MainWindow::timerSlotRtcm()
+{
+    // Update ntrip connected label
+    static bool wasNtripConnected = false;
+    if (wasNtripConnected != mRtcm->isTcpConnected()) {
+        wasNtripConnected = mRtcm->isTcpConnected();
+
+        if (wasNtripConnected) {
+            ui->ntripConnectedLabel->setText("Connected");
+        } else {
+            ui->ntripConnectedLabel->setText("Not connected");
+        }
+    }
+    // Send reference position every 5s
+    if (ui->sendRefPosBox->isChecked()) {
+        static int cnt = 0;
+        cnt++;
+        if (cnt >= (5000 / mTimerRtcm->interval())) {
+            cnt = 0;
+            QByteArray data = RtcmClient::encodeBasePos(
+                        ui->refSendLatBox->value(),
+                        ui->refSendLonBox->value(),
+                        ui->refSendHBox->value(),
+                        ui->refSendAntHBox->value());
+
+            emit rtcmReceivedStep1(data);
+            mTcpServer->broadcastData(data);
+        }
+    }
+}
+
+void MainWindow::rtcmRx(QByteArray data, int type, bool sync)
+{
+    (void)sync;
+    qDebug() << "Type: " << type << ", data:" << data;
+    emit rtcmReceivedStep1(data);
+}
+
+void MainWindow::refPosRx(double lat, double lon, double height, double antenna_height)
+{
+    QString str;
+    str.sprintf("Lat:            %.8f\n"
+                "Lon:            %.8f\n"
+                "Height:         %.3f\n"
+                "Antenna Height: %.3f",
+                lat, lon, height, antenna_height);
+    ui->lastRefPosLablel->setText(str);
+}
+
+void MainWindow::on_ntripConnectButton_clicked()
+{
+    QMessageBox msg;
+    msg.setText("In Ntrip Connect");
+    msg.exec();
+    if (ui->ntripBox->isChecked()) {
+        mRtcm->connectNtrip(ui->ntripServerEdit->text(),
+                            ui->ntripStreamEdit->text(),
+                            ui->ntripUserEdit->text(),
+                            ui->ntripPasswordEdit->text(),
+                            ui->ntripPortBox->value());
+    } else {
+        mRtcm->connectTcp(ui->ntripServerEdit->text(), ui->ntripPortBox->value());
+    }
+}
+
+void MainWindow::on_ntripDisconnectButton_clicked()
+{
+    mRtcm->disconnectTcpNtrip();
+}
+
+
+void MainWindow::on_refGetButton_clicked()
+{
+    emit refPosGet();
+}
+
+void MainWindow::on_tcpServerBox_toggled(bool checked)
+{
+    if (checked) {
+        if (!mTcpServer->startTcpServer(ui->tcpServerPortBox->value())) {
+            QMessageBox::warning(this, "TCP Server Error",
+                                 "Creating TCP server for RTCM data failed. Make sure that the port is not "
+                                 "already in use.");
+            ui->tcpServerBox->setChecked(false);
+        }
+    } else {
+        mTcpServer->stopServer();
+    }
+}
+
+void MainWindow::on_gpsOnlyBox_toggled(bool checked)
+{
+    mRtcm->setGpsOnly(checked);
+}

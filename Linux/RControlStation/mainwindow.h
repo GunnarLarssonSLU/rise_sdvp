@@ -38,6 +38,8 @@
 #include "wireguard.h"
 #include "checkboxdelegate.h"
 #include <memory>
+#include "rtcmclient.h"
+
 // #include "rtcmwidget.h"
 
 #ifdef HAS_LIME_SDR
@@ -71,6 +73,10 @@ public:
     void setNetworkTcpEnabled(bool enabled, int port = -1);
     void setNetworkUdpEnabled(bool enabled, int port = -1);
     MapWidget *map();
+
+    //RTCM
+    void setRefPos(double lat, double lon, double height, double antenna_height = 0.0);
+
 
 private slots:
     void serialDataAvailable();
@@ -200,6 +206,26 @@ private slots:
 
     void on_AutopilotPausePushButton_clicked();
 
+
+    // RTCM
+    void timerSlotRtcm();
+    void rtcmRx(QByteArray data, int type, bool sync);
+    void refPosRx(double lat, double lon, double height, double antenna_height);
+
+    void on_ntripDisconnectButton_clicked();
+
+    void on_refGetButton_clicked();
+    void on_tcpServerBox_toggled(bool checked);
+    void on_gpsOnlyBox_toggled(bool checked);
+
+signals:
+    void rtcmReceivedStep1(QByteArray data);
+    void refPosGet();
+
+public slots:
+    void on_ntripConnectButton_clicked();
+
+
 private:
     Ui::MainWindow *ui;
 //    RtcmWidget *rtcmWidget;
@@ -256,6 +282,12 @@ private:
     QSqlRelationalTableModel *modelVehicle;
     int locationIdx;
     bool fileDialogOpen;
+
+    // RTCM
+    RtcmClient *mRtcm;
+    QTimer *mTimerRtcm;
+    TcpBroadcast *mTcpServer;
+
 };
 
 
