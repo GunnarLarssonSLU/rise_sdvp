@@ -94,7 +94,6 @@ SOURCES += main.cpp\
     rtcm3_simple.c \
     rtcmclient.cpp \
     tcpbroadcast.cpp \
-    rtcmwidget.cpp \
     basestation.cpp \
     ping.cpp \
     networklogger.cpp \
@@ -135,7 +134,6 @@ HEADERS  += mainwindow.h \
     rtcm3_simple.h \
     rtcmclient.h \
     tcpbroadcast.h \
-    rtcmwidget.h \
     basestation.h \
     ping.h \
     networklogger.h \
