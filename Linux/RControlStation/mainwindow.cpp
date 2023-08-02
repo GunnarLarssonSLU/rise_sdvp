@@ -88,6 +88,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
 
+    QMessageBox msgStart;
+    msgStart.setText("Before you start make sure that: 1) The entire electric system on the vehicle is turned on, 2) That the emergency stop is turned on");
+    msgStart.exec();
+
     mVersion = "0.8";
     mSupportedFirmwares.append(qMakePair(12, 3));
     mSupportedFirmwares.append(qMakePair(20, 1));
@@ -134,48 +138,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     checkboxdelegate=new CheckBoxDelegate();
 
-#ifdef HAS_JOYSTICK
-
-    auto gamepads = QGamepadManager::instance()->connectedGamepads();
-    if (gamepads.isEmpty()) {
-        qDebug() << "Did not find any connected gamepads";
-//        return;
-    }
-
-    mJoystick = new QGamepad(*gamepads.begin(), this);
-
-    connect(mJoystick, SIGNAL(buttonChanged(int,bool)),
-            this, SLOT(jsButtonChanged(int,bool)));
-/*
-    connect(mJoystick, &QGamepad::axisLeftXChanged, this, [](double value){
-        });
-        connect(mJoystick, &QGamepad::axisLeftYChanged, this, [](double value){
-        });
-        connect(mJoystick, &QGamepad::axisRightXChanged, this, [](double value){
-        });
-        connect(mJoystick, &QGamepad::axisRightYChanged, this, [](double value){
-        });
-*/
-
-        static MainWindow *mThis=this;          // Just to be able to get the lambdas to work
-        connect(mJoystick, &QGamepad::buttonL1Changed, this, [](bool pressed){
-            qDebug() << "Button L1" << pressed;
-            mThis->jsButtonChanged(4, pressed);
-        });
-        connect(mJoystick, &QGamepad::buttonR1Changed, this, [](bool pressed){
-            qDebug() << "Button R1" << pressed;
-            mThis->jsButtonChanged(5, pressed);
-        });
-        connect(mJoystick, &QGamepad::buttonL2Changed, this, [](double value){
-            qDebug() << "Button L2: " << value;
-            mThis->jsButtonChanged(6, value>0);
-        });
-
-        connect(mJoystick, &QGamepad::buttonR2Changed, this, [](double value){
-            qDebug() << "Button R2: " << value;
-            mThis->jsButtonChanged(7, value>0);
-        });
-    #endif
 
     mPing = new Ping(this);
     mNmea = new NmeaServer(this);
@@ -268,18 +230,18 @@ MainWindow::MainWindow(QWidget *parent) :
 
 #ifdef HAS_JOYSTICK
     // Connect micronav joystick by default
-    bool connectJs = false;
-
+    if (!connectJoystick())
     {
-         QGamepad js;
+        QMessageBox msg;
+        msg.setText("No joystick connected. Please connect one before you continue");
+        msg.exec();
+        connectJoystick();
+    }
+/*         QGamepad js;
             if (js.isConnected()) {
-                    connectJs = true;
+                on_jsConnectButton_clicked();
         }
-    }
-
-    if (connectJs) {
-        on_jsConnectButton_clicked();
-    }
+*/
 #endif
 
 
@@ -475,9 +437,10 @@ MainWindow::MainWindow(QWidget *parent) :
          QString name = modelField->data(modelField->index(row, 1)).toString();
          QString xmlText = modelField->data(modelField->index(row, 4)).toString();
          qDebug() << "Name: " << name << ", xml: " << xmlText;
-         mapShort->clearRoute();
-         QXmlStreamReader xmlData(xmlText);
-         mapShort->loadXMLRoute(&xmlData,true);
+//         mapShort->clearRoute();
+//         QXmlStreamReader xmlData(xmlText);
+//         mapShort->loadXMLRoute(&xmlData,true);
+        mapShort->setRouteNow(row);
          MapRoute border=mapShort->getRoute();
          double area=border.getArea();
          qDebug() << "area: " << area;
@@ -763,8 +726,45 @@ void MainWindow::addCar(int id, QString name, bool pollData)
     connect(car, SIGNAL(showStatusInfo(QString,bool)), this, SLOT(showStatusInfo(QString,bool)));
 }
 
-void MainWindow::connectJoystick(QString dev)
+bool MainWindow::connectJoystick()
 {
+#ifdef HAS_JOYSTICK
+    qDebug() << "in connectAAAAAAAAAAAAAAAAAAAAAAA";
+
+    auto gamepads = QGamepadManager::instance()->connectedGamepads();
+    if (gamepads.isEmpty()) {
+        qDebug() << "Did not find any connected gamepads";
+        mJoystick = new QGamepad();
+        return false;
+    } else
+    {
+    mJoystick = new QGamepad(*gamepads.begin(), this);
+
+    connect(mJoystick, SIGNAL(buttonChanged(int,bool)),
+            this, SLOT(jsButtonChanged(int,bool)));
+
+        static MainWindow *mThis=this;          // Just to be able to get the lambdas to work
+        connect(mJoystick, &QGamepad::buttonL1Changed, this, [](bool pressed){
+            qDebug() << "Button L1" << pressed;
+            mThis->jsButtonChanged(4, pressed);
+        });
+        connect(mJoystick, &QGamepad::buttonR1Changed, this, [](bool pressed){
+            qDebug() << "Button R1" << pressed;
+            mThis->jsButtonChanged(5, pressed);
+        });
+        connect(mJoystick, &QGamepad::buttonL2Changed, this, [](double value){
+            qDebug() << "Button L2: " << value;
+            mThis->jsButtonChanged(6, value>0);
+        });
+
+        connect(mJoystick, &QGamepad::buttonR2Changed, this, [](double value){
+            qDebug() << "Button R2: " << value;
+            mThis->jsButtonChanged(7, value>0);
+        });
+    return true;
+    };
+    #endif
+
 }
 
 void MainWindow::addTcpConnection(QString ip, int port)
@@ -1419,7 +1419,7 @@ void MainWindow::on_mapRouteSpeedBox_valueChanged(double arg1)
 
 void MainWindow::on_jsConnectButton_clicked()
 {
-    connectJoystick(ui->jsPortEdit->text());
+    connectJoystick();
 }
 
 void MainWindow::on_jsDisconnectButton_clicked()
@@ -1700,22 +1700,51 @@ void MainWindow::on_mapGetRouteButton_clicked()
 
 void MainWindow::on_mapApButton_clicked()
 {
-    for (int i = 0;i < mCars.size();i++) {
-        if (mCars[i]->getId() == ui->mapCarBox->value()) {
-            mCars[i]->setCtrlAp();
+    if (mCars.size()>0)
+    {
+        //Note: Moves ALL vehicles to autopilot
+        for (int i = 0;i < mCars.size();i++) {
+            if (mCars[i]->getId() == ui->mapCarBox->value()) {
+                mCars[i]->setCtrlAp();
+            }
         }
+        ui->throttleOffButton->setChecked(true);
+    } else
+    {
+        QMessageBox msg;
+        msg.setText("No cars connected. Connect to one before trying again.");
+        msg.exec();
     }
-    ui->throttleOffButton->setChecked(true);
 }
 
 void MainWindow::on_mapKbButton_clicked()
 {
-    for (int i = 0;i < mCars.size();i++) {
-        if (mCars[i]->getId() == ui->mapCarBox->value()) {
-            mCars[i]->setCtrlKb();
+    QMessageBox msg;
+    msg.setText(QString::number(mCars.size()));
+    msg.exec();
+    if (mJoystick->isConnected())
+    {
+        if (mCars.size()>0)
+        {
+            //Note: Moves ALL vehicles to keyboard control
+            for (int i = 0;i < mCars.size();i++) {
+                if (mCars[i]->getId() == ui->mapCarBox->value()) {
+                    mCars[i]->setCtrlKb();
+                }
+            }
+            ui->throttleDutyButton->setChecked(true);
+        } else
+        {
+            QMessageBox msg;
+            msg.setText("No cars connected. Connect to one before trying again.");
+            msg.exec();
         }
+    } else
+    {
+        QMessageBox msg;
+        msg.setText("No joystick connected. Connect one before trying again. After you have connected it, press the connect button below");
+        msg.exec();
     }
-    ui->throttleDutyButton->setChecked(true);
 }
 
 void MainWindow::on_mapOffButton_clicked()
@@ -1884,8 +1913,8 @@ void MainWindow::on_mapOsmClearCacheButton_clicked()
 void MainWindow::on_mapOsmServerOsmButton_toggled(bool checked)
 {
     if (checked) {
-                ui->mapWidget->osmClient()->setTileServerUrl("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile");
-    	//        ui->mapWidget->osmClient()->setTileServerUrl("http://tile.openstreetmap.org");
+            	ui->mapWidget->osmClient()->setTileServerUrl("http://tile.openstreetmap.org");
+                ui->mapWidget->osmClient()->setType(2);
     }
 }
 
@@ -1893,6 +1922,7 @@ void MainWindow::on_mapOsmServerHiResButton_toggled(bool checked)
 {
     if (checked) {
                 ui->mapWidget->osmClient()->setTileServerUrl("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile");
+                ui->mapWidget->osmClient()->setType(2);
     	//        ui->mapWidget->osmClient()->setTileServerUrl("http://c.osm.rrze.fau.de/osmhd"); // Also https
     }
 }
@@ -1900,7 +1930,10 @@ void MainWindow::on_mapOsmServerHiResButton_toggled(bool checked)
 void MainWindow::on_mapOsmServerVedderButton_toggled(bool checked)
 {
     if (checked) {
-        ui->mapWidget->osmClient()->setTileServerUrl("http://tiles.vedder.se/osm_tiles");
+//        ui->mapWidget->osmClient()->setTileServerUrl("http://tiles.vedder.se/osm_tiles");
+//        ui->mapWidget->osmClient()->setType(2);
+                        ui->mapWidget->osmClient()->setTileServerUrl("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile");
+        		        ui->mapWidget->osmClient()->setType(1);
     }
 }
 
@@ -1908,6 +1941,7 @@ void MainWindow::on_mapOsmServerVedderHdButton_toggled(bool checked)
 {
     if (checked) {
         ui->mapWidget->osmClient()->setTileServerUrl("http://tiles.vedder.se/osm_tiles_hd");
+        ui->mapWidget->osmClient()->setType(2);
     }
 }
 
@@ -2219,7 +2253,7 @@ void MainWindow::on_actionLoadDriveFile_triggered()
         showStatusInfo("Loaded drive file", true);
     }
 }
-
+/*
 void MainWindow::on_mapSaveAsPdfButton_clicked()
 {
     QString filename = QFileDialog::getSaveFileName(this,
@@ -2280,7 +2314,7 @@ void MainWindow::on_mapSaveRetakeButton_clicked()
                               "is not possible.");
     }
 }
-
+*/
 void MainWindow::on_modeRouteButton_toggled(bool checked)
 {
     ui->mapWidget->setAnchorMode(!checked);

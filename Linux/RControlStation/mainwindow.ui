@@ -28,7 +28,7 @@
        <enum>QTabWidget::North</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tabSettings">
        <attribute name="icon">
@@ -47,8 +47,8 @@
        <widget class="QGroupBox" name="wgGroupBox">
         <property name="geometry">
          <rect>
-          <x>660</x>
-          <y>70</y>
+          <x>20</x>
+          <y>20</y>
           <width>291</width>
           <height>71</height>
          </rect>
@@ -121,29 +121,6 @@
           </layout>
          </item>
         </layout>
-       </widget>
-       <widget class="QComboBox" name="comboBox">
-        <property name="geometry">
-         <rect>
-          <x>660</x>
-          <y>30</y>
-          <width>171</width>
-          <height>25</height>
-         </rect>
-        </property>
-       </widget>
-       <widget class="QLabel" name="label_12">
-        <property name="geometry">
-         <rect>
-          <x>660</x>
-          <y>10</y>
-          <width>111</width>
-          <height>17</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Map source</string>
-        </property>
        </widget>
       </widget>
       <widget class="QWidget" name="tabFarm">
@@ -1584,7 +1561,7 @@
                <enum>QTabWidget::Rounded</enum>
               </property>
               <property name="currentIndex">
-               <number>1</number>
+               <number>0</number>
               </property>
               <property name="usesScrollButtons">
                <bool>false</bool>
@@ -1883,35 +1860,14 @@
                    <property name="spacing">
                     <number>2</number>
                    </property>
-                   <item row="0" column="0" colspan="2">
-                    <widget class="QLineEdit" name="jsPortEdit">
-                     <property name="enabled">
-                      <bool>false</bool>
-                     </property>
-                     <property name="text">
-                      <string>/dev/input/js0</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="0">
-                    <widget class="QPushButton" name="jsDisconnectButton">
-                     <property name="text">
-                      <string/>
-                     </property>
-                     <property name="icon">
-                      <iconset resource="resources.qrc">
-                       <normaloff>:/models/Icons/Disconnected-96.png</normaloff>:/models/Icons/Disconnected-96.png</iconset>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="2" column="0" colspan="2">
+                   <item row="1" column="0" colspan="2">
                     <widget class="QLabel" name="jsConnectedLabel">
                      <property name="text">
                       <string>Not connected</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="1" column="1">
+                   <item row="0" column="1">
                     <widget class="QPushButton" name="jsConnectButton">
                      <property name="text">
                       <string/>
@@ -1922,7 +1878,7 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="3" column="0">
+                   <item row="2" column="0">
                     <widget class="QGroupBox" name="groupBox_3">
                      <property name="sizePolicy">
                       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
@@ -2031,7 +1987,18 @@
                      </layout>
                     </widget>
                    </item>
-                   <item row="4" column="0">
+                   <item row="0" column="0">
+                    <widget class="QPushButton" name="jsDisconnectButton">
+                     <property name="text">
+                      <string/>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="resources.qrc">
+                       <normaloff>:/models/Icons/Disconnected-96.png</normaloff>:/models/Icons/Disconnected-96.png</iconset>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="0">
                     <widget class="QSpinBox" name="pollIntervalBox">
                      <property name="toolTip">
                       <string>Interval at which the car status is polled.</string>
@@ -2108,8 +2075,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>268</width>
-                     <height>974</height>
+                     <width>213</width>
+                     <height>749</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_23">

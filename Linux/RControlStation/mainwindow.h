@@ -68,7 +68,7 @@ public:
     bool eventFilter(QObject *object, QEvent *e);
 
     void addCar(int id, QString name, bool pollData = false);
-    void connectJoystick(QString dev);
+    bool connectJoystick();
     void addTcpConnection(QString ip, int port);
     void setNetworkTcpEnabled(bool enabled, int port = -1);
     void setNetworkUdpEnabled(bool enabled, int port = -1);
@@ -163,9 +163,9 @@ private slots:
     void on_actionTestIntersection_triggered();
     void on_actionSaveSelectedRouteAsDriveFile_triggered();
     void on_actionLoadDriveFile_triggered();
-    void on_mapSaveAsPdfButton_clicked();
-    void on_mapSaveAsPngButton_clicked();
-    void on_mapSaveRetakeButton_clicked();
+//    void on_mapSaveAsPdfButton_clicked();
+//    void on_mapSaveAsPngButton_clicked();
+//    void on_mapSaveRetakeButton_clicked();
     void on_modeRouteButton_toggled(bool checked);
     void on_uploadAnchorButton_clicked();
     void on_anchorIdBox_valueChanged(int arg1);
