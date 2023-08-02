@@ -16,6 +16,7 @@
     */
 
 #include "osmclient.h"
+#include "qmessagebox.h"
 #include <QDebug>
 #include <QPainter>
 
@@ -183,10 +184,19 @@ OsmTile OsmClient::getTile(int zoom, int x, int y, int &res)
         res = 1;
         mRamTilesLoaded++;
     } else if (!mCacheDir.isEmpty()) {
-//        QString path = mCacheDir + "/" + QString::number(zoom) + "/" +
-//                QString::number(x) + "/" + QString::number(y) + ".png";
-        QString path = mCacheDir + "/" + QString::number(zoom) + "/" +
-                QString::number(y) + "/" + QString::number(x) + ".jpeg";
+        QString path;
+        switch(type)
+        {
+        case 1: //ESRI
+            path = mCacheDir + "/" + QString::number(zoom) + "/" +
+                    QString::number(y) + "/" + QString::number(x) + ".jpeg";
+            break;
+        case 2: // OSM
+            path = mCacheDir + "/" + QString::number(zoom) + "/" +
+                 QString::number(x) + "/" + QString::number(y) + ".png";
+            break;
+        }
+
         QFile file;
         file.setFileName(path);
 
@@ -225,6 +235,11 @@ OsmTile OsmClient::getTile(int zoom, int x, int y, int &res)
  * 1: Tile download started.
  *
  */
+
+void OsmClient::setType(int typearg)
+{
+    type=typearg;
+}
 int OsmClient::downloadTile(int zoom, int x, int y)
 {
     int retval = -1;
@@ -247,7 +262,7 @@ int OsmClient::downloadTile(int zoom, int x, int y)
                     path = mTileServer + "/" + QString::number(zoom) + "/" + QString::number(x) + "/" + QString::number(y) + ".png";
                     break;
                 }
-
+                qDebug() << "path: " << path;
                 QNetworkRequest request(path);
                 request.setRawHeader("User-Agent", "Firefox");
                 mWebCtrl.get(request);
@@ -283,7 +298,10 @@ void OsmClient::clearCache()
 void OsmClient::fileDownloaded(QNetworkReply *pReply)
 {
     QString path = pReply->url().toString();
-//    path = path.left(path.length() - 4);   // Not used if ESRI, used if OpenStreetMap
+    if (type==2)
+    {
+        path = path.left(path.length() - 4);   // Not used if ESRI, used if OpenStreetMap
+    }
     int ind = path.lastIndexOf("/");
     int item1 = path.mid(ind + 1).toInt();
     path = path.left(ind);
@@ -293,13 +311,20 @@ void OsmClient::fileDownloaded(QNetworkReply *pReply)
     ind = path.lastIndexOf("/");
     int zoom = path.mid(ind + 1).toInt();
 
-//If ESRI
-    int x=item1;
-    int y=item2;
-// If OpenStreetmap
-//    int x=item2;
-//    int y=item1;
-
+    int x,y;
+    switch (type)
+    {
+    case 1:
+        //If ESRI
+        x=item1;
+        y=item2;
+        break;
+    case 2:
+        // If OpenStreetmap
+        x=item2;
+        y=item1;
+        break;
+    }
 
     quint64 key = calcKey(zoom, x, y);
     mDownloadingTiles.remove(key);
@@ -307,8 +332,16 @@ void OsmClient::fileDownloaded(QNetworkReply *pReply)
     if (pReply->error() == QNetworkReply::NoError) {
         QPixmap pm;
         QByteArray data = pReply->readAll();
-        pm.loadFromData(data, "JPG");    // If ESRI
-//        pm.loadFromData(data, "PNG");  // If OpenStreetMap
+        switch(type)
+        {
+        // IF ESRI
+            case 1:
+                pm.loadFromData(data, "JPG");    // If ESRI
+                break;
+            case 2:
+                pm.loadFromData(data, "PNG");  // If OpenStreetMap
+                break;
+        }
 
         // Try to cache tile
         if (!mCacheDir.isEmpty()) {
@@ -326,8 +359,11 @@ void OsmClient::fileDownloaded(QNetworkReply *pReply)
                         QString::number(x) + "/" + QString::number(y) + ".png";
                 break;
             }
-
-            QFile file;
+              qDebug() << path;
+/*            QMessageBox msg;
+            msg.setText(path);
+            msg.exec();
+*/            QFile file;
             file.setFileName(path);
             if (!file.exists()) {
                 switch(type)

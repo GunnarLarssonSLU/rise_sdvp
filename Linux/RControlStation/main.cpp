@@ -331,12 +331,13 @@ int main(int argc, char *argv[])
                 } else {
                     map.setRouteNow(map.getRouteNum() - 1);
                 }
-
+/*
                 if (plotRoutesFormat == PLOT_ROUTE_FORMAT_PDF) {
                     map.printPdf(plotRoutesFile + ".pdf", plotRoutesW, plotRoutesH);
                 } else {
                     map.printPng(plotRoutesFile + ".png", plotRoutesW, plotRoutesH);
                 }
+*/
             } else {
                 qCritical() << "Could not load routes from" << plotRoutesFile;
             }
@@ -360,7 +361,7 @@ int main(int argc, char *argv[])
             }
 
             if (!jsStr.isEmpty()) {
-                w->connectJoystick(jsStr);
+                w->connectJoystick();
             }
 
             for (auto c: carsToConn) {

@@ -94,6 +94,7 @@ public:
     int getTilesDownloaded() const;
     int getMemoryTilesNow() const;
     int getRamTilesLoaded() const;
+    void setType(int typearg);
 
 signals:
     void tileReady(OsmTile tile);
