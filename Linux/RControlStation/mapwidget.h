@@ -87,13 +87,27 @@ public:
     void moveView(double px, double py);
     void clearTrace();
     void addRoutePoint(double px, double py, double speed = 0.0, qint32 time = 0);
+
     MapRoute getRoute(int ind = -1);
     QList<MapRoute> getRoutes();
     void setRoute(const MapRoute &route);
     void addRoute(const MapRoute &route);
+    int getRouteNow() const;
+    void setRouteNow(int routeNow);
     int getRouteNum();
     void clearRoute();
     void clearAllRoutes();
+
+    MapRoute getField(int ind = -1);
+    QList<MapRoute> getFields();
+    void setField(const MapRoute &field);
+    void addField(const MapRoute &field);
+    int getFieldNow() const;
+    void setFieldNow(int fieldNow);
+    int getFieldNum();
+    void clearField();
+    void clearAllFields();
+
     void setRoutePointSpeed(double speed);
     void addInfoPoint(LocPoint &info, bool updateMap = true);
     void clearInfoTrace();
@@ -132,9 +146,6 @@ public:
 
     bool getDrawOsmStats() const;
     void setDrawOsmStats(bool drawOsmStats);
-
-    int getRouteNow() const;
-    void setRouteNow(int routeNow);
 
     qint32 getRoutePointTime() const;
     void setRoutePointTime(const qint32 &routePointTime);
@@ -189,6 +200,8 @@ signals:
     void lastRoutePointRemoved(LocPoint pos);
     void infoTraceChanged(int traceNow);
 
+    void mouseClickedInField(const int field);
+
 private slots:
     void tileReady(OsmTile tile);
     void errorGetTile(QString reason);
@@ -208,6 +221,7 @@ private:
     QVector<LocPoint> mCarTraceGps;
     QVector<LocPoint> mCarTraceUwb;
     QList<LocPoint> mAnchors;
+    QList<MapRoute> mFields;
     QList<MapRoute> mRoutes;
     QList<MapRoute> mFieldborders;
     QList<QList<LocPoint>> mInfoTraces;
@@ -247,6 +261,7 @@ private:
     int mRoutePointSelected;
     int mAnchorSelected;
     int mRouteNow;
+    int mFieldNow;
     int mInfoTraceNow;
     double mTraceMinSpaceCar;
     double mTraceMinSpaceGps;

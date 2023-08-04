@@ -36,6 +36,13 @@
 #include <QLoggingCategory>
 #include <QtSql>
 
+#include <QtCharts>
+
+using namespace QtCharts;
+
+#include <QtCharts/QChartView>>
+#include <QtCharts/QLineSeries>
+
 #include "utility.h"
 #include "routemagic.h"
 #include "wireguard.h"
@@ -80,8 +87,7 @@ void deadband(double &value, double tres, double max) {
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow),
-   fileDialogOpen(false)
+    ui(new Ui::MainWindow)
 {
 //    rtcmWidget=new RtcmWidget(this);
 
@@ -122,7 +128,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(mRtcm, SIGNAL(refPosReceived(double,double,double,double)),
             this, SLOT(refPosRx(double,double,double,double)));
     connect(mTimer, SIGNAL(timeout()),
-            this, SLOT(timerSlot()));
+            this, SLOT(timerSlotRtcm()));
 
 
     on_gpsOnlyBox_toggled(ui->gpsOnlyBox->isChecked());
@@ -203,13 +209,18 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionAboutQt, SIGNAL(triggered(bool)),
             qApp, SLOT(aboutQt()));
 
+//    connect(ui->mapWidgetFields, &MapWidget::mouseClickedInField, this, &MainWindow::onMouseClickedFieldSelected);
+    // Assuming that the signal mouseClickedInField in MapWidget is declared as a signal
+    connect(ui->mapWidgetFields, SIGNAL(mouseClickedInField(int)), this, SLOT(onMouseClickedFieldSelected(int)));
+
+
+
     connect(mTcpClientMulti, &TcpClientMulti::packetRx, [this](QByteArray data) {
         mPacketInterface->processPacket((unsigned char*)data.data(), data.size());
     });
 
     connect(mTcpClientMulti, &TcpClientMulti::stateChanged, [this](QString msg, bool isError) {
         showStatusInfo(msg, !isError);
-
 
 
         if (isError) {
@@ -222,10 +233,10 @@ MainWindow::MainWindow(QWidget *parent) :
     on_mapCameraOpacityBox_valueChanged(ui->mapCameraOpacityBox->value());
     if (WireGuard::isWireGuardInstalled()) {
         ui->wgStatusLabel->setText("Status: Ready");
-        ui->wgGroupBox->setEnabled(true);
+//        ui->wgGroupBox->setEnabled(true);
     } else {
         ui->wgStatusLabel->setText("Status: Not installed");
-        ui->wgGroupBox->setEnabled(false);
+ //       ui->wgGroupBox->setEnabled(false);
     }
 
 #ifdef HAS_JOYSTICK
@@ -237,11 +248,6 @@ MainWindow::MainWindow(QWidget *parent) :
         msg.exec();
         connectJoystick();
     }
-/*         QGamepad js;
-            if (js.isConnected()) {
-                on_jsConnectButton_clicked();
-        }
-*/
 #endif
 
 
@@ -252,8 +258,6 @@ MainWindow::MainWindow(QWidget *parent) :
                                      "Simulation Scenarios");
 #endif
 
-
-    //Initialize
     on_WgConnectPushButton_clicked();
 
     if (!QSqlDatabase::drivers().contains("QSQLITE"))
@@ -277,18 +281,12 @@ MainWindow::MainWindow(QWidget *parent) :
     modelFarm->setTable("locations");
 
     // Set the localized header captions:
-    modelFarm->setHeaderData(modelFarm->fieldIndex("name"),
-                         Qt::Horizontal, tr("Name"));
-    modelFarm->setHeaderData(modelFarm->fieldIndex("longitude"),
-                         Qt::Horizontal, tr("Longitude"));
-    modelFarm->setHeaderData(modelFarm->fieldIndex("latitude"),
-                         Qt::Horizontal, tr("Latitude"));
-    modelFarm->setHeaderData(modelFarm->fieldIndex("ip"),
-                         Qt::Horizontal, tr("ip"));
-    modelFarm->setHeaderData(modelFarm->fieldIndex("port"),
-                         Qt::Horizontal, tr("port"));
-    modelFarm->setHeaderData(modelFarm->fieldIndex("NTRIP"),
-                         Qt::Horizontal, tr("NTRIP"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("name"), Qt::Horizontal, tr("Name"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("longitude"), Qt::Horizontal, tr("Longitude"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("latitude"), Qt::Horizontal, tr("Latitude"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("ip"), Qt::Horizontal, tr("ip"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("port"), Qt::Horizontal, tr("port"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("NTRIP"), Qt::Horizontal, tr("NTRIP"));
 
     // Populate the model:
     if (!modelFarm->select()) {
@@ -301,29 +299,15 @@ MainWindow::MainWindow(QWidget *parent) :
     //ui.locationTable->setItemDelegate(new BookDelegate(ui.locationTable));
     ui->farmTable->setColumnHidden(modelFarm->fieldIndex("id"), true);
     ui->farmTable->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->farmTable->setCurrentIndex(modelFarm->index(0, 0));
 
     QDataWidgetMapper *mapperFarm = new QDataWidgetMapper(this);
     mapperFarm->setModel(modelFarm);
-//    mapperFarm->addMapping(ui->locationnameEdit, modelFarm->fieldIndex("name"));
 
-    mapperFarm->addMapping(this->findChild<QLineEdit*>("ntripServerEdit"), modelFarm->fieldIndex("ip"));
-    mapperFarm->addMapping(this->findChild<QSpinBox*>("ntripPortBox"), modelFarm->fieldIndex("port"));
-    mapperFarm->addMapping(this->findChild<QLineEdit*>("ntripUserEdit"), modelFarm->fieldIndex("user"));
-    mapperFarm->addMapping(this->findChild<QCheckBox*>("ntripBox"), modelFarm->fieldIndex("NTRIP"));
-    mapperFarm->addMapping(this->findChild<QLineEdit*>("ntripPasswordEdit"), modelFarm->fieldIndex("password"));
-    mapperFarm->addMapping(this->findChild<QLineEdit*>("ntripStreamEdit"), modelFarm->fieldIndex("stream"));
     mapperFarm->addMapping(this->findChild<QDoubleSpinBox*>("refSendLatBox"), modelFarm->fieldIndex("latitude"));
     mapperFarm->addMapping(this->findChild<QDoubleSpinBox*>("refSendLonBox"), modelFarm->fieldIndex("longitude"));
 
-    connect(ui->farmTable->selectionModel(),
-            &QItemSelectionModel::currentRowChanged,
-            mapperFarm
-            ,
-            &QDataWidgetMapper::setCurrentModelIndex
-            );
-
-    ui->farmTable->setCurrentIndex(modelFarm->index(0, 0));
-
+    connect(ui->farmTable->selectionModel(),&QItemSelectionModel::currentRowChanged,mapperFarm,&QDataWidgetMapper::setCurrentModelIndex);
 
     // Create the data model:
     modelField = new QSqlRelationalTableModel(ui->fieldTable);
@@ -332,7 +316,7 @@ MainWindow::MainWindow(QWidget *parent) :
     modelField->setTable("fields");
 
     // Remember the indexes of the columns:
-    locationIdx = modelField->fieldIndex("location");
+    int locationIdx = modelField->fieldIndex("location");
 
     // Set the relations to the other database tables:
     modelField->setRelation(locationIdx, QSqlRelation("locations", "id", "name"));
@@ -355,22 +339,19 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->fieldTable->setModel(modelField);
     ui->fieldTable->setColumnHidden(modelField->fieldIndex("id"), true);
     ui->fieldTable->setSelectionMode(QAbstractItemView::SingleSelection);
-
+  //  ui->fieldTable->setSelectionModel(new QItemSelectionModel( ui->fieldTable->model()));
+    ui->fieldTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui->fieldTable->setItemDelegateForColumn(3, checkboxdelegate);
 
-
     // Connect the signal from the first table view to a custom slot
-//        QObject::connect(ui->farmTable, &QTableView::clicked, [&](const QModelIndex& index) {
-        QObject::connect(ui->farmTable->selectionModel(), &QItemSelectionModel::currentChanged,
-                     [&](const QModelIndex& current, const QModelIndex& previous) {
+        QObject::connect(ui->farmTable->selectionModel(), &QItemSelectionModel::currentChanged, [&](const QModelIndex& current, const QModelIndex& previous) {
             int row = current.row();
             int id = modelFarm->data(modelFarm->index(row, 0)).toInt();
 
             double lon = modelFarm->data(modelFarm->index(row, 2)).toDouble();
             double lat = modelFarm->data(modelFarm->index(row, 3)).toDouble();
-            qDebug() << "Lon: " << lon << ", lat: " << lat;
             ui->mapWidgetFields->setEnuRef(lat,lon,0);
-            ui->mapWidgetFields->clearAllRoutes();
+            ui->mapWidgetFields->clearAllFields();
 
             // Get the selected value from the first table view
             QVariant selectedValue = id;
@@ -389,11 +370,8 @@ MainWindow::MainWindow(QWidget *parent) :
             // Loop through the query results
             while (query.next()) {
                 // Access data for each record
-                int id = query.value("id").toInt();
                 QString boundaryXML= query.value("boundaryXML").toString();
 
-                // Process the data or do whatever you want with it
-                qDebug() << "ID:" << id << ", border:" << boundaryXML;
                 QXmlStreamReader xmlData(boundaryXML);
                 ui->mapWidgetFields->loadXMLRoute(&xmlData,true);
             }
@@ -406,73 +384,77 @@ MainWindow::MainWindow(QWidget *parent) :
             double scaley=0.5/(fieldareaheight_m);
             ui->mapWidgetFields->moveView(offsetx_m, offsety_m);
             ui->mapWidgetFields->setScaleFactor(std::min(scalex,scaley));
+            if (ui->fieldTable->model()->rowCount()>0)
+            {
+                ui->fieldTable->selectRow(0);
+            }
+            if (ui->pathTable->model()->rowCount()>0)
+            {
+                ui->pathTable->selectRow(0);
+            }
 
+            on_ntripDisconnectButton_clicked();
+            ntripConnect(row);
         });
 
-    QTableView* tableShort=ui->fieldTable;
-    QSqlRelationalTableModel *modelShort=this->modelField;
     QSqlRelationalTableModel *modelField=this->modelFarm;
+    QSqlRelationalTableModel *modelPath=this->modelPath;
 
     MapWidget *mapShort=ui->mapWidgetFields;
     QLabel *areaLabel=ui->label_area_ha;
 
+  modelPath = new QSqlRelationalTableModel(ui->pathTable);
+  //    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
+  modelPath->setEditStrategy(QSqlTableModel::OnFieldChange);
+  modelPath->setTable("paths");
 
-//    QObject::connect(ui->fieldTable->selectionModel(), &QItemSelectionModel::selectionChanged,
-//                     [modelShort,mapShort,areaLabel](const QItemSelection& selected, const QItemSelection&)
+  // Remember the indexes of the columns:
+  int fieldIdx = modelPath->fieldIndex("field");
 
+  // Set the relations to the other database tables:
+  modelPath->setRelation(fieldIdx, QSqlRelation("fields", "id", "name"));
+
+
+  // Set the localized header captions:
+  modelPath->setHeaderData(modelPath->fieldIndex("name"), Qt::Horizontal, tr("Name"));
+  modelPath->setHeaderData(modelPath->fieldIndex("xml"), Qt::Horizontal, tr("XML"));
+
+  // Populate the model:
+  if (!modelPath->select()) {
+        showError(modelPath->lastError());
+        return;
+  }
+
+  // Set the model and hide the ID column:
+  ui->pathTable->setModel(modelPath);
+  ui->pathTable->setColumnHidden(modelPath->fieldIndex("id"), true);
+  ui->pathTable->setSelectionMode(QAbstractItemView::SingleSelection);
+  ui->pathTable->setCurrentIndex(modelPath->index(0, 0));
 
   QObject::connect(ui->fieldTable->selectionModel(), &QItemSelectionModel::currentChanged,
-             [modelField,mapShort,areaLabel](const QModelIndex& current, const QModelIndex& previous)
-     {
-/*
-         int getRouteNow() const;
-         void setRouteNow(int routeNow);
-*/
+                   [modelField,modelPath,mapShort,areaLabel](const QModelIndex& current, const QModelIndex& previous)
+                   {
+                       int row = current.row();
 
-         int row = current.row();
+                       // Retrieve the data of the selected row if needed
+                       int id = modelField->data(modelField->index(row, 0)).toInt();
+//                       QString name = modelField->data(modelField->index(row, 1)).toString();
+//                       QString xmlText = modelField->data(modelField->index(row, 4)).toString();
+                       mapShort->setFieldNow(row);
+                       MapRoute border=mapShort->getField();
+                       double area=border.getArea();
+                       areaLabel->setText(QString::number(area));
 
-         qDebug() << "Selected Row: " << row;
+                       // Construct a new query based on the selected value
+                       QString filter = QString("field = %1").arg(id);
 
-         // Retrieve the data of the selected row if needed
-         QString name = modelField->data(modelField->index(row, 1)).toString();
-         QString xmlText = modelField->data(modelField->index(row, 4)).toString();
-         qDebug() << "Name: " << name << ", xml: " << xmlText;
-//         mapShort->clearRoute();
-//         QXmlStreamReader xmlData(xmlText);
-//         mapShort->loadXMLRoute(&xmlData,true);
-        mapShort->setRouteNow(row);
-         MapRoute border=mapShort->getRoute();
-         double area=border.getArea();
-         qDebug() << "area: " << area;
-         areaLabel->setText(QString::number(area));
-     });
+                       // Set the new query for the QSqlRelationalTableModel
+                       modelPath->setFilter(filter);
+                       modelPath->select();
+                   });
 
-/*
-    // Connect the signal to the slot
-    QObject::connect(mapShort, &MapWidget::routePointAdded, [mapShort,tableShort,modelShort](){
-        QMessageBox msg;
-        msg.setText("Point added");
-        msg.exec();
-        QByteArray byteArray;
-        QXmlStreamWriter stream(&byteArray);
-        mapShort->saveXMLRoutes(&stream,false);
-        QString xmlString = QString::fromUtf8(byteArray);
-        QItemSelectionModel* selectionModel = tableShort->selectionModel();
-        QModelIndexList selectedIndexes = selectionModel->selectedIndexes();
-        if (selectedIndexes.isEmpty()) {
-            qDebug() << "No selection";
-            return;
-        }
 
-        int row = selectedIndexes.first().row();
-        qDebug() << "Selected Row: " << row;
 
-        // Retrieve the data of the selected row if needed
-        modelShort->setData(modelShort->index(row,4),xmlString);
-        tableShort->show();
-
-    });
-*/
     // Create the data model:
     modelVehicle = new QSqlRelationalTableModel(ui->vehicleTable);
 //    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
@@ -521,46 +503,193 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->vehicleTable->setCurrentIndex(modelVehicle->index(0, 0));
 
+
+
+
+    // Sample data to display in the QTableView
+    QStringList data;
+    int rowCount = modelVehicle->rowCount();
+
+
+    //    data << "Apple" << "Banana" << "Orange" << "Grapes" << "Mango";
+    // Access the data from the first column of the source model
+    for (int row = 0; row < rowCount; ++row) {
+        // Assuming the first column of the source model is the one you want to fetch
+        QModelIndex index = modelVehicle->index(row, 0);
+        QString value = modelVehicle->data(index).toString();
+        data.append(value);
+    }
+
+    // Create a QStandardItemModel and set the data
+    modelVehiclestatus=new QStandardItemModel(data.size(), 2);
+
+    statustocolourDelegate=new CustomDelegate;
+    ui->vehiclestatusTable->setItemDelegateForColumn(1, statustocolourDelegate);
+
+    for (int row = 0; row < data.size(); ++row) {
+        QStandardItem *item = new QStandardItem(data.at(row));
+        modelVehiclestatus->setItem(row, 0, item);
+
+        // Set the second column to "Not connected"
+        QStandardItem *notConnectedItem = new QStandardItem("Not connected");
+        modelVehiclestatus->setItem(row, 1, notConnectedItem);
+
+        QModelIndex cellIndex = modelVehiclestatus->index(row, 1); // Row 1, Column 1 (second column)
+        QColor colourred = Qt::red;
+        modelVehiclestatus->setData(cellIndex, colourred, Qt::TextColorRole);
+    }
+
+    // Set the model on the QTableView
+    ui->vehiclestatusTable->setModel(modelVehiclestatus);
+
+    // Set headers for both rows and columns
+    ui->vehiclestatusTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch); // Adjust the column width to the content
+    ui->vehiclestatusTable->verticalHeader()->setVisible(false); // Hide vertical headers
+
+    // Set horizontal header labels
+    QStringList headerLabels;
+    headerLabels << "Vehicle" << "Status";
+    modelVehiclestatus->setHorizontalHeaderLabels(headerLabels);
+
+
+
+
+    QModelIndex cellIndex = modelVehiclestatus->index(1, 1); // Row 1, Column 1 (second column)
+    QColor coluorgreen = Qt::green;
+    modelVehiclestatus->setData(cellIndex, coluorgreen, Qt::TextColorRole);
+
+
+
+
     connect(ui->pushButton_field, &QPushButton::released, this, &MainWindow::handleFieldButton);
     connect(ui->pushButton_location, &QPushButton::released, this, &MainWindow::handleLocationButton);
-
-    /*
-    // Create a line edit widget
-    QLineEdit* lineEdit = ui->logfileEdit; // Use the lineEdit from the generated UI class
-    lineEdit->setReadOnly(true); // Make the line edit read-only to prevent direct user input
-
-
-    // Function to handle the file selection and update the line edit
-    auto handleFileSelection = [&]() {
-        QString filename = QFileDialog::getOpenFileName(this, "Open File", "", "CSV Files (*.csv);;All Files (*)");
-
-        if (!filename.isEmpty()) {
-            // Set the selected file path to the line edit
-            lineEdit->setText(filename);
-
-            // You can now use the selected file path for further processing
-            qDebug() << "Selected file:" << filename;
-        } else {
-            qDebug() << "No file selected!";
-        }
-    };
-
-
-    // Connect the line edit's focusInSignal to the handleFileSelection function
-    QObject::connect(lineEdit, &QLineEdit::focusIn, handleFileSelection);
-*/
-
 
     ui->fieldTable->installEventFilter(this);
     ui->farmTable->installEventFilter(this);
     ui->vehicleTable->installEventFilter(this);
 
-    ui->mainTabWidget->removeTab(9);
+    ui->farmTable->selectRow(0);
+    if (ui->fieldTable->model()->rowCount()>0)
+    {
+        ui->fieldTable->selectRow(0);
+    }
+    if (ui->pathTable->model()->rowCount()>0)
+    {
+        ui->pathTable->selectRow(0);
+    }
+
+QLineSeries *series= new QLineSeries();
+
+    series->append (0,6);
+    series->append(2,4);
+    series->append(3,8);
+    series->append(7,4);
+    series->append(10,5);
+
+    *series << QPointF(11,1) << QPoint(13,3) << QPoint(17,6) << QPointF (18,9) << QPointF(20,2);
+
+QChart *chart = new QChart();
+    chart->legend()->hide();
+    chart->addSeries(series);
+    chart->setTitle("Test Example");
+
+    QChartView *chartView=new QChartView(chart);
+    chartView->setRenderHint(QPainter::Antialiasing);
+    chartView->setParent(ui->horizontalFrame);
+
+
+
+
+    connect(ui->loadTrackButton, &QPushButton::clicked, this, &MainWindow::onLoadLogFile);
+
     ui->mainTabWidget->removeTab(8);
     ui->mainTabWidget->removeTab(7);
     ui->mainTabWidget->removeTab(6);
     ui->mainTabWidget->removeTab(5);
+    ui->mainTabWidget->removeTab(4);
+    ui->controlWidget->removeTab(3);
+    ui->controlWidget->removeTab(2);
     qApp->installEventFilter(this);
+}
+
+void MainWindow::onLoadLogFile()
+{
+    // Handle the file selection and update the line edit
+    QString filename = QFileDialog::getOpenFileName(this, "Open File", "", "CSV Files (*.csv);;All Files (*)");
+
+    if (!filename.isEmpty()) {
+        // Set the selected file path to the line edit
+        ui->logfileEdit->setText(filename);
+
+        // You can now use the selected file path for further processing
+        qDebug() << "Selected file:" << filename;
+        QFile file(filename);
+
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            qDebug() << "Failed to open the file:" << file.errorString();
+        }
+
+        QTextStream in(&file);
+        int a=0;
+        int format=0;
+        bool first=true;
+
+        double lattmp;
+        double latdgr;
+        double lat;
+        double lontmp;
+        double londgr;
+        double lon;
+        in.readLine();
+        in.readLine();
+        in.readLine();
+        QString csvLine = in.readLine();
+        QStringList substrings= csvLine.split(",");
+        switch (substrings.size())
+        {
+        case 15:
+            format=1;
+            break;
+        case 24:
+            format=2;
+            break;
+        }
+        // && (a<10)
+        while (!in.atEnd()) {
+//            qDebug() << "Looping";
+//            qDebug() << csvLine;
+            substrings= csvLine.split(",");
+            if (first)
+            {
+                first=false;
+            }
+  //          qDebug() << "Size:" << substrings.size();
+  //          qDebug() << "Looping2";
+            switch(format)
+            {
+            case 1:
+                lattmp=substrings.at(2).toDouble()/100;
+                latdgr=std::floor(lattmp);
+                lat=latdgr+(lattmp-latdgr)/0.6;
+                lontmp=substrings.at(4).toDouble()/100;
+                londgr=std::floor(lontmp);
+                lon=londgr+(lontmp-londgr)/0.6;
+                break;
+            case 2:
+                lat=substrings.at(19).toDouble();
+                lon=substrings.at(20).toDouble();
+            }
+            qDebug() << "Lat.:" << lat << ", lon.: " << lon;
+
+            // Process the line (e.g., split it by commas to get individual fields)
+            csvLine = in.readLine();
+            a++;
+        }
+
+        file.close();
+    } else {
+        qDebug() << "No file selected!";
+    }
 }
 
 MainWindow::~MainWindow()
@@ -589,8 +718,7 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
     if (e->type() == QEvent::KeyPress)
     {
         QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
-//        qDebug() << "in eventFilter (key)";
-//        qDebug() << keyEvent->key();
+
         // Emergency stop on escape
         if (keyEvent->key() == Qt::Key_Escape) {
             on_stopButton_clicked();
@@ -662,43 +790,6 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
 
     }
 
-    if (object == ui->logfileEdit && e->type() == QEvent::FocusIn)
-    {
-        if (!fileDialogOpen) {
-            // Handle the file selection and update the line edit
-            fileDialogOpen = true;
-            // Handle the file selection and update the line edit
-            QString filename = QFileDialog::getOpenFileName(this, "Open File", "", "CSV Files (*.csv);;All Files (*)");
-
-            if (!filename.isEmpty()) {
-                // Set the selected file path to the line edit
-                ui->logfileEdit->setText(filename);
-
-                // You can now use the selected file path for further processing
-                qDebug() << "Selected file:" << filename;
-                QFile file(filename);
-
-                if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-                    qDebug() << "Failed to open the file:" << file.errorString();
-                    return true;
-                }
-
-                QTextStream in(&file);
-                while (!in.atEnd()) {
-                    QString line = in.readLine();
-                    // Process the line (e.g., split it by commas to get individual fields)
-                }
-
-                file.close();
-            } else {
-                qDebug() << "No file selected!";
-                fileDialogOpen = false;
-            }
-        }
-        return true;
-    }
-    // false means it should be send to target also. as in , we dont remove it.
-    // if you return true , you will take the event and widget never sees it so be carefull with that.
 
 #ifdef HAS_JOYSTICK
     if (mJoystick->isConnected()) {
@@ -713,6 +804,46 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
     return QObject::eventFilter(object, e);
 //    return false;
 }
+
+void MainWindow::onMouseClickedFieldSelected(int field)
+{
+    qDebug() << "Field selected: " << QString::number(field) << ", time to act!";
+
+    // Get the QSqlRelationalTableModel from the QTableView
+    QSqlRelationalTableModel* model = qobject_cast<QSqlRelationalTableModel*>(this->ui->fieldTable->model());
+
+    if (!model) {
+        // The model is not a QSqlRelationalTableModel
+        return;
+    }
+
+    qDebug() << "# Rows: " + QString::number(model->rowCount());
+
+    // Find the row that matches the 'idValue' in the first column (assuming it's the primary key)
+    int row = -1;
+    qDebug() << "field selected: " << field;
+    for (int i = 0; i < model->rowCount(); ++i) {
+        QModelIndex index = model->index(i, 0); // Assuming the 'id' is in column 0
+        int id = model->data(index).toInt();
+        qDebug() << "Looping. Row: " << QString::number(i) << ", id: " << QString::number(id) << ", field: " << QString::number(field);
+
+        if (id == field) {
+            row = i;
+            qDebug() << "table row: " << row;
+            break;
+        }
+    }
+
+    if (row != -1) {
+        qDebug() << "Selecting: " << row;
+        this->ui->fieldTable->selectRow(row);
+    }
+
+
+
+
+}
+
 
 void MainWindow::addCar(int id, QString name, bool pollData)
 {
@@ -883,14 +1014,16 @@ void MainWindow::timerSlot()
     // Update status label
     if (mStatusInfoTime) {
         mStatusInfoTime--;
-        if (!mStatusInfoTime) {
+    /*    if (!mStatusInfoTime) {
             mStatusLabel->setStyleSheet(qApp->styleSheet());
-        }
+        }*/
     } else {
         if (mSerialPort->isOpen() || mPacketInterface->isUdpConnected() || mTcpClientMulti->isAnyConnected()) {
-            mStatusLabel->setText("Connected");
+            mStatusLabel->setText("ConnectedXXX");
+            mStatusLabel->setStyleSheet("color: green;");
         } else {
-            mStatusLabel->setText("Not connected");
+            mStatusLabel->setText("Not connectedZZZ");
+            mStatusLabel->setStyleSheet("color: red;");
         }
     }
 
@@ -941,8 +1074,10 @@ void MainWindow::timerSlot()
 
         if (jsWasconn) {
             ui->jsConnectedLabel->setText("Connected");
+            ui->jsConnectedLabel->setStyleSheet("color: green;");
         } else {
             ui->jsConnectedLabel->setText("Not connected");
+            ui->jsConnectedLabel->setStyleSheet("color: green;");
             // STOP STOP STOP
             on_stopButton_clicked();
         }
@@ -1304,10 +1439,6 @@ void MainWindow::on_tcpConnectButton_clicked()
         int row = currentrow.row();
         if (row!=oldrow)
         {
-/*            int column = currentrow.column();
-            qDebug() << "Selected Row: " << row;
-            qDebug() << "Selected Column: " << column;
-*/
             // Retrieve the data of the selected row if needed
             QString name = this->modelVehicle->data(this->modelVehicle->index(row, 0)).toString();
             QString ip = this->modelVehicle->data(this->modelVehicle->index(row, 1)).toString();
@@ -1315,15 +1446,9 @@ void MainWindow::on_tcpConnectButton_clicked()
 
             if (port.isEmpty())
             {
-                QMessageBox msgBox;
-                msgBox.setText(ip);
-                msgBox.exec();
                 mTcpClientMulti->addConnection(ip,8300);
             } else
             {
-                QMessageBox msgBox;
-                msgBox.setText(ip + ':' + port);
-                msgBox.exec();
                 mTcpClientMulti->addConnection(ip,port.toInt());
             };
             addCar(mCars.size(),name);
@@ -1332,31 +1457,6 @@ void MainWindow::on_tcpConnectButton_clicked()
 
         };
     }
-
-
-/*
-    QStringList conns = ui->tcpConnEdit->toPlainText().split("\n");
-
-    for (QString c: conns) {
-        QStringList ipPort = c.split(":");
-
-        if (ipPort.size() == 1) {
-            QMessageBox msgBox;
-            msgBox.setText(ipPort.at(0));
-            msgBox.exec();
-            mTcpClientMulti->addConnection(ipPort.at(0),
-                                           8300);
-            on_carAddButton_clicked();
-        } else if (ipPort.size() == 2) {
-            QMessageBox msgBox;
-            msgBox.setText(ipPort.at(0));
-            msgBox.exec();
-            mTcpClientMulti->addConnection(ipPort.at(0),
-                                           ipPort.at(1).toInt());
-            on_carAddButton_clicked();
-        }
-    } */
-
 }
 
 void MainWindow::on_tcpPingButton_clicked()
@@ -1719,9 +1819,6 @@ void MainWindow::on_mapApButton_clicked()
 
 void MainWindow::on_mapKbButton_clicked()
 {
-    QMessageBox msg;
-    msg.setText(QString::number(mCars.size()));
-    msg.exec();
     if (mJoystick->isConnected())
     {
         if (mCars.size()>0)
@@ -2253,68 +2350,7 @@ void MainWindow::on_actionLoadDriveFile_triggered()
         showStatusInfo("Loaded drive file", true);
     }
 }
-/*
-void MainWindow::on_mapSaveAsPdfButton_clicked()
-{
-    QString filename = QFileDialog::getSaveFileName(this,
-                                                    tr("Save Map Image"), "",
-                                                    tr("Pdf files (*.pdf)"));
 
-    // Cancel pressed
-    if (filename.isEmpty()) {
-        return;
-    }
-
-    if (!filename.toLower().endsWith(".pdf")) {
-        filename.append(".pdf");
-    }
-
-    ui->mapWidget->printPdf(filename,
-                            ui->mapSaveWBox->value(),
-                            ui->mapSaveHBox->value());
-
-    mLastImgFileName = filename;
-}
-
-void MainWindow::on_mapSaveAsPngButton_clicked()
-{
-    QString filename = QFileDialog::getSaveFileName(this,
-                                                    tr("Save Map Image"), "",
-                                                    tr("png files (*.png)"));
-
-    // Cancel pressed
-    if (filename.isEmpty()) {
-        return;
-    }
-
-    if (!filename.toLower().endsWith(".png")) {
-        filename.append(".png");
-    }
-
-    ui->mapWidget->printPng(filename,
-                            ui->mapSaveWBox->value(),
-                            ui->mapSaveHBox->value());
-
-    mLastImgFileName = filename;
-}
-
-void MainWindow::on_mapSaveRetakeButton_clicked()
-{
-    if (mLastImgFileName.toLower().endsWith(".pdf")) {
-        ui->mapWidget->printPdf(mLastImgFileName,
-                                ui->mapSaveWBox->value(),
-                                ui->mapSaveHBox->value());
-    } else if (mLastImgFileName.toLower().endsWith(".png")) {
-        ui->mapWidget->printPng(mLastImgFileName,
-                                ui->mapSaveWBox->value(),
-                                ui->mapSaveHBox->value());
-    } else {
-        QMessageBox::critical(this, "Retake Image",
-                              "No image has been taken yet, so a retake "
-                              "is not possible.");
-    }
-}
-*/
 void MainWindow::on_modeRouteButton_toggled(bool checked)
 {
     ui->mapWidget->setAnchorMode(!checked);
@@ -2493,39 +2529,39 @@ void MainWindow::on_clearAnchorButton_clicked()
     mPacketInterface->clearUwbAnchors(ui->mapCarBox->value());
 }
 
-void MainWindow::on_setBoundsRoutePushButton_clicked()
-{
-    int r = ui->mapWidget->getRouteNow();
-    ui->boundsRouteSpinBox->setValue(r);
-}
 
 void MainWindow::on_boundsFillPushButton_clicked()
 {
-    MapRoute bounds = ui->mapWidget->getRoute(ui->boundsRouteSpinBox->value());
 
+    MapRoute bounds = ui->mapWidgetFields->getField(ui->mapWidgetFields->getFieldNow());
     double spacing = ui->boundsFillSpacingSpinBox->value();
     if (spacing < 0.5) return;
 
     QList<LocPoint> routeLP;
     if (ui->generateFrameCheckBox->isChecked())
+    {
         routeLP = RouteMagic::fillConvexPolygonWithFramedZigZag(bounds.mRoute, spacing, ui->boundsFillKeepTurnsInBoundsCheckBox->isChecked(), ui->boundsFillSpeedSpinBox->value()/3.6,
                                                               ui->boundsFillSpeedInTurnsSpinBox->value()/3.6, ui->stepsForTurningSpinBox->value(), ui->visitEverySpinBox->value(),
                                                               ui->lowerToolsCheckBox->isChecked() ? ATTR_HYDRAULIC_FRONT_DOWN : 0, ui->raiseToolsCheckBox->isChecked() ? ATTR_HYDRAULIC_FRONT_UP : 0,
                                                               ui->lowerToolsDistanceSpinBox->value()*2, ui->raiseToolsDistanceSpinBox->value()*2);
                                                               // attribute changes at half distance
-    else
+    } else
+    {
         routeLP = RouteMagic::fillConvexPolygonWithZigZag(bounds.mRoute, spacing, ui->boundsFillKeepTurnsInBoundsCheckBox->isChecked(), ui->boundsFillSpeedSpinBox->value()/3.6,
                                                         ui->boundsFillSpeedInTurnsSpinBox->value()/3.6, ui->stepsForTurningSpinBox->value(), ui->visitEverySpinBox->value(),
                                                         ui->lowerToolsCheckBox->isChecked() ? ATTR_HYDRAULIC_FRONT_DOWN : 0, ui->raiseToolsCheckBox->isChecked() ? ATTR_HYDRAULIC_FRONT_UP : 0,
                                                         ui->lowerToolsDistanceSpinBox->value()*2, ui->raiseToolsDistanceSpinBox->value()*2);
+    };
+
 
     MapRoute route;
     route.mRoute=routeLP;
-    ui->mapWidget->addRoute(route);
-    int r = ui->mapWidget->getRoutes().size()-1;
-    ui->mapWidget->setRouteNow(r);
+
+    ui->mapWidgetFields->addRoute(route);
+    int r = ui->mapWidgetFields->getRoutes().size()-1;
+    ui->mapWidgetFields->setRouteNow(r);
     ui->mapRouteBox->setValue(r);
-    ui->mapWidget->repaint();
+    ui->mapWidgetFields->repaint();
 }
 
 void MainWindow::on_lowerToolsCheckBox_stateChanged(int arg1)
@@ -2538,7 +2574,7 @@ void MainWindow::on_raiseToolsCheckBox_stateChanged(int arg1)
     ui->raiseToolsDistanceSpinBox->setEnabled(arg1 != 0);
 }
 
-void MainWindow::on_WgSettingsPushButton_clicked()
+void MainWindow::on_actionWireguard_triggered()
 {
     if (!mWireGuard)
         mWireGuard.reset(new WireGuard(this));
@@ -2551,9 +2587,14 @@ void MainWindow::on_WgConnectPushButton_clicked()
     QList<QNetworkInterface> interfaces = QNetworkInterface::allInterfaces();
     if (std::find_if(interfaces.begin(), interfaces.end(),
                      [](QNetworkInterface currInterface){return currInterface.name() == "wg_sdvp";}) != interfaces.end())
-        ui->wgStatusLabel->setText("Status: Interface up");
+    {
+        ui->wgStatusLabel->setText("Connected");
+        ui->wgStatusLabel->setStyleSheet("color: green;");
+    }
     else
+    {
         ui->wgStatusLabel->setText("Status: Config. error");
+    };
 }
 
 void MainWindow::on_WgDisconnectPushButton_clicked()
@@ -2563,9 +2604,15 @@ void MainWindow::on_WgDisconnectPushButton_clicked()
     QList<QNetworkInterface> interfaces = QNetworkInterface::allInterfaces();
     if (std::find_if(interfaces.begin(), interfaces.end(),
                      [](QNetworkInterface currInterface){return currInterface.name() == "wg_sdvp";}) != interfaces.end())
-        ui->wgStatusLabel->setText("Status: Interface up");
+    {
+        ui->wgStatusLabel->setText("Connected");
+        ui->wgStatusLabel->setStyleSheet("color: green;");
+    }
     else
-        ui->wgStatusLabel->setText("Status: Interface down");
+    {
+        ui->wgStatusLabel->setText("Disconnected");
+        ui->wgStatusLabel->setStyleSheet("color: red;");
+    };
 }
 
 void MainWindow::on_AutopilotConfigurePushButton_clicked()
@@ -2839,66 +2886,11 @@ QVariant addLocation(QSqlQuery &q, const QString &name)
 QSqlError initDb()
 {
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
-//    db.setDatabaseName(":memory:");
-    db.setDatabaseName("test.db");
+    db.setDatabaseName("test2.db");
     if (!db.open())
         return db.lastError();
     return QSqlError();
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2927,8 +2919,11 @@ void MainWindow::timerSlotRtcm()
 
         if (wasNtripConnected) {
             ui->ntripConnectedLabel->setText("Connected");
+            ui->ntripConnectedLabel->setStyleSheet("color: green;");
         } else {
             ui->ntripConnectedLabel->setText("Not connected");
+            ui->ntripConnectedLabel->setStyleSheet("color: red;");
+
         }
     }
     // Send reference position every 5s
@@ -2952,7 +2947,8 @@ void MainWindow::timerSlotRtcm()
 void MainWindow::rtcmRx(QByteArray data, int type, bool sync)
 {
     (void)sync;
-    qDebug() << "Type: " << type << ", data:" << data;
+    //Commented away for the moment. Will be logged
+    //qDebug() << "Type: " << type << ", data:" << data;
     emit rtcmReceivedStep1(data);
 }
 
@@ -2967,19 +2963,38 @@ void MainWindow::refPosRx(double lat, double lon, double height, double antenna_
     ui->lastRefPosLablel->setText(str);
 }
 
+
+void MainWindow::ntripConnect(int rowIndex)
+{
+    QString  ip = modelFarm->data(modelFarm->index(rowIndex, 4)).toString();
+    uint  port = modelFarm->data(modelFarm->index(rowIndex, 5)).toUInt();
+    bool  NTRIP = modelFarm->data(modelFarm->index(rowIndex, 6)).toBool();
+    QString  user = modelFarm->data(modelFarm->index(rowIndex, 7)).toString();
+    QString  pwd = modelFarm->data(modelFarm->index(rowIndex, 8)).toString();
+    QString  stream = modelFarm->data(modelFarm->index(rowIndex, 5)).toString();
+/*    QMessageBox msgBox;
+    msgBox.setText("In Ntrip Connect, selected ID:" + QString::number(rowIndex) + ':' + ip + ':' + port);
+    msgBox.exec();*/
+    if (NTRIP) {
+        mRtcm->connectNtrip(ip, stream, user, pwd, port);
+    } else {
+        mRtcm->connectTcp(ip, port);
+    }
+}
+
 void MainWindow::on_ntripConnectButton_clicked()
 {
-    QMessageBox msg;
-    msg.setText("In Ntrip Connect");
-    msg.exec();
-    if (ui->ntripBox->isChecked()) {
-        mRtcm->connectNtrip(ui->ntripServerEdit->text(),
-                            ui->ntripStreamEdit->text(),
-                            ui->ntripUserEdit->text(),
-                            ui->ntripPasswordEdit->text(),
-                            ui->ntripPortBox->value());
-    } else {
-        mRtcm->connectTcp(ui->ntripServerEdit->text(), ui->ntripPortBox->value());
+    QModelIndexList selectedIndexes = ui->farmTable->selectionModel()->selectedIndexes();
+    if (!selectedIndexes.isEmpty()) {
+        int rowIndex = selectedIndexes.first().row();
+//        int id = modelFarm->record(rowIndex).value("id").toInt();
+        ntripConnect(rowIndex);
+    } else
+    {
+        QMessageBox msgBox;
+        msgBox.setText("You need to select a farm before you connect!");
+        msgBox.exec();
+
     }
 }
 
@@ -3011,4 +3026,34 @@ void MainWindow::on_tcpServerBox_toggled(bool checked)
 void MainWindow::on_gpsOnlyBox_toggled(bool checked)
 {
     mRtcm->setGpsOnly(checked);
+}
+
+CustomDelegate::CustomDelegate(QObject *parent) : QStyledItemDelegate(parent)
+{
+
+}
+
+
+void CustomDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+    QStyleOptionViewItem newOption = option;
+
+    // Check if the text color role is set in the data
+    if (index.column() == 1 && index.data(Qt::TextColorRole).isValid()) {
+        newOption.palette.setColor(QPalette::Text, index.data(Qt::TextColorRole).value<QColor>());
+    }
+
+    QStyledItemDelegate::paint(painter, newOption, index);
+
+
+
+    /*
+    QStyleOptionViewItem newOption = option;
+
+    // Set the text color to red for the second column (column 1)
+    if (index.column() == 1) {
+        newOption.palette.setColor(QPalette::Text, Qt::red);
+    }
+
+    QStyledItemDelegate::paint(painter, newOption, index);*/
 }
