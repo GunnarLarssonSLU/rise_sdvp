@@ -27,6 +27,9 @@
 #include <QGamepad>
 #include <QtWidgets>
 #include <QtSql>
+//#include <QtCharts>
+//#include <QtChartView>
+
 
 #include "carinterface.h"
 #include "packetinterface.h"
@@ -57,6 +60,9 @@
 namespace Ui {
 class MainWindow;
 }
+
+
+class CustomDelegate;
 
 class MainWindow : public QMainWindow
 {
@@ -183,14 +189,11 @@ private slots:
     void on_routeZeroAllButton_clicked();
     void on_mapRoutePosAttrBox_currentIndexChanged(int index);
     void on_clearAnchorButton_clicked();
-    void on_setBoundsRoutePushButton_clicked();
     void on_boundsFillPushButton_clicked();
 
     void on_lowerToolsCheckBox_stateChanged(int arg1);
 
     void on_raiseToolsCheckBox_stateChanged(int arg1);
-
-    void on_WgSettingsPushButton_clicked();
 
     void on_WgConnectPushButton_clicked();
 
@@ -206,6 +209,10 @@ private slots:
 
     void on_AutopilotPausePushButton_clicked();
 
+    void on_actionWireguard_triggered();
+
+    void onLoadLogFile();
+
 
     // RTCM
     void timerSlotRtcm();
@@ -213,6 +220,7 @@ private slots:
     void refPosRx(double lat, double lon, double height, double antenna_height);
 
     void on_ntripDisconnectButton_clicked();
+    void ntripConnect(int rowIndex);
 
     void on_refGetButton_clicked();
     void on_tcpServerBox_toggled(bool checked);
@@ -224,7 +232,7 @@ signals:
 
 public slots:
     void on_ntripConnectButton_clicked();
-
+    void onMouseClickedFieldSelected(int field);
 
 private:
     Ui::MainWindow *ui;
@@ -277,17 +285,24 @@ private:
     void showError(const QSqlError &err);
     void handleFieldButton();
     void handleLocationButton();
-    QSqlRelationalTableModel *modelField;
     QSqlRelationalTableModel *modelFarm;
+    QSqlRelationalTableModel *modelField;
+    QSqlRelationalTableModel *modelPath;
     QSqlRelationalTableModel *modelVehicle;
-    int locationIdx;
-    bool fileDialogOpen;
+    QStandardItemModel *modelVehiclestatus;
 
     // RTCM
     RtcmClient *mRtcm;
     QTimer *mTimerRtcm;
     TcpBroadcast *mTcpServer;
+    CustomDelegate *statustocolourDelegate;
+};
 
+class CustomDelegate : public QStyledItemDelegate {
+public:
+    explicit CustomDelegate(QObject *parent = nullptr);
+
+    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
 };
 
 

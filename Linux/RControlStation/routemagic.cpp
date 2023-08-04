@@ -1386,6 +1386,7 @@ QList<LocPoint> RouteMagic::fillBoundsWithTrajectory(QList<LocPoint> bounds, QLi
 QList<LocPoint> RouteMagic::fillConvexPolygonWithZigZag(QList<LocPoint> bounds, double spacing, bool keepTurnsInBounds, double speed, double speedInTurns, int turnIntermediateSteps, int visitEveryX,
                                                         uint32_t setAttributesOnStraights, uint32_t setAttributesInTurns, double attributeDistanceAfterTurn, double attributeDistanceBeforeTurn)
 {
+
     QList<LocPoint> route;
 
     // 1. resize bounds to ensure spacing (if applicable). TODO: not sure if helpful
@@ -1394,6 +1395,7 @@ QList<LocPoint> RouteMagic::fillConvexPolygonWithZigZag(QList<LocPoint> bounds, 
 
     // 2. get bound that determines optimal zigzag direction
     QPair<LocPoint, LocPoint> baseline = getBaselineDeterminingMinHeightOfConvexPolygon(bounds);
+
     double angle = atan2(baseline.second.getY() - baseline.first.getY(), baseline.second.getX() - baseline.first.getX());
 
     // 3. draw parallels to baseline that cover whole polygon

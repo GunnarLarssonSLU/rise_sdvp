@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>858</width>
+    <width>846</width>
     <height>557</height>
    </rect>
   </property>
@@ -25,11 +25,103 @@
         <enum>QTabWidget::Triangular</enum>
        </property>
        <property name="currentIndex">
-        <number>2</number>
+        <number>0</number>
        </property>
        <property name="tabsClosable">
         <bool>false</bool>
        </property>
+       <widget class="QWidget" name="orientationTab">
+        <attribute name="icon">
+         <iconset resource="resources.qrc">
+          <normaloff>:/models/Icons/Orthogonal View-96.png</normaloff>:/models/Icons/Orthogonal View-96.png</iconset>
+        </attribute>
+        <attribute name="title">
+         <string/>
+        </attribute>
+        <attribute name="toolTip">
+         <string>Orientation</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_15">
+         <item>
+          <layout class="QVBoxLayout" name="orientationLayout">
+           <item>
+            <spacer name="orientationSpacer">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QProgressBar" name="rollBar">
+             <property name="minimum">
+              <number>-180</number>
+             </property>
+             <property name="maximum">
+              <number>180</number>
+             </property>
+             <property name="value">
+              <number>0</number>
+             </property>
+             <property name="format">
+              <string>Roll: %v°</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QProgressBar" name="pitchBar">
+             <property name="minimum">
+              <number>-180</number>
+             </property>
+             <property name="maximum">
+              <number>180</number>
+             </property>
+             <property name="value">
+              <number>0</number>
+             </property>
+             <property name="format">
+              <string>Pitch %v°</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QProgressBar" name="yawBar">
+             <property name="minimum">
+              <number>-180</number>
+             </property>
+             <property name="maximum">
+              <number>180</number>
+             </property>
+             <property name="value">
+              <number>0</number>
+             </property>
+             <property name="format">
+              <string>Yaw: %v°</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QProgressBar" name="speedBar">
+             <property name="maximum">
+              <number>120</number>
+             </property>
+             <property name="value">
+              <number>0</number>
+             </property>
+             <property name="format">
+              <string>Speed: %v km/h</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
        <widget class="QWidget" name="tab_5">
         <attribute name="icon">
          <iconset resource="resources.qrc">
@@ -398,98 +490,6 @@
              <property name="icon">
               <iconset resource="resources.qrc">
                <normaloff>:/models/Icons/Download-96.png</normaloff>:/models/Icons/Download-96.png</iconset>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="orientationTab">
-        <attribute name="icon">
-         <iconset resource="resources.qrc">
-          <normaloff>:/models/Icons/Orthogonal View-96.png</normaloff>:/models/Icons/Orthogonal View-96.png</iconset>
-        </attribute>
-        <attribute name="title">
-         <string/>
-        </attribute>
-        <attribute name="toolTip">
-         <string>Orientation</string>
-        </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_15">
-         <item>
-          <layout class="QVBoxLayout" name="orientationLayout">
-           <item>
-            <spacer name="orientationSpacer">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>40</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
-            <widget class="QProgressBar" name="rollBar">
-             <property name="minimum">
-              <number>-180</number>
-             </property>
-             <property name="maximum">
-              <number>180</number>
-             </property>
-             <property name="value">
-              <number>0</number>
-             </property>
-             <property name="format">
-              <string>Roll: %v°</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QProgressBar" name="pitchBar">
-             <property name="minimum">
-              <number>-180</number>
-             </property>
-             <property name="maximum">
-              <number>180</number>
-             </property>
-             <property name="value">
-              <number>0</number>
-             </property>
-             <property name="format">
-              <string>Pitch %v°</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QProgressBar" name="yawBar">
-             <property name="minimum">
-              <number>-180</number>
-             </property>
-             <property name="maximum">
-              <number>180</number>
-             </property>
-             <property name="value">
-              <number>0</number>
-             </property>
-             <property name="format">
-              <string>Yaw: %v°</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QProgressBar" name="speedBar">
-             <property name="maximum">
-              <number>120</number>
-             </property>
-             <property name="value">
-              <number>0</number>
-             </property>
-             <property name="format">
-              <string>Speed: %v km/h</string>
              </property>
             </widget>
            </item>

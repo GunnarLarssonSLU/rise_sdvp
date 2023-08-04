@@ -28,101 +28,8 @@
        <enum>QTabWidget::North</enum>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>1</number>
       </property>
-      <widget class="QWidget" name="tabSettings">
-       <attribute name="icon">
-        <iconset resource="resources.qrc">
-         <normaloff>:/models/Icons/Settings-96.png</normaloff>:/models/Icons/Settings-96.png</iconset>
-       </attribute>
-       <attribute name="title">
-        <string/>
-       </attribute>
-       <attribute name="toolTip">
-        <string>Farm level settings</string>
-       </attribute>
-       <attribute name="whatsThis">
-        <string>Settings</string>
-       </attribute>
-       <widget class="QGroupBox" name="wgGroupBox">
-        <property name="geometry">
-         <rect>
-          <x>20</x>
-          <y>20</y>
-          <width>291</width>
-          <height>71</height>
-         </rect>
-        </property>
-        <property name="title">
-         <string>WireGuard (VPN)</string>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout_31">
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_18">
-           <item>
-            <widget class="QLabel" name="wgStatusLabel">
-             <property name="text">
-              <string>Status:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="WgSettingsPushButton">
-             <property name="text">
-              <string/>
-             </property>
-             <property name="icon">
-              <iconset resource="resources.qrc">
-               <normaloff>:/models/Icons/Settings-96.png</normaloff>:/models/Icons/Settings-96.png</iconset>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
-            <widget class="QPushButton" name="WgConnectPushButton">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="icon">
-              <iconset resource="resources.qrc">
-               <normaloff>:/models/Icons/Connected-96.png</normaloff>:/models/Icons/Connected-96.png</iconset>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="WgDisconnectPushButton">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="icon">
-              <iconset resource="resources.qrc">
-               <normaloff>:/models/Icons/Disconnected-96.png</normaloff>:/models/Icons/Disconnected-96.png</iconset>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-        </layout>
-       </widget>
-      </widget>
       <widget class="QWidget" name="tabFarm">
        <attribute name="icon">
         <iconset>
@@ -145,7 +52,7 @@
         </property>
         <layout class="QGridLayout" name="gridlayout_3">
          <item row="4" column="0">
-          <widget class="QLabel" name="label_8">
+          <widget class="QLabel" name="labelFieldname">
            <property name="text">
             <string>Field name</string>
            </property>
@@ -166,7 +73,7 @@
           </widget>
          </item>
          <item row="8" column="0">
-          <widget class="QLabel" name="label_17">
+          <widget class="QLabel" name="labelArea">
            <property name="text">
             <string>Area:</string>
            </property>
@@ -187,21 +94,25 @@
           </widget>
          </item>
          <item row="9" column="0">
-          <widget class="QLabel" name="label_15">
+          <widget class="QLabel" name="labelPaths">
            <property name="text">
             <string>Paths</string>
            </property>
           </widget>
          </item>
          <item row="3" column="0">
-          <widget class="QLabel" name="label_6">
+          <widget class="QLabel" name="labelFields">
            <property name="text">
             <string>Fields</string>
            </property>
           </widget>
          </item>
          <item row="9" column="2">
-          <widget class="QTableView" name="tableView"/>
+          <widget class="QTableView" name="pathTable">
+           <property name="selectionBehavior">
+            <enum>QAbstractItemView::SelectRows</enum>
+           </property>
+          </widget>
          </item>
          <item row="4" column="2">
           <widget class="QLineEdit" name="fieldnameEdit">
@@ -232,7 +143,7 @@
           </widget>
          </item>
          <item row="0" column="0">
-          <widget class="QLabel" name="label_7">
+          <widget class="QLabel" name="labelFarm">
            <property name="text">
             <string>Farm</string>
            </property>
@@ -281,220 +192,119 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
-       </widget>
-       <widget class="QScrollArea" name="scrollArea_4">
-        <property name="geometry">
-         <rect>
-          <x>1220</x>
-          <y>710</y>
-          <width>334</width>
-          <height>976</height>
-         </rect>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>260</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="horizontalScrollBarPolicy">
-         <enum>Qt::ScrollBarAlwaysOff</enum>
-        </property>
-        <property name="sizeAdjustPolicy">
-         <enum>QAbstractScrollArea::AdjustIgnored</enum>
-        </property>
-        <property name="widgetResizable">
-         <bool>true</bool>
-        </property>
-        <widget class="QWidget" name="scrollAreaWidgetContents_4">
+        <widget class="QScrollArea" name="scrollArea_4">
          <property name="geometry">
           <rect>
-           <x>0</x>
-           <y>0</y>
-           <width>332</width>
-           <height>974</height>
+           <x>670</x>
+           <y>500</y>
+           <width>334</width>
+           <height>976</height>
           </rect>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_27">
-          <property name="spacing">
-           <number>2</number>
+         <property name="minimumSize">
+          <size>
+           <width>260</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="horizontalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="sizeAdjustPolicy">
+          <enum>QAbstractScrollArea::AdjustIgnored</enum>
+         </property>
+         <property name="widgetResizable">
+          <bool>true</bool>
+         </property>
+         <widget class="QWidget" name="scrollAreaWidgetContents_4">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>332</width>
+            <height>974</height>
+           </rect>
           </property>
-          <property name="leftMargin">
-           <number>4</number>
-          </property>
-          <property name="topMargin">
-           <number>4</number>
-          </property>
-          <property name="rightMargin">
-           <number>4</number>
-          </property>
-          <property name="bottomMargin">
-           <number>4</number>
-          </property>
-         </layout>
+          <layout class="QVBoxLayout" name="verticalLayout_27">
+           <property name="spacing">
+            <number>2</number>
+           </property>
+           <property name="leftMargin">
+            <number>4</number>
+           </property>
+           <property name="topMargin">
+            <number>4</number>
+           </property>
+           <property name="rightMargin">
+            <number>4</number>
+           </property>
+           <property name="bottomMargin">
+            <number>4</number>
+           </property>
+          </layout>
+         </widget>
         </widget>
        </widget>
-       <widget class="QGroupBox" name="groupBox_2">
+       <widget class="QGroupBox" name="groupBoxRTCM">
         <property name="geometry">
          <rect>
           <x>0</x>
           <y>520</y>
-          <width>854</width>
-          <height>323</height>
+          <width>661</width>
+          <height>391</height>
          </rect>
         </property>
         <property name="title">
          <string>TCP / NTRIP</string>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout_3">
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_4">
-           <item>
-            <widget class="QLabel" name="label_5">
-             <property name="text">
-              <string>Server</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLineEdit" name="ntripServerEdit">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>192.168.200.1</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QSpinBox" name="ntripPortBox">
-             <property name="prefix">
-              <string>Port: </string>
-             </property>
-             <property name="maximum">
-              <number>65535</number>
-             </property>
-             <property name="value">
-              <number>2101</number>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="ntripBox">
-             <property name="text">
-              <string>NTRIP</string>
-             </property>
-             <property name="checked">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_14">
-             <property name="text">
-              <string>User</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLineEdit" name="ntripUserEdit">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_18">
-             <property name="text">
-              <string>Password</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLineEdit" name="ntripPasswordEdit">
-             <property name="text">
-              <string/>
-             </property>
-             <property name="echoMode">
-              <enum>QLineEdit::Password</enum>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_19">
-             <property name="text">
-              <string>Stream</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLineEdit" name="ntripStreamEdit">
-             <property name="text">
-              <string>SPT000SWE0</string>
-             </property>
-             <property name="echoMode">
-              <enum>QLineEdit::Normal</enum>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="ntripConnectedLabel">
-             <property name="text">
-              <string>Not connected</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="ntripDisconnectButton">
-             <property name="toolTip">
-              <string>Disconnect</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="icon">
-              <iconset resource="resources.qrc">
-               <normaloff>:/models/Icons/Disconnected-96.png</normaloff>:/models/Icons/Disconnected-96.png</iconset>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="ntripConnectButton">
-             <property name="toolTip">
-              <string>Connect</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="icon">
-              <iconset resource="resources.qrc">
-               <normaloff>:/models/Icons/Connected-96.png</normaloff>:/models/Icons/Connected-96.png</iconset>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="gpsOnlyBox">
-           <property name="toolTip">
-            <string>Only send GPS observations and to save bandwidth and decrease transmission errors.</string>
+        <layout class="QGridLayout" name="gridLayout">
+         <item row="2" column="0" colspan="2">
+          <widget class="QGroupBox" name="groupBox_24">
+           <property name="title">
+            <string>Received RTCM Messages</string>
            </property>
-           <property name="text">
-            <string>GPS Only</string>
-           </property>
-           <property name="checked">
-            <bool>false</bool>
-           </property>
+           <layout class="QHBoxLayout" name="horizontalLayout_22">
+            <item>
+             <layout class="QVBoxLayout" name="verticalLayout_4"/>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="groupBox_25">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="title">
+               <string>Last Ref Position</string>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_6">
+               <item>
+                <widget class="QLabel" name="lastRefPosLablel">
+                 <property name="font">
+                  <font>
+                   <family>Monospace</family>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
           </widget>
          </item>
-         <item>
+         <item row="1" column="0" colspan="2">
           <widget class="QGroupBox" name="sendRefPosBox">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>80</height>
+            </size>
+           </property>
            <property name="title">
             <string>Send (or override) Reference Station Position</string>
            </property>
@@ -576,19 +386,6 @@
              </widget>
             </item>
             <item>
-             <spacer name="horizontalSpacer_4">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>33</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item>
              <widget class="QPushButton" name="refGetButton">
               <property name="toolTip">
                <string>Get average from base station tab</string>
@@ -605,60 +402,21 @@
            </layout>
           </widget>
          </item>
-         <item>
-          <widget class="QGroupBox" name="groupBox_24">
-           <property name="title">
-            <string>Received RTCM Messages</string>
+         <item row="0" column="0">
+          <widget class="QCheckBox" name="gpsOnlyBox">
+           <property name="toolTip">
+            <string>Only send GPS observations and to save bandwidth and decrease transmission errors.</string>
            </property>
-           <layout class="QHBoxLayout" name="horizontalLayout_22">
-            <item>
-             <layout class="QVBoxLayout" name="verticalLayout_4"/>
-            </item>
-            <item>
-             <widget class="QGroupBox" name="groupBox_25">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="title">
-               <string>Last Ref Position</string>
-              </property>
-              <layout class="QVBoxLayout" name="verticalLayout_6">
-               <item>
-                <widget class="QLabel" name="lastRefPosLablel">
-                 <property name="font">
-                  <font>
-                   <family>Monospace</family>
-                  </font>
-                 </property>
-                 <property name="text">
-                  <string/>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-            </item>
-           </layout>
+           <property name="text">
+            <string>GPS Only</string>
+           </property>
+           <property name="checked">
+            <bool>false</bool>
+           </property>
           </widget>
          </item>
-         <item>
+         <item row="0" column="1">
           <layout class="QHBoxLayout" name="horizontalLayout_23">
-           <item>
-            <spacer name="horizontalSpacer_6">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
            <item>
             <widget class="QCheckBox" name="tcpServerBox">
              <property name="text">
@@ -683,13 +441,13 @@
          </item>
         </layout>
        </widget>
-       <widget class="QGroupBox" name="groupBox_20">
+       <widget class="QGroupBox" name="groupBoxPathPlanner">
         <property name="geometry">
          <rect>
-          <x>1090</x>
+          <x>680</x>
           <y>520</y>
-          <width>324</width>
-          <height>966</height>
+          <width>561</width>
+          <height>351</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -699,12 +457,9 @@
          </sizepolicy>
         </property>
         <property name="title">
-         <string>ZigZag</string>
+         <string>Path planner</string>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout_28">
-         <property name="spacing">
-          <number>2</number>
-         </property>
+        <layout class="QGridLayout" name="gridLayout_2">
          <property name="leftMargin">
           <number>4</number>
          </property>
@@ -717,242 +472,7 @@
          <property name="bottomMargin">
           <number>4</number>
          </property>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_17">
-           <item>
-            <widget class="QSpinBox" name="boundsRouteSpinBox">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="prefix">
-              <string>Bound: </string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="setBoundsRoutePushButton">
-             <property name="text">
-              <string>Use Active</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <spacer name="verticalSpacer_8">
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
-           </property>
-           <property name="sizeType">
-            <enum>QSizePolicy::Fixed</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>20</width>
-             <height>5</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-         <item>
-          <widget class="QDoubleSpinBox" name="boundsFillSpeedSpinBox">
-           <property name="alignment">
-            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-           </property>
-           <property name="prefix">
-            <string>Speed: </string>
-           </property>
-           <property name="suffix">
-            <string> km/h</string>
-           </property>
-           <property name="value">
-            <double>3.000000000000000</double>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QDoubleSpinBox" name="boundsFillSpeedInTurnsSpinBox">
-           <property name="prefix">
-            <string>Speed in Turns: </string>
-           </property>
-           <property name="suffix">
-            <string> km/h</string>
-           </property>
-           <property name="value">
-            <double>2.000000000000000</double>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <spacer name="verticalSpacer_7">
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
-           </property>
-           <property name="sizeType">
-            <enum>QSizePolicy::Fixed</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>20</width>
-             <height>5</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-         <item>
-          <widget class="QDoubleSpinBox" name="boundsFillSpacingSpinBox">
-           <property name="prefix">
-            <string>Spacing: </string>
-           </property>
-           <property name="suffix">
-            <string> m</string>
-           </property>
-           <property name="minimum">
-            <double>1.000000000000000</double>
-           </property>
-           <property name="singleStep">
-            <double>0.100000000000000</double>
-           </property>
-           <property name="value">
-            <double>3.000000000000000</double>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QSpinBox" name="visitEverySpinBox">
-           <property name="suffix">
-            <string> Row</string>
-           </property>
-           <property name="prefix">
-            <string>Visit Every </string>
-           </property>
-           <property name="maximum">
-            <number>100</number>
-           </property>
-           <property name="singleStep">
-            <number>2</number>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="boundsFillKeepTurnsInBoundsCheckBox">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>Keep Turns within Bounds</string>
-           </property>
-           <property name="checked">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <spacer name="verticalSpacer_11">
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
-           </property>
-           <property name="sizeType">
-            <enum>QSizePolicy::Fixed</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>20</width>
-             <height>5</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-         <item>
-          <widget class="QGroupBox" name="groupBox_22">
-           <property name="title">
-            <string>Front Tool Actuation</string>
-           </property>
-           <layout class="QVBoxLayout" name="verticalLayout_30">
-            <item>
-             <widget class="QCheckBox" name="lowerToolsCheckBox">
-              <property name="text">
-               <string>Lower Tools on Straights</string>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QDoubleSpinBox" name="lowerToolsDistanceSpinBox">
-              <property name="prefix">
-               <string>Lower </string>
-              </property>
-              <property name="suffix">
-               <string> m after Turn</string>
-              </property>
-              <property name="singleStep">
-               <double>0.100000000000000</double>
-              </property>
-              <property name="value">
-               <double>0.500000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="raiseToolsCheckBox">
-              <property name="text">
-               <string>Raise Tools in Turns</string>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QDoubleSpinBox" name="raiseToolsDistanceSpinBox">
-              <property name="toolTip">
-               <string>Tools are lowered/raised this amount of meters after/before a turn</string>
-              </property>
-              <property name="prefix">
-               <string>Raise </string>
-              </property>
-              <property name="suffix">
-               <string> m before Turn</string>
-              </property>
-              <property name="decimals">
-               <number>2</number>
-              </property>
-              <property name="singleStep">
-               <double>0.100000000000000</double>
-              </property>
-              <property name="value">
-               <double>0.500000000000000</double>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </item>
-         <item>
-          <spacer name="verticalSpacer_9">
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
-           </property>
-           <property name="sizeType">
-            <enum>QSizePolicy::Fixed</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>20</width>
-             <height>5</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-         <item>
+         <item row="6" column="0">
           <widget class="QGroupBox" name="groupBox_21">
            <property name="title">
             <string>Expert / Experimental</string>
@@ -984,23 +504,103 @@
            </layout>
           </widget>
          </item>
-         <item>
-          <spacer name="verticalSpacer_6">
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
+         <item row="5" column="0" colspan="2">
+          <widget class="QGroupBox" name="groupBox_22">
+           <property name="title">
+            <string>Front Tool Actuation</string>
            </property>
-           <property name="sizeType">
-            <enum>QSizePolicy::Expanding</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>20</width>
-             <height>5</height>
-            </size>
-           </property>
-          </spacer>
+           <layout class="QGridLayout" name="gridLayout_8">
+            <item row="1" column="0">
+             <widget class="QDoubleSpinBox" name="lowerToolsDistanceSpinBox">
+              <property name="prefix">
+               <string>Lower </string>
+              </property>
+              <property name="suffix">
+               <string> m after Turn</string>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+              <property name="value">
+               <double>0.500000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QCheckBox" name="lowerToolsCheckBox">
+              <property name="text">
+               <string>Lower Tools on Straights</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QCheckBox" name="raiseToolsCheckBox">
+              <property name="text">
+               <string>Raise Tools in Turns</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QDoubleSpinBox" name="raiseToolsDistanceSpinBox">
+              <property name="toolTip">
+               <string>Tools are lowered/raised this amount of meters after/before a turn</string>
+              </property>
+              <property name="prefix">
+               <string>Raise </string>
+              </property>
+              <property name="suffix">
+               <string> m before Turn</string>
+              </property>
+              <property name="decimals">
+               <number>2</number>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+              <property name="value">
+               <double>0.500000000000000</double>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
          </item>
-         <item>
+         <item row="0" column="0">
+          <widget class="QDoubleSpinBox" name="boundsFillSpeedSpinBox">
+           <property name="alignment">
+            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+           </property>
+           <property name="prefix">
+            <string>Speed: </string>
+           </property>
+           <property name="suffix">
+            <string> km/h</string>
+           </property>
+           <property name="value">
+            <double>3.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QDoubleSpinBox" name="boundsFillSpeedInTurnsSpinBox">
+           <property name="prefix">
+            <string>Speed in Turns: </string>
+           </property>
+           <property name="suffix">
+            <string> km/h</string>
+           </property>
+           <property name="value">
+            <double>2.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="1">
           <widget class="QPushButton" name="boundsFillPushButton">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
@@ -1016,6 +616,57 @@
            </property>
            <property name="text">
             <string>Fill</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QSpinBox" name="visitEverySpinBox">
+           <property name="suffix">
+            <string> Row</string>
+           </property>
+           <property name="prefix">
+            <string>Visit Every </string>
+           </property>
+           <property name="maximum">
+            <number>100</number>
+           </property>
+           <property name="singleStep">
+            <number>2</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QDoubleSpinBox" name="boundsFillSpacingSpinBox">
+           <property name="prefix">
+            <string>Spacing: </string>
+           </property>
+           <property name="suffix">
+            <string> m</string>
+           </property>
+           <property name="minimum">
+            <double>1.000000000000000</double>
+           </property>
+           <property name="singleStep">
+            <double>0.100000000000000</double>
+           </property>
+           <property name="value">
+            <double>3.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QCheckBox" name="boundsFillKeepTurnsInBoundsCheckBox">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Keep Turns within Bounds</string>
+           </property>
+           <property name="checked">
+            <bool>false</bool>
            </property>
           </widget>
          </item>
@@ -1550,7 +1201,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QTabWidget" name="tabWidget_2">
+             <widget class="QTabWidget" name="controlWidget">
               <property name="toolTip">
                <string/>
               </property>
@@ -1842,7 +1493,7 @@
                    </size>
                   </property>
                   <property name="title">
-                   <string>Joystick</string>
+                   <string>Status</string>
                   </property>
                   <layout class="QGridLayout" name="gridLayout_5">
                    <property name="leftMargin">
@@ -1860,15 +1511,54 @@
                    <property name="spacing">
                     <number>2</number>
                    </property>
-                   <item row="1" column="0" colspan="2">
-                    <widget class="QLabel" name="jsConnectedLabel">
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_5">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="minimumSize">
+                      <size>
+                       <width>24</width>
+                       <height>24</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>24</width>
+                       <height>24</height>
+                      </size>
+                     </property>
                      <property name="text">
-                      <string>Not connected</string>
+                      <string/>
+                     </property>
+                     <property name="pixmap">
+                      <pixmap resource="resources.qrc">:/models/Icons/Controller-96.png</pixmap>
+                     </property>
+                     <property name="scaledContents">
+                      <bool>true</bool>
                      </property>
                     </widget>
                    </item>
-                   <item row="0" column="1">
-                    <widget class="QPushButton" name="jsConnectButton">
+                   <item row="2" column="2">
+                    <widget class="QPushButton" name="WgConnectPushButton">
+                     <property name="enabled">
+                      <bool>true</bool>
+                     </property>
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="baseSize">
+                      <size>
+                       <width>24</width>
+                       <height>24</height>
+                      </size>
+                     </property>
                      <property name="text">
                       <string/>
                      </property>
@@ -1879,6 +1569,137 @@
                     </widget>
                    </item>
                    <item row="2" column="0">
+                    <widget class="QLabel" name="label_14">
+                     <property name="text">
+                      <string>WG</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_12">
+                     <property name="minimumSize">
+                      <size>
+                       <width>24</width>
+                       <height>24</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>24</width>
+                       <height>24</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string/>
+                     </property>
+                     <property name="pixmap">
+                      <pixmap resource="resources.qrc">:/models/Icons/Satellite-96.png</pixmap>
+                     </property>
+                     <property name="scaledContents">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="3">
+                    <layout class="QHBoxLayout" name="horizontalLayout_4">
+                     <item>
+                      <widget class="QPushButton" name="ntripDisconnectButton">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="baseSize">
+                        <size>
+                         <width>24</width>
+                         <height>24</height>
+                        </size>
+                       </property>
+                       <property name="toolTip">
+                        <string>Disconnect</string>
+                       </property>
+                       <property name="text">
+                        <string/>
+                       </property>
+                       <property name="icon">
+                        <iconset resource="resources.qrc">
+                         <normaloff>:/models/Icons/Disconnected-96.png</normaloff>:/models/Icons/Disconnected-96.png</iconset>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                   <item row="1" column="2">
+                    <widget class="QPushButton" name="ntripConnectButton">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="baseSize">
+                      <size>
+                       <width>24</width>
+                       <height>24</height>
+                      </size>
+                     </property>
+                     <property name="toolTip">
+                      <string>Connect</string>
+                     </property>
+                     <property name="text">
+                      <string/>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="resources.qrc">
+                       <normaloff>:/models/Icons/Connected-96.png</normaloff>:/models/Icons/Connected-96.png</iconset>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="3">
+                    <widget class="QPushButton" name="WgDisconnectPushButton">
+                     <property name="enabled">
+                      <bool>true</bool>
+                     </property>
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="baseSize">
+                      <size>
+                       <width>24</width>
+                       <height>24</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string/>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="resources.qrc">
+                       <normaloff>:/models/Icons/Disconnected-96.png</normaloff>:/models/Icons/Disconnected-96.png</iconset>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QLabel" name="ntripConnectedLabel">
+                     <property name="text">
+                      <string>Not connected</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="1">
+                    <widget class="QLabel" name="jsConnectedLabel">
+                     <property name="styleSheet">
+                      <string notr="true">color: red</string>
+                     </property>
+                     <property name="text">
+                      <string>Not connected</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="5" column="0" colspan="4">
                     <widget class="QGroupBox" name="groupBox_3">
                      <property name="sizePolicy">
                       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
@@ -1967,7 +1788,7 @@
                          <double>0.010000000000000</double>
                         </property>
                         <property name="value">
-                         <double>0.150000000000000</double>
+                         <double>0.350000000000000</double>
                         </property>
                        </widget>
                       </item>
@@ -1987,8 +1808,43 @@
                      </layout>
                     </widget>
                    </item>
-                   <item row="0" column="0">
+                   <item row="0" column="2">
+                    <widget class="QPushButton" name="jsConnectButton">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="baseSize">
+                      <size>
+                       <width>24</width>
+                       <height>24</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string/>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="resources.qrc">
+                       <normaloff>:/models/Icons/Connected-96.png</normaloff>:/models/Icons/Connected-96.png</iconset>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="3">
                     <widget class="QPushButton" name="jsDisconnectButton">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="baseSize">
+                      <size>
+                       <width>24</width>
+                       <height>24</height>
+                      </size>
+                     </property>
                      <property name="text">
                       <string/>
                      </property>
@@ -1998,7 +1854,14 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="3" column="0">
+                   <item row="2" column="1">
+                    <widget class="QLabel" name="wgStatusLabel">
+                     <property name="text">
+                      <string>Status:</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="6" column="0" colspan="4">
                     <widget class="QSpinBox" name="pollIntervalBox">
                      <property name="toolTip">
                       <string>Interval at which the car status is polled.</string>
@@ -2017,6 +1880,22 @@
                      </property>
                      <property name="value">
                       <number>40</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="0" rowspan="2" colspan="4">
+                    <widget class="QTableView" name="vehiclestatusTable">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Ignored" vsizetype="MinimumExpanding">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="minimumSize">
+                      <size>
+                       <width>120</width>
+                       <height>100</height>
+                      </size>
                      </property>
                     </widget>
                    </item>
@@ -2075,7 +1954,7 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>213</width>
+                     <width>216</width>
                      <height>749</height>
                     </rect>
                    </property>
@@ -3055,7 +2934,7 @@
                           <string>Draw Route Text</string>
                          </property>
                          <property name="checked">
-                          <bool>true</bool>
+                          <bool>false</bool>
                          </property>
                         </widget>
                        </item>
@@ -3570,9 +3449,9 @@
        <widget class="MapWidget" name="mapWidgetLog" native="true">
         <property name="geometry">
          <rect>
-          <x>520</x>
+          <x>280</x>
           <y>10</y>
-          <width>941</width>
+          <width>591</width>
           <height>531</height>
          </rect>
         </property>
@@ -3583,28 +3462,87 @@
          </sizepolicy>
         </property>
        </widget>
-       <widget class="QLineEdit" name="logfileEdit">
-        <property name="geometry">
-         <rect>
-          <x>72</x>
-          <y>10</y>
-          <width>241</width>
-          <height>25</height>
-         </rect>
-        </property>
-       </widget>
-       <widget class="QLabel" name="label_file">
+       <widget class="QWidget" name="gridLayoutWidget_2">
         <property name="geometry">
          <rect>
           <x>20</x>
-          <y>10</y>
-          <width>67</width>
-          <height>17</height>
+          <y>40</y>
+          <width>233</width>
+          <height>96</height>
          </rect>
         </property>
-        <property name="text">
-         <string>File</string>
+        <layout class="QGridLayout" name="gridLayout_12">
+         <item row="1" column="1">
+          <widget class="QLabel" name="label_19">
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_20">
+           <property name="text">
+            <string>Time</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_18">
+           <property name="text">
+            <string>Length</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QLabel" name="label_21">
+           <property name="text">
+            <string>TextLabel</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_file">
+           <property name="text">
+            <string>File</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="2">
+          <widget class="QPushButton" name="loadTrackButton">
+           <property name="text">
+            <string>Load Track!</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLineEdit" name="logfileEdit"/>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_22">
+           <property name="text">
+            <string>TextLabel</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QLabel" name="label_23">
+           <property name="text">
+            <string>TextLabel</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QFrame" name="horizontalFrame">
+        <property name="geometry">
+         <rect>
+          <x>880</x>
+          <y>10</y>
+          <width>581</width>
+          <height>581</height>
+         </rect>
         </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_17"/>
        </widget>
       </widget>
       <widget class="QWidget" name="tab_19">
@@ -3792,10 +3730,17 @@
     <addaction name="actionSaveSelectedRouteAsDriveFile"/>
     <addaction name="actionLoadDriveFile"/>
    </widget>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+    <addaction name="actionWireguard"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuTests"/>
    <addaction name="menuChronos"/>
    <addaction name="menuHelp"/>
+   <addaction name="menuSettings"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionAbout">
@@ -3925,6 +3870,11 @@
    </property>
    <property name="shortcut">
     <string>F10</string>
+   </property>
+  </action>
+  <action name="actionWireguard">
+   <property name="text">
+    <string>Wireguard</string>
    </property>
   </action>
  </widget>

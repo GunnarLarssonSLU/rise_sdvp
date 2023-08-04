@@ -164,7 +164,7 @@ MapWidget::MapWidget(QWidget *parent) : QWidget(parent)
     mTraceMinSpaceGps = 0.05;
     mInfoTraceNow = 0;
     mAnchorMode = false;
-    mDrawRouteText = true;
+    mDrawRouteText = false;
     mDrawUwbTrace = false;
     mCameraImageWidth = 0.46;
     mCameraImageOpacity = 0.8;
@@ -399,7 +399,7 @@ void MapWidget::addRoutePoint(double px, double py, double speed, qint32 time)
 
 MapRoute MapWidget::getRoute(int ind)
 {
-    qDebug() << "Selected route: " << ind;
+    qDebug() << "Read route: " << ind;
     qDebug() << "Total no. of routes: " << mRoutes.size();
     if (ind < 0) {
         return mRoutes[mRouteNow];
@@ -413,9 +413,31 @@ MapRoute MapWidget::getRoute(int ind)
     }
 }
 
+MapRoute MapWidget::getField(int ind)
+{
+//    qDebug() << "Read field: " << ind;
+//    qDebug() << "Total no. of fields: " << mFields.size();
+    if (ind < 0) {
+        return mFields[mFieldNow];
+    } else {
+        if (mFields.size() > ind) {
+            return mFields[ind];
+        } else {
+            MapRoute tmp;
+            return tmp;
+        }
+    }
+}
+
+
 QList<MapRoute> MapWidget::getRoutes()
 {
     return mRoutes;
+}
+
+QList<MapRoute> MapWidget::getFields()
+{
+    return mFields;
 }
 
 void MapWidget::setRoute(const MapRoute &route)
@@ -423,6 +445,13 @@ void MapWidget::setRoute(const MapRoute &route)
     mRoutes[mRouteNow] = route;
     update();
 }
+
+void MapWidget::setField(const MapRoute &field)
+{
+    mFields[mFieldNow] = field;
+    update();
+}
+
 
 void MapWidget::addRoute(const MapRoute &route)
 {
@@ -436,9 +465,26 @@ void MapWidget::addRoute(const MapRoute &route)
     update();
 }
 
+void MapWidget::addField(const MapRoute &field)
+{
+    while (!mFields.isEmpty() &&
+           mFields.last().isEmpty() &&
+           mFieldNow < mFields.size()) {
+        mFields.removeLast();
+    }
+    mFields.append(field);
+    update();
+}
+
+
 int MapWidget::getRouteNum()
 {
     return mRoutes.size();
+}
+
+int MapWidget::getFieldNum()
+{
+    return mFields.size();
 }
 
 void MapWidget::clearRoute()
@@ -447,14 +493,28 @@ void MapWidget::clearRoute()
     update();
 }
 
+void MapWidget::clearField()
+{
+    mFields[mFieldNow].clear();
+    update();
+}
+
 void MapWidget::clearAllRoutes()
 {
     for (int i = 0;i < mRoutes.size();i++) {
         mRoutes[i].clear();
     }
-
     update();
 }
+
+void MapWidget::clearAllFields()
+{
+    for (int i = 0;i < mFields.size();i++) {
+        mFields[i].clear();
+    }
+    update();
+}
+
 
 void MapWidget::setRoutePointSpeed(double speed)
 {
@@ -665,17 +725,13 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
     double py=p.y()/1000.0;
     mousePosMap.setXY(px, py);
 
-/*    QMessageBox msg;
-    QString tmptext="Coordinates, x:" + QString::number(px) + ", y: " + QString::number(py);
-    msg.setText(tmptext);
-    msg.exec();*/
-    for (int i=0;i<getRouteNum();i++)
+    for (int i=0;i<getFieldNum();i++)
     {
-        if (RouteMagic::isPointWithin(px, py, getRoute(i).mRoute))
+        if (RouteMagic::isPointWithin(px, py, getField(i).mRoute))
         {
-/*                msg.setText("Inside:" + QString::number(i));
-                msg.exec();*/
-            setRouteNow(i);
+            qDebug() << "Clicked:" << i;
+            setFieldNow(i);
+            emit mouseClickedInField(i+1);
         };
     };
 
@@ -1089,9 +1145,6 @@ int MapWidget::getRouteNow() const
 
 void MapWidget::setRouteNow(int routeNow)
 {
-    QMessageBox msg;
-    msg.setText("Setting:" + QString::number(routeNow));
-    msg.exec();
     mRouteNow = routeNow;
     while (mRoutes.size() < (mRouteNow + 1)) {
         MapRoute l;
@@ -1109,6 +1162,32 @@ void MapWidget::setRouteNow(int routeNow)
 
     update();
 }
+
+int MapWidget::getFieldNow() const
+{
+    return mFieldNow;
+}
+
+void MapWidget::setFieldNow(int fieldNow)
+{
+    mFieldNow = fieldNow;
+    while (mFields.size() < (mFieldNow + 1)) {
+        MapRoute l;
+        mFields.append(l);
+    }
+
+    // Clean empty routes
+    while (mFieldNow < (mFields.size() - 1)) {
+        if (mFields.last().isEmpty()) {
+            mFields.removeLast();
+        } else {
+            break;
+        }
+    }
+
+    update();
+}
+
 
 int MapWidget::getInfoTraceNow() const
 {
@@ -1639,12 +1718,20 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
 
     paintCarTraces(painter,pen,drawTrans);
 
-    // Draw routes & borders
+    // Draw fields
     bool isSelected=false;
+    for (int fn = 0;fn < mFields.size();fn++) {
+        MapRoute &fieldNow = mFields[fn];
+        isSelected= mFieldNow == fn;
+        fieldNow.paintBorder(painter, pen, isSelected, mScaleFactor, drawTrans);
+    }
+
+    // Draw routes
+    isSelected=false;
     for (int rn = 0;rn < mRoutes.size();rn++) {
         MapRoute &routeNow = mRoutes[rn];
         isSelected= mRouteNow == rn;
-        routeNow.paint(this, painter, pen, isSelected, mScaleFactor, drawTrans, txt, pt_txt, rect_txt, txtTrans, highQuality);
+        routeNow.paintPath(this, painter, pen, isSelected, mScaleFactor, drawTrans, txt, pt_txt, rect_txt, txtTrans, highQuality);
     }
 
     // Map module painting
@@ -2325,24 +2412,42 @@ bool MapWidget::loadXMLRoute(QXmlStreamReader* stream,bool isBorder)
                 qWarning() << stream->lineNumber() << stream->columnNumber();
             }
         }
-        QMessageBox msg;
+//        QMessageBox msg;
         for (QPair<int, MapRoute > r: routes) {
             if (r.first >= 0) {
-                int routeLast = this->getRouteNow();
-                msg.setText(QString::number(routeLast));
-                msg.exec();
-                this->setRouteNow(r.first);
-                r.second.setIsBorder(isBorder);
-                this->setRoute(r.second);
-                this->setRouteNow(routeLast);
-                QMessageBox msg;
-                msg.setText("Satte rutt: " + QString::number(getRouteNum()));
-                msg.exec();
+                if (isBorder)
+                {
+                    int fieldLast = this->getFieldNow();
+                    this->setFieldNow(r.first);
+                    this->setField(r.second);
+                    this->setFieldNow(fieldLast);
+/*                    QMessageBox msg;
+                    msg.setText("Satte fält: " + QString::number(getFieldNum()));
+                    msg.exec();*/
+                } else
+                {
+                    int routeLast = this->getRouteNow();
+                    this->setRouteNow(r.first);
+                    this->setRoute(r.second);
+                    this->setRouteNow(routeLast);
+/*                    QMessageBox msg;
+                    msg.setText("Satte rutt: " + QString::number(getRouteNum()));
+                    msg.exec();*/
+                }
             } else {
-                this->addRoute(r.second);
-                QMessageBox msg;
-                msg.setText("Laddade rutt: " + QString::number(getRouteNum()));
-                msg.exec();
+                if (isBorder)
+                {
+                    this->addField(r.second);
+/*                    QMessageBox msg;
+                    msg.setText("Laddade fält: " + QString::number(getFieldNum()));
+                    msg.exec();*/
+                } else
+                {
+                    this->addRoute(r.second);
+/*                    QMessageBox msg;
+                    msg.setText("Laddade rutt: " + QString::number(getRouteNum()));
+                    msg.exec();*/
+                }
             }
         }
 
@@ -2456,10 +2561,15 @@ std::array<double, 4> MapWidget::findExtremeValuesFieldBorders()
     extremes[3]=-9999999;
 
     QList<LocPoint> allpoints;
-    for (const MapRoute& border : mRoutes)
+    for (const MapRoute& route : mRoutes)
     {
-        if (border.getIsBorder())
-        allpoints.append(border.mRoute);
+        if (route.getIsBorder())
+        allpoints.append(route.mRoute);
+    }
+    for (const MapRoute& field : mFields)
+    {
+        if (field.getIsBorder())
+        allpoints.append(field.mRoute);
     }
     for (const LocPoint& point : allpoints)
     {

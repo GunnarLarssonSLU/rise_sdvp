@@ -14,6 +14,7 @@ QT       += quick
 QT       += quickcontrols2
 QT		 += gamepad
 QT       +=sql
+QT       +=charts
 
 CONFIG   += c++11
 
