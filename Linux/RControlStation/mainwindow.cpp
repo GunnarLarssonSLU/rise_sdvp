@@ -158,7 +158,6 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->nComWidget, SIGNAL(dataRx(ncom_data)),
             mIntersectionTest, SLOT(nComRx(ncom_data)));
 
-
 #ifdef HAS_LIME_SDR
     mGpsSim = new GpsSim(this);
     mGpsSim->setMap(ui->mapWidget);
@@ -250,7 +249,6 @@ MainWindow::MainWindow(QWidget *parent) :
     }
 #endif
 
-
 #ifdef HAS_SIM_SCEN
     mSimScen = new PageSimScen;
     ui->mainTabWidget->addTab(mSimScen, QIcon(":/models/Icons/Sedan-96.png"), "");
@@ -335,6 +333,7 @@ MainWindow::MainWindow(QWidget *parent) :
         return;
     }
 */
+
     // Set the model and hide the ID column:
     ui->fieldTable->setModel(modelField);
     ui->fieldTable->setColumnHidden(modelField->fieldIndex("id"), true);
@@ -344,7 +343,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->fieldTable->setItemDelegateForColumn(3, checkboxdelegate);
 
     // Connect the signal from the first table view to a custom slot
-        QObject::connect(ui->farmTable->selectionModel(), &QItemSelectionModel::currentChanged, [&](const QModelIndex& current, const QModelIndex& previous) {
+        QObject::connect(ui->farmTable->selectionModel(), &QItemSelectionModel::currentChanged, [&](const QModelIndex& current, const QModelIndex& previous)
+            {
+            QMessageBox msg;
             int row = current.row();
             int id = modelFarm->data(modelFarm->index(row, 0)).toInt();
 
@@ -352,6 +353,7 @@ MainWindow::MainWindow(QWidget *parent) :
             double lat = modelFarm->data(modelFarm->index(row, 3)).toDouble();
             ui->mapWidgetFields->setEnuRef(lat,lon,0);
             ui->mapWidgetFields->clearAllFields();
+            ui->mapWidget->setEnuRef(lat,lon,0);
 
             // Get the selected value from the first table view
             QVariant selectedValue = id;
@@ -365,34 +367,55 @@ MainWindow::MainWindow(QWidget *parent) :
 
             // Execute the SQL query
             QString querystring= QString("SELECT * FROM fields WHERE location = %1").arg(selectedValue.toString());
+            msg.setText("Query: " + querystring);
+            msg.exec();
             QSqlQuery query(querystring);
 
             // Loop through the query results
             while (query.next()) {
                 // Access data for each record
-                QString boundaryXML= query.value("boundaryXML").toString();
+                msg.setText("Loading field");
+                msg.exec();
 
+                QString boundaryXML= query.value("boundaryXML").toString();
                 QXmlStreamReader xmlData(boundaryXML);
                 ui->mapWidgetFields->loadXMLRoute(&xmlData,true);
             }
-            std::array<double, 4> extremes_m=ui->mapWidgetFields->findExtremeValuesFieldBorders();
-            double fieldareawidth_m=extremes_m[2]-extremes_m[0];
-            double fieldareaheight_m=extremes_m[3]-extremes_m[1];
-            double offsetx_m=(extremes_m[2]+extremes_m[0])/2;
-            double offsety_m=(extremes_m[3]+extremes_m[1])/2;
-            double scalex=0.5/(fieldareawidth_m);
-            double scaley=0.5/(fieldareaheight_m);
-            ui->mapWidgetFields->moveView(offsetx_m, offsety_m);
-            ui->mapWidgetFields->setScaleFactor(std::min(scalex,scaley));
-            if (ui->fieldTable->model()->rowCount()>0)
+//            if (ui->fieldTable->model()->rowCount()>0)
+            if (ui->mapWidgetFields->getFieldNum()>0)
             {
+                msg.setText("Has fields");
+                msg.exec();
+                std::array<double, 4> extremes_m=ui->mapWidgetFields->findExtremeValuesFieldBorders();
+                double fieldareawidth_m=extremes_m[2]-extremes_m[0];
+                double fieldareaheight_m=extremes_m[3]-extremes_m[1];
+                double offsetx_m=(extremes_m[2]+extremes_m[0])/2;
+                double offsety_m=(extremes_m[3]+extremes_m[1])/2;
+                double scalex=0.5/(fieldareawidth_m);
+                double scaley=0.5/(fieldareaheight_m);
+                msg.setText("Width: " + QString::number(fieldareawidth_m) + " Height: " + QString::number(fieldareaheight_m));
+                msg.exec();
+                msg.setText("Offset: " + QString::number(offsetx_m) + " (x); " + QString::number(offsety_m) + " (y)" );
+                msg.exec();
+                ui->mapWidgetFields->moveView(offsetx_m, offsety_m);
+                ui->mapWidgetFields->setScaleFactor(std::min(scalex,scaley));
+                ui->mapWidget->moveView(offsetx_m, offsety_m);
+                ui->mapWidget->setScaleFactor(std::min(scalex,scaley));
                 ui->fieldTable->selectRow(0);
+            } else
+            {
+                ui->mapWidgetFields->moveView(0, 0);
+                ui->mapWidget->moveView(0, 0);
+                // If no fields set a zoom matching a with of about 500 m -> scalefactor=0.5/500=0.001
+                ui->mapWidgetFields->setScaleFactor(0.001);
+                ui->mapWidget->setScaleFactor(0.001);
+                msg.setText("Has nofields");
+                msg.exec();
             }
             if (ui->pathTable->model()->rowCount()>0)
             {
                 ui->pathTable->selectRow(0);
             }
-
             on_ntripDisconnectButton_clicked();
             ntripConnect(row);
         });
@@ -433,25 +456,28 @@ MainWindow::MainWindow(QWidget *parent) :
 
   QObject::connect(ui->fieldTable->selectionModel(), &QItemSelectionModel::currentChanged,
                    [modelField,modelPath,mapShort,areaLabel](const QModelIndex& current, const QModelIndex& previous)
-                   {
-                       int row = current.row();
+       {
+      QMessageBox msg;
+      msg.setText("Selected field");
+      msg.exec();
+       int row = current.row();
 
-                       // Retrieve the data of the selected row if needed
-                       int id = modelField->data(modelField->index(row, 0)).toInt();
-//                       QString name = modelField->data(modelField->index(row, 1)).toString();
-//                       QString xmlText = modelField->data(modelField->index(row, 4)).toString();
-                       mapShort->setFieldNow(row);
-                       MapRoute border=mapShort->getField();
-                       double area=border.getArea();
-                       areaLabel->setText(QString::number(area));
+       // Retrieve the data of the selected row if needed
+       int id = modelField->data(modelField->index(row, 0)).toInt();
+    //                       QString name = modelField->data(modelField->index(row, 1)).toString();
+    //                       QString xmlText = modelField->data(modelField->index(row, 4)).toString();
+       mapShort->setFieldNow(row);
+       MapRoute border=mapShort->getField();
+       double area=border.getArea();
+       areaLabel->setText(QString::number(area));
 
-                       // Construct a new query based on the selected value
-                       QString filter = QString("field = %1").arg(id);
+       // Construct a new query based on the selected value
+       QString filter = QString("field = %1").arg(id);
 
-                       // Set the new query for the QSqlRelationalTableModel
-                       modelPath->setFilter(filter);
-                       modelPath->select();
-                   });
+       // Set the new query for the QSqlRelationalTableModel
+       modelPath->setFilter(filter);
+       modelPath->select();
+    });
 
 
 
@@ -564,6 +590,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->pushButton_field, &QPushButton::released, this, &MainWindow::handleFieldButton);
     connect(ui->pushButton_location, &QPushButton::released, this, &MainWindow::handleLocationButton);
 
+    ui->farmTable->setFocus();
     ui->fieldTable->installEventFilter(this);
     ui->farmTable->installEventFilter(this);
     ui->vehicleTable->installEventFilter(this);
@@ -876,20 +903,20 @@ bool MainWindow::connectJoystick()
 
         static MainWindow *mThis=this;          // Just to be able to get the lambdas to work
         connect(mJoystick, &QGamepad::buttonL1Changed, this, [](bool pressed){
-            qDebug() << "Button L1" << pressed;
+ //           qDebug() << "Button L1" << pressed;
             mThis->jsButtonChanged(4, pressed);
         });
         connect(mJoystick, &QGamepad::buttonR1Changed, this, [](bool pressed){
-            qDebug() << "Button R1" << pressed;
+ //           qDebug() << "Button R1" << pressed;
             mThis->jsButtonChanged(5, pressed);
         });
         connect(mJoystick, &QGamepad::buttonL2Changed, this, [](double value){
-            qDebug() << "Button L2: " << value;
+//            qDebug() << "Button L2: " << value;
             mThis->jsButtonChanged(6, value>0);
         });
 
         connect(mJoystick, &QGamepad::buttonR2Changed, this, [](double value){
-            qDebug() << "Button R2: " << value;
+ //           qDebug() << "Button R2: " << value;
             mThis->jsButtonChanged(7, value>0);
         });
     return true;
@@ -976,7 +1003,7 @@ void MainWindow::timerSlot()
 //#ifdef DEBUG_FUNCTIONS
                 if (mThrottle !=0 || mSteering !=0)
                 {
-                    qDebug() << QDateTime::currentDateTime().toString() << " - JOYSTICK (timerslot), mThrottle: " << mThrottle << ", mSteering: " << mSteering;
+//                    qDebug() << QDateTime::currentDateTime().toString() << " - JOYSTICK (timerslot), mThrottle: " << mThrottle << ", mSteering: " << mSteering;
                 }
   //  #endif
             //mSteering /= 2.0;
@@ -1337,7 +1364,7 @@ void MainWindow::infoTraceChanged(int traceNow)
 
 void MainWindow::jsButtonChanged(int button, bool pressed)
 {
-        qDebug() << "JS BT:" << button << pressed;
+//        qDebug() << "JS BT:" << button << pressed;
 
     #ifdef HAS_JOYSTICK
         if (1) {
@@ -1356,10 +1383,10 @@ void MainWindow::jsButtonChanged(int button, bool pressed)
                         if (button == 5 || button == 7) {
                             if (pressed) {
                                 if (button == 5) {
-                                    qDebug() << "Hydraulic, front up";
+                                	// front up
                                     mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_UP);
                                 } else {
-                                    qDebug() << "Hydraulic, front down";
+//                                  // front down
                                     mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_DOWN);
                                 }
                             } else {

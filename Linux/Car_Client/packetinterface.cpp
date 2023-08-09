@@ -98,6 +98,8 @@ void PacketInterface::processData(QByteArray &data)
     unsigned char rx_data;
     const int rx_timeout = 50;
 
+    qDebug() << "in packetinterface::processData";
+    qDebug() << data;
     for(int i = 0;i < data.length();i++) {
         rx_data = data[i];
 
@@ -170,6 +172,7 @@ void PacketInterface::processData(QByteArray &data)
                 if (crc16(mRxBuffer, mPayloadLength) ==
                         ((unsigned short)mCrcHigh << 8 | (unsigned short)mCrcLow)) {
                     // Packet received!
+                    qDebug() << "Ready to process packet";
                     processPacket(mRxBuffer, mPayloadLength);
                 }
             }
@@ -197,6 +200,11 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     len--;
 
     emit packetReceived(id, cmd, pkt);
+
+    if (!((cmd==63) || (cmd==82) || (cmd==120)))
+    {
+        qDebug() << "Kommando: " << cmd;
+    }
 
     switch (cmd) {
     case CMD_PRINTF: {
@@ -564,6 +572,8 @@ void PacketInterface::timerSlot()
 
 void PacketInterface::readPendingDatagrams()
 {
+    qDebug() << "in packetinterface::readPendingDatagram";
+
     while (mUdpSocket->hasPendingDatagrams()) {
         QByteArray datagram;
         datagram.resize(mUdpSocket->pendingDatagramSize());
@@ -593,6 +603,7 @@ unsigned short PacketInterface::crc16(const unsigned char *buf, unsigned int len
 
 bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_packet)
 {
+    qDebug() << "in packetinterface::sendPacket";
     unsigned int ind = 0;
 
     // If the IP is valid, send the packet over UDP
@@ -613,6 +624,7 @@ bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_pac
     int len_tot = len_packet;
     unsigned int data_offs = 0;
 
+    qDebug() << "Length: " << len_tot;
     if (len_tot <= 255) {
         mSendBufferAck[ind++] = 2;
         mSendBufferAck[ind++] = len_tot;
@@ -712,6 +724,8 @@ bool PacketInterface::sendPacketAck(const unsigned char *data, unsigned int len_
 
 bool PacketInterface::waitSignal(QObject *sender, const char *signal, int timeoutMs)
 {
+    qDebug() << "in packetinterface::waitSignal";
+
     QEventLoop loop;
     QTimer timeoutTimer;
     timeoutTimer.setSingleShot(true);
@@ -728,6 +742,7 @@ bool PacketInterface::waitSignal(QObject *sender, const char *signal, int timeou
 
 void PacketInterface::startUdpConnection(QHostAddress ip, int port)
 {
+    qDebug() << "in packetinterface::startUdpConnection";
     mHostAddress = ip;
     mUdpPort = port;
     mUdpServer = false;
@@ -737,11 +752,13 @@ void PacketInterface::startUdpConnection(QHostAddress ip, int port)
 
 void PacketInterface::startUdpConnection2(QHostAddress ip)
 {
+    qDebug() << "in packetinterface::startUdpConnection2";
     mHostAddress2 = ip;
 }
 
 void PacketInterface::startUdpConnectionServer(int port)
 {
+    qDebug() << "in packetinterface::startUdpConnectionServer";
     mUdpPort = port + 1;
     mUdpServer = true;
     mUdpSocket->close();
@@ -750,6 +767,7 @@ void PacketInterface::startUdpConnectionServer(int port)
 
 void PacketInterface::stopUdpConnection()
 {
+    qDebug() << "in packetinterface::stopUdpConnection";
     mHostAddress = QHostAddress("0.0.0.0");
     mHostAddress2 = QHostAddress("0.0.0.0");
     mUdpPort = 0;

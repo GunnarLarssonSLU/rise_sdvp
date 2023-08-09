@@ -57,7 +57,7 @@ CarInterface::CarInterface(QWidget *parent) :
 #endif
 
     ui->tabWidget->removeTab(6);
-    ui->tabWidget->removeTab(5);
+ //   ui->tabWidget->removeTab(5);
     ui->tabWidget->removeTab(4);
 
     memset(&mLastCarState, 0, sizeof(CAR_STATE));

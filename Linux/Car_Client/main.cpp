@@ -86,6 +86,7 @@ int main(int argc, char *argv[])
 
     for (int i = 0;i < argc;i++) {
         args.append(argv[i]);
+        qDebug() << i << ":" << argv[i];
     }
 
     QString ttyPort = "";
@@ -104,6 +105,7 @@ int main(int argc, char *argv[])
     QString logUsbDir = QDir::currentPath() + "/logs";
     bool inputRtcm = false;
     QString ttyPortRtcm = "/dev/ttyUSB0";
+//    QString ttyPortRtcm = "/dev/ttyACMO";
     int rtcmBaud = 9600;
     bool useChronos = false;
     int chronosTxId = -1;
@@ -137,6 +139,7 @@ int main(int argc, char *argv[])
     signal(SIGINT, m_cleanup);
     signal(SIGTERM, m_cleanup);
 
+    qDebug() << "Size: " << args.size();
     for (int i = 0;i < args.size();i++) {
         // Skip the program argument
         if (i == 0) {
@@ -144,6 +147,7 @@ int main(int argc, char *argv[])
         }
 
         QString str = args.at(i).toLower();
+        qDebug() << "str: " << str;
 
         // Skip path argument
         if (i >= args.size() && args.size() >= 3) {
@@ -373,6 +377,7 @@ int main(int argc, char *argv[])
                     simulateCarFirst = simData.at(1).toInt();
                 }
             }
+            found=true;
         }
 
         if (str == "--dynosim") {
@@ -438,7 +443,7 @@ int main(int argc, char *argv[])
                 qCritical() << "Invalid option:" << str;
             }
 
-            showHelp();
+//            showHelp();
             return 1;
         }
     }
@@ -464,8 +469,10 @@ int main(int argc, char *argv[])
     car.setCarIdToSet(carId);
 
     if (!ttyPort.isEmpty()) {
+        qDebug() << "Connecting to a car";
         car.connectSerial(ttyPort, baudrate);
     } else {
+        qDebug() << "Not connecting to a car";
         // Not connected to any car, set default ID
         if (simulateCarNum > 0) {
             car.setCarId(simulateCarFirst);
@@ -486,17 +493,21 @@ int main(int argc, char *argv[])
     }
 
     if (tcpRtcmPort >= 0) {
+        qDebug() << "Starting RTCM server";
         car.startRtcmServer(tcpRtcmPort);
     }
 
     if (tcpUbxPort >= 0) {
+        qDebug() << "Starting UBX server";
         car.startUbxServer(tcpUbxPort);
     }
 
     if (tcpLogPort >= 0) {
+        qDebug() << "Starting Log server";
         car.startLogServer(tcpLogPort);
     }
 
+    qDebug() << "Restart RTK lib";
     car.restartRtklib();
     car.setBatteryCells(batteryCells);
 
