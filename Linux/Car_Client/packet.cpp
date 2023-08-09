@@ -16,7 +16,7 @@
     */
 
 #include "packet.h"
-
+#include <QDebug>
 namespace {
 // CRC Table
 const unsigned short crc16_tab[] = { 0x0000, 0x1021, 0x2042, 0x3063, 0x4084,
@@ -68,6 +68,7 @@ Packet::Packet(QObject *parent) : QObject(parent)
 
 void Packet::sendPacket(const QByteArray &data)
 {
+//    qDebug() << "in packet::sendPacket";
     QByteArray to_send;
     unsigned int len_tot = data.size();
 
@@ -106,6 +107,8 @@ unsigned short Packet::crc16(const unsigned char *buf, unsigned int len)
 
 void Packet::processData(QByteArray data)
 {
+    qDebug() << "in packet::processData";
+
     unsigned char rx_data;
 
     for(int i = 0;i < data.length();i++) {
@@ -176,6 +179,7 @@ void Packet::processData(QByteArray data)
                 if (crc16((const unsigned char*)mRxBuffer.data(), mPayloadLength) ==
                         ((unsigned short)mCrcHigh << 8 | (unsigned short)mCrcLow)) {
                     // Packet received!
+                    qDebug() << "Packet received! (packet::processData)";
                     emit packetReceived(mRxBuffer);
                 }
             }

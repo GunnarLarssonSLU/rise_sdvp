@@ -7,8 +7,14 @@
     <x>0</x>
     <y>0</y>
     <width>846</width>
-    <height>557</height>
+    <height>476</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
   <property name="windowTitle">
    <string>Form</string>
@@ -25,7 +31,7 @@
         <enum>QTabWidget::Triangular</enum>
        </property>
        <property name="currentIndex">
-        <number>0</number>
+        <number>5</number>
        </property>
        <property name="tabsClosable">
         <bool>false</bool>
@@ -721,156 +727,6 @@
              </property>
             </widget>
            </item>
-           <item>
-            <layout class="QVBoxLayout" name="verticalLayout_3">
-             <property name="spacing">
-              <number>2</number>
-             </property>
-             <item>
-              <widget class="QLabel" name="label_8">
-               <property name="font">
-                <font>
-                 <bold>true</bold>
-                </font>
-               </property>
-               <property name="text">
-                <string>Car</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="zeroGyroButton">
-               <property name="toolTip">
-                <string>Zero gyro on car. Before doing this, make sure that the car is standing still.</string>
-               </property>
-               <property name="text">
-                <string>Zero Gyro</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="label">
-               <property name="font">
-                <font>
-                 <bold>true</bold>
-                </font>
-               </property>
-               <property name="text">
-                <string>Ublox</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="ubxVersionButton">
-               <property name="text">
-                <string>Version</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="ubxNavSatButton">
-               <property name="text">
-                <string>NAV_SAT</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="ubxSolButton">
-               <property name="text">
-                <string>SOL</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="ubxRelPosNedButton">
-               <property name="text">
-                <string>RELPOSNED</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="ubxCfgGnssButton">
-               <property name="text">
-                <string>CFG_GNSS</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="label_5">
-               <property name="font">
-                <font>
-                 <bold>true</bold>
-                </font>
-               </property>
-               <property name="text">
-                <string>UWB</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="uwbListAnchorsButton">
-               <property name="toolTip">
-                <string>List UWB anchors.</string>
-               </property>
-               <property name="text">
-                <string>List Anchors</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="uwbResetPosButton">
-               <property name="toolTip">
-                <string>Set UWB position to RTK position.</string>
-               </property>
-               <property name="text">
-                <string>Reset Pos</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="uwbUptimeButton">
-               <property name="toolTip">
-                <string>Print how long the UWB module has been running.</string>
-               </property>
-               <property name="text">
-                <string>Uptime</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="uwbRebootButton">
-               <property name="toolTip">
-                <string>Reboot the UWB module.</string>
-               </property>
-               <property name="text">
-                <string>Reboot</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <spacer name="verticalSpacer_2">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>20</width>
-                 <height>40</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
-           </item>
           </layout>
          </item>
          <item>
@@ -1283,7 +1139,7 @@
           <rect>
            <x>140</x>
            <y>270</y>
-           <width>531</width>
+           <width>431</width>
            <height>171</height>
           </rect>
          </property>

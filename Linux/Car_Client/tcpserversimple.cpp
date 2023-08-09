@@ -32,6 +32,8 @@ TcpServerSimple::TcpServerSimple(QObject *parent) : QObject(parent)
 
 bool TcpServerSimple::startServer(int port, QHostAddress addr)
 {
+	qDebug() << "in TcpServerSimple::startServer";
+	qDebug() << "(adress: " << addr << ", port: " << port;
     if (!mTcpServer->listen(addr,  port)) {
         return false;
     }
@@ -41,6 +43,7 @@ bool TcpServerSimple::startServer(int port, QHostAddress addr)
 
 void TcpServerSimple::stopServer()
 {
+	qDebug() << "in TcpServerSimple::stoptServer";
     mTcpServer->close();
 
     if (mTcpSocket) {
@@ -53,6 +56,12 @@ void TcpServerSimple::stopServer()
 
 bool TcpServerSimple::sendData(const QByteArray &data)
 {
+/*
+    qDebug() << "in TcpServerSimple::sendData: " << data;
+    qDebug() << "The data(0) is:" << (int)data.at(0);
+    qDebug() << "The data(1) is:" << (int)data.at(1);
+    qDebug() << "The data(2) is:" << (int)data.at(2);
+*/
     bool res = false;
 
     if (mTcpSocket) {
@@ -104,11 +113,18 @@ void TcpServerSimple::tcpInputDisconnected()
 
 void TcpServerSimple::tcpInputDataAvailable()
 {
+	qDebug() << "in TcpServerSimple::tcpInputDataAvailable";
     QByteArray data = mTcpSocket->readAll();
+    qDebug() << "The data(3) is:" << (int)data.at(3);
+    qDebug() << "The data(4) is:" << (int)data.at(4);
+    qDebug() << "The data(5) is:" << (int)data.at(5);
     emit dataRx(data);
 
     if (mUsePacket) {
+        qDebug() << "use Packet";
         mPacket->processData(data);
+    } else {
+    	qDebug() << "do not use Packet";
     }
 }
 

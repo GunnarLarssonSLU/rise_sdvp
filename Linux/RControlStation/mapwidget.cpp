@@ -512,6 +512,7 @@ void MapWidget::clearAllFields()
     for (int i = 0;i < mFields.size();i++) {
         mFields[i].clear();
     }
+    mFields.clear();
     update();
 }
 
@@ -1209,54 +1210,7 @@ void MapWidget::setInfoTraceNow(int infoTraceNow)
         emit infoTraceChanged(mInfoTraceNow);
     }
 }
-/*
-void MapWidget::printPdf(QString path, int width, int height)
-{
-    if (width == 0) {
-        width = this->width();
-    }
 
-    if (height == 0) {
-        height = this->height();
-    }
-
-    QPrinter printer(QPrinter::ScreenResolution);
-    printer.setOutputFileName(path);
-    printer.setOutputFormat(QPrinter::PdfFormat);
-    printer.setColorMode(QPrinter::Color);
-
-    printer.printEngine()->setProperty(QPrintEngine::PPK_Creator, "RControlStation");
-    printer.printEngine()->setProperty(QPrintEngine::PPK_DocumentName, "Map");
-
-    QPageLayout pageLayout;
-    pageLayout.setMode(QPageLayout::FullPageMode);
-    pageLayout.setOrientation(QPageLayout::Portrait);
-    pageLayout.setMargins(QMarginsF(0, 0, 0, 0));
-    pageLayout.setPageSize(QPageSize(QSize(width, height),
-                                     QPageSize::Point, QString(),
-                                     QPageSize::ExactMatch));
-    printer.setPageLayout(pageLayout);
-
-    QPainter painter(&printer);
-    paint(painter, printer.pageRect().width(), printer.pageRect().height(), true);
-}
-
-void MapWidget::printPng(QString path, int width, int height)
-{
-    if (width == 0) {
-        width = this->width();
-    }
-
-    if (height == 0) {
-        height = this->height();
-    }
-
-    QImage img(width, height, QImage::Format_ARGB32);
-    QPainter painter(&img);
-    paint(painter, width, height, true);
-    img.save(path, "PNG");
-}
-*/
 bool MapWidget::getDrawOsmStats() const
 {
     return mDrawOsmStats;
@@ -2561,14 +2515,16 @@ std::array<double, 4> MapWidget::findExtremeValuesFieldBorders()
     extremes[3]=-9999999;
 
     QList<LocPoint> allpoints;
-    for (const MapRoute& route : mRoutes)
+    QMessageBox msg;
+    msg.setText("Fields: " + QString::number(mFields.size()));
+    msg.exec();
+/*    for (const MapRoute& route : mRoutes)
     {
         if (route.getIsBorder())
         allpoints.append(route.mRoute);
-    }
+    }*/
     for (const MapRoute& field : mFields)
     {
-        if (field.getIsBorder())
         allpoints.append(field.mRoute);
     }
     for (const LocPoint& point : allpoints)

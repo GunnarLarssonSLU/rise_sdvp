@@ -568,6 +568,7 @@ bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_pac
 
     // If the IP is valid, send the packet over UDP
     if (QString::compare(mHostAddress.toString(), "0.0.0.0") != 0) {
+//    	qDebug() << "Sending over UDP";
         memcpy(mSendBufferAck + ind, data, len_packet);
         ind += len_packet;
 
@@ -580,6 +581,8 @@ bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_pac
 
         return true;
     }
+
+
 
     int len_tot = len_packet;
     unsigned int data_offs = 0;
@@ -610,6 +613,9 @@ bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_pac
     mSendBufferAck[ind++] = 3;
 
     QByteArray sendData = QByteArray::fromRawData((char*)mSendBufferAck, ind);
+//    qDebug() << "Sending over something else:";
+//    qDebug() << "data(2):" << sendData.at(2);
+    qDebug() << "data(3):" << (int) sendData.at(3);
 
     emit dataToSend(sendData);
 
@@ -1117,12 +1123,15 @@ void PacketInterface::ioBoardSetValve(quint8 id, quint8 board, quint8 valve, boo
 
 void PacketInterface::hydraulicMove(quint8 id, HYDRAULIC_POS pos, HYDRAULIC_MOVE move)
 {
+
+	/*
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_HYDRAULIC_MOVE;
     mSendBuffer[send_index++] = pos;
     mSendBuffer[send_index++] = move;
     sendPacket(mSendBuffer, send_index);
+    */
 }
 
 bool PacketInterface::sendMoteUbxBase(int mode,
@@ -1173,6 +1182,7 @@ void PacketInterface::getMrState(quint8 id)
 
 void PacketInterface::sendTerminalCmd(quint8 id, QString cmd)
 {
+    qDebug() << "Sending terminal message: " << cmd;
     QByteArray packet;
     packet.clear();
     packet.append(id);
@@ -1183,7 +1193,9 @@ void PacketInterface::sendTerminalCmd(quint8 id, QString cmd)
 
 void PacketInterface::forwardVesc(quint8 id, QByteArray data)
 {
-    QByteArray packet;
+	qDebug() << "Setting forward to VESC";
+
+	QByteArray packet;
     packet.clear();
     packet.append(id);
     packet.append((char)CMD_VESC_FWD);
@@ -1193,6 +1205,7 @@ void PacketInterface::forwardVesc(quint8 id, QByteArray data)
 
 void PacketInterface::setRcControlCurrent(quint8 id, double current, double steering)
 {
+	qDebug() << "Setting Current";
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_RC_CONTROL;
@@ -1204,6 +1217,7 @@ void PacketInterface::setRcControlCurrent(quint8 id, double current, double stee
 
 void PacketInterface::setRcControlCurrentBrake(quint8 id, double current, double steering)
 {
+	qDebug() << "Setting Current Brake";
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_RC_CONTROL;
@@ -1215,6 +1229,7 @@ void PacketInterface::setRcControlCurrentBrake(quint8 id, double current, double
 
 void PacketInterface::setRcControlDuty(quint8 id, double duty, double steering)
 {
+	qDebug() << "Setting Duty";
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_RC_CONTROL;
@@ -1226,6 +1241,7 @@ void PacketInterface::setRcControlDuty(quint8 id, double duty, double steering)
 
 void PacketInterface::setRcControlPid(quint8 id, double speed, double steering)
 {
+	qDebug() << "Setting PID";
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_RC_CONTROL;

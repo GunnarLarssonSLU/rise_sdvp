@@ -50,6 +50,7 @@ ChronosComm::ChronosComm(QObject *parent) : QObject(parent)
 
 bool ChronosComm::startObject(QHostAddress addr)
 {
+	qDebug() << "In ChronosComm::startObject";
     closeConnection();
 
     bool res = mTcpServer->startServer(53241, addr);
@@ -393,6 +394,8 @@ quint32 ChronosComm::gpsMsOfWeekToUtcToday(quint64 time)
 
 void ChronosComm::tcpRx(QByteArray data)
 {
+	qDebug() << "in ChronocComm:tcpRx";
+	qDebug() << "data(3): " << (int) data.at(3);
     uint8_t sender_id = 0;
     for (char c: data) {
         switch (mTcpState) {

@@ -145,6 +145,7 @@ CarClient::~CarClient()
 
 void CarClient::connectSerial(QString port, int baudrate)
 {
+    qDebug() << "Trying to connect to serial port: " << port;
     if(mSerialPort->isOpen()) {
         mSerialPort->closePort();
     }
@@ -225,11 +226,14 @@ void CarClient::startUdpServer(int port)
 
 bool CarClient::startTcpServer(int port, QHostAddress addr)
 {
-
+    qDebug() << "Trying to start TCP server. Port: " << port << ", addr: " << addr;
     bool res = mTcpServer->startServer(port,addr);
 
     if (!res) {
-        qWarning() << "Starting TCP server failed:" << mTcpServer->errorString();
+        qDebug() << "Starting TCP server failed:" << mTcpServer->errorString();
+    } else
+    {
+        qDebug() << "Started :-)";
     }
 
     return res;
@@ -552,6 +556,7 @@ void CarClient::packetDataToSend(QByteArray &data)
     vb.chop(3);
 
     (void)id;
+    qDebug() << "in CarClient::packetDataToSend. Cmd: " << cmd;
 
     if (id == mCarId || id == 255) {
         if (cmd == CMD_CAMERA_STREAM_START) {
@@ -611,8 +616,14 @@ void CarClient::packetDataToSend(QByteArray &data)
     }
 
     if (!packetConsumed) {
+    	qDebug() << "Try to send to serial port";
         if (mSerialPort->isOpen()) {
+        	qDebug() << "Worked";
             mSerialPort->writeData(data);
+        } else
+        {
+        	qDebug() << "Did not worked";
+
         }
 
         for (CarSim *s: mSimulatedCars) {
@@ -713,12 +724,14 @@ void CarClient::carPacketRx(quint8 id, CMD_PACKET cmd, const QByteArray &data)
     }
 
     if (id != 254) {
+        qDebug() << "In CarClient::carPacketRx. Car: " << id;
         mCarId = id;
 
         if (QString::compare(mHostAddress.toString(), "0.0.0.0") != 0) {
+            qDebug() << "datagramming";
             mUdpSocket->writeDatagram(toSend, mHostAddress, mUdpPort);
         }
-
+        qDebug() << "tcpservering";
         mTcpServer->packet()->sendPacket(toSend);
     }
 }
@@ -808,6 +821,7 @@ void CarClient::rxRawx(ubx_rxm_rawx rawx)
 
 void CarClient::tcpRx(QByteArray &data)
 {
+	qDebug() << "In CarClient::tcpRx";
     mPacketInterface->sendPacket(data);
 }
 
