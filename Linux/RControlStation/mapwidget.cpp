@@ -169,6 +169,7 @@ MapWidget::MapWidget(QWidget *parent) : QWidget(parent)
     mCameraImageWidth = 0.46;
     mCameraImageOpacity = 0.8;
     mInteractionMode = InteractionModeDefault;
+    focusBorder=true;
 
     mOsm = new OsmClient(this);
     mDrawOpenStreetmap = true;
@@ -504,6 +505,7 @@ void MapWidget::clearAllRoutes()
     for (int i = 0;i < mRoutes.size();i++) {
         mRoutes[i].clear();
     }
+//    mRoutes.clear();
     update();
 }
 
@@ -516,6 +518,11 @@ void MapWidget::clearAllFields()
     update();
 }
 
+
+void MapWidget::setBorderFocus(bool focus)
+{
+    focusBorder=focus;
+}
 
 void MapWidget::setRoutePointSpeed(double speed)
 {
@@ -756,6 +763,7 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
     double routeDist = 0.0;
     double anchorDist = 0.0;
     int routeInd = getClosestPoint(mousePosMap, mRoutes[mRouteNow].mRoute, routeDist);
+    int fieldInd = getClosestPoint(mousePosMap, mFields[mFieldNow].mRoute, routeDist);
     int anchorInd = getClosestPoint(mousePosMap, mAnchors, anchorDist);
     bool routeFound = (routeDist * mScaleFactor * 1000.0) < 20 && routeDist >= 0.0;
     bool anchorFound = (anchorDist * mScaleFactor * 1000.0) < 20 && anchorDist >= 0.0;
@@ -791,6 +799,7 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
         update();
     } else if (shift) {
         if (mAnchorMode) {
+            /*
             if (e->buttons() & Qt::LeftButton) {
                 if (anchorFound) {
                     mAnchorSelected = anchorInd;
@@ -802,7 +811,7 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
                 if (anchorFound) {
                     mAnchors.removeAt(anchorInd);
                 }
-            }
+            }*/
         } else {
             if (e->buttons() & Qt::LeftButton) {
                 if (routeFound) {
@@ -1673,18 +1682,18 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
     paintCarTraces(painter,pen,drawTrans);
 
     // Draw fields
-    bool isSelected=false;
+    bool isSelected;
     for (int fn = 0;fn < mFields.size();fn++) {
         MapRoute &fieldNow = mFields[fn];
-        isSelected= mFieldNow == fn;
+        isSelected= (mFieldNow == fn) && (focusBorder==true);
         fieldNow.paintBorder(painter, pen, isSelected, mScaleFactor, drawTrans);
     }
 
     // Draw routes
-    isSelected=false;
+    isSelected;
     for (int rn = 0;rn < mRoutes.size();rn++) {
         MapRoute &routeNow = mRoutes[rn];
-        isSelected= mRouteNow == rn;
+        isSelected= (mRouteNow == rn) && (focusBorder==false);
         routeNow.paintPath(this, painter, pen, isSelected, mScaleFactor, drawTrans, txt, pt_txt, rect_txt, txtTrans, highQuality);
     }
 
@@ -2515,9 +2524,6 @@ std::array<double, 4> MapWidget::findExtremeValuesFieldBorders()
     extremes[3]=-9999999;
 
     QList<LocPoint> allpoints;
-    QMessageBox msg;
-    msg.setText("Fields: " + QString::number(mFields.size()));
-    msg.exec();
 /*    for (const MapRoute& route : mRoutes)
     {
         if (route.getIsBorder())
@@ -2643,6 +2649,7 @@ bool MapRoute::getIsBorder() const
     return isBorder;
 }
 
+/*
 void MapRoute::paint(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawTrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool highQuality)
 {
     if (isBorder)
@@ -2653,6 +2660,7 @@ void MapRoute::paint(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool is
         paintPath(mapWidget, painter, pen, isSelected, mScaleFactor, drawTrans, txt, pt_txt, rect_txt, txtTrans, highQuality);
     }
 }
+*/
 
 void MapRoute::paintPath(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawTrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool highQuality)
 {
@@ -2828,4 +2836,5 @@ void MapRoute::routeinfo(MapWidget* mapWidget, QPainter &painter,double start_tx
         start_txt += txt_row_h;
     }
 }
+
 

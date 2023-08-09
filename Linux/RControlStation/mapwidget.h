@@ -52,6 +52,7 @@ public:
 };
 
 class MapRoute;
+class MapRouteCollection;
 
 class MapWidget : public QWidget
 {
@@ -98,6 +99,7 @@ public:
     void clearRoute();
     void clearAllRoutes();
 
+    void setBorderFocus(bool focus);
     MapRoute getField(int ind = -1);
     QList<MapRoute> getFields();
     void setField(const MapRoute &field);
@@ -295,6 +297,8 @@ private:
     void paintCamera(QPainter &painter,QTransform txtTrans, int width,double &start_txt);
     void paintUnitZoomGeneralinfo(QPainter &painter,QFont font, QTransform txtTrans, int width, double stepGrid,QString& txt, const QColor textColor, double& start_txt,const double txtOffset,const double txt_row_h,    int& info_segments, int& info_points);
     void paintClosestPoint(QPainter &painter,QPen &pen,QTransform drawTrans, QTransform txtTrans, QPointF& pt_txt,QRectF &rect_txt );
+
+    bool focusBorder;
 };
 
 class MapRoute
@@ -321,7 +325,7 @@ public:
 
     double getArea();
 
-    void paint(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawtrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool highQuality = false);
+//    void paint(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawtrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool highQuality = false);
     void paintPath(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawtrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool highQuality = false);
     void paintBorder(QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawtrans);
     void routeinfo(MapWidget* mapWidget, QPainter &painter,double start_txt,const double txtOffset,const double txt_row_h, int width, QString txt);
@@ -333,5 +337,10 @@ private:
 
 };
 
+class MapRouteCollection
+{
+private:
+    QList<MapRoute> mCollection;
+};
 
 #endif // MAPWIDGET_H
