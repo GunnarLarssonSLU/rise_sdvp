@@ -345,7 +345,7 @@ MainWindow::MainWindow(QWidget *parent) :
     // Connect the signal from the first table view to a custom slot
         QObject::connect(ui->farmTable->selectionModel(), &QItemSelectionModel::currentChanged, [&](const QModelIndex& current, const QModelIndex& previous)
             {
-            QMessageBox msg;
+ //           QMessageBox msg;
             int row = current.row();
             int id = modelFarm->data(modelFarm->index(row, 0)).toInt();
 
@@ -367,16 +367,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
             // Execute the SQL query
             QString querystring= QString("SELECT * FROM fields WHERE location = %1").arg(selectedValue.toString());
-            msg.setText("Query: " + querystring);
-            msg.exec();
             QSqlQuery query(querystring);
 
             // Loop through the query results
             while (query.next()) {
                 // Access data for each record
-                msg.setText("Loading field");
-                msg.exec();
-
                 QString boundaryXML= query.value("boundaryXML").toString();
                 QXmlStreamReader xmlData(boundaryXML);
                 ui->mapWidgetFields->loadXMLRoute(&xmlData,true);
@@ -384,8 +379,6 @@ MainWindow::MainWindow(QWidget *parent) :
 //            if (ui->fieldTable->model()->rowCount()>0)
             if (ui->mapWidgetFields->getFieldNum()>0)
             {
-                msg.setText("Has fields");
-                msg.exec();
                 std::array<double, 4> extremes_m=ui->mapWidgetFields->findExtremeValuesFieldBorders();
                 double fieldareawidth_m=extremes_m[2]-extremes_m[0];
                 double fieldareaheight_m=extremes_m[3]-extremes_m[1];
@@ -393,10 +386,10 @@ MainWindow::MainWindow(QWidget *parent) :
                 double offsety_m=(extremes_m[3]+extremes_m[1])/2;
                 double scalex=0.5/(fieldareawidth_m);
                 double scaley=0.5/(fieldareaheight_m);
-                msg.setText("Width: " + QString::number(fieldareawidth_m) + " Height: " + QString::number(fieldareaheight_m));
+/*                msg.setText("Width: " + QString::number(fieldareawidth_m) + " Height: " + QString::number(fieldareaheight_m));
                 msg.exec();
                 msg.setText("Offset: " + QString::number(offsetx_m) + " (x); " + QString::number(offsety_m) + " (y)" );
-                msg.exec();
+                msg.exec();*/
                 ui->mapWidgetFields->moveView(offsetx_m, offsety_m);
                 ui->mapWidgetFields->setScaleFactor(std::min(scalex,scaley));
                 ui->mapWidget->moveView(offsetx_m, offsety_m);
@@ -409,8 +402,6 @@ MainWindow::MainWindow(QWidget *parent) :
                 // If no fields set a zoom matching a with of about 500 m -> scalefactor=0.5/500=0.001
                 ui->mapWidgetFields->setScaleFactor(0.001);
                 ui->mapWidget->setScaleFactor(0.001);
-                msg.setText("Has nofields");
-                msg.exec();
             }
             if (ui->pathTable->model()->rowCount()>0)
             {
@@ -422,9 +413,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     QSqlRelationalTableModel *modelField=this->modelFarm;
     QSqlRelationalTableModel *modelPath=this->modelPath;
-
-    MapWidget *mapShort=ui->mapWidgetFields;
-    QLabel *areaLabel=ui->label_area_ha;
 
   modelPath = new QSqlRelationalTableModel(ui->pathTable);
   //    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
@@ -454,22 +442,24 @@ MainWindow::MainWindow(QWidget *parent) :
   ui->pathTable->setSelectionMode(QAbstractItemView::SingleSelection);
   ui->pathTable->setCurrentIndex(modelPath->index(0, 0));
 
+  MapWidget *mapFields=ui->mapWidgetFields;
+  QLabel *areaLabel=ui->label_area_ha;
+  QComboBox *selectedRoute=ui->mapRouteBox;
+
   QObject::connect(ui->fieldTable->selectionModel(), &QItemSelectionModel::currentChanged,
-                   [modelField,modelPath,mapShort,areaLabel](const QModelIndex& current, const QModelIndex& previous)
+                   [modelField,modelPath,mapFields,selectedRoute,areaLabel](const QModelIndex& current, const QModelIndex& previous)
        {
-      QMessageBox msg;
-      msg.setText("Selected field");
-      msg.exec();
        int row = current.row();
 
        // Retrieve the data of the selected row if needed
        int id = modelField->data(modelField->index(row, 0)).toInt();
     //                       QString name = modelField->data(modelField->index(row, 1)).toString();
     //                       QString xmlText = modelField->data(modelField->index(row, 4)).toString();
-       mapShort->setFieldNow(row);
-       MapRoute border=mapShort->getField();
+       mapFields->setFieldNow(row);
+       MapRoute border=mapFields->getField();
        double area=border.getArea();
        areaLabel->setText(QString::number(area));
+       mapFields->clearAllRoutes();
 
        // Construct a new query based on the selected value
        QString filter = QString("field = %1").arg(id);
@@ -477,8 +467,48 @@ MainWindow::MainWindow(QWidget *parent) :
        // Set the new query for the QSqlRelationalTableModel
        modelPath->setFilter(filter);
        modelPath->select();
+
+       // Clear the existing items in the combobox
+       selectedRoute->clear();
+
+       // Iterate through the rows in the model and add items to the combobox
+       for (int row = 0; row < modelPath->rowCount(); ++row) {
+           // Assuming "id" is in column 0 and "name" is in column 1
+           QVariant id = modelPath->data(modelPath->index(row, 0));
+           QVariant name = modelPath->data(modelPath->index(row, 1));
+
+           // Add the item to the combobox
+           selectedRoute->addItem(name.toString(), id);
+       }
+
+
+       // Execute the SQL query
+       QString querystring= QString("SELECT * FROM paths WHERE field = %1").arg(QString::number(id));
+       QSqlQuery query(querystring);
+       while (query.next()) {
+           // Access data for each record
+           QString pathXML= query.value("xml").toString();
+           QXmlStreamReader xmlData(pathXML);
+           mapFields->loadXMLRoute(&xmlData,false);
+       }
+       mapFields->setBorderFocus(true);
+//       mapFields->setRouteNow();   // Make sure that no route is set automatically (in order to make it easier to edit)
+
     });
 
+  QObject::connect(ui->pathTable->selectionModel(), &QItemSelectionModel::currentChanged,
+                   [modelPath,mapFields,selectedRoute,areaLabel](const QModelIndex& current, const QModelIndex& previous)
+    {
+       mapFields->setBorderFocus(false);
+      mapFields->update();
+       int row = current.row();
+
+       // Retrieve the data of the selected row if needed
+       int id = modelPath->data(modelPath->index(row, 0)).toInt();
+       QMessageBox msg;
+       msg.setText("Selected path! Row: " + QString::number(row) + ", id: " +QString::number(id));
+       msg.exec();
+  });
 
 
     // Create the data model:
@@ -577,15 +607,9 @@ MainWindow::MainWindow(QWidget *parent) :
     headerLabels << "Vehicle" << "Status";
     modelVehiclestatus->setHorizontalHeaderLabels(headerLabels);
 
-
-
-
     QModelIndex cellIndex = modelVehiclestatus->index(1, 1); // Row 1, Column 1 (second column)
     QColor coluorgreen = Qt::green;
     modelVehiclestatus->setData(cellIndex, coluorgreen, Qt::TextColorRole);
-
-
-
 
     connect(ui->pushButton_field, &QPushButton::released, this, &MainWindow::handleFieldButton);
     connect(ui->pushButton_location, &QPushButton::released, this, &MainWindow::handleLocationButton);
@@ -844,15 +868,11 @@ void MainWindow::onMouseClickedFieldSelected(int field)
         return;
     }
 
-    qDebug() << "# Rows: " + QString::number(model->rowCount());
-
     // Find the row that matches the 'idValue' in the first column (assuming it's the primary key)
     int row = -1;
-    qDebug() << "field selected: " << field;
     for (int i = 0; i < model->rowCount(); ++i) {
         QModelIndex index = model->index(i, 0); // Assuming the 'id' is in column 0
         int id = model->data(index).toInt();
-        qDebug() << "Looping. Row: " << QString::number(i) << ", id: " << QString::number(id) << ", field: " << QString::number(field);
 
         if (id == field) {
             row = i;
@@ -862,7 +882,6 @@ void MainWindow::onMouseClickedFieldSelected(int field)
     }
 
     if (row != -1) {
-        qDebug() << "Selecting: " << row;
         this->ui->fieldTable->selectRow(row);
     }
 
@@ -2535,7 +2554,7 @@ void MainWindow::on_tabWidget_currentChanged(int index)
 
 void MainWindow::on_routeZeroButton_clicked()
 {
-    ui->mapWidget->zoomInOnRoute(ui->mapRouteBox->value(), 0.1);
+    ui->mapWidget->zoomInOnRoute(ui->mapRouteBox->currentIndex(), 0.1);
 }
 
 void MainWindow::on_routeZeroAllButton_clicked()
@@ -2587,7 +2606,7 @@ void MainWindow::on_boundsFillPushButton_clicked()
     ui->mapWidgetFields->addRoute(route);
     int r = ui->mapWidgetFields->getRoutes().size()-1;
     ui->mapWidgetFields->setRouteNow(r);
-    ui->mapRouteBox->setValue(r);
+    ui->mapRouteBox->setCurrentIndex(r);
     ui->mapWidgetFields->repaint();
 }
 
