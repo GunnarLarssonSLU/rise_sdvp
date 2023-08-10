@@ -1836,12 +1836,12 @@ int RouteMagic::loadRoutes(QString filename, MapWidget *map) {
 
         for (QPair<int, MapRoute > r: routes) {
             if (r.first >= 0) {
-                int routeLast = map->getRouteNow();
-                map->setRouteNow(r.first);
-                map->setRoute(r.second);
-                map->setRouteNow(routeLast);
+                int routeLast = map->getPathNow();
+                map->setPathNow(r.first);
+                map->setPath(r.second);
+                map->setPathNow(routeLast);
             } else {
-                map->addRoute(r.second);
+                map->addPath(r.second);
             }
         }
 

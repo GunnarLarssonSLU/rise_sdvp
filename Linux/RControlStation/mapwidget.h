@@ -52,7 +52,34 @@ public:
 };
 
 class MapRoute;
-class MapRouteCollection;
+
+class MapRouteCollection
+{
+public:
+    MapRouteCollection();
+    MapRoute getRoute(int ind = -1);
+    QList<MapRoute> getRoutes();
+    void setRoute(const MapRoute &route);
+    void addRoute(const MapRoute &route);
+    int getRouteNow() const;
+    void setRouteNow(int routeNow);
+    int getRouteNum();
+    void clearRoute();
+    void clearAllRoutes();
+    int mRouteNow;
+
+    void clear();
+    void append(MapRoute &maproute);
+    int size();
+    MapRoute& getCurrent();
+    QList<MapRoute>::const_iterator begin() const;
+    QList<MapRoute>::const_iterator end() const;
+
+    MapRoute& at(int i);
+    QList<MapRoute> mCollection;
+private:
+
+};
 
 class MapWidget : public QWidget
 {
@@ -89,17 +116,18 @@ public:
     void clearTrace();
     void addRoutePoint(double px, double py, double speed = 0.0, qint32 time = 0);
 
-    MapRoute getRoute(int ind = -1);
-    QList<MapRoute> getRoutes();
-    void setRoute(const MapRoute &route);
-    void addRoute(const MapRoute &route);
-    int getRouteNow() const;
-    void setRouteNow(int routeNow);
-    int getRouteNum();
-    void clearRoute();
-    void clearAllRoutes();
-
     void setBorderFocus(bool focus);
+
+    MapRoute getPath(int ind = -1);
+    QList<MapRoute> getPaths();
+    void setPath(const MapRoute &route);
+    void addPath(const MapRoute &route);
+    int getPathNow() const;
+    void setPathNow(int routeNow);
+    int getPathNum();
+    void clearPath();
+    void clearAllPaths();
+
     MapRoute getField(int ind = -1);
     QList<MapRoute> getFields();
     void setField(const MapRoute &field);
@@ -161,11 +189,6 @@ public:
     int getInfoTraceNow() const;
     void setInfoTraceNow(int infoTraceNow);
 
-    /*
-    void printPdf(QString path, int width = 0, int height = 0);
-    void printPng(QString path, int width = 0, int height = 0);
-*/
-
     bool getDrawRouteText() const;
     void setDrawRouteText(bool drawRouteText);
 
@@ -223,9 +246,9 @@ private:
     QVector<LocPoint> mCarTraceGps;
     QVector<LocPoint> mCarTraceUwb;
     QList<LocPoint> mAnchors;
-    QList<MapRoute> mFields;
-    QList<MapRoute> mRoutes;
-    QList<MapRoute> mFieldborders;
+    MapRouteCollection* mFields;
+    MapRouteCollection* mPaths;
+//    QList<MapRoute> mFieldborders;
     QList<QList<LocPoint>> mInfoTraces;
     //    QList<MapRoute> mInfoTraces;
     QList<LocPoint> mVisibleInfoTracePoints;
@@ -262,8 +285,6 @@ private:
     bool mDrawGrid;
     int mRoutePointSelected;
     int mAnchorSelected;
-    int mRouteNow;
-    int mFieldNow;
     int mInfoTraceNow;
     double mTraceMinSpaceCar;
     double mTraceMinSpaceGps;
@@ -335,12 +356,6 @@ public:
 private:
     bool isBorder;
 
-};
-
-class MapRouteCollection
-{
-private:
-    QList<MapRoute> mCollection;
 };
 
 #endif // MAPWIDGET_H

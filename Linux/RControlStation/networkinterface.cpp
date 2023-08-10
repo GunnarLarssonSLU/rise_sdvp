@@ -505,20 +505,20 @@ void NetworkInterface::processXml(const QByteArray &xml)
             }
 
             if (mMap && (ui->plotRouteMapBox->isChecked() || mapOnly) && mapRoute != -2) {
-                int mapRouteLast = mMap->getRouteNow();
+                int mapRouteLast = mMap->getPathNow();
                 if (mapRoute >= 0) {
-                    mMap->setRouteNow(mapRoute);
+                    mMap->setPathNow(mapRoute);
                 }
 
                 if (name == "replaceRoute") {
-                    mMap->clearRoute();
+                    mMap->clearPath();
                 }
 
                 for (LocPoint p: route) {
                     mMap->addRoutePoint(p.getX(), p.getY(), p.getSpeed(), p.getTime());
                 }
 
-                mMap->setRouteNow(mapRouteLast);
+                mMap->setPathNow(mapRouteLast);
             }
 
             if (ok) {
@@ -554,7 +554,7 @@ void NetworkInterface::processXml(const QByteArray &xml)
             }
             if (mapRoute >= 0) {
                 if (mMap) {
-                    sendRoute(id, mMap->getRoute(mapRoute).mRoute);
+                    sendRoute(id, mMap->getPath(mapRoute).mRoute);
                 }
             } else {
                 if (!ui->disableSendCarBox->isChecked() && mPacketInterface) {
@@ -643,10 +643,10 @@ void NetworkInterface::processXml(const QByteArray &xml)
             }
 
             if (mapRoute >= 0 && mMap) {
-                int lastRoute = mMap->getRouteNow();
-                mMap->setRouteNow(mapRoute);
-                mMap->clearRoute();
-                mMap->setRouteNow(lastRoute);
+                int lastRoute = mMap->getPathNow();
+                mMap->setPathNow(mapRoute);
+                mMap->clearPath();
+                mMap->setPathNow(lastRoute);
             }
 
             if (ok) {
