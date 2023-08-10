@@ -74,6 +74,10 @@ public:
     MapRoute& getCurrent();
     QList<MapRoute>::const_iterator begin() const;
     QList<MapRoute>::const_iterator end() const;
+    MapRoute&	first();
+    MapRoute&	last();
+    void 	prepend(const MapRoute &value);
+    void 	removeAt(int i);
 
     MapRoute& at(int i);
     QList<MapRoute> mCollection;

@@ -51,31 +51,10 @@
          </rect>
         </property>
         <layout class="QGridLayout" name="gridlayout_3">
-         <item row="4" column="0">
-          <widget class="QLabel" name="labelFieldname">
-           <property name="text">
-            <string>Field name</string>
-           </property>
-          </widget>
-         </item>
          <item row="2" column="2">
           <widget class="QPushButton" name="pushButton_location">
            <property name="text">
             <string>Add location</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_16">
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Name:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item row="8" column="0">
-          <widget class="QLabel" name="labelArea">
-           <property name="text">
-            <string>Area:</string>
            </property>
           </widget>
          </item>
@@ -86,38 +65,10 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="2">
-          <widget class="QLineEdit" name="locationnameEdit">
-           <property name="enabled">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="9" column="0">
-          <widget class="QLabel" name="labelPaths">
-           <property name="text">
-            <string>Paths</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
-          <widget class="QLabel" name="labelFields">
-           <property name="text">
-            <string>Fields</string>
-           </property>
-          </widget>
-         </item>
          <item row="9" column="2">
           <widget class="QTableView" name="pathTable">
            <property name="selectionBehavior">
             <enum>QAbstractItemView::SelectRows</enum>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="2">
-          <widget class="QLineEdit" name="fieldnameEdit">
-           <property name="enabled">
-            <bool>true</bool>
            </property>
           </widget>
          </item>
@@ -128,24 +79,10 @@
            </property>
           </widget>
          </item>
-         <item row="7" column="2">
-          <widget class="QPushButton" name="pushButton_field">
+         <item row="9" column="0">
+          <widget class="QLabel" name="labelPaths">
            <property name="text">
-            <string>Add field</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="3">
-          <widget class="QLabel" name="label_11">
-           <property name="text">
-            <string>Boundary</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0">
-          <widget class="QLabel" name="labelFarm">
-           <property name="text">
-            <string>Farm</string>
+            <string>Paths</string>
            </property>
           </widget>
          </item>
@@ -168,10 +105,80 @@
            </property>
           </widget>
          </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="labelFarm">
+           <property name="text">
+            <string>Farm</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="3">
+          <widget class="QLabel" name="label_11">
+           <property name="text">
+            <string>Boundary</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="QLineEdit" name="locationnameEdit">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="2">
+          <widget class="QLineEdit" name="fieldnameEdit">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
          <item row="3" column="2">
           <widget class="QTableView" name="fieldTable">
            <property name="selectionBehavior">
             <enum>QAbstractItemView::SelectRows</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="labelFields">
+           <property name="text">
+            <string>Fields</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="labelFieldname">
+           <property name="text">
+            <string>Field name</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_16">
+           <property name="text">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Name:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+          </widget>
+         </item>
+         <item row="8" column="0">
+          <widget class="QLabel" name="labelArea">
+           <property name="text">
+            <string>Area:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="2">
+          <widget class="QPushButton" name="pushButton_field">
+           <property name="text">
+            <string>Add field</string>
+           </property>
+          </widget>
+         </item>
+         <item row="10" column="2">
+          <widget class="QPushButton" name="pushButton">
+           <property name="text">
+            <string>Add path</string>
            </property>
           </widget>
          </item>
