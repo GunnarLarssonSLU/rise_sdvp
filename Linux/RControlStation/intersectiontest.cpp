@@ -65,9 +65,9 @@ void IntersectionTest::nComRx(const ncom_data &data)
         if (mMap && mPacketInterface) {
             LocPoint sync;
             bool syncFound = false;
-            if (mMap->getRoute(ui->routeSyncBox->value()).size() > 0) {
+            if (mMap->getPath(ui->routeSyncBox->value()).size() > 0) {
 //                sync = mMap->getRoute(ui->routeSyncBox->value()).at(0);
-                sync = mMap->getRoute(ui->routeSyncBox->value())[0];
+                sync = mMap->getPath(ui->routeSyncBox->value())[0];
                 syncFound = true;
             }
 
@@ -143,7 +143,7 @@ void IntersectionTest::on_runButton_clicked()
             int carId = ui->carABox->value();
 
             if (carId == ui->carABox->value()) {
-                MapRoute route = mMap->getRoute(ui->routeABox->value());
+                MapRoute route = mMap->getPath(ui->routeABox->value());
 
                 if (!mPacketInterface->clearRoute(carId)) {
                     ok = false;
@@ -155,7 +155,7 @@ void IntersectionTest::on_runButton_clicked()
             } else if (carId == ui->carBBox->value()) {
                 car->emergencyStop();
 
-                MapRoute route = mMap->getRoute(ui->routeBBox->value());
+                MapRoute route = mMap->getPath(ui->routeBBox->value());
 
                 if (!mPacketInterface->clearRoute(carId)) {
                     ok = false;

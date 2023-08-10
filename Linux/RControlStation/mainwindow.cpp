@@ -459,7 +459,7 @@ MainWindow::MainWindow(QWidget *parent) :
        MapRoute border=mapFields->getField();
        double area=border.getArea();
        areaLabel->setText(QString::number(area));
-       mapFields->clearAllRoutes();
+       mapFields->clearAllPaths();
 
        // Construct a new query based on the selected value
        QString filter = QString("field = %1").arg(id);
@@ -1555,7 +1555,7 @@ void MainWindow::on_mapZeroButton_clicked()
 
 void MainWindow::on_mapRemoveRouteButton_clicked()
 {
-    ui->mapWidget->clearRoute();
+    ui->mapWidget->clearPath();
 }
 
 void MainWindow::on_mapRouteSpeedBox_valueChanged(double arg1)
@@ -1618,7 +1618,7 @@ void MainWindow::on_genCircButton_clicked()
         cx = ui->genCircXBox->value();
         cy = ui->genCircYBox->value();
     } else if (type == 4) {
-        MapRoute r = ui->mapWidget->getRoute();
+        MapRoute r = ui->mapWidget->getPath();
         int samples = 0;
         cx = 0.0;
         cy = 0.0;
@@ -1680,7 +1680,7 @@ void MainWindow::on_genCircButton_clicked()
             ui->mapWidget->addRoutePoint(p.getX(), p.getY(), p.getSpeed(), p.getTime());
         }
     } else {
-        ui->mapWidget->addRoute(route);
+        ui->mapWidget->addPath(route);
     }
 }
 
@@ -1736,7 +1736,7 @@ void MainWindow::on_mapUploadRouteButton_clicked()
         return;
     }
 
-    MapRoute route = ui->mapWidget->getRoute();
+    MapRoute route = ui->mapWidget->getPath();
     int len = route.size();
     int car = ui->mapCarBox->value();
     bool ok = true;
@@ -1831,7 +1831,7 @@ void MainWindow::on_mapGetRouteButton_clicked()
 
     if (ok) {
         if (route.size() > 0) {
-            ui->mapWidget->setRoute(route);
+            ui->mapWidget->setPath(route);
             ui->mapUploadRouteProgressBar->setValue(100);
             showStatusInfo("GetRoute OK", true);
         } else {
@@ -1901,7 +1901,7 @@ void MainWindow::on_mapOffButton_clicked()
 
 void MainWindow::on_mapUpdateSpeedButton_clicked()
 {
-    MapRoute route = ui->mapWidget->getRoute();
+    MapRoute route = ui->mapWidget->getPath();
     qint32 timeAcc = 0;
 
     for (int i = 0;i < route.size();i++) {
@@ -1917,7 +1917,7 @@ void MainWindow::on_mapUpdateSpeedButton_clicked()
         }
     }
 
-    ui->mapWidget->setRoute(route);
+    ui->mapWidget->setPath(route);
 }
 
 void MainWindow::on_mapOpenStreetMapBox_toggled(bool checked)
@@ -2149,12 +2149,12 @@ void MainWindow::on_mapStreamNmeaClearTraceButton_clicked()
 
 void MainWindow::on_mapRouteBox_valueChanged(int arg1)
 {
-    ui->mapWidget->setRouteNow(arg1);
+    ui->mapWidget->setPathNow(arg1);
 }
 
 void MainWindow::on_mapRemoveRouteAllButton_clicked()
 {
-    ui->mapWidget->clearAllRoutes();
+    ui->mapWidget->clearAllPaths();
 }
 
 void MainWindow::on_mapUpdateTimeButton_clicked()
@@ -2165,7 +2165,7 @@ void MainWindow::on_mapUpdateTimeButton_clicked()
                                    tr("Seconds from now"), 30, 0, 60000, 1, &ok);
 
     if (ok) {
-        MapRoute route = ui->mapWidget->getRoute();
+        MapRoute route = ui->mapWidget->getPath();
         QDateTime date = QDateTime::currentDateTime();
         QTime current = QTime::currentTime().addSecs(-date.offsetFromUtc());
         qint32 now = current.msecsSinceStartOfDay() + res * 1000;
@@ -2179,7 +2179,7 @@ void MainWindow::on_mapUpdateTimeButton_clicked()
             route[i].setTime(route[i].getTime() + start_diff);
         }
 
-        ui->mapWidget->setRoute(route);
+        ui->mapWidget->setPath(route);
     }
 }
 
@@ -2306,7 +2306,7 @@ void MainWindow::on_actionSaveSelectedRouteAsDriveFile_triggered()
     QTextStream stream(&file);
     stream.setCodec("UTF-8");
 
-    MapRoute route = ui->mapWidget->getRoute();
+    MapRoute route = ui->mapWidget->getPath();
 
     QString trajName = fileInfo.fileName();
     trajName.chop(4);
@@ -2390,7 +2390,7 @@ void MainWindow::on_actionLoadDriveFile_triggered()
             routeReduced.append(route.last());
         }
 
-        ui->mapWidget->addRoute(routeReduced);
+        ui->mapWidget->addPath(routeReduced);
 
         file.close();
         showStatusInfo("Loaded drive file", true);
@@ -2603,9 +2603,9 @@ void MainWindow::on_boundsFillPushButton_clicked()
     MapRoute route;
     route.mRoute=routeLP;
 
-    ui->mapWidgetFields->addRoute(route);
-    int r = ui->mapWidgetFields->getRoutes().size()-1;
-    ui->mapWidgetFields->setRouteNow(r);
+    ui->mapWidgetFields->addPath(route);
+    int r = ui->mapWidgetFields->getPaths().size()-1;
+    ui->mapWidgetFields->setPathNow(r);
     ui->mapRouteBox->setCurrentIndex(r);
     ui->mapWidgetFields->repaint();
 }

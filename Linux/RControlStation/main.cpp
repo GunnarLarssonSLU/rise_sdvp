@@ -327,9 +327,9 @@ int main(int argc, char *argv[])
                 map.setDrawRouteText(plotRoutesShowText);
 
                 if (plotRoutesSelect >= 0) {
-                    map.setRouteNow(plotRoutesSelect);
+                    map.setPathNow(plotRoutesSelect);
                 } else {
-                    map.setRouteNow(map.getRouteNum() - 1);
+                    map.setPathNow(map.getPathNum() - 1);
                 }
 /*
                 if (plotRoutesFormat == PLOT_ROUTE_FORMAT_PDF) {

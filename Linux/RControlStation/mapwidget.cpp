@@ -159,7 +159,6 @@ MapWidget::MapWidget(QWidget *parent) : QWidget(parent)
     mDrawGrid = true;
     mRoutePointSelected = -1;
     mAnchorSelected = -1;
-    mRouteNow = 0;
     mTraceMinSpaceCar = 0.05;
     mTraceMinSpaceGps = 0.05;
     mInfoTraceNow = 0;
@@ -169,7 +168,6 @@ MapWidget::MapWidget(QWidget *parent) : QWidget(parent)
     mCameraImageWidth = 0.46;
     mCameraImageOpacity = 0.8;
     mInteractionMode = InteractionModeDefault;
-    focusBorder=true;
 
     mOsm = new OsmClient(this);
     mDrawOpenStreetmap = true;
@@ -178,10 +176,14 @@ MapWidget::MapWidget(QWidget *parent) : QWidget(parent)
     mOsmMaxZoomLevel = 18;
     mDrawOsmStats = false;
 
-    mRoutes.clear();
+    focusBorder=true;
+    mPaths=new MapRouteCollection();
+    mFields=new MapRouteCollection();
+
+    mPaths->clear();
 
     MapRoute maproute;
-    mRoutes.append(maproute);
+    mPaths->append(maproute);
 
     mTimer = new QTimer(this);
     mTimer->start(20);
@@ -394,127 +396,110 @@ void MapWidget::addRoutePoint(double px, double py, double speed, qint32 time)
     pos.setXY(px, py);
     pos.setSpeed(speed);
     pos.setTime(time);
-    mRoutes[mRouteNow].append(pos);
+    mPaths->getCurrent().append(pos);
     update();
 }
 
-MapRoute MapWidget::getRoute(int ind)
+MapRoute MapWidget::getPath(int ind)
 {
-    qDebug() << "Read route: " << ind;
-    qDebug() << "Total no. of routes: " << mRoutes.size();
-    if (ind < 0) {
-        return mRoutes[mRouteNow];
-    } else {
-        if (mRoutes.size() > ind) {
-            return mRoutes[ind];
-        } else {
-            MapRoute tmp;
-            return tmp;
-        }
-    }
+    return mPaths->getRoute(ind);
 }
 
 MapRoute MapWidget::getField(int ind)
 {
-//    qDebug() << "Read field: " << ind;
-//    qDebug() << "Total no. of fields: " << mFields.size();
-    if (ind < 0) {
-        return mFields[mFieldNow];
-    } else {
-        if (mFields.size() > ind) {
-            return mFields[ind];
-        } else {
-            MapRoute tmp;
-            return tmp;
-        }
-    }
+    return mFields->getRoute(ind);
 }
 
 
-QList<MapRoute> MapWidget::getRoutes()
+QList<MapRoute> MapWidget::getPaths()
 {
-    return mRoutes;
+    return mPaths->getRoutes();
 }
 
 QList<MapRoute> MapWidget::getFields()
 {
-    return mFields;
+    return mFields->getRoutes();
 }
 
-void MapWidget::setRoute(const MapRoute &route)
+void MapWidget::setPath(const MapRoute &path)
 {
-    mRoutes[mRouteNow] = route;
+    mPaths->setRoute(path);
     update();
 }
 
 void MapWidget::setField(const MapRoute &field)
 {
-    mFields[mFieldNow] = field;
+    mFields->setRoute(field);
     update();
 }
 
 
-void MapWidget::addRoute(const MapRoute &route)
+void MapWidget::addPath(const MapRoute &path)
 {
-    while (!mRoutes.isEmpty() &&
-           mRoutes.last().isEmpty() &&
-           mRouteNow < mRoutes.size()) {
-        mRoutes.removeLast();
-    }
-
-    mRoutes.append(route);
+    mPaths->addRoute(path);
     update();
 }
 
 void MapWidget::addField(const MapRoute &field)
 {
-    while (!mFields.isEmpty() &&
-           mFields.last().isEmpty() &&
-           mFieldNow < mFields.size()) {
-        mFields.removeLast();
-    }
-    mFields.append(field);
+    mFields->addRoute(field);
     update();
 }
 
 
-int MapWidget::getRouteNum()
+int MapWidget::getPathNum()
 {
-    return mRoutes.size();
+    return mPaths->size();
 }
 
 int MapWidget::getFieldNum()
 {
-    return mFields.size();
+    return mFields->size();
 }
 
-void MapWidget::clearRoute()
+void MapWidget::clearPath()
 {
-    mRoutes[mRouteNow].clear();
+    mPaths->clearRoute();
     update();
 }
 
 void MapWidget::clearField()
 {
-    mFields[mFieldNow].clear();
+    mFields->clearRoute();
     update();
 }
 
-void MapWidget::clearAllRoutes()
+void MapWidget::clearAllPaths()
 {
-    for (int i = 0;i < mRoutes.size();i++) {
-        mRoutes[i].clear();
-    }
-//    mRoutes.clear();
+    mPaths->clearAllRoutes();
     update();
 }
 
 void MapWidget::clearAllFields()
 {
-    for (int i = 0;i < mFields.size();i++) {
-        mFields[i].clear();
-    }
-    mFields.clear();
+    mFields->clearAllRoutes();
+    update();
+}
+
+int MapWidget::getPathNow() const
+{
+    return mPaths->mRouteNow;
+}
+
+void MapWidget::setPathNow(int pathNow)
+{
+    mPaths->setRouteNow(pathNow);
+    update();
+}
+
+int MapWidget::getFieldNow() const
+{
+    return mFields->mRouteNow;
+}
+
+void MapWidget::setFieldNow(int fieldNow)
+{
+    mFields->setRouteNow(fieldNow);
     update();
 }
 
@@ -692,7 +677,9 @@ void MapWidget::mouseMoveEvent(QMouseEvent *e)
     }
 
     if (mRoutePointSelected >= 0) {
-        mRoutes[mRouteNow][mRoutePointSelected].setXY(mousePosMap.getX(), mousePosMap.getY());
+ //       MapRoute *current=mPaths->getCurrent();
+ //       *current[mRoutePointSelected].setXY(mousePosMap.getX(), mousePosMap.getY());
+        mPaths->getCurrent()[mRoutePointSelected].setXY(mousePosMap.getX(), mousePosMap.getY());
         update();
     }
 
@@ -762,8 +749,9 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
 
     double routeDist = 0.0;
     double anchorDist = 0.0;
-    int routeInd = getClosestPoint(mousePosMap, mRoutes[mRouteNow].mRoute, routeDist);
-    int fieldInd = getClosestPoint(mousePosMap, mFields[mFieldNow].mRoute, routeDist);
+    MapRoute &currentPath=mPaths->getCurrent();
+    int routeInd = getClosestPoint(mousePosMap, currentPath.mRoute, routeDist);
+    int fieldInd = getClosestPoint(mousePosMap, mFields->getCurrent().mRoute, routeDist);
     int anchorInd = getClosestPoint(mousePosMap, mAnchors, anchorDist);
     bool routeFound = (routeDist * mScaleFactor * 1000.0) < 20 && routeDist >= 0.0;
     bool anchorFound = (anchorDist * mScaleFactor * 1000.0) < 20 && anchorDist >= 0.0;
@@ -790,9 +778,9 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
                 }
             } else {
                 if (routeFound) {
-                    mRoutes[mRouteNow][routeInd].setSpeed(mRoutePointSpeed);
-                    mRoutes[mRouteNow][routeInd].setTime(mRoutePointTime);
-                    mRoutes[mRouteNow][routeInd].setAttributes(mRoutePointAttributes);
+                    mPaths->getCurrent()[routeInd].setSpeed(mRoutePointSpeed);
+                    mPaths->getCurrent()[routeInd].setTime(mRoutePointTime);
+                    mPaths->getCurrent()[routeInd].setAttributes(mRoutePointAttributes);
                 }
             }
         }
@@ -816,20 +804,20 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
             if (e->buttons() & Qt::LeftButton) {
                 if (routeFound) {
                     mRoutePointSelected = routeInd;
-                    mRoutes[mRouteNow][routeInd].setXY(mousePosMap.getX(), mousePosMap.getY());
+                    mPaths->getCurrent()[routeInd].setXY(mousePosMap.getX(), mousePosMap.getY());
                 } else {
-                    if (mRoutes[mRouteNow].size() < 2 ||
-                            mRoutes[mRouteNow].last().getDistanceTo(mousePosMap) <
-                            mRoutes[mRouteNow].first().getDistanceTo(mousePosMap)) {
-                        mRoutes[mRouteNow].append(mousePosMap);
+                    if (currentPath.size() < 2 ||
+                            currentPath.last().getDistanceTo(mousePosMap) <
+                            currentPath.first().getDistanceTo(mousePosMap)) {
+                        currentPath.append(mousePosMap);
                         emit routePointAdded(mousePosMap);
                     } else {
-                        mRoutes[mRouteNow].prepend(mousePosMap);
+                        currentPath.prepend(mousePosMap);
                     }
                 }
             } else if (e->buttons() & Qt::RightButton) {
                 if (routeFound) {
-                    mRoutes[mRouteNow].removeAt(routeInd);
+                    currentPath.removeAt(routeInd);
                 } else {
                     removeLastRoutePoint();
                 }
@@ -1148,57 +1136,6 @@ void MapWidget::setRoutePointTime(const qint32 &routePointTime)
     mRoutePointTime = routePointTime;
 }
 
-int MapWidget::getRouteNow() const
-{
-    return mRouteNow;
-}
-
-void MapWidget::setRouteNow(int routeNow)
-{
-    mRouteNow = routeNow;
-    while (mRoutes.size() < (mRouteNow + 1)) {
-        MapRoute l;
-        mRoutes.append(l);
-    }
-
-    // Clean empty routes
-    while (mRouteNow < (mRoutes.size() - 1)) {
-        if (mRoutes.last().isEmpty()) {
-            mRoutes.removeLast();
-        } else {
-            break;
-        }
-    }
-
-    update();
-}
-
-int MapWidget::getFieldNow() const
-{
-    return mFieldNow;
-}
-
-void MapWidget::setFieldNow(int fieldNow)
-{
-    mFieldNow = fieldNow;
-    while (mFields.size() < (mFieldNow + 1)) {
-        MapRoute l;
-        mFields.append(l);
-    }
-
-    // Clean empty routes
-    while (mFieldNow < (mFields.size() - 1)) {
-        if (mFields.last().isEmpty()) {
-            mFields.removeLast();
-        } else {
-            break;
-        }
-    }
-
-    update();
-}
-
-
 int MapWidget::getInfoTraceNow() const
 {
     return mInfoTraceNow;
@@ -1442,9 +1379,10 @@ void MapWidget::setAnchorHeight(double height)
 void MapWidget::removeLastRoutePoint()
 {
     LocPoint pos;
-    if (mRoutes[mRouteNow].size() > 0) {
-        pos = mRoutes[mRouteNow].last();
-        mRoutes[mRouteNow].removeLast();
+    MapRoute &current=mPaths->getCurrent();
+    if (current.size() > 0) {
+        pos = current.last();
+        current.removeLast();
     }
     emit lastRoutePointRemoved(pos);
     update();
@@ -1455,9 +1393,9 @@ void MapWidget::zoomInOnRoute(int id, double margins, double wWidth, double wHei
     MapRoute route;
 
     if (id >= 0) {
-        route = getRoute(id);
+        route = getPath(id);
     } else {
-        for (auto r: mRoutes) {
+        for (auto r: mPaths->mCollection) {
             route.append(r);
         }
     }
@@ -1683,17 +1621,17 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
 
     // Draw fields
     bool isSelected;
-    for (int fn = 0;fn < mFields.size();fn++) {
-        MapRoute &fieldNow = mFields[fn];
-        isSelected= (mFieldNow == fn) && (focusBorder==true);
+    for (int fn = 0;fn < mFields->size();fn++) {
+        isSelected= (mFields->mRouteNow == fn) && (focusBorder==true);
+        MapRoute &fieldNow = mFields->at(fn);
         fieldNow.paintBorder(painter, pen, isSelected, mScaleFactor, drawTrans);
     }
 
     // Draw routes
     isSelected;
-    for (int rn = 0;rn < mRoutes.size();rn++) {
-        MapRoute &routeNow = mRoutes[rn];
-        isSelected= (mRouteNow == rn) && (focusBorder==false);
+    for (int rn = 0;rn < mPaths->size();rn++) {
+        MapRoute &routeNow = mPaths->at(rn);
+        isSelected= (mPaths->mRouteNow == rn) && (focusBorder==false);
         routeNow.paintPath(this, painter, pen, isSelected, mScaleFactor, drawTrans, txt, pt_txt, rect_txt, txtTrans, highQuality);
     }
 
@@ -1726,7 +1664,7 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
     paintUnitZoomGeneralinfo(painter,font, txtTrans, width, stepGrid,txt,textColor,start_txt,txtOffset,txt_row_h, info_segments, info_points);
 
     // Current route info
-    mRoutes[mRouteNow].routeinfo(this, painter,start_txt,txtOffset,txt_row_h,width,txt);
+    mPaths->getCurrent().routeinfo(this, painter,start_txt,txtOffset,txt_row_h,width,txt);
 
     painter.end();
 }
@@ -2389,10 +2327,10 @@ bool MapWidget::loadXMLRoute(QXmlStreamReader* stream,bool isBorder)
                     msg.exec();*/
                 } else
                 {
-                    int routeLast = this->getRouteNow();
-                    this->setRouteNow(r.first);
-                    this->setRoute(r.second);
-                    this->setRouteNow(routeLast);
+                    int routeLast = this->getPathNow();
+                    this->setPathNow(r.first);
+                    this->setPath(r.second);
+                    this->setPathNow(routeLast);
 /*                    QMessageBox msg;
                     msg.setText("Satte rutt: " + QString::number(getRouteNum()));
                     msg.exec();*/
@@ -2406,7 +2344,7 @@ bool MapWidget::loadXMLRoute(QXmlStreamReader* stream,bool isBorder)
                     msg.exec();*/
                 } else
                 {
-                    this->addRoute(r.second);
+                    this->addPath(r.second);
 /*                    QMessageBox msg;
                     msg.setText("Laddade rutt: " + QString::number(getRouteNum()));
                     msg.exec();*/
@@ -2431,7 +2369,7 @@ void MapWidget::saveXMLRoutes(QXmlStreamWriter* stream, bool withId)
     stream->writeStartElement("routes");
 
     QList<LocPoint> anchors = this->getAnchors();
-    QList<MapRoute> routes = this->getRoutes();
+    QList<MapRoute> routes = this->getPaths();
 
     if (!anchors.isEmpty()) {
         stream->writeStartElement("anchors");
@@ -2529,7 +2467,7 @@ std::array<double, 4> MapWidget::findExtremeValuesFieldBorders()
         if (route.getIsBorder())
         allpoints.append(route.mRoute);
     }*/
-    for (const MapRoute& field : mFields)
+    for (const MapRoute& field : mFields->mCollection)
     {
         allpoints.append(field.mRoute);
     }
@@ -2616,7 +2554,7 @@ QList<LocPoint>::const_iterator MapRoute::begin() const
 
 QList<LocPoint>::const_iterator MapRoute::end() const
 {
-    return mRoute.begin();
+    return mRoute.end();
 }
 
 double MapRoute::getArea()
@@ -2838,3 +2776,115 @@ void MapRoute::routeinfo(MapWidget* mapWidget, QPainter &painter,double start_tx
 }
 
 
+MapRouteCollection::MapRouteCollection()
+{
+    mRouteNow = 0;
+}
+
+MapRoute MapRouteCollection::getRoute(int ind)
+{
+    if (ind < 0) {
+        return mCollection[mRouteNow];
+    } else {
+        if (mCollection.size() > ind) {
+            return mCollection[ind];
+        } else {
+            MapRoute tmp;
+            return tmp;
+        }
+    }
+}
+
+QList<MapRoute> MapRouteCollection::getRoutes()
+{
+    return mCollection;
+}
+
+void MapRouteCollection::setRoute(const MapRoute &route)
+{
+    mCollection[mRouteNow] = route;
+}
+
+
+void MapRouteCollection::addRoute(const MapRoute &route)
+{
+    while (!mCollection.isEmpty() &&
+           mCollection.last().isEmpty() &&
+           mRouteNow < mCollection.size()) {
+        mCollection.removeLast();
+    }
+    mCollection.append(route);
+}
+
+int MapRouteCollection::getRouteNum()
+{
+    return mCollection.size();
+}
+
+void MapRouteCollection::clearRoute()
+{
+    mCollection[mRouteNow].clear();
+}
+
+void MapRouteCollection::clearAllRoutes()
+{
+    for (int i = 0;i < mCollection.size();i++) {
+        mCollection[i].clear();
+    }
+    //    mRoutes.clear();
+}
+
+void MapRouteCollection::setRouteNow(int routeNow)
+{
+    mRouteNow = routeNow;
+    while (mCollection.size() < (mRouteNow + 1)) {
+        MapRoute l;
+        mCollection.append(l);
+    }
+
+    // Clean empty routes
+    while (mRouteNow < (mCollection.size() - 1)) {
+        if (mCollection.last().isEmpty()) {
+            mCollection.removeLast();
+        } else {
+            break;
+        }
+    }
+}
+
+
+void MapRouteCollection::clear()
+{
+    mCollection.clear();
+}
+
+void MapRouteCollection::append(MapRoute &maproute)
+{
+    mCollection.append(maproute);
+}
+
+
+int MapRouteCollection::size()
+{
+    return mCollection.size();
+}
+
+MapRoute& MapRouteCollection::getCurrent()
+{
+    return mCollection[mRouteNow];
+}
+
+QList<MapRoute>::const_iterator MapRouteCollection::begin() const
+{
+    return mCollection.begin();
+}
+
+QList<MapRoute>::const_iterator MapRouteCollection::end() const
+{
+    return mCollection.end();
+}
+
+MapRoute& MapRouteCollection::at(int i)
+{
+    return mCollection[i];
+}
