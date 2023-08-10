@@ -693,6 +693,7 @@ void MapWidget::mouseMoveEvent(QMouseEvent *e)
 
 void MapWidget::mousePressEvent(QMouseEvent *e)
 {
+    qDebug() << "Mouse pressed!";
     setFocus();
 
     bool ctrl = e->modifiers() == Qt::ControlModifier;
@@ -719,6 +720,8 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
     double px=p.x()/1000.0;
     double py=p.y()/1000.0;
     mousePosMap.setXY(px, py);
+
+    qDebug() << "Checking fields!";
 
     for (int i=0;i<getFieldNum();i++)
     {
@@ -747,15 +750,31 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
     mousePosMap.setId(mAnchorId);
     mousePosMap.setHeight(mAnchorHeight);
 
+    qDebug() << "Checking what is close";
+
     double routeDist = 0.0;
     double anchorDist = 0.0;
-    MapRoute &currentPath=mPaths->getCurrent();
-    int routeInd = getClosestPoint(mousePosMap, currentPath.mRoute, routeDist);
-    int fieldInd = getClosestPoint(mousePosMap, mFields->getCurrent().mRoute, routeDist);
+
     int anchorInd = getClosestPoint(mousePosMap, mAnchors, anchorDist);
     bool routeFound = (routeDist * mScaleFactor * 1000.0) < 20 && routeDist >= 0.0;
     bool anchorFound = (anchorDist * mScaleFactor * 1000.0) < 20 && anchorDist >= 0.0;
 
+    MapRoute *currentRoute;
+    int mRoutePointSelected;
+    if (focusBorder)
+    {
+        currentRoute=&(mFields->getCurrent());
+        qDebug() << "Acting on border";
+        qDebug() << "Border size: " << currentRoute->size();
+    } else
+    {
+        currentRoute=&(mPaths->getCurrent());
+        qDebug() << "Acting on path";
+    }
+    mRoutePointSelected = getClosestPoint(mousePosMap, currentRoute->mRoute, routeDist);
+
+
+    qDebug() << "Was Ctrl clicked?";
     if (ctrl) {
         if (e->buttons() & Qt::LeftButton) {
             if (mSelectedCar >= 0) {
@@ -777,15 +796,16 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
                     mAnchors[anchorInd].setHeight(mAnchorHeight);
                 }
             } else {
-                if (routeFound) {
-                    mPaths->getCurrent()[routeInd].setSpeed(mRoutePointSpeed);
-                    mPaths->getCurrent()[routeInd].setTime(mRoutePointTime);
-                    mPaths->getCurrent()[routeInd].setAttributes(mRoutePointAttributes);
+                if (routeFound && (!focusBorder)) {
+                    (*currentRoute)[mRoutePointSelected].setSpeed(mRoutePointSpeed);
+                    (*currentRoute)[mRoutePointSelected].setTime(mRoutePointTime);
+                    (*currentRoute)[mRoutePointSelected].setAttributes(mRoutePointAttributes);
                 }
             }
         }
         update();
     } else if (shift) {
+        qDebug() << "Shift clicked!";
         if (mAnchorMode) {
             /*
             if (e->buttons() & Qt::LeftButton) {
@@ -801,28 +821,38 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
                 }
             }*/
         } else {
+            qDebug() << "Point: " << mRoutePointSelected;
             if (e->buttons() & Qt::LeftButton) {
+                qDebug() << "Pressed left key";
                 if (routeFound) {
-                    mRoutePointSelected = routeInd;
-                    mPaths->getCurrent()[routeInd].setXY(mousePosMap.getX(), mousePosMap.getY());
+                    qDebug() << "Found route";
+                    qDebug() << "Size: " << currentRoute->size();
+                    qDebug() << "Pos: " << mRoutePointSelected;
+                    (*currentRoute)[mRoutePointSelected].setXY(mousePosMap.getX(), mousePosMap.getY());
+                    qDebug() << "Set position";
                 } else {
-                    if (currentPath.size() < 2 ||
-                            currentPath.last().getDistanceTo(mousePosMap) <
-                            currentPath.first().getDistanceTo(mousePosMap)) {
-                        currentPath.append(mousePosMap);
+                    qDebug() << "Did not find route";
+                    if (currentRoute->size() < 2 ||
+                        currentRoute->last().getDistanceTo(mousePosMap) <
+                                                           currentRoute->first().getDistanceTo(mousePosMap)) {
+                    qDebug() << "Appending";
+                    currentRoute->append(mousePosMap);
                         emit routePointAdded(mousePosMap);
                     } else {
-                        currentPath.prepend(mousePosMap);
+                        qDebug() << "Prepending";
+                        currentRoute->prepend(mousePosMap);
                     }
                 }
             } else if (e->buttons() & Qt::RightButton) {
+                qDebug() << "Pressed right key";
                 if (routeFound) {
-                    currentPath.removeAt(routeInd);
+                    currentRoute->removeAt(mRoutePointSelected );
                 } else {
                     removeLastRoutePoint();
                 }
             }
         }
+        qDebug() << "Updating";
         update();
     } else if (ctrl_shift) {
         if (e->buttons() & Qt::LeftButton) {
@@ -1618,22 +1648,29 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
 
 
     paintCarTraces(painter,pen,drawTrans);
-
+    qDebug() << "Painting fields";
     // Draw fields
     bool isSelected;
     for (int fn = 0;fn < mFields->size();fn++) {
         isSelected= (mFields->mRouteNow == fn) && (focusBorder==true);
         MapRoute &fieldNow = mFields->at(fn);
+        qDebug() << "Painting field:" << fn;
         fieldNow.paintBorder(painter, pen, isSelected, mScaleFactor, drawTrans);
     }
+
+    qDebug() << "Painting paths";
+    qDebug() << "Number of paths:" << mPaths->size();
 
     // Draw routes
     isSelected;
     for (int rn = 0;rn < mPaths->size();rn++) {
         MapRoute &routeNow = mPaths->at(rn);
         isSelected= (mPaths->mRouteNow == rn) && (focusBorder==false);
+        qDebug() << "Painting path:" << rn;
         routeNow.paintPath(this, painter, pen, isSelected, mScaleFactor, drawTrans, txt, pt_txt, rect_txt, txtTrans, highQuality);
     }
+
+    qDebug() << "Finished painting paths";
 
     // Map module painting
     painter.save();
@@ -1664,8 +1701,11 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
     paintUnitZoomGeneralinfo(painter,font, txtTrans, width, stepGrid,txt,textColor,start_txt,txtOffset,txt_row_h, info_segments, info_points);
 
     // Current route info
-    mPaths->getCurrent().routeinfo(this, painter,start_txt,txtOffset,txt_row_h,width,txt);
-
+    qDebug() << "Printing path info";
+    if (mPaths->size()>0)
+    {
+        mPaths->getCurrent().routeinfo(this, painter,start_txt,txtOffset,txt_row_h,width,txt);
+    };
     painter.end();
 }
 
@@ -2831,7 +2871,7 @@ void MapRouteCollection::clearAllRoutes()
     for (int i = 0;i < mCollection.size();i++) {
         mCollection[i].clear();
     }
-    //    mRoutes.clear();
+    mCollection.clear();
 }
 
 void MapRouteCollection::setRouteNow(int routeNow)
@@ -2871,6 +2911,10 @@ int MapRouteCollection::size()
 
 MapRoute& MapRouteCollection::getCurrent()
 {
+    qDebug() << "In getCurrent!";
+    qDebug() << "mRouteNow:" << mRouteNow;
+    qDebug() << "Size: " <<  mCollection.size();
+
     return mCollection[mRouteNow];
 }
 
@@ -2887,4 +2931,24 @@ QList<MapRoute>::const_iterator MapRouteCollection::end() const
 MapRoute& MapRouteCollection::at(int i)
 {
     return mCollection[i];
+}
+
+MapRoute& MapRouteCollection::first()
+{
+    return mCollection.first();
+}
+
+MapRoute& MapRouteCollection::last()
+{
+    return mCollection.last();
+}
+
+void MapRouteCollection::prepend(const MapRoute &value)
+{
+    mCollection.prepend(value);
+}
+
+void MapRouteCollection::removeAt(int i)
+{
+    mCollection.removeAt(i);
 }

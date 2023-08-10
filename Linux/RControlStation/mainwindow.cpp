@@ -500,7 +500,7 @@ MainWindow::MainWindow(QWidget *parent) :
                    [modelPath,mapFields,selectedRoute,areaLabel](const QModelIndex& current, const QModelIndex& previous)
     {
        mapFields->setBorderFocus(false);
-      mapFields->update();
+       mapFields->update();
        int row = current.row();
 
        // Retrieve the data of the selected row if needed
@@ -837,6 +837,7 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
                 ui->fieldTable->show();
                 return true;
               }
+            qDebug() << "Done";
       }
 
     }
@@ -880,13 +881,12 @@ void MainWindow::onMouseClickedFieldSelected(int field)
             break;
         }
     }
-
+    qDebug() << "Select in fieldTable";
     if (row != -1) {
         this->ui->fieldTable->selectRow(row);
     }
 
-
-
+    qDebug() << "Acted enough!";
 
 }
 
