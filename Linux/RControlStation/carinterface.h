@@ -102,13 +102,14 @@ private slots:
     void on_confReadButton_clicked();
     void on_confReadDefaultButton_clicked();
     void on_confWriteButton_clicked();
-    void on_setClockButton_clicked();
-    void on_setClockPiButton_clicked();
+//    void on_setClockButton_clicked();
+//    void on_setClockPiButton_clicked();
     void on_rebootPiButton_clicked();
     void on_shutdownPiButton_clicked();
     void on_camStartButton_clicked();
     void on_camStopButton_clicked();
     void on_camShowMapBox_toggled(bool checked);
+    /*
     void on_ubxVersionButton_clicked();
     void on_ubxNavSatButton_clicked();
     void on_ubxSolButton_clicked();
@@ -119,6 +120,7 @@ private slots:
     void on_zeroGyroButton_clicked();
     void on_uwbRebootButton_clicked();
     void on_uwbListAnchorsButton_clicked();
+    */
     void on_ioBoardPwmSlider_valueChanged(int value);
     void on_startCalibration1Button_clicked();
     void on_startCalibration2Button_clicked();

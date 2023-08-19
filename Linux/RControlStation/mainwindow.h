@@ -64,6 +64,40 @@ class MainWindow;
 
 class CustomDelegate;
 
+class FocusEventFilter : public QObject
+{
+    Q_OBJECT
+
+signals:
+    void focusGained();
+    void focusLost();
+
+protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
+};
+
+struct coords_cartesian
+{
+    float x,y,z;
+};
+
+struct coords_polar
+{
+    float lon,lat,h;
+};
+
+struct coords_matrix
+{
+    float r1c1,r1c2,r1c3;
+    float r2c1,r2c2,r2c3;
+    float r3c1,r3c2,r3c3;
+};
+
+// Constants
+#define FE_WGS84						(D(1.0)/D(298.257223563)) // earth flattening (WGS84)
+#define RE_WGS84						D(6378137.0)           // earth semimajor axis (WGS84) (m)
+
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -296,6 +330,9 @@ private:
     QTimer *mTimerRtcm;
     TcpBroadcast *mTcpServer;
     CustomDelegate *statustocolourDelegate;
+
+    FocusEventFilter filterFieldtable;
+    FocusEventFilter filterPathtable;
 };
 
 class CustomDelegate : public QStyledItemDelegate {
@@ -306,9 +343,15 @@ public:
 };
 
 
+
 void addField(QSqlQuery &q, const QString &title, const QVariant &locationId);
 QVariant addLocation(QSqlQuery &q, const QString &name);
 void deleteField(const QVariant &fieldId);
+
+coords_matrix toOrientationMatrix(coords_polar cp);
+coords_cartesian toCartesian(coords_polar cp);
+coords_cartesian toEnu(coords_polar basestation,coords_polar vehicle);
+coords_cartesian toEnu(coords_cartesian basestation,coords_matrix orientation,coords_polar vehicle);
 
 QSqlError initDb();
 

@@ -59,6 +59,8 @@ CarInterface::CarInterface(QWidget *parent) :
     ui->tabWidget->removeTab(6);
  //   ui->tabWidget->removeTab(5);
     ui->tabWidget->removeTab(4);
+//    ui->tabWidget->removeTab(2);
+//    ui->tabWidget->removeTab(0);
 
     memset(&mLastCarState, 0, sizeof(CAR_STATE));
 
@@ -332,11 +334,14 @@ void CarInterface::setControlValues(double throttle, double steering, double max
 {
     if (ui->keyboardControlBox->isChecked()) {
         if (fabs(throttle) < 0.005) {
+            qDebug() << "emit setRcCurrent: 0 :: " << steering;
             emit setRcCurrent(mId, 0.0, steering);
         } else {
             if (currentMode) {
+                qDebug() << "emit setRcCurrent: " << (throttle * 80.0 * max) << " :: " << steering;
                 emit setRcCurrent(mId, throttle * 80.0 * max, steering);
             } else {
+                qDebug() << "emit setRcDuty: " << (throttle * max) << " :: " << steering;
                 emit setRcDuty(mId, throttle * max, steering);
             }
         }
@@ -792,7 +797,7 @@ void CarInterface::setConfGui(MAIN_CONFIG &conf)
 
     ui->confCommonWidget->setConfGui(conf);
 }
-
+/*
 void CarInterface::on_setClockButton_clicked()
 {
     if (mPacketInterface) {
@@ -801,7 +806,7 @@ void CarInterface::on_setClockButton_clicked()
         mPacketInterface->setMsToday(mId, current.msecsSinceStartOfDay());
     }
 }
-
+*/
 void CarInterface::on_startCalibration1Button_clicked()
 {
     ui->calibratingCheckBox->setChecked(true);
@@ -942,6 +947,7 @@ void CarInterface::on_endCalibration2Button_clicked()
     ui->nmeaTextBrowser->clear();
 }
 
+/*
 void CarInterface::on_setClockPiButton_clicked()
 {
     if (mPacketInterface) {
@@ -954,7 +960,7 @@ void CarInterface::on_setClockPiButton_clicked()
         }
     }
 }
-
+*/
 void CarInterface::on_rebootPiButton_clicked()
 {
     if (mPacketInterface) {
@@ -1014,6 +1020,7 @@ void CarInterface::on_camShowMapBox_toggled(bool checked)
     }
 }
 
+/*
 void CarInterface::on_ubxVersionButton_clicked()
 {
     emit terminalCmd(uint8_t(mId), "ubx_poll UBX_MON_VER");
@@ -1063,7 +1070,7 @@ void CarInterface::on_uwbListAnchorsButton_clicked()
 {
     emit terminalCmd(uint8_t(mId), "pos_uwb_anchors");
 }
-
+*/
 void CarInterface::on_ioBoardPwmSlider_valueChanged(int value)
 {
     double val_mapped = (double)value / 1000.0;

@@ -47,6 +47,8 @@ static float dec_adc;
 static float dec_adc_voltage;
 static float dec_chuk;
 
+extern float showData;
+
 // Private functions
 void send_packet_no_fwd(unsigned char *data, unsigned int len);
 
@@ -360,9 +362,11 @@ void bldc_interface_terminal_cmd(char* cmd) {
 
 void bldc_interface_set_duty_cycle(float dutyCycle) {
 	if (motor_control_set_func) {
+		showData=dutyCycle+10;
 		motor_control_set_func(MOTOR_CONTROL_DUTY, dutyCycle);
 		return;
 	}
+	showData=dutyCycle;
 	int32_t send_index = 0;
 	send_buffer[send_index++] = COMM_SET_DUTY;
 	buffer_append_float32(send_buffer, dutyCycle, 100000.0, &send_index);

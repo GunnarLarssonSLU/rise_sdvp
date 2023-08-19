@@ -169,6 +169,8 @@ MapWidget::MapWidget(QWidget *parent) : QWidget(parent)
     mCameraImageOpacity = 0.8;
     mInteractionMode = InteractionModeDefault;
 
+    bUpdateable=true;
+
     mOsm = new OsmClient(this);
     mDrawOpenStreetmap = true;
     mOsmZoomLevel = 14;
@@ -693,7 +695,6 @@ void MapWidget::mouseMoveEvent(QMouseEvent *e)
 
 void MapWidget::mousePressEvent(QMouseEvent *e)
 {
-    qDebug() << "Mouse pressed!";
     setFocus();
 
     bool ctrl = e->modifiers() == Qt::ControlModifier;
@@ -721,7 +722,7 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
     double py=p.y()/1000.0;
     mousePosMap.setXY(px, py);
 
-    qDebug() << "Checking fields!";
+    qDebug() << "Mouse pressed! Checking fields!";
 
     for (int i=0;i<getFieldNum();i++)
     {
@@ -750,7 +751,6 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
     mousePosMap.setId(mAnchorId);
     mousePosMap.setHeight(mAnchorHeight);
 
-    qDebug() << "Checking what is close";
 
     double routeDist = 0.0;
     double anchorDist = 0.0;
@@ -759,22 +759,30 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
     bool routeFound = (routeDist * mScaleFactor * 1000.0) < 20 && routeDist >= 0.0;
     bool anchorFound = (anchorDist * mScaleFactor * 1000.0) < 20 && anchorDist >= 0.0;
 
+
     MapRoute *currentRoute;
     int mRoutePointSelected;
+    bool bHasCurrentRoute=false;
     if (focusBorder)
     {
-        currentRoute=&(mFields->getCurrent());
-        qDebug() << "Acting on border";
-        qDebug() << "Border size: " << currentRoute->size();
+        if (mFields->size()>0)
+        {
+            qDebug() << "Acting on border";
+            currentRoute=&(mFields->getCurrent());
+            qDebug() << "Border size: " << currentRoute->size();
+            bHasCurrentRoute=true;
+        }
     } else
     {
-        currentRoute=&(mPaths->getCurrent());
-        qDebug() << "Acting on path";
+        if (mPaths->size()>0)
+        {
+            qDebug() << "Acting on path";
+            currentRoute=&(mPaths->getCurrent());
+            bHasCurrentRoute=true;
+        }
     }
-    mRoutePointSelected = getClosestPoint(mousePosMap, currentRoute->mRoute, routeDist);
+    if (bHasCurrentRoute) mRoutePointSelected = getClosestPoint(mousePosMap, currentRoute->mRoute, routeDist);
 
-
-    qDebug() << "Was Ctrl clicked?";
     if (ctrl) {
         if (e->buttons() & Qt::LeftButton) {
             if (mSelectedCar >= 0) {
@@ -796,7 +804,7 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
                     mAnchors[anchorInd].setHeight(mAnchorHeight);
                 }
             } else {
-                if (routeFound && (!focusBorder)) {
+                if (routeFound && (!focusBorder) && bHasCurrentRoute) {
                     (*currentRoute)[mRoutePointSelected].setSpeed(mRoutePointSpeed);
                     (*currentRoute)[mRoutePointSelected].setTime(mRoutePointTime);
                     (*currentRoute)[mRoutePointSelected].setAttributes(mRoutePointAttributes);
@@ -1515,8 +1523,34 @@ void MapWidget::getEnuRef(double *llh)
     llh[2] = mRefHeight;
 }
 
+void MapWidget::setTrace(QVector<LocPoint> mTrace)
+{
+    mCarTrace=mTrace;
+    setLogStart(0);
+    setLogEnd(99);
+    bUpdateable=false;
+}
+
+void MapWidget::setLogStart(int iStart)
+{
+    iLogstart=(int)(iStart*mCarTrace.size()/99);
+    update();
+};
+
+void MapWidget::setLogEnd(int iEnd)
+{
+    iLogend=(int)(mCarTrace.size()*iEnd/99);
+    qDebug() << "size: " << mCarTrace.size();
+    qDebug() << "iend: " << iEnd;
+    qDebug() << "iLogend: " << iLogend;
+    update();
+    qDebug() << "updated!";
+};
+
+
 void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality)
 {
+    qDebug() << "Start painting";
     if (highQuality) {
         painter.setRenderHint(QPainter::Antialiasing, true);
         painter.setRenderHint(QPainter::TextAntialiasing, true);
@@ -1646,31 +1680,25 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
 
     paintClosestPoint(painter,pen,drawTrans, txtTrans, pt_txt,rect_txt );
 
+    qDebug() << "Middle painting";
 
     paintCarTraces(painter,pen,drawTrans);
-    qDebug() << "Painting fields";
     // Draw fields
     bool isSelected;
     for (int fn = 0;fn < mFields->size();fn++) {
         isSelected= (mFields->mRouteNow == fn) && (focusBorder==true);
         MapRoute &fieldNow = mFields->at(fn);
-        qDebug() << "Painting field:" << fn;
         fieldNow.paintBorder(painter, pen, isSelected, mScaleFactor, drawTrans);
     }
-
-    qDebug() << "Painting paths";
-    qDebug() << "Number of paths:" << mPaths->size();
 
     // Draw routes
     isSelected;
     for (int rn = 0;rn < mPaths->size();rn++) {
         MapRoute &routeNow = mPaths->at(rn);
         isSelected= (mPaths->mRouteNow == rn) && (focusBorder==false);
-        qDebug() << "Painting path:" << rn;
         routeNow.paintPath(this, painter, pen, isSelected, mScaleFactor, drawTrans, txt, pt_txt, rect_txt, txtTrans, highQuality);
     }
 
-    qDebug() << "Finished painting paths";
 
     // Map module painting
     painter.save();
@@ -1701,12 +1729,13 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
     paintUnitZoomGeneralinfo(painter,font, txtTrans, width, stepGrid,txt,textColor,start_txt,txtOffset,txt_row_h, info_segments, info_points);
 
     // Current route info
-    qDebug() << "Printing path info";
     if (mPaths->size()>0)
     {
         mPaths->getCurrent().routeinfo(this, painter,start_txt,txtOffset,txt_row_h,width,txt);
     };
     painter.end();
+    qDebug() << "End painting";
+
 }
 
 void MapWidget::paintClosestPoint(QPainter &painter,QPen &pen,QTransform drawTrans, QTransform txtTrans, QPointF& pt_txt,QRectF &rect_txt )
@@ -1824,8 +1853,39 @@ void MapWidget::paintCamera(QPainter &painter,QTransform txtTrans, int width,dou
 
 }
 
+
+void MapWidget::paintTraceVechicle(QPainter &painter,QPen &pen, QTransform drawTrans,QVector<LocPoint> mTrace,double traceWidth,QColor traceColour)
+{
+    // Draw trace for the selected car
+    pen.setWidthF(traceWidth);
+    pen.setColor(traceColour);
+    painter.setPen(pen);
+    painter.setTransform(drawTrans);
+    if (bUpdateable)
+    {
+        for (int i = 1;i < mTrace.size();i++) {
+        painter.drawLine(mTrace[i - 1].getX() * 1000.0, mTrace[i - 1].getY() * 1000.0,
+                         mTrace[i].getX() * 1000.0, mTrace[i].getY() * 1000.0);
+        }
+    } else
+    {
+        if(mTrace.size()>0)
+        {
+            qDebug() << "Logstart: " << iLogstart;
+            qDebug() << "Logend: " << iLogend;
+            qDebug() << "Size: " << mTrace.size();
+            for (int i = iLogstart+1;i < iLogend;i++) {
+                    painter.drawLine(mTrace[i - 1].getX() * 1000.0, mTrace[i - 1].getY() * 1000.0,
+                                     mTrace[i].getX() * 1000.0, mTrace[i].getY() * 1000.0);
+            }
+        }
+        qDebug() << "Done!";
+    };
+}
+
 void MapWidget::paintCarTraces(QPainter &painter,QPen &pen, QTransform drawTrans)
 {
+    /*
     // Draw trace for the selected car
     pen.setWidthF(5.0 / mScaleFactor);
     pen.setColor(Qt::red);
@@ -1835,7 +1895,10 @@ void MapWidget::paintCarTraces(QPainter &painter,QPen &pen, QTransform drawTrans
         painter.drawLine(mCarTrace[i - 1].getX() * 1000.0, mCarTrace[i - 1].getY() * 1000.0,
                 mCarTrace[i].getX() * 1000.0, mCarTrace[i].getY() * 1000.0);
     }
+    */
+    paintTraceVechicle(painter,pen, drawTrans,mCarTrace,5.0 / mScaleFactor,Qt::red);
 
+    /*
     // Draw GPS trace for the selected car
     pen.setWidthF(2.5 / mScaleFactor);
     pen.setColor(Qt::magenta);
@@ -1845,9 +1908,12 @@ void MapWidget::paintCarTraces(QPainter &painter,QPen &pen, QTransform drawTrans
         painter.drawLine(mCarTraceGps[i - 1].getX() * 1000.0, mCarTraceGps[i - 1].getY() * 1000.0,
                 mCarTraceGps[i].getX() * 1000.0, mCarTraceGps[i].getY() * 1000.0);
     }
+    */
+    paintTraceVechicle(painter,pen, drawTrans,mCarTraceGps,2.5 / mScaleFactor,Qt::magenta);
 
     // Draw UWB trace for the selected car
     if (mDrawUwbTrace) {
+        /*
         pen.setWidthF(2.5 / mScaleFactor);
         pen.setColor(Qt::green);
         painter.setPen(pen);
@@ -1856,9 +1922,9 @@ void MapWidget::paintCarTraces(QPainter &painter,QPen &pen, QTransform drawTrans
             painter.drawLine(mCarTraceUwb[i - 1].getX() * 1000.0, mCarTraceUwb[i - 1].getY() * 1000.0,
                     mCarTraceUwb[i].getX() * 1000.0, mCarTraceUwb[i].getY() * 1000.0);
         }
+        */
+        paintTraceVechicle(painter,pen, drawTrans,mCarTraceUwb ,2.5 / mScaleFactor,Qt::green);
     }
-
-
 }
 
 void MapWidget::paintTrace(QList<LocPoint> &itNow,QPainter &painter,QPen &pen, bool isActive, QTransform drawTrans, QTransform txtTrans,const double cx, const double cy, const double view_w, const double view_h,int& info_segments, int& info_points)
@@ -2353,7 +2419,6 @@ bool MapWidget::loadXMLRoute(QXmlStreamReader* stream,bool isBorder)
                 qWarning() << stream->lineNumber() << stream->columnNumber();
             }
         }
-//        QMessageBox msg;
         for (QPair<int, MapRoute > r: routes) {
             if (r.first >= 0) {
                 if (isBorder)
@@ -2362,32 +2427,20 @@ bool MapWidget::loadXMLRoute(QXmlStreamReader* stream,bool isBorder)
                     this->setFieldNow(r.first);
                     this->setField(r.second);
                     this->setFieldNow(fieldLast);
-/*                    QMessageBox msg;
-                    msg.setText("Satte fält: " + QString::number(getFieldNum()));
-                    msg.exec();*/
                 } else
                 {
                     int routeLast = this->getPathNow();
                     this->setPathNow(r.first);
                     this->setPath(r.second);
                     this->setPathNow(routeLast);
-/*                    QMessageBox msg;
-                    msg.setText("Satte rutt: " + QString::number(getRouteNum()));
-                    msg.exec();*/
                 }
             } else {
                 if (isBorder)
                 {
                     this->addField(r.second);
-/*                    QMessageBox msg;
-                    msg.setText("Laddade fält: " + QString::number(getFieldNum()));
-                    msg.exec();*/
                 } else
                 {
                     this->addPath(r.second);
-/*                    QMessageBox msg;
-                    msg.setText("Laddade rutt: " + QString::number(getRouteNum()));
-                    msg.exec();*/
                 }
             }
         }
@@ -2400,6 +2453,52 @@ bool MapWidget::loadXMLRoute(QXmlStreamReader* stream,bool isBorder)
 
 }
 
+void MapWidget::saveXMLCurrentRoute(QXmlStreamWriter* stream)
+{
+    stream->setCodec("UTF-8");
+    stream->setAutoFormatting(true);
+    stream->writeStartDocument();
+
+    stream->writeStartElement("routes");
+
+    MapRoute *currentRoute;
+    int mRoutePointSelected;
+    if (focusBorder)
+    {
+        currentRoute=&(mFields->getCurrent());
+        qDebug() << "Acting on border";
+        qDebug() << "Border size: " << currentRoute->size();
+    } else
+    {
+        currentRoute=&(mPaths->getCurrent());
+        qDebug() << "Acting on path";
+    }
+    saveXMLRoute(stream, *currentRoute,false, 0);
+
+    stream->writeEndDocument();
+}
+
+void MapWidget::saveXMLRoute(QXmlStreamWriter* stream, MapRoute route,bool withId, int i)
+{
+    stream->writeStartElement("route");
+
+    if (withId) {
+        stream->writeTextElement("id", QString::number(i));
+    }
+
+    for (const LocPoint p: route.mRoute) {
+        stream->writeStartElement("point");
+        stream->writeTextElement("x", QString::number(p.getX()));
+        stream->writeTextElement("y", QString::number(p.getY()));
+        stream->writeTextElement("speed", QString::number(p.getSpeed()));
+        stream->writeTextElement("time", QString::number(p.getTime()));
+        stream->writeTextElement("attributes", QString::number(p.getAttributes()));
+        stream->writeEndElement();
+    }
+    stream->writeEndElement();
+}
+
+
 void MapWidget::saveXMLRoutes(QXmlStreamWriter* stream, bool withId)
 {
     stream->setCodec("UTF-8");
@@ -2409,8 +2508,15 @@ void MapWidget::saveXMLRoutes(QXmlStreamWriter* stream, bool withId)
     stream->writeStartElement("routes");
 
     QList<LocPoint> anchors = this->getAnchors();
-    QList<MapRoute> routes = this->getPaths();
-
+    QList<MapRoute> routes;
+    if (focusBorder)
+    {
+        routes = this->getFields();
+    } else
+    {
+        routes = this->getPaths();
+    }
+/*
     if (!anchors.isEmpty()) {
         stream->writeStartElement("anchors");
         for (LocPoint p: anchors) {
@@ -2423,25 +2529,10 @@ void MapWidget::saveXMLRoutes(QXmlStreamWriter* stream, bool withId)
         }
         stream->writeEndElement();
     }
-
+*/
     for (int i = 0;i < routes.size();i++) {
         if (!routes.at(i).isEmpty()) {
-            stream->writeStartElement("route");
-
-            if (withId) {
-                stream->writeTextElement("id", QString::number(i));
-            }
-
-            for (const LocPoint p: routes.at(i)) {
-                stream->writeStartElement("point");
-                stream->writeTextElement("x", QString::number(p.getX()));
-                stream->writeTextElement("y", QString::number(p.getY()));
-                stream->writeTextElement("speed", QString::number(p.getSpeed()));
-                stream->writeTextElement("time", QString::number(p.getTime()));
-                stream->writeTextElement("attributes", QString::number(p.getAttributes()));
-                stream->writeEndElement();
-            }
-            stream->writeEndElement();
+            saveXMLRoute(stream,routes.at(i),i,withId);
         }
     }
     stream->writeEndDocument();
@@ -2450,46 +2541,49 @@ void MapWidget::saveXMLRoutes(QXmlStreamWriter* stream, bool withId)
 
 void MapWidget::updateTraces()
 {
-    // Store trace for the selected car
-    if (mTraceCar >= 0) {
-        for (int i = 0;i < mCarInfo.size();i++) {
-            CarInfo &carInfo = mCarInfo[i];
-            if (carInfo.getId() == mTraceCar) {
-                if (mCarTrace.isEmpty()) {
-                    mCarTrace.append(carInfo.getLocation());
-                }
-                if (mCarTrace.last().getDistanceTo(carInfo.getLocation()) > mTraceMinSpaceCar) {
-                    mCarTrace.append(carInfo.getLocation());
-                }
-                // GPS trace
-                if (mCarTraceGps.isEmpty()) {
-                    mCarTraceGps.append(carInfo.getLocationGps());
-                }
-                if (mCarTraceGps.last().getDistanceTo(carInfo.getLocationGps()) > mTraceMinSpaceGps) {
-                    mCarTraceGps.append(carInfo.getLocationGps());
-                }
-                // UWB trace
-                if (mCarTraceUwb.isEmpty()) {
-                    mCarTraceUwb.append(carInfo.getLocationUwb());
-                }
-                if (mCarTraceUwb.last().getDistanceTo(carInfo.getLocationUwb()) > mTraceMinSpaceCar) {
-                    mCarTraceUwb.append(carInfo.getLocationUwb());
+    if (bUpdateable)
+    {
+        // Store trace for the selected car
+        if (mTraceCar >= 0) {
+            for (int i = 0;i < mCarInfo.size();i++) {
+                CarInfo &carInfo = mCarInfo[i];
+                if (carInfo.getId() == mTraceCar) {
+                    if (mCarTrace.isEmpty()) {
+                        mCarTrace.append(carInfo.getLocation());
+                    }
+                    if (mCarTrace.last().getDistanceTo(carInfo.getLocation()) > mTraceMinSpaceCar) {
+                        mCarTrace.append(carInfo.getLocation());
+                    }
+                    // GPS trace
+                    if (mCarTraceGps.isEmpty()) {
+                        mCarTraceGps.append(carInfo.getLocationGps());
+                    }
+                    if (mCarTraceGps.last().getDistanceTo(carInfo.getLocationGps()) > mTraceMinSpaceGps) {
+                        mCarTraceGps.append(carInfo.getLocationGps());
+                    }
+                    // UWB trace
+                    if (mCarTraceUwb.isEmpty()) {
+                        mCarTraceUwb.append(carInfo.getLocationUwb());
+                    }
+                    if (mCarTraceUwb.last().getDistanceTo(carInfo.getLocationUwb()) > mTraceMinSpaceCar) {
+                        mCarTraceUwb.append(carInfo.getLocationUwb());
+                    }
                 }
             }
         }
-    }
 
-    // Truncate traces
-    while (mCarTrace.size() > 5000) {
-        mCarTrace.removeFirst();
-    }
+        // Truncate traces
+        while (mCarTrace.size() > 5000) {
+            mCarTrace.removeFirst();
+        }
 
-    while (mCarTraceGps.size() > 1800) {
-        mCarTraceGps.removeFirst();
-    }
+        while (mCarTraceGps.size() > 1800) {
+            mCarTraceGps.removeFirst();
+        }
 
-    while (mCarTraceUwb.size() > 5000) {
-        mCarTraceUwb.removeFirst();
+        while (mCarTraceUwb.size() > 5000) {
+            mCarTraceUwb.removeFirst();
+        }
     }
 }
 
@@ -2600,7 +2694,6 @@ QList<LocPoint>::const_iterator MapRoute::end() const
 double MapRoute::getArea()
 {
     int n = this->size();
-    qDebug() << "Points: " << n;
     double area = 0.0;
 
     for (int i = 0; i < n; ++i) {
@@ -2911,10 +3004,6 @@ int MapRouteCollection::size()
 
 MapRoute& MapRouteCollection::getCurrent()
 {
-    qDebug() << "In getCurrent!";
-    qDebug() << "mRouteNow:" << mRouteNow;
-    qDebug() << "Size: " <<  mCollection.size();
-
     return mCollection[mRouteNow];
 }
 

@@ -104,8 +104,8 @@ int main(int argc, char *argv[])
     bool logUsb = false;
     QString logUsbDir = QDir::currentPath() + "/logs";
     bool inputRtcm = false;
-    QString ttyPortRtcm = "/dev/ttyUSB0";
-//    QString ttyPortRtcm = "/dev/ttyACMO";
+//    QString ttyPortRtcm = "/dev/ttyUSB0";
+    QString ttyPortRtcm = "/dev/ttyACMO";
     int rtcmBaud = 9600;
     bool useChronos = false;
     int chronosTxId = -1;

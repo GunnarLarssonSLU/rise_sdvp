@@ -142,6 +142,8 @@ public:
     void clearField();
     void clearAllFields();
 
+    void setTrace(QVector<LocPoint> mTrace);
+
     void setRoutePointSpeed(double speed);
     void addInfoPoint(LocPoint &info, bool updateMap = true);
     void clearInfoTrace();
@@ -219,8 +221,12 @@ public:
 
     bool loadXMLRoute(QXmlStreamReader* stream,bool isBorder);
     void saveXMLRoutes(QXmlStreamWriter* stream,bool withId);
+    void saveXMLRoute(QXmlStreamWriter* stream, MapRoute route,bool withId, int i);
+    void saveXMLCurrentRoute(QXmlStreamWriter* stream);
 
     std::array<double, 4> findExtremeValuesFieldBorders();
+    void setLogStart(int iStart);
+    void setLogEnd(int iEnd);
 signals:
     void scaleChanged(double newScale);
     void offsetChanged(double newXOffset, double newYOffset);
@@ -249,10 +255,11 @@ private:
     QVector<LocPoint> mCarTrace;
     QVector<LocPoint> mCarTraceGps;
     QVector<LocPoint> mCarTraceUwb;
+    QVector<LocPoint> mLoadedTrace;
+
     QList<LocPoint> mAnchors;
     MapRouteCollection* mFields;
     MapRouteCollection* mPaths;
-//    QList<MapRoute> mFieldborders;
     QList<QList<LocPoint>> mInfoTraces;
     //    QList<MapRoute> mInfoTraces;
     QList<LocPoint> mVisibleInfoTracePoints;
@@ -322,8 +329,11 @@ private:
     void paintCamera(QPainter &painter,QTransform txtTrans, int width,double &start_txt);
     void paintUnitZoomGeneralinfo(QPainter &painter,QFont font, QTransform txtTrans, int width, double stepGrid,QString& txt, const QColor textColor, double& start_txt,const double txtOffset,const double txt_row_h,    int& info_segments, int& info_points);
     void paintClosestPoint(QPainter &painter,QPen &pen,QTransform drawTrans, QTransform txtTrans, QPointF& pt_txt,QRectF &rect_txt );
+    void paintTraceVechicle(QPainter &painter,QPen &pen, QTransform drawTrans,QVector<LocPoint> mTrace,double traceWidth,QColor traceColour);
 
     bool focusBorder;
+    bool bUpdateable;
+    int iLogstart,iLogend;
 };
 
 class MapRoute
