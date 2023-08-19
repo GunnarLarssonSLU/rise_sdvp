@@ -28,7 +28,7 @@
        <enum>QTabWidget::North</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tabFarm">
        <attribute name="icon">
@@ -46,8 +46,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>756</width>
-          <height>510</height>
+          <width>759</width>
+          <height>512</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridlayout_3">
@@ -55,6 +55,13 @@
           <widget class="QPushButton" name="pushButton_location">
            <property name="text">
             <string>Add location</string>
+           </property>
+          </widget>
+         </item>
+         <item row="11" column="2">
+          <widget class="QPushButton" name="pushButton_path">
+           <property name="text">
+            <string>Add path</string>
            </property>
           </widget>
          </item>
@@ -150,7 +157,7 @@
          <item row="4" column="0">
           <widget class="QLabel" name="labelFieldname">
            <property name="text">
-            <string>Field name</string>
+            <string>Field name:</string>
            </property>
           </widget>
          </item>
@@ -176,9 +183,12 @@
           </widget>
          </item>
          <item row="10" column="2">
-          <widget class="QPushButton" name="pushButton">
+          <widget class="QLineEdit" name="pathnameEdit"/>
+         </item>
+         <item row="10" column="0">
+          <widget class="QLabel" name="label_6">
            <property name="text">
-            <string>Add path</string>
+            <string>Path name:</string>
            </property>
           </widget>
          </item>
@@ -753,109 +763,6 @@
          </item>
         </layout>
        </widget>
-       <widget class="QTabWidget" name="carsWidget">
-        <property name="geometry">
-         <rect>
-          <x>350</x>
-          <y>10</y>
-          <width>1531</width>
-          <height>701</height>
-         </rect>
-        </property>
-        <property name="currentIndex">
-         <number>-1</number>
-        </property>
-        <property name="tabsClosable">
-         <bool>true</bool>
-        </property>
-       </widget>
-       <widget class="QPushButton" name="tcpConnectButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>580</y>
-          <width>121</width>
-          <height>24</height>
-         </rect>
-        </property>
-        <property name="toolTip">
-         <string>Connect</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset resource="resources.qrc">
-          <normaloff>:/models/Icons/Connected-96.png</normaloff>:/models/Icons/Connected-96.png</iconset>
-        </property>
-       </widget>
-       <widget class="QPushButton" name="disconnectButton">
-        <property name="geometry">
-         <rect>
-          <x>130</x>
-          <y>580</y>
-          <width>121</width>
-          <height>31</height>
-         </rect>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>32</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Disconnect</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset resource="resources.qrc">
-          <normaloff>:/models/Icons/Disconnected-96.png</normaloff>:/models/Icons/Disconnected-96.png</iconset>
-        </property>
-       </widget>
-       <widget class="QPushButton" name="stopButton">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>610</y>
-          <width>121</width>
-          <height>50</height>
-         </rect>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>50</height>
-         </size>
-        </property>
-        <property name="font">
-         <font>
-          <pointsize>15</pointsize>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="toolTip">
-         <string>Stop all cars</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset resource="resources.qrc">
-          <normaloff>:/models/Icons/Stop Sign-96.png</normaloff>:/models/Icons/Stop Sign-96.png</iconset>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>48</width>
-          <height>48</height>
-         </size>
-        </property>
-       </widget>
        <widget class="QLabel" name="label">
         <property name="geometry">
          <rect>
@@ -888,6 +795,124 @@
          <enum>QAbstractItemView::SelectRows</enum>
         </property>
        </widget>
+       <widget class="QWidget" name="gridLayoutWidget_4">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>570</y>
+          <width>341</width>
+          <height>141</height>
+         </rect>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_13">
+         <item row="0" column="0">
+          <widget class="QPushButton" name="tcpConnectButton">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="toolTip">
+            <string>Connect</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="resources.qrc">
+             <normaloff>:/models/Icons/Connected-96.png</normaloff>:/models/Icons/Connected-96.png</iconset>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QPushButton" name="disconnectButton">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>32</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>Disconnect</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="resources.qrc">
+             <normaloff>:/models/Icons/Disconnected-96.png</normaloff>:/models/Icons/Disconnected-96.png</iconset>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0" colspan="2">
+          <widget class="QPushButton" name="stopButton">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>50</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>15</pointsize>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="toolTip">
+            <string>Stop all cars</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="resources.qrc">
+             <normaloff>:/models/Icons/Stop Sign-96.png</normaloff>:/models/Icons/Stop Sign-96.png</iconset>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>48</width>
+             <height>48</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="horizontalLayoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>350</x>
+          <y>10</y>
+          <width>1201</width>
+          <height>701</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_18">
+         <property name="sizeConstraint">
+          <enum>QLayout::SetNoConstraint</enum>
+         </property>
+         <item>
+          <widget class="QTabWidget" name="carsWidget">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>1</horstretch>
+             <verstretch>1</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>846</width>
+             <height>476</height>
+            </size>
+           </property>
+           <property name="currentIndex">
+            <number>-1</number>
+           </property>
+           <property name="tabsClosable">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </widget>
       <widget class="QWidget" name="tabMap">
        <attribute name="icon">
@@ -910,8 +935,14 @@
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
              <horstretch>1</horstretch>
-             <verstretch>0</verstretch>
+             <verstretch>1</verstretch>
             </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>846</width>
+             <height>476</height>
+            </size>
            </property>
           </widget>
           <widget class="QWidget" name="layoutWidget">
@@ -1511,39 +1542,8 @@
                    <property name="spacing">
                     <number>2</number>
                    </property>
-                   <item row="0" column="0">
-                    <widget class="QLabel" name="label_5">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="minimumSize">
-                      <size>
-                       <width>24</width>
-                       <height>24</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>24</width>
-                       <height>24</height>
-                      </size>
-                     </property>
-                     <property name="text">
-                      <string/>
-                     </property>
-                     <property name="pixmap">
-                      <pixmap resource="resources.qrc">:/models/Icons/Controller-96.png</pixmap>
-                     </property>
-                     <property name="scaledContents">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="2" column="2">
-                    <widget class="QPushButton" name="WgConnectPushButton">
+                   <item row="2" column="3">
+                    <widget class="QPushButton" name="WgDisconnectPushButton">
                      <property name="enabled">
                       <bool>true</bool>
                      </property>
@@ -1564,39 +1564,7 @@
                      </property>
                      <property name="icon">
                       <iconset resource="resources.qrc">
-                       <normaloff>:/models/Icons/Connected-96.png</normaloff>:/models/Icons/Connected-96.png</iconset>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="2" column="0">
-                    <widget class="QLabel" name="label_14">
-                     <property name="text">
-                      <string>WG</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="0">
-                    <widget class="QLabel" name="label_12">
-                     <property name="minimumSize">
-                      <size>
-                       <width>24</width>
-                       <height>24</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>24</width>
-                       <height>24</height>
-                      </size>
-                     </property>
-                     <property name="text">
-                      <string/>
-                     </property>
-                     <property name="pixmap">
-                      <pixmap resource="resources.qrc">:/models/Icons/Satellite-96.png</pixmap>
-                     </property>
-                     <property name="scaledContents">
-                      <bool>true</bool>
+                       <normaloff>:/models/Icons/Disconnected-96.png</normaloff>:/models/Icons/Disconnected-96.png</iconset>
                      </property>
                     </widget>
                    </item>
@@ -1630,37 +1598,97 @@
                      </item>
                     </layout>
                    </item>
-                   <item row="1" column="2">
-                    <widget class="QPushButton" name="ntripConnectButton">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
+                   <item row="0" column="1">
+                    <widget class="QLabel" name="jsConnectedLabel">
+                     <property name="styleSheet">
+                      <string notr="true">color: red</string>
                      </property>
-                     <property name="baseSize">
+                     <property name="text">
+                      <string>Not connected</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="QLabel" name="ntripConnectedLabel">
+                     <property name="text">
+                      <string>Not connected</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_12">
+                     <property name="minimumSize">
                       <size>
                        <width>24</width>
                        <height>24</height>
                       </size>
                      </property>
-                     <property name="toolTip">
-                      <string>Connect</string>
+                     <property name="maximumSize">
+                      <size>
+                       <width>24</width>
+                       <height>24</height>
+                      </size>
                      </property>
                      <property name="text">
                       <string/>
                      </property>
-                     <property name="icon">
-                      <iconset resource="resources.qrc">
-                       <normaloff>:/models/Icons/Connected-96.png</normaloff>:/models/Icons/Connected-96.png</iconset>
+                     <property name="pixmap">
+                      <pixmap resource="resources.qrc">:/models/Icons/Satellite-96.png</pixmap>
+                     </property>
+                     <property name="scaledContents">
+                      <bool>true</bool>
                      </property>
                     </widget>
                    </item>
-                   <item row="2" column="3">
-                    <widget class="QPushButton" name="WgDisconnectPushButton">
-                     <property name="enabled">
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_5">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="minimumSize">
+                      <size>
+                       <width>24</width>
+                       <height>24</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>24</width>
+                       <height>24</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string/>
+                     </property>
+                     <property name="pixmap">
+                      <pixmap resource="resources.qrc">:/models/Icons/Controller-96.png</pixmap>
+                     </property>
+                     <property name="scaledContents">
                       <bool>true</bool>
                      </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="0" rowspan="2" colspan="4">
+                    <widget class="QTableView" name="vehiclestatusTable">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Ignored" vsizetype="MinimumExpanding">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="minimumSize">
+                      <size>
+                       <width>120</width>
+                       <height>100</height>
+                      </size>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="3">
+                    <widget class="QPushButton" name="jsDisconnectButton">
                      <property name="sizePolicy">
                       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
                        <horstretch>0</horstretch>
@@ -1682,20 +1710,29 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="1" column="1">
-                    <widget class="QLabel" name="ntripConnectedLabel">
-                     <property name="text">
-                      <string>Not connected</string>
+                   <item row="2" column="2">
+                    <widget class="QPushButton" name="WgConnectPushButton">
+                     <property name="enabled">
+                      <bool>true</bool>
                      </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="1">
-                    <widget class="QLabel" name="jsConnectedLabel">
-                     <property name="styleSheet">
-                      <string notr="true">color: red</string>
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="baseSize">
+                      <size>
+                       <width>24</width>
+                       <height>24</height>
+                      </size>
                      </property>
                      <property name="text">
-                      <string>Not connected</string>
+                      <string/>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="resources.qrc">
+                       <normaloff>:/models/Icons/Connected-96.png</normaloff>:/models/Icons/Connected-96.png</iconset>
                      </property>
                     </widget>
                    </item>
@@ -1808,59 +1845,6 @@
                      </layout>
                     </widget>
                    </item>
-                   <item row="0" column="2">
-                    <widget class="QPushButton" name="jsConnectButton">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="baseSize">
-                      <size>
-                       <width>24</width>
-                       <height>24</height>
-                      </size>
-                     </property>
-                     <property name="text">
-                      <string/>
-                     </property>
-                     <property name="icon">
-                      <iconset resource="resources.qrc">
-                       <normaloff>:/models/Icons/Connected-96.png</normaloff>:/models/Icons/Connected-96.png</iconset>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="3">
-                    <widget class="QPushButton" name="jsDisconnectButton">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="baseSize">
-                      <size>
-                       <width>24</width>
-                       <height>24</height>
-                      </size>
-                     </property>
-                     <property name="text">
-                      <string/>
-                     </property>
-                     <property name="icon">
-                      <iconset resource="resources.qrc">
-                       <normaloff>:/models/Icons/Disconnected-96.png</normaloff>:/models/Icons/Disconnected-96.png</iconset>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="2" column="1">
-                    <widget class="QLabel" name="wgStatusLabel">
-                     <property name="text">
-                      <string>Status:</string>
-                     </property>
-                    </widget>
-                   </item>
                    <item row="6" column="0" colspan="4">
                     <widget class="QSpinBox" name="pollIntervalBox">
                      <property name="toolTip">
@@ -1883,19 +1867,66 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="3" column="0" rowspan="2" colspan="4">
-                    <widget class="QTableView" name="vehiclestatusTable">
+                   <item row="1" column="2">
+                    <widget class="QPushButton" name="ntripConnectButton">
                      <property name="sizePolicy">
-                      <sizepolicy hsizetype="Ignored" vsizetype="MinimumExpanding">
+                      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
                        <horstretch>0</horstretch>
                        <verstretch>0</verstretch>
                       </sizepolicy>
                      </property>
-                     <property name="minimumSize">
+                     <property name="baseSize">
                       <size>
-                       <width>120</width>
-                       <height>100</height>
+                       <width>24</width>
+                       <height>24</height>
                       </size>
+                     </property>
+                     <property name="toolTip">
+                      <string>Connect</string>
+                     </property>
+                     <property name="text">
+                      <string/>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="resources.qrc">
+                       <normaloff>:/models/Icons/Connected-96.png</normaloff>:/models/Icons/Connected-96.png</iconset>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="0">
+                    <widget class="QLabel" name="label_14">
+                     <property name="text">
+                      <string>WG</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="1">
+                    <widget class="QLabel" name="wgStatusLabel">
+                     <property name="text">
+                      <string>Status:</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="2">
+                    <widget class="QPushButton" name="jsConnectButton">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="baseSize">
+                      <size>
+                       <width>24</width>
+                       <height>24</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string/>
+                     </property>
+                     <property name="icon">
+                      <iconset resource="resources.qrc">
+                       <normaloff>:/models/Icons/Connected-96.png</normaloff>:/models/Icons/Connected-96.png</iconset>
                      </property>
                     </widget>
                    </item>
@@ -3543,6 +3574,32 @@
          </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_17"/>
+       </widget>
+       <widget class="QSlider" name="horizontalSliderStart">
+        <property name="geometry">
+         <rect>
+          <x>270</x>
+          <y>580</y>
+          <width>431</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+       <widget class="QSlider" name="horizontalSliderEnd">
+        <property name="geometry">
+         <rect>
+          <x>270</x>
+          <y>610</y>
+          <width>441</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
        </widget>
       </widget>
       <widget class="QWidget" name="tab_19">

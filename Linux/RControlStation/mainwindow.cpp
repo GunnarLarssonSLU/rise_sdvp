@@ -337,10 +337,18 @@ MainWindow::MainWindow(QWidget *parent) :
     // Set the model and hide the ID column:
     ui->fieldTable->setModel(modelField);
     ui->fieldTable->setColumnHidden(modelField->fieldIndex("id"), true);
+    ui->fieldTable->setColumnHidden(modelField->fieldIndex("location"), true);
+    ui->fieldTable->setColumnHidden(modelField->fieldIndex("boundaryXML"), true);
     ui->fieldTable->setSelectionMode(QAbstractItemView::SingleSelection);
   //  ui->fieldTable->setSelectionModel(new QItemSelectionModel( ui->fieldTable->model()));
     ui->fieldTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui->fieldTable->setItemDelegateForColumn(3, checkboxdelegate);
+
+    modelPath = new QSqlRelationalTableModel(ui->pathTable);
+    //    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
+    modelPath->setEditStrategy(QSqlTableModel::OnFieldChange);
+    modelPath->setTable("paths");
+
 
     // Connect the signal from the first table view to a custom slot
         QObject::connect(ui->farmTable->selectionModel(), &QItemSelectionModel::currentChanged, [&](const QModelIndex& current, const QModelIndex& previous)
@@ -353,7 +361,9 @@ MainWindow::MainWindow(QWidget *parent) :
             double lat = modelFarm->data(modelFarm->index(row, 3)).toDouble();
             ui->mapWidgetFields->setEnuRef(lat,lon,0);
             ui->mapWidgetFields->clearAllFields();
+            ui->mapWidgetFields->clearAllPaths();
             ui->mapWidget->setEnuRef(lat,lon,0);
+            ui->mapWidgetLog->setEnuRef(lat,lon,0);
 
             // Get the selected value from the first table view
             QVariant selectedValue = id;
@@ -364,6 +374,10 @@ MainWindow::MainWindow(QWidget *parent) :
             // Set the new query for the QSqlRelationalTableModel
             modelField->setFilter(filter);
             modelField->select();
+            //To make sure the path table view is empty until a field has been selected
+            QString filter2 = QString("field = %1").arg(0);
+            modelPath->setFilter(filter2);
+            modelPath->select();
 
             // Execute the SQL query
             QString querystring= QString("SELECT * FROM fields WHERE location = %1").arg(selectedValue.toString());
@@ -394,7 +408,7 @@ MainWindow::MainWindow(QWidget *parent) :
                 ui->mapWidgetFields->setScaleFactor(std::min(scalex,scaley));
                 ui->mapWidget->moveView(offsetx_m, offsety_m);
                 ui->mapWidget->setScaleFactor(std::min(scalex,scaley));
-                ui->fieldTable->selectRow(0);
+//                ui->fieldTable->selectRow(0);
             } else
             {
                 ui->mapWidgetFields->moveView(0, 0);
@@ -402,22 +416,19 @@ MainWindow::MainWindow(QWidget *parent) :
                 // If no fields set a zoom matching a with of about 500 m -> scalefactor=0.5/500=0.001
                 ui->mapWidgetFields->setScaleFactor(0.001);
                 ui->mapWidget->setScaleFactor(0.001);
-            }
+            }/*
             if (ui->pathTable->model()->rowCount()>0)
             {
                 ui->pathTable->selectRow(0);
-            }
+            }*/
             on_ntripDisconnectButton_clicked();
             ntripConnect(row);
         });
 
-    QSqlRelationalTableModel *modelField=this->modelFarm;
-    QSqlRelationalTableModel *modelPath=this->modelPath;
 
-  modelPath = new QSqlRelationalTableModel(ui->pathTable);
-  //    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
-  modelPath->setEditStrategy(QSqlTableModel::OnFieldChange);
-  modelPath->setTable("paths");
+
+  QSqlRelationalTableModel *modelField=this->modelFarm;
+  QSqlRelationalTableModel *modelPath=this->modelPath;
 
   // Remember the indexes of the columns:
   int fieldIdx = modelPath->fieldIndex("field");
@@ -443,23 +454,28 @@ MainWindow::MainWindow(QWidget *parent) :
   ui->pathTable->setCurrentIndex(modelPath->index(0, 0));
 
   MapWidget *mapFields=ui->mapWidgetFields;
+  MapWidget *mapDrive=ui->mapWidget;
+  mapDrive->setBorderFocus(false);
+
   QLabel *areaLabel=ui->label_area_ha;
   QComboBox *selectedRoute=ui->mapRouteBox;
 
   QObject::connect(ui->fieldTable->selectionModel(), &QItemSelectionModel::currentChanged,
-                   [modelField,modelPath,mapFields,selectedRoute,areaLabel](const QModelIndex& current, const QModelIndex& previous)
+                   [modelField,modelPath,mapFields,mapDrive,selectedRoute,areaLabel](const QModelIndex& current, const QModelIndex& previous)
        {
+//      if (previous.row()!=-1)   // Something actually selected
+//    {
        int row = current.row();
 
        // Retrieve the data of the selected row if needed
        int id = modelField->data(modelField->index(row, 0)).toInt();
-    //                       QString name = modelField->data(modelField->index(row, 1)).toString();
-    //                       QString xmlText = modelField->data(modelField->index(row, 4)).toString();
+
        mapFields->setFieldNow(row);
        MapRoute border=mapFields->getField();
        double area=border.getArea();
        areaLabel->setText(QString::number(area));
        mapFields->clearAllPaths();
+       mapDrive->clearAllPaths();
 
        // Construct a new query based on the selected value
        QString filter = QString("field = %1").arg(id);
@@ -481,35 +497,66 @@ MainWindow::MainWindow(QWidget *parent) :
            selectedRoute->addItem(name.toString(), id);
        }
 
-
        // Execute the SQL query
        QString querystring= QString("SELECT * FROM paths WHERE field = %1").arg(QString::number(id));
        QSqlQuery query(querystring);
+  //     QMessageBox msg;
        while (query.next()) {
            // Access data for each record
            QString pathXML= query.value("xml").toString();
            QXmlStreamReader xmlData(pathXML);
+           QXmlStreamReader xmlData2(pathXML);
            mapFields->loadXMLRoute(&xmlData,false);
+           mapDrive->loadXMLRoute(&xmlData2,false);
+//           msg.setText("Looping!");
+//           msg.exec();
        }
+       mapDrive->update();
+ //     };
        mapFields->setBorderFocus(true);
 //       mapFields->setRouteNow();   // Make sure that no route is set automatically (in order to make it easier to edit)
-
     });
 
   QObject::connect(ui->pathTable->selectionModel(), &QItemSelectionModel::currentChanged,
                    [modelPath,mapFields,selectedRoute,areaLabel](const QModelIndex& current, const QModelIndex& previous)
     {
-       mapFields->setBorderFocus(false);
-       mapFields->update();
-       int row = current.row();
+      if (previous.row()!=-1)   // Something actually selected
+          {
+           mapFields->setBorderFocus(false);
+           mapFields->update();
+           int row = current.row();
 
-       // Retrieve the data of the selected row if needed
-       int id = modelPath->data(modelPath->index(row, 0)).toInt();
-       QMessageBox msg;
-       msg.setText("Selected path! Row: " + QString::number(row) + ", id: " +QString::number(id));
-       msg.exec();
+           // Retrieve the data of the selected row if needed
+           int id = modelPath->data(modelPath->index(row, 0)).toInt();
+           QMessageBox msg;
+           msg.setText("Selected path! Row: " + QString::number(row) + ", previous row: " + QString::number(previous.row()) + "id: " +QString::number(id));
+           msg.exec();
+          }
   });
 
+  ui->fieldTable->installEventFilter(&filterFieldtable);
+  QObject::connect(&filterFieldtable, &FocusEventFilter::focusGained, [mapFields]() {
+      qDebug() << "Focus gained Fields";
+  });
+  ui->pathTable->installEventFilter(&filterPathtable);
+
+  QObject::connect(&filterPathtable, &FocusEventFilter::focusGained, [mapFields]() {
+      mapFields->setBorderFocus(false);
+      mapFields->update();
+      qDebug() << "Focus gained Paths";
+  });
+
+/*
+  QObject::connect(ui->pathTable, &QWidget::focusIn,
+                   [mapFields]()
+                   {
+                           mapFields->setBorderFocus(false);
+                           mapFields->update();
+                           QMessageBox msg;
+                           msg.setText("PathTable got focus!");
+                           msg.exec();
+                   });
+*/
 
     // Create the data model:
     modelVehicle = new QSqlRelationalTableModel(ui->vehicleTable);
@@ -567,7 +614,6 @@ MainWindow::MainWindow(QWidget *parent) :
     int rowCount = modelVehicle->rowCount();
 
 
-    //    data << "Apple" << "Banana" << "Orange" << "Grapes" << "Mango";
     // Access the data from the first column of the source model
     for (int row = 0; row < rowCount; ++row) {
         // Assuming the first column of the source model is the one you want to fetch
@@ -653,6 +699,27 @@ QChart *chart = new QChart();
 
     connect(ui->loadTrackButton, &QPushButton::clicked, this, &MainWindow::onLoadLogFile);
 
+    ui->mapWidgetLog->update();
+    ui->horizontalSliderStart->setValue(0);
+
+    MapWidget* logWidget=ui->mapWidgetLog;
+
+    // Connect the valueChanged signal to a slot function
+    QObject::connect(ui->horizontalSliderStart, &QSlider::valueChanged, [logWidget](int newValue) {
+                // This lambda function will be called whenever the slider's value changes
+                // The 'newValue' parameter contains the updated value of the slider
+        qDebug() << "Slider value (start) changed: " << newValue;
+               logWidget->setLogStart(newValue);
+            });
+
+    // Connect the valueChanged signal to a slot function
+    QObject::connect(ui->horizontalSliderEnd, &QSlider::valueChanged, [logWidget](int newValue) {
+        // This lambda function will be called whenever the slider's value changes
+        // The 'newValue' parameter contains the updated value of the slider
+        qDebug() << "Slider value (end) changed: " << newValue;
+        logWidget->setLogEnd(newValue);
+    });
+
     ui->mainTabWidget->removeTab(8);
     ui->mainTabWidget->removeTab(7);
     ui->mainTabWidget->removeTab(6);
@@ -667,6 +734,9 @@ void MainWindow::onLoadLogFile()
 {
     // Handle the file selection and update the line edit
     QString filename = QFileDialog::getOpenFileName(this, "Open File", "", "CSV Files (*.csv);;All Files (*)");
+    QVector<LocPoint> mTrace;
+    coords_polar vehicle_polar;
+    coords_cartesian vehicle_enu;
 
     if (!filename.isEmpty()) {
         // Set the selected file path to the line edit
@@ -691,24 +761,37 @@ void MainWindow::onLoadLogFile()
         double lontmp;
         double londgr;
         double lon;
+        double height;
         in.readLine();
         in.readLine();
         in.readLine();
         QString csvLine = in.readLine();
+        qDebug() << "csvline: " << csvLine;
         QStringList substrings= csvLine.split(",");
+        QString time1,time2;
         switch (substrings.size())
         {
         case 15:
             format=1;
+            time1=substrings.at(1);
             break;
         case 24:
             format=2;
+            time1=substrings.at(0);
             break;
         }
+        double llh[3]={0.0,0.0,0.0};
+        double *llhp=llh;
+        ui->mapWidgetLog->getEnuRef(llhp);
+        coords_polar basestation_polar;
+        basestation_polar.lat=llhp[0];
+        basestation_polar.lon=llhp[1];
+        basestation_polar.h=llhp[2];
+        coords_matrix basestation_matrix=toOrientationMatrix(basestation_polar);
+        coords_cartesian basestation_cartesian=toCartesian(basestation_polar);
+
         // && (a<10)
         while (!in.atEnd()) {
-//            qDebug() << "Looping";
-//            qDebug() << csvLine;
             substrings= csvLine.split(",");
             if (first)
             {
@@ -725,22 +808,48 @@ void MainWindow::onLoadLogFile()
                 lontmp=substrings.at(4).toDouble()/100;
                 londgr=std::floor(lontmp);
                 lon=londgr+(lontmp-londgr)/0.6;
+                lontmp=substrings.at(4).toDouble()/100;
+                height=substrings.at(9).toDouble();
                 break;
             case 2:
                 lat=substrings.at(19).toDouble();
                 lon=substrings.at(20).toDouble();
+                break;
             }
-            qDebug() << "Lat.:" << lat << ", lon.: " << lon;
+            vehicle_polar.lat=lat;
+            vehicle_polar.lon=lon;
+            vehicle_polar.h=height;
+            vehicle_enu=toEnu(basestation_cartesian,basestation_matrix,vehicle_polar);
+            LocPoint toAdd;
+            toAdd.setX(vehicle_enu.x);
+            toAdd.setY(vehicle_enu.y);
+            mTrace.append(toAdd);
+//            qDebug() << "Lat.:" << lat << ", lon.: " << lon;
 
             // Process the line (e.g., split it by commas to get individual fields)
             csvLine = in.readLine();
             a++;
         }
-
+        switch(format)
+        {
+        case 1:
+            time2=substrings.at(1);
+            break;
+        case 2:
+            time2=substrings.at(0);
+            break;
+        }
+        qDebug() << "time 1: " << time1 << ", time 2: " << time2;
         file.close();
+        ui->mapWidgetLog->setTrace(mTrace);
+        ui->horizontalSliderStart->setValue(0);
+        qDebug() << "Slide start set!";
+        ui->horizontalSliderEnd->setValue(99);
+        qDebug() << "All loaded!";
     } else {
         qDebug() << "No file selected!";
     }
+
 }
 
 MainWindow::~MainWindow()
@@ -822,7 +931,7 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
             case Qt::Key_Return:
                 QByteArray byteArray;
                 QXmlStreamWriter stream(&byteArray);
-                ui->mapWidgetFields->saveXMLRoutes(&stream,false);
+                ui->mapWidgetFields->saveXMLCurrentRoute(&stream);
                 QString xmlString = QString::fromUtf8(byteArray);
                 QModelIndexList selectedIndexes = selectionModel->selectedIndexes();
                 if (selectedIndexes.isEmpty()) {
@@ -837,8 +946,11 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
                 ui->fieldTable->show();
                 return true;
               }
-            qDebug() << "Done";
       }
+        if (object == ui->pathTable)
+        {
+              qDebug() << "in pathdtable";
+        }
 
     }
 
@@ -1007,6 +1119,7 @@ void MainWindow::timerSlot()
         if (mJoystick->isConnected()) {
 
                 mThrottle = -mJoystick->axisLeftY();
+        qDebug() << "mThrottle" << mThrottle;
                 deadband(mThrottle,0.1, 1.0);
                 mSteering = mJoystick->axisRightX();
                 // qDebug () << "Throttle: " << mThrottle << ", Steering: " << mSteering;
@@ -3102,4 +3215,100 @@ void CustomDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option
     }
 
     QStyledItemDelegate::paint(painter, newOption, index);*/
+}
+
+bool FocusEventFilter::eventFilter(QObject* watched, QEvent* event)
+{
+    if (event->type() == QEvent::FocusIn)
+    {
+        emit focusGained();
+    }
+    else if (event->type() == QEvent::FocusOut)
+    {
+        emit focusLost();
+    }
+
+    return QObject::eventFilter(watched, event);
+};
+
+coords_matrix toOrientationMatrix(coords_polar cp)
+{
+float so = sinf(cp.lon * M_PI / 180.0);
+float co = cosf(cp.lon * M_PI / 180.0);
+float sa = sinf(cp.lat * M_PI / 180.0);
+float ca = cosf(cp.lat * M_PI / 180.0);
+
+coords_matrix retur;
+// ENU
+retur.r1c1 = -so;
+retur.r1c2 = co;
+retur.r1c3 = 0.0;
+
+retur.r2c1 = -sa * co;
+retur.r2c2 = -sa * so;
+retur.r2c3 = ca;
+
+retur.r3c1 = ca * co;
+retur.r3c2 = ca * so;
+retur.r3c3 = sa;
+return retur;
+}
+
+coords_cartesian toCartesian(coords_polar cp)
+{
+    double sinp = sin(cp.lat * D_PI / D(180.0));
+    double cosp = cos(cp.lat * D_PI / D(180.0));
+    double sinl = sin(cp.lon * D_PI / D(180.0));
+    double cosl = cos(cp.lon * D_PI / D(180.0));
+    double e2 = FE_WGS84 * (2.0 - FE_WGS84);
+    double v = RE_WGS84 / sqrt(1.0 - e2 * sinp * sinp);
+
+    coords_cartesian retur;
+
+    retur.x = (v + cp.h) * cosp * cosl;
+    retur.y = (v + cp.h) * cosp * sinl;
+    retur.z = (v * (1.0 - e2) + cp.h) * sinp;
+    return retur;
+
+}
+
+coords_cartesian toEnu(coords_polar basestation,coords_polar vehicle)
+{
+    // Convert llh to ecef
+    coords_cartesian basestation_cartesian=toCartesian(basestation);
+    coords_cartesian vehicle_cartesian=toCartesian(vehicle);
+
+
+    // Continue if ENU frame is initialized
+    float dx = vehicle_cartesian.x - basestation_cartesian.x;
+    float dy = vehicle_cartesian.y - basestation_cartesian.y;
+    float dz = vehicle_cartesian.z - basestation_cartesian.z;
+
+    coords_cartesian retur;
+    coords_matrix orientation=toOrientationMatrix(basestation);
+
+    retur.x = orientation.r1c1 * dx + orientation.r1c2 * dy + orientation.r1c3 * dz;
+    retur.y = orientation.r2c1 * dx + orientation.r2c2 * dy + orientation.r2c3 * dz;
+    retur.z = orientation.r3c1 * dx + orientation.r3c2 * dy + orientation.r3c3 * dz;
+
+    return retur;
+}
+
+coords_cartesian toEnu(coords_cartesian basestation,coords_matrix orientation,coords_polar vehicle)
+{
+    // Convert llh to ecef
+    coords_cartesian vehicle_cartesian=toCartesian(vehicle);
+
+
+    // Continue if ENU frame is initialized
+    float dx = vehicle_cartesian.x - basestation.x;
+    float dy = vehicle_cartesian.y - basestation.y;
+    float dz = vehicle_cartesian.z - basestation.z;
+
+    coords_cartesian retur;
+    retur.x = orientation.r1c1 * dx + orientation.r1c2 * dy + orientation.r1c3 * dz;
+    retur.y = orientation.r2c1 * dx + orientation.r2c2 * dy + orientation.r2c3 * dz;
+    retur.z = orientation.r3c1 * dx + orientation.r3c2 * dy + orientation.r3c3 * dz;
+
+    return retur;
 }

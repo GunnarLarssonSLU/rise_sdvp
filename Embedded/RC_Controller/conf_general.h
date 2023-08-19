@@ -48,9 +48,9 @@
 //#define EBIKE_BENJAMIN // Benjamins ebike
 
 
-//#define IS_DRANGEN
+#define IS_DRANGEN
 
-#define IS_MACTRAC
+//#define IS_MACTRAC
 
 // MacTrac
 // Steering Center: 210
@@ -74,19 +74,55 @@
 #define IS_F9_BOARD					1
 
 #endif
-
+/*
 #ifdef IS_DRANGEN
 #define HAS_HYDRAULIC_DRIVE			0
+//#define HAS_DIFF_STEERING            0
 #define HAS_DIFF_STEERING            0
 #define VESC_THROTTLE_ID		76
 #define VESC_STEERING_ID		113
-#define SERVO_VESC_ID				0
-#define VESC_ID				0                        // NY
-#define DIFF_STEERING_VESC_LEFT      76
-#define DIFF_STEERING_VESC_RIGHT      113
+//#define SERVO_VESC_ID				0
+//#define VESC_ID				0                        // NY
+//#define DIFF_STEERING_VESC_LEFT      76
+//#define DIFF_STEERING_VESC_RIGHT      113
+
+
+#define DIFF_STEERING_VESC_LEFT      0
+#define DIFF_STEERING_VESC_RIGHT      0
+
 #define IS_F9_BOARD					1
 //#define UBLOX_IS_F9P				1
 #endif
+*/
+
+
+#ifdef IS_DRANGEN
+#define HAS_HYDRAULIC_DRIVE			1
+#define HAS_DIFF_STEERING            1
+
+#define DIFF_STEERING_VESC_LEFT 113
+//#define DIFF_STEERING_VESC_RIGHT 0
+
+#define SERVO_VESC_S1				178.0 // Left
+#define SERVO_VESC_S2				240.0 // Right
+//#define SERVO_VESC_S1				-20.0 // Left
+//#define SERVO_VESC_S2				40.0 // Right
+#define USE_ADCONV_FOR_VIN
+#define SERVO_VESC_HYDRAULIC
+#define HYDRAULIC_HAS_SPEED_SENSOR
+#define SERVO_VESC_ID				0
+#define SERVO_VESC_INVERTED			0
+//#define SERVO_VESC_P_GAIN			3.0
+//#define SERVO_VESC_I_GAIN			5.0
+//#define SERVO_VESC_D_GAIN			1.0
+#define SERVO_VESC_DEADBAND_COMP    0.2
+#define IS_F9_BOARD					1
+#endif
+
+
+
+
+
 
 // Differential steering
 #ifndef HAS_DIFF_STEERING

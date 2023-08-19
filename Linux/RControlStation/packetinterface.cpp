@@ -616,6 +616,7 @@ bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_pac
 //    qDebug() << "Sending over something else:";
 //    qDebug() << "data(2):" << sendData.at(2);
     qDebug() << "data(3):" << (int) sendData.at(3);
+    qDebug() << "data(4):" << (int) sendData.at(4);
 
     emit dataToSend(sendData);
 
@@ -1229,7 +1230,7 @@ void PacketInterface::setRcControlCurrentBrake(quint8 id, double current, double
 
 void PacketInterface::setRcControlDuty(quint8 id, double duty, double steering)
 {
-	qDebug() << "Setting Duty";
+    qDebug() << "Setting Duty (PacketInterface): " << duty << ":: " << steering ;
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_RC_CONTROL;

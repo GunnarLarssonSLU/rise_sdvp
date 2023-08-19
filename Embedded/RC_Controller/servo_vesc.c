@@ -173,6 +173,7 @@ static THD_FUNCTION(servo_thread, arg) {
 			m_not_ok_cnt = 0;
 		} else {
 			m_not_ok_cnt++;
+			m_not_ok_cnt = 0; // FOR TESTING, REMOVE!!!
 		}
 
 #ifdef SERVO_VESC_HYDRAULIC

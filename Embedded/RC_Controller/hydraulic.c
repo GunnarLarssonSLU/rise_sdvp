@@ -146,7 +146,7 @@ void hydraulic_set_throttle_raw(float throttle) {
 #endif
 
 	float pos = utils_map(throttle, -1.0, 1.0, 0.0, 1.0);
-	showData=pos;
+//	showData=pos;
 	pwm_esc_set(SERVO_LEFT, pos);
 	pwm_esc_set(SERVO_RIGHT, 1.0 - pos);
 }

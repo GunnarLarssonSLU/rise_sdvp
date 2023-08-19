@@ -64,7 +64,7 @@ static void rtcm_base_rx(rtcm_ref_sta_pos_t *pos);
 // Private variables
 static rtcm3_state m_rtcm_state;
 
-float showData=0.0;
+float showData=0.1;
 
 
 void commands_init(void) {
@@ -125,7 +125,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 	if (!len) {
 		return;
 	}
-
 	if (data[0] == RTCM3PREAMB) {
 		for (unsigned int i = 0;i < len;i++) {
 			rtcm3_input_data(data[i], &m_rtcm_state);
@@ -144,13 +143,13 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 	data++;
 	len--;
 
+
 	if (id == main_id || id == ID_ALL || id == ID_CAR_CLIENT) {
 		int id_ret = main_id;
 
 		if (id == ID_CAR_CLIENT) {
 			id_ret = ID_CAR_CLIENT;
 		}
-
 		switch (packet_id) {
 		// ==================== General commands ==================== //
 		case CMD_TERMINAL_CMD: {
@@ -910,6 +909,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 		} break;
 
 		case CMD_VESC_FWD:
+			showData=999;
 			timeout_reset();
 			commands_set_send_func(func);
 
@@ -920,6 +920,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 
 		case CMD_RC_CONTROL: {
 			timeout_reset();
+			showData=33;
 
 			RC_MODE mode;
 			float throttle, steering;
@@ -933,9 +934,10 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 
 			autopilot_set_active(false);
 
-	//		mode=RC_MODE_DUTY;
+			mode=RC_MODE_DUTY;
 			switch (mode) {
 			case RC_MODE_CURRENT:
+//				showData=111;
 				if (!main_config.car.disable_motor) {
 //					#if IS_DRANGEN
 		//				comm_can_lock_vesc();
@@ -950,6 +952,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 //					#endif
 
 					#if HAS_DIFF_STEERING
+						showData=42;
 						comm_can_lock_vesc();
 						comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
 						bldc_interface_set_current(throttle + throttle * steering);
@@ -958,9 +961,20 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 						comm_can_unlock_vesc();
 					#else
 						#if HAS_HYDRAULIC_DRIVE
-//							showData=throttle+10.0;
+						/*
+						/// TEMPORARY REMOVE SOON!!! START
+							comm_can_lock_vesc();
+						comm_can_set_vesc_id(113);
+						bldc_interface_set_duty_cycle(0.2);
+						comm_can_unlock_vesc();
+						comm_can_set_vesc_id(113);
+						bldc_interface_set_duty_cycle(0.3);
+						/// TEMPORARY REMOVE SOON!!! END
+						// REMOVE COMMENT FOR NEXT ONE!!!
+						*/
 							hydraulic_set_speed(throttle / 10);
 						#else
+							showData=222;
 							comm_can_lock_vesc();
 							comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
 							bldc_interface_set_current(throttle);
@@ -978,6 +992,8 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				break;
 
 			case RC_MODE_DUTY:
+				showData=142;
+
 				utils_truncate_number(&throttle, -1.0, 1.0);
 				if (!main_config.car.disable_motor) {
 /*					#if IS_DRANGEN
@@ -992,22 +1008,35 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 					#endif
 */
 					#if HAS_DIFF_STEERING
+					showData=143+throttle + throttle * steering;
 						comm_can_lock_vesc();
 						comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
 						bldc_interface_set_duty_cycle(throttle + throttle * steering);
-						comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
-						bldc_interface_set_duty_cycle(throttle - throttle * steering);
+//						comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
+//						bldc_interface_set_duty_cycle(throttle - throttle * steering);
 						comm_can_unlock_vesc();
 					#else
 						#if HAS_HYDRAULIC_DRIVE
 						//					hydraulic_set_speed(throttle * 10);
 							#ifdef IS_MACTRAC
-								showData=throttle+20.0;
+
+								showData=61;
+								/*
+								/// TEMPORARY REMOVE SOON!!! START
+								comm_can_lock_vesc();
+								comm_can_set_vesc_id(113);
+								bldc_interface_set_duty_cycle(throttle);
+								comm_can_unlock_vesc();
+								/// TEMPORARY REMOVE SOON!!! END
+								// REMOVE COMMENT FOR NEXT ONE!!!
+								 *
+								 */
 								hydraulic_set_throttle_raw(throttle);
 							#else
 								hydraulic_set_throttle_raw(throttle / 0.15);
 							#endif
 						#else
+							showData=24+throttle;
 							comm_can_lock_vesc();
 							comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
 							bldc_interface_set_duty_cycle(throttle);
