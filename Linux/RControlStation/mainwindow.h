@@ -29,7 +29,9 @@
 #include <QtSql>
 //#include <QtCharts>
 //#include <QtChartView>
-
+#include <QtWidgets>
+#include <QtCharts>
+#include <QScatterSeries>
 
 #include "carinterface.h"
 #include "packetinterface.h"
@@ -324,6 +326,12 @@ private:
     QSqlRelationalTableModel *modelPath;
     QSqlRelationalTableModel *modelVehicle;
     QStandardItemModel *modelVehiclestatus;
+    QScatterSeries scatterSeriesLog;
+    QChart chartLog;
+    QVector<QPointF> datasetX; // Fill this with your data
+    QVector<QPointF> datasetY; // Fill this with your data
+    QVector<QPointF> datasetSpeed; // Fill this with your data
+    QVector<QPointF> datasetAngle; // Fill this with your data
 
     // RTCM
     RtcmClient *mRtcm;

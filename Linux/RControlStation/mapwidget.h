@@ -227,6 +227,9 @@ public:
     std::array<double, 4> findExtremeValuesFieldBorders();
     void setLogStart(int iStart);
     void setLogEnd(int iEnd);
+    int Elements();
+    int firstElement();
+    int lastElement();
 signals:
     void scaleChanged(double newScale);
     void offsetChanged(double newXOffset, double newYOffset);
