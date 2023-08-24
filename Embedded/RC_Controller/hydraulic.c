@@ -224,19 +224,32 @@ static THD_FUNCTION(hydro_thread, arg) {
 				fmaxf(cnt.low_time_current, cnt.low_time_last);
 		m_speed_now = SIGN(m_throttle_set) * (wheel_diam * M_PI) / (time_last * cnts_per_rev);
 
+		showData=comm_can_io_board_lim_sw(0)*8+comm_can_io_board_lim_sw(1)*4+comm_can_io_board_lim_sw(2)*2+comm_can_io_board_lim_sw(3)+50*m_move_rear;
+
+		// comm_can_io_board_lim_sw(2) - Upp bak
+		// comm_can_io_board_lim_sw(3) - Ner bak
+
 		// Control hydraulic actuators
 		if (comm_can_io_board_lim_sw(0) && m_move_front == HYDRAULIC_MOVE_DOWN) {
 			m_move_front = HYDRAULIC_MOVE_STOP;
 		} else if (comm_can_io_board_lim_sw(1) && m_move_front == HYDRAULIC_MOVE_UP) {
 			m_move_front = HYDRAULIC_MOVE_STOP;
 		}
-// var x1 och x2 istf 0 och 1
+
+		if (comm_can_io_board_lim_sw(3) && m_move_rear == HYDRAULIC_MOVE_DOWN) {
+			m_move_rear = HYDRAULIC_MOVE_STOP;
+		} else if (comm_can_io_board_lim_sw(2) && m_move_rear == HYDRAULIC_MOVE_UP) {
+			m_move_rear = HYDRAULIC_MOVE_STOP;
+		}
+
+/*
+		// var x1 och x2 istf 0 och 1
 		if (comm_can_io_board_lim_sw(0) && m_move_rear == HYDRAULIC_MOVE_DOWN) {
 			m_move_rear = HYDRAULIC_MOVE_STOP;
 		} else if (comm_can_io_board_lim_sw(1) && m_move_rear == HYDRAULIC_MOVE_UP) {
 			m_move_rear = HYDRAULIC_MOVE_STOP;
 		}
-
+*/
 
 		if (move_last_front != m_move_front) {
 			move_last_front = m_move_front;

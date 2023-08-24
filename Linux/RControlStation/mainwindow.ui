@@ -265,8 +265,8 @@
        <widget class="QGroupBox" name="groupBoxRTCM">
         <property name="geometry">
          <rect>
-          <x>0</x>
-          <y>520</y>
+          <x>690</x>
+          <y>510</y>
           <width>661</width>
           <height>391</height>
          </rect>
@@ -461,10 +461,10 @@
        <widget class="QGroupBox" name="groupBoxPathPlanner">
         <property name="geometry">
          <rect>
-          <x>680</x>
-          <y>520</y>
-          <width>561</width>
-          <height>351</height>
+          <x>0</x>
+          <y>510</y>
+          <width>691</width>
+          <height>381</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -489,7 +489,23 @@
          <property name="bottomMargin">
           <number>4</number>
          </property>
-         <item row="6" column="0">
+         <item row="3" column="1">
+          <widget class="QSpinBox" name="visitEverySpinBox">
+           <property name="suffix">
+            <string> Row</string>
+           </property>
+           <property name="prefix">
+            <string>Visit Every </string>
+           </property>
+           <property name="maximum">
+            <number>100</number>
+           </property>
+           <property name="singleStep">
+            <number>2</number>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="0">
           <widget class="QGroupBox" name="groupBox_21">
            <property name="title">
             <string>Expert / Experimental</string>
@@ -521,7 +537,48 @@
            </layout>
           </widget>
          </item>
-         <item row="5" column="0" colspan="2">
+         <item row="1" column="0">
+          <widget class="QDoubleSpinBox" name="boundsFillSpeedSpinBox">
+           <property name="alignment">
+            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+           </property>
+           <property name="prefix">
+            <string>Speed: </string>
+           </property>
+           <property name="suffix">
+            <string> km/h</string>
+           </property>
+           <property name="minimum">
+            <double>3.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>20.000000000000000</double>
+           </property>
+           <property name="value">
+            <double>4.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QDoubleSpinBox" name="boundsFillSpacingSpinBox">
+           <property name="prefix">
+            <string>Spacing: </string>
+           </property>
+           <property name="suffix">
+            <string> m</string>
+           </property>
+           <property name="minimum">
+            <double>1.000000000000000</double>
+           </property>
+           <property name="singleStep">
+            <double>0.100000000000000</double>
+           </property>
+           <property name="value">
+            <double>3.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0" colspan="2">
           <widget class="QGroupBox" name="groupBox_22">
            <property name="title">
             <string>Front Tool Actuation</string>
@@ -588,23 +645,7 @@
            </layout>
           </widget>
          </item>
-         <item row="0" column="0">
-          <widget class="QDoubleSpinBox" name="boundsFillSpeedSpinBox">
-           <property name="alignment">
-            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-           </property>
-           <property name="prefix">
-            <string>Speed: </string>
-           </property>
-           <property name="suffix">
-            <string> km/h</string>
-           </property>
-           <property name="value">
-            <double>3.000000000000000</double>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
+         <item row="1" column="1">
           <widget class="QDoubleSpinBox" name="boundsFillSpeedInTurnsSpinBox">
            <property name="prefix">
             <string>Speed in Turns: </string>
@@ -612,12 +653,34 @@
            <property name="suffix">
             <string> km/h</string>
            </property>
+           <property name="minimum">
+            <double>3.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>20.000000000000000</double>
+           </property>
            <property name="value">
-            <double>2.000000000000000</double>
+            <double>4.000000000000000</double>
            </property>
           </widget>
          </item>
-         <item row="6" column="1">
+         <item row="5" column="0">
+          <widget class="QCheckBox" name="boundsFillKeepTurnsInBoundsCheckBox">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Keep Turns within Bounds</string>
+           </property>
+           <property name="checked">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="1">
           <widget class="QPushButton" name="boundsFillPushButton">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
@@ -636,54 +699,13 @@
            </property>
           </widget>
          </item>
-         <item row="2" column="1">
-          <widget class="QSpinBox" name="visitEverySpinBox">
-           <property name="suffix">
-            <string> Row</string>
-           </property>
-           <property name="prefix">
-            <string>Visit Every </string>
-           </property>
-           <property name="maximum">
-            <number>100</number>
-           </property>
-           <property name="singleStep">
-            <number>2</number>
-           </property>
-          </widget>
+         <item row="0" column="1">
+          <widget class="QComboBox" name="comboBoxVehicleType"/>
          </item>
-         <item row="2" column="0">
-          <widget class="QDoubleSpinBox" name="boundsFillSpacingSpinBox">
-           <property name="prefix">
-            <string>Spacing: </string>
-           </property>
-           <property name="suffix">
-            <string> m</string>
-           </property>
-           <property name="minimum">
-            <double>1.000000000000000</double>
-           </property>
-           <property name="singleStep">
-            <double>0.100000000000000</double>
-           </property>
-           <property name="value">
-            <double>3.000000000000000</double>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="0">
-          <widget class="QCheckBox" name="boundsFillKeepTurnsInBoundsCheckBox">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_8">
            <property name="text">
-            <string>Keep Turns within Bounds</string>
-           </property>
-           <property name="checked">
-            <bool>false</bool>
+            <string>Vehicle type</string>
            </property>
           </widget>
          </item>
@@ -3551,12 +3573,12 @@
          <item row="3" column="0">
           <widget class="QLabel" name="label_22">
            <property name="text">
-            <string>TextLabel</string>
+            <string>Elements</string>
            </property>
           </widget>
          </item>
          <item row="3" column="1">
-          <widget class="QLabel" name="label_23">
+          <widget class="QLabel" name="labelElements">
            <property name="text">
             <string>TextLabel</string>
            </property>
@@ -3599,6 +3621,29 @@
         </property>
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+       <widget class="QListView" name="listViewVariable">
+        <property name="geometry">
+         <rect>
+          <x>985</x>
+          <y>600</y>
+          <width>481</width>
+          <height>192</height>
+         </rect>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_7">
+        <property name="geometry">
+         <rect>
+          <x>880</x>
+          <y>600</y>
+          <width>67</width>
+          <height>17</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Study</string>
         </property>
        </widget>
       </widget>

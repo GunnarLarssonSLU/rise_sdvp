@@ -1534,23 +1534,36 @@ void MapWidget::setTrace(QVector<LocPoint> mTrace)
 void MapWidget::setLogStart(int iStart)
 {
     iLogstart=(int)(iStart*mCarTrace.size()/99);
+    qDebug() << "istart: " << iStart;
     update();
 };
 
 void MapWidget::setLogEnd(int iEnd)
 {
     iLogend=(int)(mCarTrace.size()*iEnd/99);
-    qDebug() << "size: " << mCarTrace.size();
     qDebug() << "iend: " << iEnd;
-    qDebug() << "iLogend: " << iLogend;
     update();
-    qDebug() << "updated!";
 };
+
+int MapWidget::Elements()
+{
+    return iLogend-iLogstart+1;
+}
+
+int MapWidget::firstElement()
+{
+    return iLogstart;
+}
+
+int MapWidget::lastElement()
+{
+    return iLogend-1;
+}
 
 
 void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality)
 {
-    qDebug() << "Start painting";
+//    qDebug() << "Start painting";
     if (highQuality) {
         painter.setRenderHint(QPainter::Antialiasing, true);
         painter.setRenderHint(QPainter::TextAntialiasing, true);
@@ -1680,7 +1693,7 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
 
     paintClosestPoint(painter,pen,drawTrans, txtTrans, pt_txt,rect_txt );
 
-    qDebug() << "Middle painting";
+//    qDebug() << "Middle painting";
 
     paintCarTraces(painter,pen,drawTrans);
     // Draw fields
@@ -1734,7 +1747,7 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
         mPaths->getCurrent().routeinfo(this, painter,start_txt,txtOffset,txt_row_h,width,txt);
     };
     painter.end();
-    qDebug() << "End painting";
+//    qDebug() << "End painting";
 
 }
 
@@ -1871,58 +1884,21 @@ void MapWidget::paintTraceVechicle(QPainter &painter,QPen &pen, QTransform drawT
     {
         if(mTrace.size()>0)
         {
-            qDebug() << "Logstart: " << iLogstart;
-            qDebug() << "Logend: " << iLogend;
-            qDebug() << "Size: " << mTrace.size();
             for (int i = iLogstart+1;i < iLogend;i++) {
                     painter.drawLine(mTrace[i - 1].getX() * 1000.0, mTrace[i - 1].getY() * 1000.0,
                                      mTrace[i].getX() * 1000.0, mTrace[i].getY() * 1000.0);
             }
         }
-        qDebug() << "Done!";
     };
 }
 
 void MapWidget::paintCarTraces(QPainter &painter,QPen &pen, QTransform drawTrans)
 {
-    /*
-    // Draw trace for the selected car
-    pen.setWidthF(5.0 / mScaleFactor);
-    pen.setColor(Qt::red);
-    painter.setPen(pen);
-    painter.setTransform(drawTrans);
-    for (int i = 1;i < mCarTrace.size();i++) {
-        painter.drawLine(mCarTrace[i - 1].getX() * 1000.0, mCarTrace[i - 1].getY() * 1000.0,
-                mCarTrace[i].getX() * 1000.0, mCarTrace[i].getY() * 1000.0);
-    }
-    */
     paintTraceVechicle(painter,pen, drawTrans,mCarTrace,5.0 / mScaleFactor,Qt::red);
-
-    /*
-    // Draw GPS trace for the selected car
-    pen.setWidthF(2.5 / mScaleFactor);
-    pen.setColor(Qt::magenta);
-    painter.setPen(pen);
-    painter.setTransform(drawTrans);
-    for (int i = 1;i < mCarTraceGps.size();i++) {
-        painter.drawLine(mCarTraceGps[i - 1].getX() * 1000.0, mCarTraceGps[i - 1].getY() * 1000.0,
-                mCarTraceGps[i].getX() * 1000.0, mCarTraceGps[i].getY() * 1000.0);
-    }
-    */
     paintTraceVechicle(painter,pen, drawTrans,mCarTraceGps,2.5 / mScaleFactor,Qt::magenta);
 
     // Draw UWB trace for the selected car
     if (mDrawUwbTrace) {
-        /*
-        pen.setWidthF(2.5 / mScaleFactor);
-        pen.setColor(Qt::green);
-        painter.setPen(pen);
-        painter.setTransform(drawTrans);
-        for (int i = 1;i < mCarTraceUwb.size();i++) {
-            painter.drawLine(mCarTraceUwb[i - 1].getX() * 1000.0, mCarTraceUwb[i - 1].getY() * 1000.0,
-                    mCarTraceUwb[i].getX() * 1000.0, mCarTraceUwb[i].getY() * 1000.0);
-        }
-        */
         paintTraceVechicle(painter,pen, drawTrans,mCarTraceUwb ,2.5 / mScaleFactor,Qt::green);
     }
 }

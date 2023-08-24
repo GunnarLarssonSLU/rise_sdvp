@@ -42,6 +42,9 @@ using namespace QtCharts;
 
 #include <QtCharts/QChartView>>
 #include <QtCharts/QLineSeries>
+#include <QListView>
+#include <QStringListModel>
+
 
 #include "utility.h"
 #include "routemagic.h"
@@ -675,50 +678,123 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->pathTable->selectRow(0);
     }
 
-QLineSeries *series= new QLineSeries();
-
-    series->append (0,6);
-    series->append(2,4);
-    series->append(3,8);
-    series->append(7,4);
-    series->append(10,5);
-
-    *series << QPointF(11,1) << QPoint(13,3) << QPoint(17,6) << QPointF (18,9) << QPointF(20,2);
-
-QChart *chart = new QChart();
-    chart->legend()->hide();
-    chart->addSeries(series);
-    chart->setTitle("Test Example");
-
-    QChartView *chartView=new QChartView(chart);
-    chartView->setRenderHint(QPainter::Antialiasing);
-    chartView->setParent(ui->horizontalFrame);
-
-
-
-
-    connect(ui->loadTrackButton, &QPushButton::clicked, this, &MainWindow::onLoadLogFile);
 
     ui->mapWidgetLog->update();
     ui->horizontalSliderStart->setValue(0);
 
+    // Create a QStringListModel instance
+    QStringListModel* modelChoseVariable = new QStringListModel();
+
+    // Create a QStringList containing items
+    QStringList items;
+    items << "Speed" << "Angle";
+
+    // Set the QStringList as the model's data
+    modelChoseVariable->setStringList(items);
+
+    // Create a QListView instance
+
+    // Set the model to the QListView
+    ui->listViewVariable->setModel(modelChoseVariable);
+
+    connect(ui->loadTrackButton, &QPushButton::clicked, this, &MainWindow::onLoadLogFile);
+
     MapWidget* logWidget=ui->mapWidgetLog;
+    QLabel* logElements=ui->labelElements;
+
+    QVector<QPointF> *datasetLog=&datasetSpeed;
+    QScatterSeries* scatterSeriesLog2=&scatterSeriesLog;
+    QChart* chartLog2=&chartLog;
+
+    scatterSeriesLog2->setMarkerShape(QScatterSeries::MarkerShapeCircle);
+    scatterSeriesLog2->setMarkerSize(7.0);
+    scatterSeriesLog2->setColor(Qt::blue);
+
+    chartLog2->setTitle("Speed");
+    chartLog2->addSeries(scatterSeriesLog2);
+    chartLog2->createDefaultAxes(); // Add axes to the chart
+
+    //    QChartView chartView(&chartLog);
+    QChartView *chartView=new QChartView(chartLog2);
+    chartView->setRenderHint(QPainter::Antialiasing);
+    chartView->setParent(ui->horizontalFrame);
+
 
     // Connect the valueChanged signal to a slot function
-    QObject::connect(ui->horizontalSliderStart, &QSlider::valueChanged, [logWidget](int newValue) {
+    QObject::connect(ui->horizontalSliderStart, &QSlider::valueChanged, [logWidget,logElements,scatterSeriesLog2,datasetLog,chartLog2](int newValue) {
                 // This lambda function will be called whenever the slider's value changes
                 // The 'newValue' parameter contains the updated value of the slider
         qDebug() << "Slider value (start) changed: " << newValue;
                logWidget->setLogStart(newValue);
+               int iElements=logWidget->Elements();
+               logElements->setText(QString::number(iElements));
+               int stepsize;
+               if (iElements>2000)
+               {
+                   stepsize=(int)(iElements/2000);
+               } else stepsize=1;
+               int iFirstelement=logWidget->firstElement();
+               int iLastelement=logWidget->lastElement();
+               scatterSeriesLog2->clear();
+               float firsttime=datasetLog->at(iFirstelement).x();
+               float lasttime=datasetLog->at(iLastelement).x();
+               float maxvalue=0;
+               for (int i = iFirstelement; i < iLastelement; i+=stepsize) {
+                   scatterSeriesLog2->append(datasetLog->at(i));
+                   float tmpy=datasetLog->at(i).y();
+                   qDebug() << "time:" << datasetLog->at(i).x() << ", speed: " << tmpy;
+                   maxvalue = (tmpy>maxvalue) ? tmpy : maxvalue;
+               }
+               chartLog2->axes(Qt::Horizontal).first()->setRange(firsttime, lasttime);
+               chartLog2->axes(Qt::Vertical).first()->setRange(0, maxvalue+0.2);
+               chartLog2->update();
             });
-
+/*
     // Connect the valueChanged signal to a slot function
-    QObject::connect(ui->horizontalSliderEnd, &QSlider::valueChanged, [logWidget](int newValue) {
+    QObject::connect(ui->horizontalSliderEnd, &QSlider::valueChanged, [logWidget,logElements,scatterSeriesLog2,datasetLog](int newValue) {
         // This lambda function will be called whenever the slider's value changes
         // The 'newValue' parameter contains the updated value of the slider
         qDebug() << "Slider value (end) changed: " << newValue;
         logWidget->setLogEnd(newValue);
+        int iElements=logWidget->Elements();
+        logElements->setText(QString::number(iElements));
+        //scatterSeriesLog2->clear();
+        //for (int i = newValue-iElements+1; i < newValue; ++i) {
+        //    scatterSeriesLog2->append(datasetLog[i]);
+        //}
     });
+    */
+
+    QObject::connect(ui->horizontalSliderEnd, &QSlider::valueChanged, [logWidget,logElements,scatterSeriesLog2,datasetLog,chartLog2](int newValue) {
+        // This lambda function will be called whenever the slider's value changes
+        // The 'newValue' parameter contains the updated value of the slider
+        qDebug() << "Slider value (end) changed: " << newValue;
+        logWidget->setLogEnd(newValue);
+        int iElements=logWidget->Elements();
+        logElements->setText(QString::number(iElements));
+        int stepsize;
+        if (iElements>2000)
+        {
+            stepsize=(int)(iElements/2000);
+        } else stepsize=1;
+        int iFirstelement=logWidget->firstElement();
+        int iLastelement=logWidget->lastElement();
+        scatterSeriesLog2->clear();
+        float firsttime=datasetLog->at(iFirstelement).x();
+        float lasttime=datasetLog->at(iLastelement).x();
+        float maxvalue=0;
+        for (int i = iFirstelement; i < iLastelement; i+=stepsize) {
+            scatterSeriesLog2->append(datasetLog->at(i));
+            float tmpy=datasetLog->at(i).y();
+            qDebug() << "time:" << datasetLog->at(i).x() << ", speed: " << tmpy;
+            maxvalue = (tmpy>maxvalue) ? tmpy : maxvalue;
+        }
+        chartLog2->axes(Qt::Horizontal).first()->setRange(firsttime, lasttime);
+        chartLog2->axes(Qt::Vertical).first()->setRange(0, maxvalue+0.2);
+        chartLog2->update();
+    });
+
+
 
     ui->mainTabWidget->removeTab(8);
     ui->mainTabWidget->removeTab(7);
@@ -790,6 +866,8 @@ void MainWindow::onLoadLogFile()
         coords_matrix basestation_matrix=toOrientationMatrix(basestation_polar);
         coords_cartesian basestation_cartesian=toCartesian(basestation_polar);
 
+
+        float time,lastTime,lastX,lastY,speed,dt,dx,dy;
         // && (a<10)
         while (!in.atEnd()) {
             substrings= csvLine.split(",");
@@ -802,6 +880,7 @@ void MainWindow::onLoadLogFile()
             switch(format)
             {
             case 1:
+                time=substrings.at(1).toFloat();
                 lattmp=substrings.at(2).toDouble()/100;
                 latdgr=std::floor(lattmp);
                 lat=latdgr+(lattmp-latdgr)/0.6;
@@ -812,10 +891,12 @@ void MainWindow::onLoadLogFile()
                 height=substrings.at(9).toDouble();
                 break;
             case 2:
+                time=substrings.at(0).toFloat()/100;
                 lat=substrings.at(19).toDouble();
                 lon=substrings.at(20).toDouble();
                 break;
             }
+            time/=3600; // s->h
             vehicle_polar.lat=lat;
             vehicle_polar.lon=lon;
             vehicle_polar.h=height;
@@ -824,6 +905,28 @@ void MainWindow::onLoadLogFile()
             toAdd.setX(vehicle_enu.x);
             toAdd.setY(vehicle_enu.y);
             mTrace.append(toAdd);
+
+            datasetX.append(QPointF(time,vehicle_enu.x));
+            datasetY.append(QPointF(time,vehicle_enu.y));
+            datasetAngle.append(QPointF(time,0));     // temporary
+            if (first)
+            {
+                datasetSpeed.append(QPointF(time,0));
+            } else
+            {
+                dx=vehicle_enu.x-lastX;
+                dy=vehicle_enu.y-lastY;
+                dt=time-lastTime;
+                speed=sqrt(dx*dx+dy*dy)*(0.001/3.6)/dt;
+                if (dx>0)
+                {
+                    qDebug() << "dx: " << dx << " dy: " << dy << " dt: " << dt << " speed: " << speed;
+                };
+                datasetSpeed.append(QPointF(time,speed));
+            }
+            lastX=vehicle_enu.x;
+            lastY=vehicle_enu.y;
+            lastTime=time;
 //            qDebug() << "Lat.:" << lat << ", lon.: " << lon;
 
             // Process the line (e.g., split it by commas to get individual fields)
@@ -1034,20 +1137,20 @@ bool MainWindow::connectJoystick()
 
         static MainWindow *mThis=this;          // Just to be able to get the lambdas to work
         connect(mJoystick, &QGamepad::buttonL1Changed, this, [](bool pressed){
- //           qDebug() << "Button L1" << pressed;
+            qDebug() << "Button L1" << pressed;
             mThis->jsButtonChanged(4, pressed);
         });
         connect(mJoystick, &QGamepad::buttonR1Changed, this, [](bool pressed){
- //           qDebug() << "Button R1" << pressed;
+            qDebug() << "Button R1" << pressed;
             mThis->jsButtonChanged(5, pressed);
         });
         connect(mJoystick, &QGamepad::buttonL2Changed, this, [](double value){
-//            qDebug() << "Button L2: " << value;
+            qDebug() << "Button L2: " << value;
             mThis->jsButtonChanged(6, value>0);
         });
 
         connect(mJoystick, &QGamepad::buttonR2Changed, this, [](double value){
- //           qDebug() << "Button R2: " << value;
+            qDebug() << "Button R2: " << value;
             mThis->jsButtonChanged(7, value>0);
         });
     return true;

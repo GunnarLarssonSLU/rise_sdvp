@@ -64,7 +64,7 @@ static void rtcm_base_rx(rtcm_ref_sta_pos_t *pos);
 // Private variables
 static rtcm3_state m_rtcm_state;
 
-float showData=0.1;
+float showData;
 
 
 void commands_init(void) {
@@ -909,7 +909,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 		} break;
 
 		case CMD_VESC_FWD:
-			showData=999;
+//			showData=999;
 			timeout_reset();
 			commands_set_send_func(func);
 
@@ -920,7 +920,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 
 		case CMD_RC_CONTROL: {
 			timeout_reset();
-			showData=33;
+//			showData=33;
 
 			RC_MODE mode;
 			float throttle, steering;
@@ -934,7 +934,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 
 			autopilot_set_active(false);
 
-			mode=RC_MODE_DUTY;
+//			mode=RC_MODE_DUTY;
 			switch (mode) {
 			case RC_MODE_CURRENT:
 //				showData=111;
