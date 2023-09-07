@@ -874,7 +874,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			buffer_append_float32(m_send_buffer, pos.speed, 1e6, &send_index); // 64
 			#ifdef USE_ADCONV_FOR_VIN
 //						buffer_append_float32(m_send_buffer, adconv_get_vin(), 1e6, &send_index); // 68
-//				showData=pos.speed;
 				buffer_append_float32(m_send_buffer, showData, 1e6, &send_index); // 68
 
 				////						float tot = comm_can_io_board_as5047_angle();
@@ -951,8 +950,20 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 		//				comm_can_unlock_vesc();
 //					#endif
 
+					#if IS_ALL_ELECTRIC
+					showData=10;
+					comm_can_lock_vesc();
+					comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
+					bldc_interface_set_current(throttle);
+					comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
+					bldc_interface_set_current(throttle);
+					comm_can_set_vesc_id(DIFF_STEERING);
+					bldc_interface_set_duty_cycle(steering*0.25);
+					comm_can_unlock_vesc();
+				#endif
+
 					#if HAS_DIFF_STEERING
-						showData=42;
+						showData=11;
 						comm_can_lock_vesc();
 						comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
 						bldc_interface_set_current(throttle + throttle * steering);
@@ -974,6 +985,17 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 						*/
 							hydraulic_set_speed(throttle / 10);
 						#else
+//							showData=100+DIFF_THROTTLE_VESC_RIGHT+throttle;
+							comm_can_lock_vesc();
+							comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
+							bldc_interface_set_duty_cycle(throttle);
+							comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
+							bldc_interface_set_duty_cycle(throttle);
+							comm_can_set_vesc_id(DIFF_STEERING);
+							bldc_interface_set_duty_cycle(steering*VOLTAGEFRACTION);
+							comm_can_unlock_vesc();
+/*
+
 							showData=222;
 							comm_can_lock_vesc();
 							comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
@@ -986,14 +1008,14 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 							comm_can_unlock_vesc();
 //							comm_can_set_vesc_id(VESC_ID);
 //							bldc_interface_set_current(throttle);
+ *
+ */
 						#endif
 					#endif
 				}
 				break;
 
 			case RC_MODE_DUTY:
-				showData=142;
-
 				utils_truncate_number(&throttle, -1.0, 1.0);
 				if (!main_config.car.disable_motor) {
 /*					#if IS_DRANGEN
@@ -1008,7 +1030,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 					#endif
 */
 					#if HAS_DIFF_STEERING
-					showData=143+throttle + throttle * steering;
+					showData=13+throttle + throttle * steering;
 						comm_can_lock_vesc();
 						comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
 						bldc_interface_set_duty_cycle(throttle + throttle * steering);
@@ -1020,7 +1042,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 						//					hydraulic_set_speed(throttle * 10);
 							#ifdef IS_MACTRAC
 
-								showData=61;
+								showData=14;
 								/*
 								/// TEMPORARY REMOVE SOON!!! START
 								comm_can_lock_vesc();
@@ -1036,13 +1058,23 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 								hydraulic_set_throttle_raw(throttle / 0.15);
 							#endif
 						#else
-							showData=24+throttle;
+//							showData=200+DIFF_THROTTLE_VESC_RIGHT+throttle;
 							comm_can_lock_vesc();
+							comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
+							bldc_interface_set_duty_cycle(throttle);
+							comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
+							bldc_interface_set_duty_cycle(throttle);
+							comm_can_set_vesc_id(DIFF_STEERING);
+							bldc_interface_set_duty_cycle(steering*VOLTAGEFRACTION);
+							comm_can_unlock_vesc();
+
+/*							comm_can_lock_vesc();
 							comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
 							bldc_interface_set_duty_cycle(throttle);
 							comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
 							bldc_interface_set_duty_cycle(steering);
 							comm_can_unlock_vesc();
+							*/
 //							comm_can_set_vesc_id(VESC_ID);
 //							bldc_interface_set_duty_cycle(throttle);
 //							bldc_interface_set_rpm((int)throttle);

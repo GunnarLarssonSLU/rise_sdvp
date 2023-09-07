@@ -48,9 +48,9 @@
 //#define EBIKE_BENJAMIN // Benjamins ebike
 
 
-// #define IS_DRANGEN
+#define IS_DRANGEN
 
-#define IS_MACTRAC
+//#define IS_MACTRAC
 
 // MacTrac
 // Steering Center: 210
@@ -67,9 +67,6 @@
 #define HYDRAULIC_HAS_SPEED_SENSOR
 #define SERVO_VESC_ID				0
 #define SERVO_VESC_INVERTED			0
-//#define SERVO_VESC_P_GAIN			3.0
-//#define SERVO_VESC_I_GAIN			5.0
-//#define SERVO_VESC_D_GAIN			1.0
 #define SERVO_VESC_DEADBAND_COMP    0.2
 #define IS_F9_BOARD					1
 
@@ -97,11 +94,20 @@
 
 
 #ifdef IS_DRANGEN
-#define HAS_HYDRAULIC_DRIVE			1
-#define HAS_DIFF_STEERING            1
 
-#define DIFF_STEERING_VESC_LEFT 113
-//#define DIFF_STEERING_VESC_RIGHT 0
+// Bägge följande var "aktiva" när fungerade
+//#define HAS_HYDRAULIC_DRIVE			1
+//#define HAS_DIFF_STEERING            1
+
+//#define IS_ALL_ELECTRIC 1
+
+#define DIFF_THROTTLE_VESC_LEFT 61
+#define DIFF_THROTTLE_VESC_RIGHT 69
+#define DIFF_STEERING 113
+#define VOLTAGEFRACTION 0.5
+
+// Nästa var "aktiv" när fungerade
+//#define DIFF_STEERING_VESC_LEFT 113
 
 #define SERVO_VESC_S1				178.0 // Left
 #define SERVO_VESC_S2				240.0 // Right
@@ -112,11 +118,9 @@
 #define HYDRAULIC_HAS_SPEED_SENSOR
 #define SERVO_VESC_ID				0
 #define SERVO_VESC_INVERTED			0
-//#define SERVO_VESC_P_GAIN			3.0
-//#define SERVO_VESC_I_GAIN			5.0
-//#define SERVO_VESC_D_GAIN			1.0
 #define SERVO_VESC_DEADBAND_COMP    0.2
 #define IS_F9_BOARD					1
+#define INGENVINKELGIVARE
 #endif
 
 

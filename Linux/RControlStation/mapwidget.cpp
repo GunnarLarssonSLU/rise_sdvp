@@ -756,32 +756,33 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
     double anchorDist = 0.0;
 
     int anchorInd = getClosestPoint(mousePosMap, mAnchors, anchorDist);
-    bool routeFound = (routeDist * mScaleFactor * 1000.0) < 20 && routeDist >= 0.0;
-    bool anchorFound = (anchorDist * mScaleFactor * 1000.0) < 20 && anchorDist >= 0.0;
-
+    bool routeFound = false;
+    bool anchorFound = false;
 
     MapRoute *currentRoute;
     int mRoutePointSelected;
     bool bHasCurrentRoute=false;
+    MapRouteCollection* mRoutes;
     if (focusBorder)
     {
-        if (mFields->size()>0)
-        {
-            qDebug() << "Acting on border";
-            currentRoute=&(mFields->getCurrent());
-            qDebug() << "Border size: " << currentRoute->size();
-            bHasCurrentRoute=true;
-        }
+        mRoutes=mFields;
     } else
     {
-        if (mPaths->size()>0)
-        {
-            qDebug() << "Acting on path";
-            currentRoute=&(mPaths->getCurrent());
-            bHasCurrentRoute=true;
-        }
+        mRoutes=mPaths;
     }
-    if (bHasCurrentRoute) mRoutePointSelected = getClosestPoint(mousePosMap, currentRoute->mRoute, routeDist);
+    if (mRoutes->size()>0)
+    {
+        qDebug() << "Items: " << mRoutes->size();
+        currentRoute=&(mRoutes->getCurrent());
+        bHasCurrentRoute=true;
+        routeFound = (routeDist * mScaleFactor * 1000.0) < 20 && routeDist >= 0.0;
+        anchorFound = (anchorDist * mScaleFactor * 1000.0) < 20 && anchorDist >= 0.0;
+        mRoutePointSelected = getClosestPoint(mousePosMap, currentRoute->mRoute, routeDist);
+    } else
+    {
+        currentRoute=new MapRoute();
+    }
+//    if (bHasCurrentRoute)
 
     if (ctrl) {
         if (e->buttons() & Qt::LeftButton) {
@@ -2980,6 +2981,7 @@ int MapRouteCollection::size()
 
 MapRoute& MapRouteCollection::getCurrent()
 {
+    qDebug() << "Getting current (" << mRouteNow << ")";
     return mCollection[mRouteNow];
 }
 

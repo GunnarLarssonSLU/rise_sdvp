@@ -362,11 +362,11 @@ void bldc_interface_terminal_cmd(char* cmd) {
 
 void bldc_interface_set_duty_cycle(float dutyCycle) {
 	if (motor_control_set_func) {
-		showData=dutyCycle+10;
+//		showData=dutyCycle+10;
 		motor_control_set_func(MOTOR_CONTROL_DUTY, dutyCycle);
 		return;
 	}
-	showData=dutyCycle;
+	showData=5.0+dutyCycle;
 	int32_t send_index = 0;
 	send_buffer[send_index++] = COMM_SET_DUTY;
 	buffer_append_float32(send_buffer, dutyCycle, 100000.0, &send_index);
@@ -378,6 +378,7 @@ void bldc_interface_set_current(float current) {
 		motor_control_set_func(MOTOR_CONTROL_CURRENT, current);
 		return;
 	}
+	showData=6.0+current;
 	int32_t send_index = 0;
 	send_buffer[send_index++] = COMM_SET_CURRENT;
 	buffer_append_float32(send_buffer, current, 1000.0, &send_index);
@@ -389,6 +390,7 @@ void bldc_interface_set_current_brake(float current) {
 		motor_control_set_func(MOTOR_CONTROL_CURRENT_BRAKE, current);
 		return;
 	}
+	showData=7.0+current;
 	int32_t send_index = 0;
 	send_buffer[send_index++] = COMM_SET_CURRENT_BRAKE;
 	buffer_append_float32(send_buffer, current, 1000.0, &send_index);
@@ -400,6 +402,7 @@ void bldc_interface_set_rpm(int rpm) {
 		motor_control_set_func(MOTOR_CONTROL_RPM, rpm);
 		return;
 	}
+	showData=8.0+rpm;
 	int32_t send_index = 0;
 	send_buffer[send_index++] = COMM_SET_RPM;
 	buffer_append_int32(send_buffer, rpm, &send_index);
@@ -411,6 +414,7 @@ void bldc_interface_set_pos(float pos) {
 		motor_control_set_func(MOTOR_CONTROL_POS, pos);
 		return;
 	}
+	showData=9.0+pos;
 	int32_t send_index = 0;
 	send_buffer[send_index++] = COMM_SET_POS;
 	buffer_append_float32(send_buffer, pos, 1000000.0, &send_index);
@@ -418,6 +422,7 @@ void bldc_interface_set_pos(float pos) {
 }
 
 void bldc_interface_set_handbrake(float current) {
+	showData=10.0+current;
 	int32_t send_index = 0;
 	send_buffer[send_index++] = COMM_SET_HANDBRAKE;
 	buffer_append_float32(send_buffer, current, 1e3, &send_index);
@@ -425,6 +430,7 @@ void bldc_interface_set_handbrake(float current) {
 }
 
 void bldc_interface_set_servo_pos(float pos) {
+	showData=11.0+pos;
 	int32_t send_index = 0;
 	send_buffer[send_index++] = COMM_SET_SERVO_POS;
 	buffer_append_float16(send_buffer, pos, 1000.0, &send_index);

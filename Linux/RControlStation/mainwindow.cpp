@@ -119,6 +119,8 @@ MainWindow::MainWindow(QWidget *parent) :
     mThrottle = 0.0;
     mSteering = 0.0;
 
+    bLogLoaded=false;
+    stepsize=1;
 
 // START RTCM
     mRtcm = new RtcmClient(this);
@@ -133,20 +135,11 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(mTimer, SIGNAL(timeout()),
             this, SLOT(timerSlotRtcm()));
 
-
     on_gpsOnlyBox_toggled(ui->gpsOnlyBox->isChecked());
-
-    // SPT00 default
-//    ui->refSendLatBox->setValue(59.81);
-//    ui->refSendLonBox->setValue(17.658);
-//    ui->refSendHBox->setValue(0);
 
 // END RTCM
 
-
-
     checkboxdelegate=new CheckBoxDelegate();
-
 
     mPing = new Ping(this);
     mNmea = new NmeaServer(this);
@@ -195,7 +188,6 @@ MainWindow::MainWindow(QWidget *parent) :
             this, SLOT(mapPosSet(quint8,LocPoint)));
     connect(mPacketInterface, SIGNAL(ackReceived(quint8,CMD_PACKET,QString)),
             this, SLOT(ackReceived(quint8,CMD_PACKET,QString)));
-//    connect(ui->rtcmWidget, SIGNAL(rtcmReceived(QByteArray)), this, SLOT(rtcmReceived(QByteArray)));
     connect(this, SIGNAL(refPosGet()), this, SLOT(rtcmRefPosGet()));
     connect(mPing, SIGNAL(pingRx(int,QString)), this, SLOT(pingRx(int,QString)));
     connect(mPing, SIGNAL(pingError(QString,QString)), this, SLOT(pingError(QString,QString)));
@@ -211,11 +203,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionAboutQt, SIGNAL(triggered(bool)),
             qApp, SLOT(aboutQt()));
 
-//    connect(ui->mapWidgetFields, &MapWidget::mouseClickedInField, this, &MainWindow::onMouseClickedFieldSelected);
     // Assuming that the signal mouseClickedInField in MapWidget is declared as a signal
     connect(ui->mapWidgetFields, SIGNAL(mouseClickedInField(int)), this, SLOT(onMouseClickedFieldSelected(int)));
-
-
 
     connect(mTcpClientMulti, &TcpClientMulti::packetRx, [this](QByteArray data) {
         mPacketInterface->processPacket((unsigned char*)data.data(), data.size());
@@ -223,7 +212,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(mTcpClientMulti, &TcpClientMulti::stateChanged, [this](QString msg, bool isError) {
         showStatusInfo(msg, !isError);
-
 
         if (isError) {
             qWarning() << "TCP Error:" << msg;
@@ -235,10 +223,8 @@ MainWindow::MainWindow(QWidget *parent) :
     on_mapCameraOpacityBox_valueChanged(ui->mapCameraOpacityBox->value());
     if (WireGuard::isWireGuardInstalled()) {
         ui->wgStatusLabel->setText("Status: Ready");
-//        ui->wgGroupBox->setEnabled(true);
     } else {
         ui->wgStatusLabel->setText("Status: Not installed");
- //       ui->wgGroupBox->setEnabled(false);
     }
 
 #ifdef HAS_JOYSTICK
@@ -265,7 +251,7 @@ MainWindow::MainWindow(QWidget *parent) :
         QMessageBox::critical(
                     this,
                     "Unable to load database",
-                    "This demo needs the SQLITE driver"
+                    "This program needs the SQLITE driver"
                     );
 
     // Initialize the database:
@@ -277,7 +263,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Create the data model:
     modelFarm = new QSqlRelationalTableModel(ui->farmTable);
-//    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
     modelFarm->setEditStrategy(QSqlTableModel::OnFieldChange);
     modelFarm->setTable("locations");
 
@@ -312,7 +297,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Create the data model:
     modelField = new QSqlRelationalTableModel(ui->fieldTable);
-//    modelField->setEditStrategy(QSqlTableModel::OnManualSubmit);
     modelField->setEditStrategy(QSqlTableModel::OnFieldChange);
     modelField->setTable("fields");
 
@@ -329,13 +313,6 @@ MainWindow::MainWindow(QWidget *parent) :
     modelField->setHeaderData(modelField->fieldIndex("boundaryXML"),  Qt::Horizontal, tr("boundary"));
     modelField->setHeaderData(modelField->fieldIndex("location"),  Qt::Horizontal, tr("Location"));
     modelField->setHeaderData(modelField->fieldIndex("id"),  Qt::Horizontal, tr("Id"));
-    /*
-    // Populate the model:
-    if (!modelField->select()) {
-        showError(modelField->lastError());
-        return;
-    }
-*/
 
     // Set the model and hide the ID column:
     ui->fieldTable->setModel(modelField);
@@ -346,89 +323,16 @@ MainWindow::MainWindow(QWidget *parent) :
   //  ui->fieldTable->setSelectionModel(new QItemSelectionModel( ui->fieldTable->model()));
     ui->fieldTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui->fieldTable->setItemDelegateForColumn(3, checkboxdelegate);
+    ui->fieldTable->resizeColumnsToContents();
+    ui->fieldTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
     modelPath = new QSqlRelationalTableModel(ui->pathTable);
     //    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
     modelPath->setEditStrategy(QSqlTableModel::OnFieldChange);
     modelPath->setTable("paths");
 
-
     // Connect the signal from the first table view to a custom slot
-        QObject::connect(ui->farmTable->selectionModel(), &QItemSelectionModel::currentChanged, [&](const QModelIndex& current, const QModelIndex& previous)
-            {
- //           QMessageBox msg;
-            int row = current.row();
-            int id = modelFarm->data(modelFarm->index(row, 0)).toInt();
-
-            double lon = modelFarm->data(modelFarm->index(row, 2)).toDouble();
-            double lat = modelFarm->data(modelFarm->index(row, 3)).toDouble();
-            ui->mapWidgetFields->setEnuRef(lat,lon,0);
-            ui->mapWidgetFields->clearAllFields();
-            ui->mapWidgetFields->clearAllPaths();
-            ui->mapWidget->setEnuRef(lat,lon,0);
-            ui->mapWidgetLog->setEnuRef(lat,lon,0);
-
-            // Get the selected value from the first table view
-            QVariant selectedValue = id;
-
-            // Construct a new query based on the selected value
-            QString filter = QString("location = %1").arg(id);
-
-            // Set the new query for the QSqlRelationalTableModel
-            modelField->setFilter(filter);
-            modelField->select();
-            //To make sure the path table view is empty until a field has been selected
-            QString filter2 = QString("field = %1").arg(0);
-            modelPath->setFilter(filter2);
-            modelPath->select();
-
-            // Execute the SQL query
-            QString querystring= QString("SELECT * FROM fields WHERE location = %1").arg(selectedValue.toString());
-            QSqlQuery query(querystring);
-
-            // Loop through the query results
-            while (query.next()) {
-                // Access data for each record
-                QString boundaryXML= query.value("boundaryXML").toString();
-                QXmlStreamReader xmlData(boundaryXML);
-                ui->mapWidgetFields->loadXMLRoute(&xmlData,true);
-            }
-//            if (ui->fieldTable->model()->rowCount()>0)
-            if (ui->mapWidgetFields->getFieldNum()>0)
-            {
-                std::array<double, 4> extremes_m=ui->mapWidgetFields->findExtremeValuesFieldBorders();
-                double fieldareawidth_m=extremes_m[2]-extremes_m[0];
-                double fieldareaheight_m=extremes_m[3]-extremes_m[1];
-                double offsetx_m=(extremes_m[2]+extremes_m[0])/2;
-                double offsety_m=(extremes_m[3]+extremes_m[1])/2;
-                double scalex=0.5/(fieldareawidth_m);
-                double scaley=0.5/(fieldareaheight_m);
-/*                msg.setText("Width: " + QString::number(fieldareawidth_m) + " Height: " + QString::number(fieldareaheight_m));
-                msg.exec();
-                msg.setText("Offset: " + QString::number(offsetx_m) + " (x); " + QString::number(offsety_m) + " (y)" );
-                msg.exec();*/
-                ui->mapWidgetFields->moveView(offsetx_m, offsety_m);
-                ui->mapWidgetFields->setScaleFactor(std::min(scalex,scaley));
-                ui->mapWidget->moveView(offsetx_m, offsety_m);
-                ui->mapWidget->setScaleFactor(std::min(scalex,scaley));
-//                ui->fieldTable->selectRow(0);
-            } else
-            {
-                ui->mapWidgetFields->moveView(0, 0);
-                ui->mapWidget->moveView(0, 0);
-                // If no fields set a zoom matching a with of about 500 m -> scalefactor=0.5/500=0.001
-                ui->mapWidgetFields->setScaleFactor(0.001);
-                ui->mapWidget->setScaleFactor(0.001);
-            }/*
-            if (ui->pathTable->model()->rowCount()>0)
-            {
-                ui->pathTable->selectRow(0);
-            }*/
-            on_ntripDisconnectButton_clicked();
-            ntripConnect(row);
-        });
-
-
+    QObject::connect(ui->farmTable->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onSelectedFarm);
 
   QSqlRelationalTableModel *modelField=this->modelFarm;
   QSqlRelationalTableModel *modelPath=this->modelPath;
@@ -438,7 +342,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
   // Set the relations to the other database tables:
   modelPath->setRelation(fieldIdx, QSqlRelation("fields", "id", "name"));
-
 
   // Set the localized header captions:
   modelPath->setHeaderData(modelPath->fieldIndex("name"), Qt::Horizontal, tr("Name"));
@@ -453,91 +356,20 @@ MainWindow::MainWindow(QWidget *parent) :
   // Set the model and hide the ID column:
   ui->pathTable->setModel(modelPath);
   ui->pathTable->setColumnHidden(modelPath->fieldIndex("id"), true);
+  ui->pathTable->setColumnHidden(modelPath->fieldIndex("iPath"), true);
+  ui->pathTable->setColumnHidden(modelPath->fieldIndex("fields name"), true);
   ui->pathTable->setSelectionMode(QAbstractItemView::SingleSelection);
   ui->pathTable->setCurrentIndex(modelPath->index(0, 0));
+  ui->pathTable->resizeColumnsToContents();
+  ui->pathTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
-  MapWidget *mapFields=ui->mapWidgetFields;
-  MapWidget *mapDrive=ui->mapWidget;
-  mapDrive->setBorderFocus(false);
-
-  QLabel *areaLabel=ui->label_area_ha;
-  QComboBox *selectedRoute=ui->mapRouteBox;
-
-  QObject::connect(ui->fieldTable->selectionModel(), &QItemSelectionModel::currentChanged,
-                   [modelField,modelPath,mapFields,mapDrive,selectedRoute,areaLabel](const QModelIndex& current, const QModelIndex& previous)
-       {
-//      if (previous.row()!=-1)   // Something actually selected
-//    {
-       int row = current.row();
-
-       // Retrieve the data of the selected row if needed
-       int id = modelField->data(modelField->index(row, 0)).toInt();
-
-       mapFields->setFieldNow(row);
-       MapRoute border=mapFields->getField();
-       double area=border.getArea();
-       areaLabel->setText(QString::number(area));
-       mapFields->clearAllPaths();
-       mapDrive->clearAllPaths();
-
-       // Construct a new query based on the selected value
-       QString filter = QString("field = %1").arg(id);
-
-       // Set the new query for the QSqlRelationalTableModel
-       modelPath->setFilter(filter);
-       modelPath->select();
-
-       // Clear the existing items in the combobox
-       selectedRoute->clear();
-
-       // Iterate through the rows in the model and add items to the combobox
-       for (int row = 0; row < modelPath->rowCount(); ++row) {
-           // Assuming "id" is in column 0 and "name" is in column 1
-           QVariant id = modelPath->data(modelPath->index(row, 0));
-           QVariant name = modelPath->data(modelPath->index(row, 1));
-
-           // Add the item to the combobox
-           selectedRoute->addItem(name.toString(), id);
-       }
-
-       // Execute the SQL query
-       QString querystring= QString("SELECT * FROM paths WHERE field = %1").arg(QString::number(id));
-       QSqlQuery query(querystring);
-  //     QMessageBox msg;
-       while (query.next()) {
-           // Access data for each record
-           QString pathXML= query.value("xml").toString();
-           QXmlStreamReader xmlData(pathXML);
-           QXmlStreamReader xmlData2(pathXML);
-           mapFields->loadXMLRoute(&xmlData,false);
-           mapDrive->loadXMLRoute(&xmlData2,false);
-//           msg.setText("Looping!");
-//           msg.exec();
-       }
-       mapDrive->update();
- //     };
-       mapFields->setBorderFocus(true);
-//       mapFields->setRouteNow();   // Make sure that no route is set automatically (in order to make it easier to edit)
-    });
-
-  QObject::connect(ui->pathTable->selectionModel(), &QItemSelectionModel::currentChanged,
-                   [modelPath,mapFields,selectedRoute,areaLabel](const QModelIndex& current, const QModelIndex& previous)
-    {
-      if (previous.row()!=-1)   // Something actually selected
-          {
-           mapFields->setBorderFocus(false);
-           mapFields->update();
-           int row = current.row();
-
-           // Retrieve the data of the selected row if needed
-           int id = modelPath->data(modelPath->index(row, 0)).toInt();
-           QMessageBox msg;
-           msg.setText("Selected path! Row: " + QString::number(row) + ", previous row: " + QString::number(previous.row()) + "id: " +QString::number(id));
-           msg.exec();
-          }
-  });
+  QObject::connect(ui->fieldTable->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onSelectedField);
+  QObject::connect(ui->pathTable->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onSelectedPath);
 
   ui->fieldTable->installEventFilter(&filterFieldtable);
+
+  MapWidget *mapFields=ui->mapWidgetFields;
+
   QObject::connect(&filterFieldtable, &FocusEventFilter::focusGained, [mapFields]() {
       qDebug() << "Focus gained Fields";
   });
@@ -549,17 +381,19 @@ MainWindow::MainWindow(QWidget *parent) :
       qDebug() << "Focus gained Paths";
   });
 
-/*
-  QObject::connect(ui->pathTable, &QWidget::focusIn,
-                   [mapFields]()
-                   {
-                           mapFields->setBorderFocus(false);
-                           mapFields->update();
-                           QMessageBox msg;
-                           msg.setText("PathTable got focus!");
-                           msg.exec();
-                   });
-*/
+//  modelVehicleTypes = new QSqlRelationalTableModel(ui->pathTable);
+  // Assuming you have a QSqlDatabase connection named "db" and a QComboBox named "comboBox"
+  QSqlQuery query("SELECT id, name FROM vehicle_types"); // Replace with your table name
+  if (query.exec()) {
+        while (query.next()) {
+            int id = query.value(0).toInt();
+            QString name = query.value(1).toString();
+            qDebug() << "Vehicle: " << id << " (id), " << name << " (name)";
+            ui->comboBoxVehicleType->addItem(name, id); // Add the name to the combo box with the associated id as userData
+        }
+  } else {
+        // Handle query error
+  }
 
     // Create the data model:
     modelVehicle = new QSqlRelationalTableModel(ui->vehicleTable);
@@ -569,16 +403,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Set the localized header captions:
  //   modelFarm->setHeaderData(locationIdx, Qt::Horizontal, tr("Location"));
-    modelVehicle->setHeaderData(modelVehicle->fieldIndex("name"),
-                         Qt::Horizontal, tr("Name"));
-    modelVehicle->setHeaderData(modelVehicle->fieldIndex("ip"),
-                         Qt::Horizontal, tr("IP"));
-    modelVehicle->setHeaderData(modelVehicle->fieldIndex("port"),
-                         Qt::Horizontal, tr("port"));
-    modelVehicle->setHeaderData(modelVehicle->fieldIndex("steering_type"),
-                         Qt::Horizontal, tr("Steering type"));
-    modelVehicle->setHeaderData(modelVehicle->fieldIndex("length"),
-                         Qt::Horizontal, tr("Length"));
+    modelVehicle->setHeaderData(modelVehicle->fieldIndex("name"), Qt::Horizontal, tr("Name"));
+    modelVehicle->setHeaderData(modelVehicle->fieldIndex("ip"), Qt::Horizontal, tr("IP"));
+    modelVehicle->setHeaderData(modelVehicle->fieldIndex("port"), Qt::Horizontal, tr("port"));
+    modelVehicle->setHeaderData(modelVehicle->fieldIndex("steering_type"), Qt::Horizontal, tr("Steering type"));
+    modelVehicle->setHeaderData(modelVehicle->fieldIndex("length"), Qt::Horizontal, tr("Length"));
 
     // Populate the model:
     if (!modelVehicle->select()) {
@@ -609,13 +438,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->vehicleTable->setCurrentIndex(modelVehicle->index(0, 0));
 
-
-
-
     // Sample data to display in the QTableView
     QStringList data;
     int rowCount = modelVehicle->rowCount();
-
 
     // Access the data from the first column of the source model
     for (int row = 0; row < rowCount; ++row) {
@@ -660,8 +485,8 @@ MainWindow::MainWindow(QWidget *parent) :
     QColor coluorgreen = Qt::green;
     modelVehiclestatus->setData(cellIndex, coluorgreen, Qt::TextColorRole);
 
-    connect(ui->pushButton_field, &QPushButton::released, this, &MainWindow::handleFieldButton);
-    connect(ui->pushButton_location, &QPushButton::released, this, &MainWindow::handleLocationButton);
+    connect(ui->pushButton_farm, &QPushButton::released, this, &MainWindow::handleAddFarmButton);
+    connect(ui->pushButton_field, &QPushButton::released, this, &MainWindow::handleAddFieldButton);
 
     ui->farmTable->setFocus();
     ui->fieldTable->installEventFilter(this);
@@ -677,7 +502,6 @@ MainWindow::MainWindow(QWidget *parent) :
     {
         ui->pathTable->selectRow(0);
     }
-
 
     ui->mapWidgetLog->update();
     ui->horizontalSliderStart->setValue(0);
@@ -699,102 +523,26 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(ui->loadTrackButton, &QPushButton::clicked, this, &MainWindow::onLoadLogFile);
 
-    MapWidget* logWidget=ui->mapWidgetLog;
-    QLabel* logElements=ui->labelElements;
+    scatterSeriesLog.setMarkerShape(QScatterSeries::MarkerShapeCircle);
+    scatterSeriesLog.setMarkerSize(7.0);
+    scatterSeriesLog.setColor(Qt::blue);
 
-    QVector<QPointF> *datasetLog=&datasetSpeed;
-    QScatterSeries* scatterSeriesLog2=&scatterSeriesLog;
-    QChart* chartLog2=&chartLog;
-
-    scatterSeriesLog2->setMarkerShape(QScatterSeries::MarkerShapeCircle);
-    scatterSeriesLog2->setMarkerSize(7.0);
-    scatterSeriesLog2->setColor(Qt::blue);
-
-    chartLog2->setTitle("Speed");
-    chartLog2->addSeries(scatterSeriesLog2);
-    chartLog2->createDefaultAxes(); // Add axes to the chart
+    chartLog.setTitle("Speed");
+    chartLog.addSeries(&scatterSeriesLog);
+    chartLog.createDefaultAxes(); // Add axes to the chart
 
     //    QChartView chartView(&chartLog);
-    QChartView *chartView=new QChartView(chartLog2);
+    QChartView *chartView=new QChartView(&chartLog);
     chartView->setRenderHint(QPainter::Antialiasing);
     chartView->setParent(ui->horizontalFrame);
 
-
     // Connect the valueChanged signal to a slot function
-    QObject::connect(ui->horizontalSliderStart, &QSlider::valueChanged, [logWidget,logElements,scatterSeriesLog2,datasetLog,chartLog2](int newValue) {
-                // This lambda function will be called whenever the slider's value changes
-                // The 'newValue' parameter contains the updated value of the slider
-        qDebug() << "Slider value (start) changed: " << newValue;
-               logWidget->setLogStart(newValue);
-               int iElements=logWidget->Elements();
-               logElements->setText(QString::number(iElements));
-               int stepsize;
-               if (iElements>2000)
-               {
-                   stepsize=(int)(iElements/2000);
-               } else stepsize=1;
-               int iFirstelement=logWidget->firstElement();
-               int iLastelement=logWidget->lastElement();
-               scatterSeriesLog2->clear();
-               float firsttime=datasetLog->at(iFirstelement).x();
-               float lasttime=datasetLog->at(iLastelement).x();
-               float maxvalue=0;
-               for (int i = iFirstelement; i < iLastelement; i+=stepsize) {
-                   scatterSeriesLog2->append(datasetLog->at(i));
-                   float tmpy=datasetLog->at(i).y();
-                   qDebug() << "time:" << datasetLog->at(i).x() << ", speed: " << tmpy;
-                   maxvalue = (tmpy>maxvalue) ? tmpy : maxvalue;
-               }
-               chartLog2->axes(Qt::Horizontal).first()->setRange(firsttime, lasttime);
-               chartLog2->axes(Qt::Vertical).first()->setRange(0, maxvalue+0.2);
-               chartLog2->update();
-            });
-/*
-    // Connect the valueChanged signal to a slot function
-    QObject::connect(ui->horizontalSliderEnd, &QSlider::valueChanged, [logWidget,logElements,scatterSeriesLog2,datasetLog](int newValue) {
-        // This lambda function will be called whenever the slider's value changes
-        // The 'newValue' parameter contains the updated value of the slider
-        qDebug() << "Slider value (end) changed: " << newValue;
-        logWidget->setLogEnd(newValue);
-        int iElements=logWidget->Elements();
-        logElements->setText(QString::number(iElements));
-        //scatterSeriesLog2->clear();
-        //for (int i = newValue-iElements+1; i < newValue; ++i) {
-        //    scatterSeriesLog2->append(datasetLog[i]);
-        //}
-    });
-    */
+    QObject::connect(ui->horizontalSliderStart, &QSlider::valueChanged, this, &MainWindow::onLogStartSliderChange);
 
-    QObject::connect(ui->horizontalSliderEnd, &QSlider::valueChanged, [logWidget,logElements,scatterSeriesLog2,datasetLog,chartLog2](int newValue) {
-        // This lambda function will be called whenever the slider's value changes
-        // The 'newValue' parameter contains the updated value of the slider
-        qDebug() << "Slider value (end) changed: " << newValue;
-        logWidget->setLogEnd(newValue);
-        int iElements=logWidget->Elements();
-        logElements->setText(QString::number(iElements));
-        int stepsize;
-        if (iElements>2000)
-        {
-            stepsize=(int)(iElements/2000);
-        } else stepsize=1;
-        int iFirstelement=logWidget->firstElement();
-        int iLastelement=logWidget->lastElement();
-        scatterSeriesLog2->clear();
-        float firsttime=datasetLog->at(iFirstelement).x();
-        float lasttime=datasetLog->at(iLastelement).x();
-        float maxvalue=0;
-        for (int i = iFirstelement; i < iLastelement; i+=stepsize) {
-            scatterSeriesLog2->append(datasetLog->at(i));
-            float tmpy=datasetLog->at(i).y();
-            qDebug() << "time:" << datasetLog->at(i).x() << ", speed: " << tmpy;
-            maxvalue = (tmpy>maxvalue) ? tmpy : maxvalue;
-        }
-        chartLog2->axes(Qt::Horizontal).first()->setRange(firsttime, lasttime);
-        chartLog2->axes(Qt::Vertical).first()->setRange(0, maxvalue+0.2);
-        chartLog2->update();
-    });
+    QObject::connect(ui->horizontalSliderEnd, &QSlider::valueChanged, this, &MainWindow::onLogEndSliderChange);
 
-
+    // Connect the clicked signal to the handleItemSelectionChange slot
+    QObject::connect(ui->listViewVariable, &QListView::clicked, this, &MainWindow::onLogVariableSelection);
 
     ui->mainTabWidget->removeTab(8);
     ui->mainTabWidget->removeTab(7);
@@ -805,6 +553,246 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->controlWidget->removeTab(2);
     qApp->installEventFilter(this);
 }
+
+
+
+void MainWindow::onLogVariableSelection(const QModelIndex &index)
+{
+    onUpdateLogGraph();
+}
+
+void MainWindow::onLogStartSliderChange(int newValue)
+{
+    qDebug() << "LogStartSlider";
+    ui->mapWidgetLog->setLogStart(newValue);
+    emit onLogSliderChange();
+}
+
+void MainWindow::onLogEndSliderChange(int newValue)
+{
+    qDebug() << "LogEndSlider";
+    ui->mapWidgetLog->setLogEnd(newValue);
+    emit onLogSliderChange();
+}
+
+void MainWindow::onUpdateLogGraph()
+{
+    int iFirstelement=ui->mapWidgetLog->firstElement();
+    int iLastelement=ui->mapWidgetLog->lastElement();
+    QScatterSeries* scatterSeriesLog2=&scatterSeriesLog;
+    scatterSeriesLog2->clear();
+
+    QVector<QPointF> *datasetLog;
+
+    QModelIndex selectedIndex = ui->listViewVariable->selectionModel()->currentIndex();
+    if (selectedIndex.isValid()) {
+        switch(selectedIndex.row())
+        {
+        case 0:
+            datasetLog=&datasetSpeed;
+            break;
+        case 1:
+            datasetLog=&datasetAngle;
+            break;
+        }
+        float firsttime=datasetLog->at(iFirstelement).x();
+        float lasttime=datasetLog->at(iLastelement).x();
+        float maxvalue=0;
+
+        for (int i = iFirstelement; i < iLastelement; i+=stepsize) {
+            float tmpy=datasetLog->at(i).y();
+            float x=datasetX.at(i).y();
+            float y=datasetY.at(i).y();
+            qDebug() << "x:" << x;
+            qDebug() << ", y:" << y;
+            qDebug() << ", time:" << datasetLog->at(i).x() << ", value: " << tmpy;
+            maxvalue = (tmpy>maxvalue) ? tmpy : maxvalue;
+            //            if (isPointWithin(x, y, QList<LocPoint> route);)
+            //            {
+            scatterSeriesLog2->append(datasetLog->at(i));
+            //            }
+        }
+        QChart* chartLog2=&chartLog;
+        chartLog2->axes(Qt::Horizontal).first()->setRange(firsttime, lasttime);
+        chartLog2->axes(Qt::Vertical).first()->setRange(0, maxvalue+0.2);
+        chartLog2->update();
+    } else
+    {
+        QMessageBox msg;
+        msg.setText("No variable chosen!");
+        msg.exec();
+    }
+}
+
+void MainWindow::onLogSliderChange()
+{
+    if (bLogLoaded)
+    {
+        int iElements=ui->mapWidgetLog->Elements();
+        ui->labelElements->setText(QString::number(iElements));
+        if (iElements>300)
+        {
+            stepsize=(int)(iElements/300);
+        } else stepsize=1;
+
+        onUpdateLogGraph();
+    } else
+    {
+        QMessageBox msg;
+        msg.setText("No log loaded!");
+        msg.exec();
+    };
+}
+
+void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& previous)
+{
+    //           QMessageBox msg;
+    int row = current.row();
+    int id = modelFarm->data(modelFarm->index(row, 0)).toInt();
+
+    double lon = modelFarm->data(modelFarm->index(row, 2)).toDouble();
+    double lat = modelFarm->data(modelFarm->index(row, 3)).toDouble();
+    ui->mapWidgetFields->setEnuRef(lat,lon,0);
+    ui->mapWidgetFields->clearAllFields();
+    ui->mapWidgetFields->clearAllPaths();
+    ui->mapWidget->setEnuRef(lat,lon,0);
+    ui->mapWidgetLog->setEnuRef(lat,lon,0);
+
+    // Get the selected value from the first table view
+    QVariant selectedValue = id;
+
+    // Construct a new query based on the selected value
+    QString filter = QString("location = %1").arg(id);
+
+    // Set the new query for the QSqlRelationalTableModel
+    modelField->setFilter(filter);
+    modelField->select();
+    //To make sure the path table view is empty until a field has been selected
+    QString filter2 = QString("field = %1").arg(0);
+    modelPath->setFilter(filter2);
+    modelPath->select();
+
+    // Execute the SQL query
+    QString querystring= QString("SELECT * FROM fields WHERE location = %1").arg(selectedValue.toString());
+    QSqlQuery query(querystring);
+
+    // Loop through the query results
+    while (query.next()) {
+        // Access data for each record
+        QString boundaryXML= query.value("boundaryXML").toString();
+        QXmlStreamReader xmlData(boundaryXML);
+        ui->mapWidgetFields->loadXMLRoute(&xmlData,true);
+    }
+    //            if (ui->fieldTable->model()->rowCount()>0)
+    if (ui->mapWidgetFields->getFieldNum()>0)
+    {
+        std::array<double, 4> extremes_m=ui->mapWidgetFields->findExtremeValuesFieldBorders();
+        double fieldareawidth_m=extremes_m[2]-extremes_m[0];
+        double fieldareaheight_m=extremes_m[3]-extremes_m[1];
+        double offsetx_m=(extremes_m[2]+extremes_m[0])/2;
+        double offsety_m=(extremes_m[3]+extremes_m[1])/2;
+        double scalex=0.5/(fieldareawidth_m);
+        double scaley=0.5/(fieldareaheight_m);
+        /*                msg.setText("Width: " + QString::number(fieldareawidth_m) + " Height: " + QString::number(fieldareaheight_m));
+                msg.exec();
+                msg.setText("Offset: " + QString::number(offsetx_m) + " (x); " + QString::number(offsety_m) + " (y)" );
+                msg.exec();*/
+        ui->mapWidgetFields->moveView(offsetx_m, offsety_m);
+        ui->mapWidgetFields->setScaleFactor(std::min(scalex,scaley));
+        ui->mapWidget->moveView(offsetx_m, offsety_m);
+        ui->mapWidget->setScaleFactor(std::min(scalex,scaley));
+        //                ui->fieldTable->selectRow(0);
+    } else
+    {
+        ui->mapWidgetFields->moveView(0, 0);
+        ui->mapWidget->moveView(0, 0);
+        // If no fields set a zoom matching a with of about 500 m -> scalefactor=0.5/500=0.001
+        ui->mapWidgetFields->setScaleFactor(0.001);
+        ui->mapWidget->setScaleFactor(0.001);
+    }/*
+            if (ui->pathTable->model()->rowCount()>0)
+            {
+                ui->pathTable->selectRow(0);
+            }*/
+    on_ntripDisconnectButton_clicked();
+    ntripConnect(row);
+}
+
+void MainWindow::onSelectedField(const QModelIndex& current, const QModelIndex& previous)
+{
+int row = current.row();
+
+// Retrieve the data of the selected row if needed
+int id = modelField->data(modelField->index(row, 0)).toInt();
+
+ui->mapWidgetFields->setFieldNow(row);
+
+//MapWidget *mapFields=;
+QLabel *areaLabel=ui->label_area_ha;
+QComboBox *selectedRoute=ui->mapRouteBox;
+
+
+MapRoute border=ui->mapWidgetFields->getField();
+double area=border.getArea();
+areaLabel->setText(QString::number(area));
+ui->mapWidgetFields->clearAllPaths();
+ui->mapWidget->clearAllPaths(); // Drive widget
+
+// Construct a new query based on the selected value
+QString filter = QString("field = %1").arg(id);
+
+// Set the new query for the QSqlRelationalTableModel
+modelPath->setFilter(filter);
+modelPath->select();
+
+// Clear the existing items in the combobox
+selectedRoute->clear();
+
+// Iterate through the rows in the model and add items to the combobox
+for (int row = 0; row < modelPath->rowCount(); ++row) {
+    // Assuming "id" is in column 0 and "name" is in column 1
+    QVariant id = modelPath->data(modelPath->index(row, 0));
+    QVariant name = modelPath->data(modelPath->index(row, 1));
+
+    // Add the item to the combobox
+    selectedRoute->addItem(name.toString(), id);
+}
+
+// Execute the SQL query
+QString querystring= QString("SELECT * FROM paths WHERE field = %1").arg(QString::number(id));
+QSqlQuery query(querystring);
+//     QMessageBox msg;
+while (query.next()) {
+    // Access data for each record
+    QString pathXML= query.value("xml").toString();
+    QXmlStreamReader xmlData(pathXML);
+    QXmlStreamReader xmlData2(pathXML);
+    ui->mapWidgetFields->loadXMLRoute(&xmlData,false);
+    ui->mapWidget->loadXMLRoute(&xmlData2,false); // Drive-widget
+    //           msg.setText("Looping!");
+    //           msg.exec();
+}
+ui->mapWidget->update(); // Drive-widget
+ui->mapWidgetFields->setBorderFocus(true);
+//       mapFields->setRouteNow();   // Make sure that no route is set automatically (in order to make it easier to edit)
+};
+
+
+void MainWindow::onSelectedPath(const QModelIndex& current, const QModelIndex& previous)
+    {
+      if (previous.row()!=-1)   // Something actually selected
+          {
+           ui->mapWidgetFields->setBorderFocus(false);
+           ui->mapWidgetFields->update();
+           int row = current.row();
+
+           // Retrieve the data of the selected row if needed
+           int id = modelPath->data(modelPath->index(row, 0)).toInt();
+           QMessageBox msg;
+           msg.setText("Selected path! Row: " + QString::number(row) + ", previous row: " + QString::number(previous.row()) + "id: " +QString::number(id));
+           msg.exec();
+          }
+  };
 
 void MainWindow::onLoadLogFile()
 {
@@ -867,14 +855,9 @@ void MainWindow::onLoadLogFile()
         coords_cartesian basestation_cartesian=toCartesian(basestation_polar);
 
 
-        float time,lastTime,lastX,lastY,speed,dt,dx,dy;
-        // && (a<10)
+        float time,lastTime,lastX,lastY,speed,distance,dt,dx,dy;
         while (!in.atEnd()) {
             substrings= csvLine.split(",");
-            if (first)
-            {
-                first=false;
-            }
   //          qDebug() << "Size:" << substrings.size();
   //          qDebug() << "Looping2";
             switch(format)
@@ -904,25 +887,37 @@ void MainWindow::onLoadLogFile()
             LocPoint toAdd;
             toAdd.setX(vehicle_enu.x);
             toAdd.setY(vehicle_enu.y);
-            mTrace.append(toAdd);
 
-            datasetX.append(QPointF(time,vehicle_enu.x));
-            datasetY.append(QPointF(time,vehicle_enu.y));
-            datasetAngle.append(QPointF(time,0));     // temporary
             if (first)
             {
                 datasetSpeed.append(QPointF(time,0));
+                datasetAngle.append(QPointF(time,0));
+                datasetX.append(QPointF(time,vehicle_enu.x));
+                datasetY.append(QPointF(time,vehicle_enu.y));
+                mTrace.append(toAdd);
+                first=false;
             } else
             {
                 dx=vehicle_enu.x-lastX;
                 dy=vehicle_enu.y-lastY;
                 dt=time-lastTime;
-                speed=sqrt(dx*dx+dy*dy)*(0.001/3.6)/dt;
-                if (dx>0)
+                // Calculate the angle in radians using atan2
+                double angle_rad = std::atan2(dy, dx);
+
+                // Convert radians to degrees
+                double angle_deg = angle_rad * (180.0 / M_PI);
+
+                distance=sqrt(dx*dx+dy*dy);
+                speed=distance*(0.001/3.6)/dt;
+                if ((distance>0.00001) && (speed>0.00001))
                 {
+                    datasetX.append(QPointF(time,vehicle_enu.x));
+                    datasetY.append(QPointF(time,vehicle_enu.y));
+                    datasetAngle.append(QPointF(time,angle_deg));
+                    datasetSpeed.append(QPointF(time,speed));
+                    mTrace.append(toAdd);
                     qDebug() << "dx: " << dx << " dy: " << dy << " dt: " << dt << " speed: " << speed;
-                };
-                datasetSpeed.append(QPointF(time,speed));
+                }
             }
             lastX=vehicle_enu.x;
             lastY=vehicle_enu.y;
@@ -945,10 +940,9 @@ void MainWindow::onLoadLogFile()
         qDebug() << "time 1: " << time1 << ", time 2: " << time2;
         file.close();
         ui->mapWidgetLog->setTrace(mTrace);
+        bLogLoaded=true;
         ui->horizontalSliderStart->setValue(0);
-        qDebug() << "Slide start set!";
         ui->horizontalSliderEnd->setValue(99);
-        qDebug() << "All loaded!";
     } else {
         qDebug() << "No file selected!";
     }
@@ -3046,35 +3040,39 @@ void MainWindow::showError(const QSqlError &err)
                 "Error initializing database: " + err.text());
 }
 
-void MainWindow::handleFieldButton()
+void MainWindow::handleAddFieldButton()
 {
     QMessageBox msgBox;
+    msgBox.setText("Adding field:" + ui->fieldnameEdit->text());
+    msgBox.exec();
     QModelIndexList selectedIndexes = ui->farmTable->selectionModel()->selectedIndexes();
     if (!selectedIndexes.isEmpty()) {
         int rowIndex = selectedIndexes.first().row();
         int id = modelFarm->record(rowIndex).value("id").toInt();
-        msgBox.setText("Selected ID:" + QString::number(id));
-        msgBox.exec();
         const auto INSERT_FIELD_SQL = QLatin1String(R"(
-            insert into fields(title, year, location, rating)
-                              values(?, ?, ?, ?)
+            insert into fields(name,location)
+                              values(?,?)
             )");
         QSqlQuery q;
         if (q.prepare(INSERT_FIELD_SQL))
         {
+            msgBox.setText("Farm:" + QString::number(id) +", Fieldname: " + ui->fieldnameEdit->text());
+            msgBox.exec();
             addField(q, ui->fieldnameEdit->text(), id);
         };
     } else {
         msgBox.setText("No row selected!");
         msgBox.exec();
     }
+    modelField->select();
+    //ui->fieldTable->update();
 }
 
 
-void MainWindow::handleLocationButton()
+void MainWindow::handleAddFarmButton()
 {
     QMessageBox msgBox;
-    msgBox.setText("Adding location:" + ui->locationnameEdit->text());
+    msgBox.setText("Adding farm:" + ui->locationnameEdit->text());
     msgBox.exec();
     const auto INSERT_FIELD_SQL = QLatin1String(R"(
         insert into locations(name)
@@ -3116,9 +3114,9 @@ void BookWindow::keyPressEvent( QKeyEvent *k )
 }
 */
 
-void addField(QSqlQuery &q, const QString &title, const QVariant &locationId)
+void addField(QSqlQuery &q, const QString &name, const QVariant &locationId)
 {
-    q.addBindValue(title);
+    q.addBindValue(name);
     q.addBindValue(locationId);
     q.exec();
 }

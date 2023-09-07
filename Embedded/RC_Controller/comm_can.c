@@ -64,8 +64,6 @@ static ADC_CNT_t io_board_adc0_cnt = {0};
  * See section 22.7.7 on the STM32 reference manual.
  */
 
-//extern float showData;
-
 static const CANConfig cancfg = {
 		CAN_MCR_ABOM | CAN_MCR_AWUM | CAN_MCR_TXFP,
 		CAN_BTR_SJW(0) | CAN_BTR_TS2(1) |
