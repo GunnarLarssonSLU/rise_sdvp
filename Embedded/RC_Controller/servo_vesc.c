@@ -52,8 +52,6 @@ static float m_pos_now_raw = 0.0;
 static int m_not_ok_cnt = 0;
 static float m_out_last = 0.0;
 
-extern float showData;
-
 // Threads
 static THD_WORKING_AREA(servo_thread_wa, 1024);
 static THD_FUNCTION(servo_thread, arg);
@@ -115,7 +113,6 @@ static THD_FUNCTION(servo_thread, arg) {
 		m_pos_now_raw = as5047_read(&ok);
 #endif
 
-//		showData=pos_io_board;
 
 		float pos = m_pos_now_raw;
 		pos -= SERVO_VESC_S1;
@@ -133,7 +130,6 @@ static THD_FUNCTION(servo_thread, arg) {
 		// Run PID-controller on the output
 
 		float error = m_pos_set - m_pos_now;
-//		showData=error;
 
 		float dt = 0.01;
 		float p_term = error * main_config.car.vesc_p_gain;
@@ -172,8 +168,11 @@ static THD_FUNCTION(servo_thread, arg) {
 		if (ok) {
 			m_not_ok_cnt = 0;
 		} else {
+#ifndef INGENVINKELGIVARE
 			m_not_ok_cnt++;
-//			m_not_ok_cnt = 0; // FOR TESTING, REMOVE!!!
+#else
+			m_not_ok_cnt = 0; // FOR TESTING, REMOVE!!!
+#endif
 		}
 
 #ifdef SERVO_VESC_HYDRAULIC
@@ -181,7 +180,6 @@ static THD_FUNCTION(servo_thread, arg) {
 			float output_scaled = SERVO_VESC_INVERTED ? output : -output;
 			output_scaled *= 0.75;
 			m_out_last = (output_scaled + 1.0) / 2.0;
-//			showData=m_out_last;
 			comm_can_io_board_set_pwm_duty(0, m_out_last);
 		} else {
 			comm_can_io_board_set_pwm_duty(0, 0.5);

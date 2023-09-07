@@ -383,28 +383,7 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         tmpArray[len] = '\0';
         emit logLineUsbReceived(id, QString::fromLocal8Bit(tmpArray));
     } break;
-/*
-    case CMD_PLOT_INIT: {
-        QString xL = QString::fromLocal8Bit((const char*)data);
-        QString yL = QString::fromLocal8Bit((const char*)data + xL.size() + 1);
-        emit plotInitReceived(id, xL, yL);
-    } break;
 
-    case CMD_PLOT_DATA: {
-        int32_t ind = 0;
-        double x = utility::buffer_get_double32_auto(data, &ind);
-        double y = utility::buffer_get_double32_auto(data, &ind);
-        emit plotDataReceived(id, x, y);
-    } break;
-
-    case CMD_PLOT_ADD_GRAPH: {
-        emit plotAddGraphReceived(id, QString::fromLocal8Bit((const char*)data));
-    } break;
-
-    case CMD_PLOT_SET_GRAPH: {
-        emit plotSetGraphReceived(id, data[0]);
-    } break;
-*/
     case CMD_SET_SYSTEM_TIME: {
         int32_t ind = 0;
         qint32 sec = utility::buffer_get_int32(data, &ind);

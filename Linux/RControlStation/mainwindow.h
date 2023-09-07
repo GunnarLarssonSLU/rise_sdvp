@@ -139,6 +139,13 @@ private slots:
     void routePointAdded(LocPoint pos);
     void infoTraceChanged(int traceNow);
     void jsButtonChanged(int button, bool pressed);
+    void onSelectedFarm(const QModelIndex& current, const QModelIndex& previous);
+    void onSelectedField(const QModelIndex& current, const QModelIndex& previous);
+    void onSelectedPath(const QModelIndex& current, const QModelIndex& previous);
+    void onLogStartSliderChange(int newValue);
+    void onLogEndSliderChange(int newValue);
+    void onLogSliderChange();
+    void onUpdateLogGraph();
 
 //    void on_carAddButton_clicked();
     void on_disconnectButton_clicked();
@@ -228,27 +235,18 @@ private slots:
     void on_boundsFillPushButton_clicked();
 
     void on_lowerToolsCheckBox_stateChanged(int arg1);
-
     void on_raiseToolsCheckBox_stateChanged(int arg1);
-
     void on_WgConnectPushButton_clicked();
-
     void on_WgDisconnectPushButton_clicked();
-
     void on_AutopilotConfigurePushButton_clicked();
-
     void on_AutopilotStartPushButton_clicked();
-
     void on_AutopilotStopPushButton_clicked();
-
     void on_AutopilotRestartPushButton_clicked();
-
     void on_AutopilotPausePushButton_clicked();
-
     void on_actionWireguard_triggered();
 
     void onLoadLogFile();
-
+    void onLogVariableSelection(const QModelIndex &index);
 
     // RTCM
     void timerSlotRtcm();
@@ -299,6 +297,8 @@ private:
     QString mLastImgFileName;
     QList<QPair<int, int> > mSupportedFirmwares;
     CheckBoxDelegate* checkboxdelegate;
+    bool bLogLoaded;
+    int stepsize;
 
 #ifdef HAS_JOYSTICK_CHECK
     QGamepad *mJoystick;
@@ -319,8 +319,8 @@ protected:
 
 private:
     void showError(const QSqlError &err);
-    void handleFieldButton();
-    void handleLocationButton();
+    void handleAddFieldButton();
+    void handleAddFarmButton();
     QSqlRelationalTableModel *modelFarm;
     QSqlRelationalTableModel *modelField;
     QSqlRelationalTableModel *modelPath;
@@ -362,6 +362,5 @@ coords_cartesian toEnu(coords_polar basestation,coords_polar vehicle);
 coords_cartesian toEnu(coords_cartesian basestation,coords_matrix orientation,coords_polar vehicle);
 
 QSqlError initDb();
-
 
 #endif // MAINWINDOW_H

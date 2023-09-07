@@ -28,7 +28,7 @@
        <enum>QTabWidget::North</enum>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tabFarm">
        <attribute name="icon">
@@ -52,9 +52,9 @@
         </property>
         <layout class="QGridLayout" name="gridlayout_3">
          <item row="2" column="2">
-          <widget class="QPushButton" name="pushButton_location">
+          <widget class="QPushButton" name="pushButton_farm">
            <property name="text">
-            <string>Add location</string>
+            <string>Add farm</string>
            </property>
           </widget>
          </item>

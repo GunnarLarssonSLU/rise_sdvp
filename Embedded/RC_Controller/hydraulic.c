@@ -37,7 +37,7 @@
 #define TIMEOUT_SECONDS			2.0
 #define TIMEOUT_SECONDS_MOVE	10.0
 
-extern float showData;
+//extern float showData;
 
 // Private variables
 static volatile float m_speed_now = 0.0;
@@ -146,7 +146,6 @@ void hydraulic_set_throttle_raw(float throttle) {
 #endif
 
 	float pos = utils_map(throttle, -1.0, 1.0, 0.0, 1.0);
-//	showData=pos;
 	pwm_esc_set(SERVO_LEFT, pos);
 	pwm_esc_set(SERVO_RIGHT, 1.0 - pos);
 }
@@ -224,7 +223,7 @@ static THD_FUNCTION(hydro_thread, arg) {
 				fmaxf(cnt.low_time_current, cnt.low_time_last);
 		m_speed_now = SIGN(m_throttle_set) * (wheel_diam * M_PI) / (time_last * cnts_per_rev);
 
-		showData=comm_can_io_board_lim_sw(0)*8+comm_can_io_board_lim_sw(1)*4+comm_can_io_board_lim_sw(2)*2+comm_can_io_board_lim_sw(3)+50*m_move_rear;
+		//showData=comm_can_io_board_lim_sw(0)*8+comm_can_io_board_lim_sw(1)*4+comm_can_io_board_lim_sw(2)*2+comm_can_io_board_lim_sw(3)+50*m_move_rear;
 
 		// comm_can_io_board_lim_sw(2) - Upp bak
 		// comm_can_io_board_lim_sw(3) - Ner bak
