@@ -261,112 +261,20 @@ MainWindow::MainWindow(QWidget *parent) :
         return;
     }
 
-    // Create the data model:
-    modelFarm = new QSqlRelationalTableModel(ui->farmTable);
-    modelFarm->setEditStrategy(QSqlTableModel::OnFieldChange);
-    modelFarm->setTable("locations");
-
-    // Set the localized header captions:
-    modelFarm->setHeaderData(modelFarm->fieldIndex("name"), Qt::Horizontal, tr("Name"));
-    modelFarm->setHeaderData(modelFarm->fieldIndex("longitude"), Qt::Horizontal, tr("Longitude"));
-    modelFarm->setHeaderData(modelFarm->fieldIndex("latitude"), Qt::Horizontal, tr("Latitude"));
-    modelFarm->setHeaderData(modelFarm->fieldIndex("ip"), Qt::Horizontal, tr("ip"));
-    modelFarm->setHeaderData(modelFarm->fieldIndex("port"), Qt::Horizontal, tr("port"));
-    modelFarm->setHeaderData(modelFarm->fieldIndex("NTRIP"), Qt::Horizontal, tr("NTRIP"));
-
-    // Populate the model:
-    if (!modelFarm->select()) {
-        showError(modelFarm->lastError());
-        return;
-    }
-
-    // Set the model and hide the ID column:
-    ui->farmTable->setModel(modelFarm);
-    //ui.locationTable->setItemDelegate(new BookDelegate(ui.locationTable));
-    ui->farmTable->setColumnHidden(modelFarm->fieldIndex("id"), true);
-    ui->farmTable->setSelectionMode(QAbstractItemView::SingleSelection);
-    ui->farmTable->setCurrentIndex(modelFarm->index(0, 0));
-
-    QDataWidgetMapper *mapperFarm = new QDataWidgetMapper(this);
-    mapperFarm->setModel(modelFarm);
-
-    mapperFarm->addMapping(this->findChild<QDoubleSpinBox*>("refSendLatBox"), modelFarm->fieldIndex("latitude"));
-    mapperFarm->addMapping(this->findChild<QDoubleSpinBox*>("refSendLonBox"), modelFarm->fieldIndex("longitude"));
-
-    connect(ui->farmTable->selectionModel(),&QItemSelectionModel::currentRowChanged,mapperFarm,&QDataWidgetMapper::setCurrentModelIndex);
-
-    // Create the data model:
-    modelField = new QSqlRelationalTableModel(ui->fieldTable);
-    modelField->setEditStrategy(QSqlTableModel::OnFieldChange);
-    modelField->setTable("fields");
-
-    // Remember the indexes of the columns:
-    int locationIdx = modelField->fieldIndex("location");
-
-    // Set the relations to the other database tables:
-    modelField->setRelation(locationIdx, QSqlRelation("locations", "id", "name"));
-
-    // Set the localized header captions:
-    modelField->setHeaderData(locationIdx, Qt::Horizontal, tr("Location"));
-    modelField->setHeaderData(modelField->fieldIndex("name"),  Qt::Horizontal, tr("Field name"));
-    modelField->setHeaderData(modelField->fieldIndex("fenced"),  Qt::Horizontal, tr("Is fenced?"));
-    modelField->setHeaderData(modelField->fieldIndex("boundaryXML"),  Qt::Horizontal, tr("boundary"));
-    modelField->setHeaderData(modelField->fieldIndex("location"),  Qt::Horizontal, tr("Location"));
-    modelField->setHeaderData(modelField->fieldIndex("id"),  Qt::Horizontal, tr("Id"));
-
-    // Set the model and hide the ID column:
-    ui->fieldTable->setModel(modelField);
-    ui->fieldTable->setColumnHidden(modelField->fieldIndex("id"), true);
-    ui->fieldTable->setColumnHidden(modelField->fieldIndex("location"), true);
-    ui->fieldTable->setColumnHidden(modelField->fieldIndex("boundaryXML"), true);
-    ui->fieldTable->setSelectionMode(QAbstractItemView::SingleSelection);
-  //  ui->fieldTable->setSelectionModel(new QItemSelectionModel( ui->fieldTable->model()));
-    ui->fieldTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    ui->fieldTable->setItemDelegateForColumn(3, checkboxdelegate);
-    ui->fieldTable->resizeColumnsToContents();
-    ui->fieldTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-
-    modelPath = new QSqlRelationalTableModel(ui->pathTable);
-    //    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
-    modelPath->setEditStrategy(QSqlTableModel::OnFieldChange);
-    modelPath->setTable("paths");
-
-    // Connect the signal from the first table view to a custom slot
-    QObject::connect(ui->farmTable->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onSelectedFarm);
-
-  QSqlRelationalTableModel *modelField=this->modelFarm;
-  QSqlRelationalTableModel *modelPath=this->modelPath;
-
-  // Remember the indexes of the columns:
-  int fieldIdx = modelPath->fieldIndex("field");
-
-  // Set the relations to the other database tables:
-  modelPath->setRelation(fieldIdx, QSqlRelation("fields", "id", "name"));
-
-  // Set the localized header captions:
-  modelPath->setHeaderData(modelPath->fieldIndex("name"), Qt::Horizontal, tr("Name"));
-  modelPath->setHeaderData(modelPath->fieldIndex("xml"), Qt::Horizontal, tr("XML"));
-
-  // Populate the model:
-  if (!modelPath->select()) {
-        showError(modelPath->lastError());
-        return;
-  }
-
-  // Set the model and hide the ID column:
-  ui->pathTable->setModel(modelPath);
-  ui->pathTable->setColumnHidden(modelPath->fieldIndex("id"), true);
-  ui->pathTable->setColumnHidden(modelPath->fieldIndex("iPath"), true);
-  ui->pathTable->setColumnHidden(modelPath->fieldIndex("fields name"), true);
-  ui->pathTable->setSelectionMode(QAbstractItemView::SingleSelection);
-  ui->pathTable->setCurrentIndex(modelPath->index(0, 0));
-  ui->pathTable->resizeColumnsToContents();
-  ui->pathTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    setupFarmTable(ui->farmTable,"locations");
+    setupFarmTable(ui->farmTable_Log,"locations");
+    setupFieldTable(ui->fieldTable,"fields");
+    setupFieldTable(ui->fieldTable_Log,"fields");
+    setupFieldTable(ui->pathTable,"paths");
+    setupFieldTable(ui->pathTable_Log,"paths");
 
   QObject::connect(ui->fieldTable->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onSelectedField);
   QObject::connect(ui->pathTable->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onSelectedPath);
 
   ui->fieldTable->installEventFilter(&filterFieldtable);
+
+  // Connect the signal from the first table view to a custom slot
+  QObject::connect(ui->farmTable->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onSelectedFarm);
 
   MapWidget *mapFields=ui->mapWidgetFields;
 
@@ -493,7 +401,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->farmTable->installEventFilter(this);
     ui->vehicleTable->installEventFilter(this);
 
-    ui->farmTable->selectRow(0);
+//    ui->farmTable->selectRow(0);
+    /*
     if (ui->fieldTable->model()->rowCount()>0)
     {
         ui->fieldTable->selectRow(0);
@@ -543,7 +452,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Connect the clicked signal to the handleItemSelectionChange slot
     QObject::connect(ui->listViewVariable, &QListView::clicked, this, &MainWindow::onLogVariableSelection);
-
+*/
     ui->mainTabWidget->removeTab(8);
     ui->mainTabWidget->removeTab(7);
     ui->mainTabWidget->removeTab(6);
@@ -554,6 +463,111 @@ MainWindow::MainWindow(QWidget *parent) :
     qApp->installEventFilter(this);
 }
 
+void MainWindow::setupPathTable(QTableView* uiPathTable,QString sqlTablename)
+{
+    modelPath = new QSqlRelationalTableModel(ui->pathTable);
+    modelPath->setEditStrategy(QSqlTableModel::OnFieldChange);
+    modelPath->setTable(sqlTablename);
+
+
+
+    // Remember the indexes of the columns:
+    int fieldIdx = modelPath->fieldIndex("field");
+
+    // Set the relations to the other database tables:
+    modelPath->setRelation(fieldIdx, QSqlRelation("fields", "id", "name"));
+
+    // Set the localized header captions:
+    modelPath->setHeaderData(modelPath->fieldIndex("name"), Qt::Horizontal, tr("Name"));
+    modelPath->setHeaderData(modelPath->fieldIndex("xml"), Qt::Horizontal, tr("XML"));
+
+    // Populate the model:
+    if (!modelPath->select()) {
+        showError(modelPath->lastError());
+        return;
+    }
+
+    // Set the model and hide the ID column:
+    uiPathTable->setModel(modelPath);
+    uiPathTable->setColumnHidden(modelPath->fieldIndex("id"), true);
+    uiPathTable->setColumnHidden(modelPath->fieldIndex("iPath"), true);
+    uiPathTable->setColumnHidden(modelPath->fieldIndex("fields name"), true);
+    uiPathTable->setSelectionMode(QAbstractItemView::SingleSelection);
+    uiPathTable->setCurrentIndex(modelPath->index(0, 0));
+    uiPathTable->resizeColumnsToContents();
+    uiPathTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+}
+
+void MainWindow::setupFieldTable(QTableView* uiFieldTable,QString sqlTablename)
+{
+    // Create the data model:
+    modelField = new QSqlRelationalTableModel(uiFieldTable);
+    modelField->setEditStrategy(QSqlTableModel::OnFieldChange);
+    modelField->setTable(sqlTablename);
+
+    // Remember the indexes of the columns:
+    int locationIdx = modelField->fieldIndex("location");
+
+    // Set the relations to the other database tables:
+    modelField->setRelation(locationIdx, QSqlRelation("locations", "id", "name"));
+
+    // Set the localized header captions:
+    modelField->setHeaderData(locationIdx, Qt::Horizontal, tr("Location"));
+    modelField->setHeaderData(modelField->fieldIndex("name"),  Qt::Horizontal, tr("Field name"));
+    modelField->setHeaderData(modelField->fieldIndex("fenced"),  Qt::Horizontal, tr("Is fenced?"));
+    modelField->setHeaderData(modelField->fieldIndex("boundaryXML"),  Qt::Horizontal, tr("boundary"));
+    modelField->setHeaderData(modelField->fieldIndex("location"),  Qt::Horizontal, tr("Location"));
+    modelField->setHeaderData(modelField->fieldIndex("id"),  Qt::Horizontal, tr("Id"));
+
+    // Set the model and hide the ID column:
+    uiFieldTable->setModel(modelField);
+    uiFieldTable->setColumnHidden(modelField->fieldIndex("id"), true);
+    uiFieldTable->setColumnHidden(modelField->fieldIndex("location"), true);
+    uiFieldTable->setColumnHidden(modelField->fieldIndex("boundaryXML"), true);
+    uiFieldTable->setSelectionMode(QAbstractItemView::SingleSelection);
+    //  ui->fieldTable->setSelectionModel(new QItemSelectionModel( ui->fieldTable->model()));
+    uiFieldTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    uiFieldTable->setItemDelegateForColumn(3, checkboxdelegate);
+    uiFieldTable->resizeColumnsToContents();
+    uiFieldTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+}
+
+void MainWindow::setupFarmTable(QTableView* uiFarmTable,QString sqlTablename)
+{
+    // Create the data model:
+    modelFarm = new QSqlRelationalTableModel(uiFarmTable);
+    modelFarm->setEditStrategy(QSqlTableModel::OnFieldChange);
+    modelFarm->setTable(sqlTablename);
+
+    // Set the localized header captions:
+    modelFarm->setHeaderData(modelFarm->fieldIndex("name"), Qt::Horizontal, tr("Name"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("longitude"), Qt::Horizontal, tr("Longitude"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("latitude"), Qt::Horizontal, tr("Latitude"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("ip"), Qt::Horizontal, tr("ip"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("port"), Qt::Horizontal, tr("port"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("NTRIP"), Qt::Horizontal, tr("NTRIP"));
+
+    // Populate the model:
+    if (!modelFarm->select()) {
+        showError(modelFarm->lastError());
+        return;
+    }
+
+    // Set the model and hide the ID column:
+    uiFarmTable->setModel(modelFarm);
+    //ui.locationTable->setItemDelegate(new BookDelegate(ui.locationTable));
+    uiFarmTable->setColumnHidden(modelFarm->fieldIndex("id"), true);
+    uiFarmTable->setSelectionMode(QAbstractItemView::SingleSelection);
+    uiFarmTable->setCurrentIndex(modelFarm->index(0, 0));
+
+    QDataWidgetMapper *mapperFarm = new QDataWidgetMapper(this);
+    mapperFarm->setModel(modelFarm);
+
+    mapperFarm->addMapping(this->findChild<QDoubleSpinBox*>("refSendLatBox"), modelFarm->fieldIndex("latitude"));
+    mapperFarm->addMapping(this->findChild<QDoubleSpinBox*>("refSendLonBox"), modelFarm->fieldIndex("longitude"));
+
+    connect(uiFarmTable->selectionModel(),&QItemSelectionModel::currentRowChanged,mapperFarm,&QDataWidgetMapper::setCurrentModelIndex);
+}
 
 
 void MainWindow::onLogVariableSelection(const QModelIndex &index)

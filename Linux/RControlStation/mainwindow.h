@@ -247,6 +247,9 @@ private slots:
 
     void onLoadLogFile();
     void onLogVariableSelection(const QModelIndex &index);
+    void setupFarmTable(QTableView* uiFarmtable,QString SqlTableName);
+    void setupFieldTable(QTableView* uiFieldTable,QString sqlTablename);
+    void setupPathTable(QTableView* uiFieldTable,QString sqlTablename);
 
     // RTCM
     void timerSlotRtcm();

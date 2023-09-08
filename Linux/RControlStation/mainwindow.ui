@@ -28,7 +28,7 @@
        <enum>QTabWidget::North</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tabFarm">
        <attribute name="icon">
@@ -3518,69 +3518,140 @@
        <widget class="QWidget" name="gridLayoutWidget_2">
         <property name="geometry">
          <rect>
-          <x>20</x>
-          <y>40</y>
-          <width>233</width>
-          <height>96</height>
+          <x>30</x>
+          <y>680</y>
+          <width>639</width>
+          <height>450</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_12">
-         <item row="1" column="1">
-          <widget class="QLabel" name="label_19">
+         <item row="1" column="0">
+          <widget class="QLabel" name="labelFields_2">
            <property name="text">
-            <string/>
+            <string>Fields</string>
            </property>
           </widget>
          </item>
-         <item row="2" column="0">
+         <item row="1" column="2">
+          <widget class="QTableView" name="fieldTable_Log">
+           <property name="selectionBehavior">
+            <enum>QAbstractItemView::SelectRows</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="2">
+          <widget class="QLineEdit" name="logfileEdit">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="2">
+          <widget class="QTableView" name="farmTable_Log">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>400</width>
+             <height>120</height>
+            </size>
+           </property>
+           <property name="selectionBehavior">
+            <enum>QAbstractItemView::SelectRows</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="0">
           <widget class="QLabel" name="label_20">
            <property name="text">
             <string>Time</string>
            </property>
           </widget>
          </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_18">
-           <property name="text">
-            <string>Length</string>
+         <item row="2" column="2">
+          <widget class="QTableView" name="pathTable_Log">
+           <property name="selectionBehavior">
+            <enum>QAbstractItemView::SelectRows</enum>
            </property>
           </widget>
          </item>
-         <item row="2" column="1">
-          <widget class="QLabel" name="label_21">
-           <property name="text">
-            <string>TextLabel</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0">
+         <item row="4" column="0">
           <widget class="QLabel" name="label_file">
            <property name="text">
             <string>File</string>
            </property>
           </widget>
          </item>
-         <item row="0" column="2">
-          <widget class="QPushButton" name="loadTrackButton">
+         <item row="6" column="0">
+          <widget class="QLabel" name="label_18">
            <property name="text">
-            <string>Load Track!</string>
+            <string>Length</string>
            </property>
           </widget>
          </item>
-         <item row="0" column="1">
-          <widget class="QLineEdit" name="logfileEdit"/>
+         <item row="6" column="2">
+          <widget class="QLabel" name="label_19">
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
          </item>
-         <item row="3" column="0">
+         <item row="8" column="0">
           <widget class="QLabel" name="label_22">
            <property name="text">
             <string>Elements</string>
            </property>
           </widget>
          </item>
-         <item row="3" column="1">
+         <item row="8" column="2">
           <widget class="QLabel" name="labelElements">
            <property name="text">
             <string>TextLabel</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="4">
+          <widget class="QPushButton" name="loadTrackButton">
+           <property name="text">
+            <string>Load Track!</string>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="2">
+          <widget class="QLabel" name="label_21">
+           <property name="text">
+            <string>TextLabel</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="labelPaths_2">
+           <property name="text">
+            <string>Paths</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_23">
+           <property name="text">
+            <string>Test</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="2">
+          <widget class="QTableView" name="testTable_Log"/>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="labelFarm_2">
+           <property name="text">
+            <string>Farm</string>
            </property>
           </widget>
          </item>
