@@ -92,7 +92,6 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
-//    rtcmWidget=new RtcmWidget(this);
 
     ui->setupUi(this);
 
@@ -128,7 +127,7 @@ MainWindow::MainWindow(QWidget *parent) :
     mTimerRtcm->start(20);
     mTcpServer = new TcpBroadcast(this);
 
-    connect(mRtcm, SIGNAL(rtcmReceived(QByteArray,int,bool)),
+    connect(mRtcm, SIGNAL(rtcmReceivedStep1(QByteArray,int,bool)),
             this, SLOT(rtcmRx(QByteArray,int,bool)));
     connect(mRtcm, SIGNAL(refPosReceived(double,double,double,double)),
             this, SLOT(refPosRx(double,double,double,double)));
@@ -205,6 +204,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Assuming that the signal mouseClickedInField in MapWidget is declared as a signal
     connect(ui->mapWidgetFields, SIGNAL(mouseClickedInField(int)), this, SLOT(onMouseClickedFieldSelected(int)));
+    connect(ui->mapWidgetLog, SIGNAL(mouseClickedInField(int)), this, SLOT(onMouseClickedFieldSelected(int)));
 
     connect(mTcpClientMulti, &TcpClientMulti::packetRx, [this](QByteArray data) {
         mPacketInterface->processPacket((unsigned char*)data.data(), data.size());
@@ -597,8 +597,8 @@ void MainWindow::onUpdateLogGraph()
         }
         float firsttime=datasetLog->at(iFirstelement).x();
         float lasttime=datasetLog->at(iLastelement).x();
-        float maxvalue=0;
-
+        float maxvalue=-999;
+        float minvalue=999;
         for (int i = iFirstelement; i < iLastelement; i+=stepsize) {
             float tmpy=datasetLog->at(i).y();
             float x=datasetX.at(i).y();
@@ -607,14 +607,17 @@ void MainWindow::onUpdateLogGraph()
             qDebug() << ", y:" << y;
             qDebug() << ", time:" << datasetLog->at(i).x() << ", value: " << tmpy;
             maxvalue = (tmpy>maxvalue) ? tmpy : maxvalue;
+            minvalue = (tmpy<minvalue) ? tmpy : minvalue;
             //            if (isPointWithin(x, y, QList<LocPoint> route);)
             //            {
             scatterSeriesLog2->append(datasetLog->at(i));
             //            }
         }
+        qDebug() << "First element:" << iFirstelement << ", time: " << firsttime;
+        qDebug() << "Last element:" << iLastelement << ", time: " << lasttime;
         QChart* chartLog2=&chartLog;
         chartLog2->axes(Qt::Horizontal).first()->setRange(firsttime, lasttime);
-        chartLog2->axes(Qt::Vertical).first()->setRange(0, maxvalue+0.2);
+        chartLog2->axes(Qt::Vertical).first()->setRange(minvalue, maxvalue*1.1);
         chartLog2->update();
     } else
     {
@@ -841,7 +844,8 @@ void MainWindow::onLoadLogFile()
             break;
         case 24:
             format=2;
-            time1=substrings.at(0);
+//            time1=substrings.at(0);
+            time1=QString::number(substrings.at(1).toFloat()/100);
             break;
         }
         double llh[3]={0.0,0.0,0.0};
@@ -874,7 +878,7 @@ void MainWindow::onLoadLogFile()
                 height=substrings.at(9).toDouble();
                 break;
             case 2:
-                time=substrings.at(0).toFloat()/100;
+                time=substrings.at(1).toFloat()/100;
                 lat=substrings.at(19).toDouble();
                 lon=substrings.at(20).toDouble();
                 break;
@@ -934,7 +938,7 @@ void MainWindow::onLoadLogFile()
             time2=substrings.at(1);
             break;
         case 2:
-            time2=substrings.at(0);
+            time2=QString::number(substrings.at(1).toFloat()/100);
             break;
         }
         qDebug() << "time 1: " << time1 << ", time 2: " << time2;
