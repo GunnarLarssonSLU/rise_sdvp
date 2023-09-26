@@ -22,6 +22,7 @@
 #include <cstring>
 #include <locale.h>
 #include <QMessageBox>
+#include <QtSql>
 
 namespace
 {
@@ -295,7 +296,10 @@ bool NmeaServer::logToFile(QString file)
     if (mLog.isOpen()) {
         mLog.close();
     }
-
+    QSqlQuery query;
+    qDebug() << "INSERT INTO drivelogs (filename, path) values('" + file + "',1)";
+    query.exec("INSERT INTO drivelogs (filename, path) values('" + file + "',1)");
+    qDebug() << "added";
     mLog.setFileName(file);
     return mLog.open(QIODevice::ReadWrite | QIODevice::Truncate);
 }

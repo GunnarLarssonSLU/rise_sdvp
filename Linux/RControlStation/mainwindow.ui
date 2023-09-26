@@ -91,6 +91,9 @@
            <property name="text">
             <string>Paths</string>
            </property>
+           <property name="alignment">
+            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+           </property>
           </widget>
          </item>
          <item row="0" column="2">
@@ -117,12 +120,18 @@
            <property name="text">
             <string>Farm</string>
            </property>
+           <property name="alignment">
+            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+           </property>
           </widget>
          </item>
          <item row="0" column="3">
           <widget class="QLabel" name="label_11">
            <property name="text">
             <string>Boundary</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
            </property>
           </widget>
          </item>
@@ -151,6 +160,9 @@
           <widget class="QLabel" name="labelFields">
            <property name="text">
             <string>Fields</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
            </property>
           </widget>
          </item>
@@ -3502,9 +3514,9 @@
        <widget class="MapWidget" name="mapWidgetLog" native="true">
         <property name="geometry">
          <rect>
-          <x>280</x>
-          <y>10</y>
-          <width>591</width>
+          <x>590</x>
+          <y>70</y>
+          <width>571</width>
           <height>531</height>
          </rect>
         </property>
@@ -3515,13 +3527,73 @@
          </sizepolicy>
         </property>
        </widget>
+       <widget class="QFrame" name="horizontalFrame">
+        <property name="geometry">
+         <rect>
+          <x>1180</x>
+          <y>10</y>
+          <width>581</width>
+          <height>581</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_17"/>
+       </widget>
+       <widget class="QSlider" name="horizontalSliderStart">
+        <property name="geometry">
+         <rect>
+          <x>590</x>
+          <y>610</y>
+          <width>431</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+       <widget class="QSlider" name="horizontalSliderEnd">
+        <property name="geometry">
+         <rect>
+          <x>590</x>
+          <y>640</y>
+          <width>441</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+       <widget class="QListView" name="listViewVariable">
+        <property name="geometry">
+         <rect>
+          <x>580</x>
+          <y>690</y>
+          <width>481</width>
+          <height>161</height>
+         </rect>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_7">
+        <property name="geometry">
+         <rect>
+          <x>580</x>
+          <y>670</y>
+          <width>67</width>
+          <height>17</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Study</string>
+        </property>
+       </widget>
        <widget class="QWidget" name="gridLayoutWidget_2">
         <property name="geometry">
          <rect>
-          <x>30</x>
-          <y>680</y>
-          <width>639</width>
-          <height>450</height>
+          <x>10</x>
+          <y>70</y>
+          <width>563</width>
+          <height>780</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_12">
@@ -3529,6 +3601,9 @@
           <widget class="QLabel" name="labelFields_2">
            <property name="text">
             <string>Fields</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
            </property>
           </widget>
          </item>
@@ -3636,6 +3711,9 @@
            <property name="text">
             <string>Paths</string>
            </property>
+           <property name="alignment">
+            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+           </property>
           </widget>
          </item>
          <item row="3" column="0">
@@ -3643,80 +3721,96 @@
            <property name="text">
             <string>Test</string>
            </property>
+           <property name="alignment">
+            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+           </property>
           </widget>
          </item>
          <item row="3" column="2">
-          <widget class="QTableView" name="testTable_Log"/>
+          <widget class="QTableView" name="testTable_Log">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>400</width>
+             <height>400</height>
+            </size>
+           </property>
+          </widget>
          </item>
          <item row="0" column="0">
           <widget class="QLabel" name="labelFarm_2">
            <property name="text">
             <string>Farm</string>
            </property>
+           <property name="alignment">
+            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+           </property>
           </widget>
          </item>
         </layout>
        </widget>
-       <widget class="QFrame" name="horizontalFrame">
+       <widget class="QLineEdit" name="minEdit">
         <property name="geometry">
          <rect>
-          <x>880</x>
-          <y>10</y>
-          <width>581</width>
-          <height>581</height>
-         </rect>
-        </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_17"/>
-       </widget>
-       <widget class="QSlider" name="horizontalSliderStart">
-        <property name="geometry">
-         <rect>
-          <x>270</x>
-          <y>580</y>
-          <width>431</width>
-          <height>16</height>
-         </rect>
-        </property>
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-       <widget class="QSlider" name="horizontalSliderEnd">
-        <property name="geometry">
-         <rect>
-          <x>270</x>
+          <x>1310</x>
           <y>610</y>
-          <width>441</width>
-          <height>16</height>
-         </rect>
-        </property>
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-       <widget class="QListView" name="listViewVariable">
-        <property name="geometry">
-         <rect>
-          <x>985</x>
-          <y>600</y>
-          <width>481</width>
-          <height>192</height>
+          <width>113</width>
+          <height>25</height>
          </rect>
         </property>
        </widget>
-       <widget class="QLabel" name="label_7">
+       <widget class="QLineEdit" name="maxEdit">
         <property name="geometry">
          <rect>
-          <x>880</x>
-          <y>600</y>
+          <x>1310</x>
+          <y>640</y>
+          <width>113</width>
+          <height>25</height>
+         </rect>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_15">
+        <property name="geometry">
+         <rect>
+          <x>1170</x>
+          <y>620</y>
           <width>67</width>
           <height>17</height>
          </rect>
         </property>
         <property name="text">
-         <string>Study</string>
+         <string>Min</string>
         </property>
        </widget>
+       <widget class="QLabel" name="label_17">
+        <property name="geometry">
+         <rect>
+          <x>1170</x>
+          <y>650</y>
+          <width>67</width>
+          <height>17</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Max</string>
+        </property>
+       </widget>
+       <zorder>horizontalFrame</zorder>
+       <zorder>horizontalSliderStart</zorder>
+       <zorder>horizontalSliderEnd</zorder>
+       <zorder>listViewVariable</zorder>
+       <zorder>label_7</zorder>
+       <zorder>mapWidgetLog</zorder>
+       <zorder>gridLayoutWidget_2</zorder>
+       <zorder>minEdit</zorder>
+       <zorder>maxEdit</zorder>
+       <zorder>label_15</zorder>
+       <zorder>label_17</zorder>
       </widget>
       <widget class="QWidget" name="tab_19">
        <property name="enabled">

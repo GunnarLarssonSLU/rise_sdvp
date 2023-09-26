@@ -139,9 +139,16 @@ private slots:
     void routePointAdded(LocPoint pos);
     void infoTraceChanged(int traceNow);
     void jsButtonChanged(int button, bool pressed);
+    void onSelectedFarmGeneral(QSqlRelationalTableModel *model,QSqlRelationalTableModel *modelFld,QSqlRelationalTableModel *modelPth,const QModelIndex& current, const QModelIndex& previous,bool bAct);
     void onSelectedFarm(const QModelIndex& current, const QModelIndex& previous);
+    void onSelectedFarmLog(const QModelIndex& current, const QModelIndex& previous);
+    void onSelectedFieldGeneral(QSqlRelationalTableModel *model,QSqlRelationalTableModel *modelPth,const QModelIndex& current, const QModelIndex& previous,bool bAct);
     void onSelectedField(const QModelIndex& current, const QModelIndex& previous);
+    void onSelectedFieldLog(const QModelIndex& current, const QModelIndex& previous);
+    void onSelectedPathGeneral(QSqlRelationalTableModel *model,const QModelIndex& current, const QModelIndex& previous, bool bAct);
     void onSelectedPath(const QModelIndex& current, const QModelIndex& previous);
+    void onSelectedPathLog(const QModelIndex& current, const QModelIndex& previous);
+    void onSelectedLog(const QModelIndex& current, const QModelIndex& previous);
     void onLogStartSliderChange(int newValue);
     void onLogEndSliderChange(int newValue);
     void onLogSliderChange();
@@ -245,11 +252,12 @@ private slots:
     void on_AutopilotPausePushButton_clicked();
     void on_actionWireguard_triggered();
 
-    void onLoadLogFile();
+    void onLoadLogFile(QString filename);
     void onLogVariableSelection(const QModelIndex &index);
-    void setupFarmTable(QTableView* uiFarmtable,QString SqlTableName);
-    void setupFieldTable(QTableView* uiFieldTable,QString sqlTablename);
-    void setupPathTable(QTableView* uiFieldTable,QString sqlTablename);
+    QSqlRelationalTableModel* setupFarmTable(QTableView* uiFarmTable,QString sqlTablename,bool bShowAll);
+    QSqlRelationalTableModel* setupFieldTable(QTableView* uiFieldTable,QString sqlTablename);
+    QSqlRelationalTableModel* setupPathTable(QTableView* uiFieldTable,QString sqlTablename);
+    QSqlRelationalTableModel* setupLogTable(QTableView* uiLogTable,QString sqlTablename);
 
     // RTCM
     void timerSlotRtcm();
@@ -325,8 +333,12 @@ private:
     void handleAddFieldButton();
     void handleAddFarmButton();
     QSqlRelationalTableModel *modelFarm;
+    QSqlRelationalTableModel *modelFarmLog;
     QSqlRelationalTableModel *modelField;
+    QSqlRelationalTableModel *modelFieldLog;
     QSqlRelationalTableModel *modelPath;
+    QSqlRelationalTableModel *modelPathLog;
+    QSqlRelationalTableModel *modelTestLog;
     QSqlRelationalTableModel *modelVehicle;
     QStandardItemModel *modelVehiclestatus;
     QScatterSeries scatterSeriesLog;
@@ -339,7 +351,7 @@ private:
     // RTCM
     RtcmClient *mRtcm;
     QTimer *mTimerRtcm;
-    TcpBroadcast *mTcpServer;
+    TcpBroadcast *mTcpServerRtcm;
     CustomDelegate *statustocolourDelegate;
 
     FocusEventFilter filterFieldtable;
