@@ -113,7 +113,7 @@ void NmeaWidget::on_nmeaLogChooseButton_clicked()
 void NmeaWidget::on_nmeaLogActiveBox_toggled(bool checked)
 {
     if (checked) {
-        bool ok = mNmeaForwardServer->logToFile(ui->nmeaLogEdit->text());
+        bool ok = mNmeaForwardServer->logToFile(QDir("documents/logs").dirName() + ui->nmeaLogEdit->text());
 
         if (!ok) {
             QMessageBox::warning(this, "NMEA Log",

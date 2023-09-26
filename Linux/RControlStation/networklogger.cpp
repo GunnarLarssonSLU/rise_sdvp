@@ -280,6 +280,7 @@ void NetworkLogger::on_logFileActiveBox_toggled(bool checked)
         }
 
         mLog.setFileName(ui->logFileEdit->text());
+        qDebug() << ui->logFileEdit->text();
         bool ok = mLog.open(QIODevice::ReadWrite | QIODevice::Append | QIODevice::Text);
 
         if (!ok) {

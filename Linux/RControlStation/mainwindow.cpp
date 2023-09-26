@@ -121,22 +121,6 @@ MainWindow::MainWindow(QWidget *parent) :
     bLogLoaded=false;
     stepsize=1;
 
-// START RTCM
-    mRtcm = new RtcmClient(this);
-    mTimerRtcm = new QTimer(this);
-    mTimerRtcm->start(20);
-    mTcpServer = new TcpBroadcast(this);
-
-    connect(mRtcm, SIGNAL(rtcmReceivedStep1(QByteArray,int,bool)),
-            this, SLOT(rtcmRx(QByteArray,int,bool)));
-    connect(mRtcm, SIGNAL(refPosReceived(double,double,double,double)),
-            this, SLOT(refPosRx(double,double,double,double)));
-    connect(mTimer, SIGNAL(timeout()),
-            this, SLOT(timerSlotRtcm()));
-
-    on_gpsOnlyBox_toggled(ui->gpsOnlyBox->isChecked());
-
-// END RTCM
 
     checkboxdelegate=new CheckBoxDelegate();
 
@@ -187,6 +171,8 @@ MainWindow::MainWindow(QWidget *parent) :
             this, SLOT(mapPosSet(quint8,LocPoint)));
     connect(mPacketInterface, SIGNAL(ackReceived(quint8,CMD_PACKET,QString)),
             this, SLOT(ackReceived(quint8,CMD_PACKET,QString)));
+    connect(this, SIGNAL(rtcmReceivedStep1(QByteArray)),
+            this, SLOT(rtcmReceived(QByteArray)));
     connect(this, SIGNAL(refPosGet()), this, SLOT(rtcmRefPosGet()));
     connect(mPing, SIGNAL(pingRx(int,QString)), this, SLOT(pingRx(int,QString)));
     connect(mPing, SIGNAL(pingError(QString,QString)), this, SLOT(pingError(QString,QString)));
@@ -261,20 +247,25 @@ MainWindow::MainWindow(QWidget *parent) :
         return;
     }
 
-    setupFarmTable(ui->farmTable,"locations");
-    setupFarmTable(ui->farmTable_Log,"locations");
-    setupFieldTable(ui->fieldTable,"fields");
-    setupFieldTable(ui->fieldTable_Log,"fields");
-    setupFieldTable(ui->pathTable,"paths");
-    setupFieldTable(ui->pathTable_Log,"paths");
+    modelFarm=setupFarmTable(ui->farmTable,"locations",true);
+    modelFarmLog=setupFarmTable(ui->farmTable_Log,"locations",false);
+    modelField=setupFieldTable(ui->fieldTable,"fields");
+    modelFieldLog=setupFieldTable(ui->fieldTable_Log,"fields");
+    modelPath=setupPathTable(ui->pathTable,"paths");
+    modelPathLog=setupFieldTable(ui->pathTable_Log,"paths");
+    modelTestLog=setupLogTable(ui->testTable_Log,"drivelogs");
 
-  QObject::connect(ui->fieldTable->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onSelectedField);
-  QObject::connect(ui->pathTable->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onSelectedPath);
+    // Connect the signal from the first table view to a custom slot
+    QObject::connect(ui->farmTable->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onSelectedFarm);
+    QObject::connect(ui->farmTable_Log->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onSelectedFarmLog);
+    QObject::connect(ui->fieldTable->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onSelectedField);
+    QObject::connect(ui->fieldTable_Log->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onSelectedFieldLog);
+    QObject::connect(ui->pathTable->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onSelectedPath);
+    QObject::connect(ui->pathTable_Log->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onSelectedPathLog);
+    QObject::connect(ui->testTable_Log->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onSelectedLog);
 
   ui->fieldTable->installEventFilter(&filterFieldtable);
 
-  // Connect the signal from the first table view to a custom slot
-  QObject::connect(ui->farmTable->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onSelectedFarm);
 
   MapWidget *mapFields=ui->mapWidgetFields;
 
@@ -305,12 +296,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Create the data model:
     modelVehicle = new QSqlRelationalTableModel(ui->vehicleTable);
-//    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
     modelVehicle->setEditStrategy(QSqlTableModel::OnFieldChange);
     modelVehicle->setTable("vehicles");
 
     // Set the localized header captions:
- //   modelFarm->setHeaderData(locationIdx, Qt::Horizontal, tr("Location"));
     modelVehicle->setHeaderData(modelVehicle->fieldIndex("name"), Qt::Horizontal, tr("Name"));
     modelVehicle->setHeaderData(modelVehicle->fieldIndex("ip"), Qt::Horizontal, tr("IP"));
     modelVehicle->setHeaderData(modelVehicle->fieldIndex("port"), Qt::Horizontal, tr("port"));
@@ -402,7 +391,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->vehicleTable->installEventFilter(this);
 
 //    ui->farmTable->selectRow(0);
-    /*
+
     if (ui->fieldTable->model()->rowCount()>0)
     {
         ui->fieldTable->selectRow(0);
@@ -430,7 +419,7 @@ MainWindow::MainWindow(QWidget *parent) :
     // Set the model to the QListView
     ui->listViewVariable->setModel(modelChoseVariable);
 
-    connect(ui->loadTrackButton, &QPushButton::clicked, this, &MainWindow::onLoadLogFile);
+//    connect(ui->loadTrackButton, &QPushButton::clicked, this, &MainWindow::onLoadLogFile);
 
     scatterSeriesLog.setMarkerShape(QScatterSeries::MarkerShapeCircle);
     scatterSeriesLog.setMarkerSize(7.0);
@@ -452,7 +441,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Connect the clicked signal to the handleItemSelectionChange slot
     QObject::connect(ui->listViewVariable, &QListView::clicked, this, &MainWindow::onLogVariableSelection);
-*/
+
     ui->mainTabWidget->removeTab(8);
     ui->mainTabWidget->removeTab(7);
     ui->mainTabWidget->removeTab(6);
@@ -460,113 +449,186 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->mainTabWidget->removeTab(4);
     ui->controlWidget->removeTab(3);
     ui->controlWidget->removeTab(2);
+
+    // START RTCM
+    mRtcm = new RtcmClient(this);
+    mTimerRtcm = new QTimer(this);
+    mTimerRtcm->start(20);
+    mTcpServerRtcm = new TcpBroadcast(this);
+
+    connect(mRtcm, SIGNAL(rtcmReceivedStep1(QByteArray,int,bool)),
+            this, SLOT(rtcmRx(QByteArray,int,bool)));
+    connect(mRtcm, SIGNAL(refPosReceived(double,double,double,double)),
+            this, SLOT(refPosRx(double,double,double,double)));
+    connect(mTimerRtcm, SIGNAL(timeout()),
+            this, SLOT(timerSlotRtcm()));
+
+    on_gpsOnlyBox_toggled(ui->gpsOnlyBox->isChecked());
+
+    // END RTCM
+
     qApp->installEventFilter(this);
 }
 
-void MainWindow::setupPathTable(QTableView* uiPathTable,QString sqlTablename)
+QSqlRelationalTableModel* MainWindow::setupLogTable(QTableView* uiLogTable,QString sqlTablename)
 {
-    modelPath = new QSqlRelationalTableModel(ui->pathTable);
-    modelPath->setEditStrategy(QSqlTableModel::OnFieldChange);
-    modelPath->setTable(sqlTablename);
-
-
+    QSqlRelationalTableModel *model= new QSqlRelationalTableModel(uiLogTable);
+    model->setEditStrategy(QSqlTableModel::OnFieldChange);
+    model->setTable(sqlTablename);
 
     // Remember the indexes of the columns:
-    int fieldIdx = modelPath->fieldIndex("field");
+    int pathIdx = model->fieldIndex("path");
 
     // Set the relations to the other database tables:
-    modelPath->setRelation(fieldIdx, QSqlRelation("fields", "id", "name"));
+    model->setRelation(pathIdx, QSqlRelation("paths", "iPath", "name"));
 
     // Set the localized header captions:
-    modelPath->setHeaderData(modelPath->fieldIndex("name"), Qt::Horizontal, tr("Name"));
-    modelPath->setHeaderData(modelPath->fieldIndex("xml"), Qt::Horizontal, tr("XML"));
+    model->setHeaderData(model->fieldIndex("filename"), Qt::Horizontal, tr("File name"));
 
     // Populate the model:
-    if (!modelPath->select()) {
-        showError(modelPath->lastError());
-        return;
+    if (!model->select()) {
+        showError(model->lastError());
+        return model;
     }
 
     // Set the model and hide the ID column:
-    uiPathTable->setModel(modelPath);
-    uiPathTable->setColumnHidden(modelPath->fieldIndex("id"), true);
-    uiPathTable->setColumnHidden(modelPath->fieldIndex("iPath"), true);
-    uiPathTable->setColumnHidden(modelPath->fieldIndex("fields name"), true);
-    uiPathTable->setSelectionMode(QAbstractItemView::SingleSelection);
-    uiPathTable->setCurrentIndex(modelPath->index(0, 0));
-    uiPathTable->resizeColumnsToContents();
-    uiPathTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    uiLogTable->setModel(model);
+    uiLogTable->setColumnHidden(model->fieldIndex("id"), true);
+    uiLogTable->setColumnHidden(model->fieldIndex("name"), true);
+    uiLogTable->setSelectionMode(QAbstractItemView::SingleSelection);
+    uiLogTable->setCurrentIndex(model->index(0, 0));
+    uiLogTable->resizeColumnsToContents();
+    uiLogTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    return model;
 }
 
-void MainWindow::setupFieldTable(QTableView* uiFieldTable,QString sqlTablename)
+QSqlRelationalTableModel* MainWindow::setupPathTable(QTableView* uiPathTable,QString sqlTablename)
 {
-    // Create the data model:
-    modelField = new QSqlRelationalTableModel(uiFieldTable);
-    modelField->setEditStrategy(QSqlTableModel::OnFieldChange);
-    modelField->setTable(sqlTablename);
+    QSqlRelationalTableModel *model= new QSqlRelationalTableModel(uiPathTable);
+    model->setEditStrategy(QSqlTableModel::OnFieldChange);
+    model->setTable(sqlTablename);
 
     // Remember the indexes of the columns:
-    int locationIdx = modelField->fieldIndex("location");
+    int fieldIdx = model->fieldIndex("field");
 
     // Set the relations to the other database tables:
-    modelField->setRelation(locationIdx, QSqlRelation("locations", "id", "name"));
+    model->setRelation(fieldIdx, QSqlRelation("fields", "id", "name"));
 
     // Set the localized header captions:
-    modelField->setHeaderData(locationIdx, Qt::Horizontal, tr("Location"));
-    modelField->setHeaderData(modelField->fieldIndex("name"),  Qt::Horizontal, tr("Field name"));
-    modelField->setHeaderData(modelField->fieldIndex("fenced"),  Qt::Horizontal, tr("Is fenced?"));
-    modelField->setHeaderData(modelField->fieldIndex("boundaryXML"),  Qt::Horizontal, tr("boundary"));
-    modelField->setHeaderData(modelField->fieldIndex("location"),  Qt::Horizontal, tr("Location"));
-    modelField->setHeaderData(modelField->fieldIndex("id"),  Qt::Horizontal, tr("Id"));
+    model->setHeaderData(model->fieldIndex("name"), Qt::Horizontal, tr("Name"));
+//    model->setHeaderData(model->fieldIndex("xml"), Qt::Horizontal, tr("XML"));
+
+    // Populate the model:
+    if (!model->select()) {
+        showError(model->lastError());
+        return model;
+    }
 
     // Set the model and hide the ID column:
-    uiFieldTable->setModel(modelField);
-    uiFieldTable->setColumnHidden(modelField->fieldIndex("id"), true);
-    uiFieldTable->setColumnHidden(modelField->fieldIndex("location"), true);
-    uiFieldTable->setColumnHidden(modelField->fieldIndex("boundaryXML"), true);
+    uiPathTable->setModel(model);
+    uiPathTable->setColumnHidden(model->fieldIndex("iPath"), true);
+    uiPathTable->setColumnHidden(model->fieldIndex("xml"), true);
+    uiPathTable->setColumnHidden(model->fieldIndex("field"), true);
+    uiPathTable->setColumnHidden(model->fieldIndex("fields name"), true);
+    uiPathTable->setSelectionMode(QAbstractItemView::SingleSelection);
+    uiPathTable->setCurrentIndex(model->index(0, 0));
+    uiPathTable->resizeColumnsToContents();
+    uiPathTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    return model;
+}
+
+QSqlRelationalTableModel* MainWindow::setupFieldTable(QTableView* uiFieldTable,QString sqlTablename)
+{
+    // Create the data model:
+    QSqlRelationalTableModel *model = new QSqlRelationalTableModel(uiFieldTable);
+    model->setEditStrategy(QSqlTableModel::OnFieldChange);
+    model->setTable(sqlTablename);
+
+    // Remember the indexes of the columns:
+    int locationIdx = model->fieldIndex("location");
+
+    // Set the relations to the other database tables:
+    model->setRelation(locationIdx, QSqlRelation("locations", "id", "name"));
+
+    // Set the localized header captions:
+    model->setHeaderData(locationIdx, Qt::Horizontal, tr("Location"));
+    model->setHeaderData(model->fieldIndex("name"),  Qt::Horizontal, tr("Field name"));
+    model->setHeaderData(model->fieldIndex("fenced"),  Qt::Horizontal, tr("Is fenced?"));
+    model->setHeaderData(model->fieldIndex("boundaryXML"),  Qt::Horizontal, tr("boundary"));
+    model->setHeaderData(model->fieldIndex("location"),  Qt::Horizontal, tr("Location"));
+    model->setHeaderData(model->fieldIndex("id"),  Qt::Horizontal, tr("Id"));
+
+    // Set the model and hide the ID column:
+    uiFieldTable->setModel(model);
+    uiFieldTable->setColumnHidden(model->fieldIndex("id"), true);
+    uiFieldTable->setColumnHidden(model->fieldIndex("location"), true);
+    uiFieldTable->setColumnHidden(model->fieldIndex("fenced"), true);
+    uiFieldTable->setColumnHidden(model->fieldIndex("boundaryXML"), true);
     uiFieldTable->setSelectionMode(QAbstractItemView::SingleSelection);
     //  ui->fieldTable->setSelectionModel(new QItemSelectionModel( ui->fieldTable->model()));
     uiFieldTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     uiFieldTable->setItemDelegateForColumn(3, checkboxdelegate);
     uiFieldTable->resizeColumnsToContents();
     uiFieldTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    return model;
 }
 
-void MainWindow::setupFarmTable(QTableView* uiFarmTable,QString sqlTablename)
+QSqlRelationalTableModel* MainWindow::setupFarmTable(QTableView* uiFarmTable,QString sqlTablename,bool bShowAll)
 {
     // Create the data model:
-    modelFarm = new QSqlRelationalTableModel(uiFarmTable);
-    modelFarm->setEditStrategy(QSqlTableModel::OnFieldChange);
-    modelFarm->setTable(sqlTablename);
+    QSqlRelationalTableModel* model = new QSqlRelationalTableModel(uiFarmTable);
+    model->setEditStrategy(QSqlTableModel::OnFieldChange);
+    model->setTable(sqlTablename);
 
     // Set the localized header captions:
-    modelFarm->setHeaderData(modelFarm->fieldIndex("name"), Qt::Horizontal, tr("Name"));
-    modelFarm->setHeaderData(modelFarm->fieldIndex("longitude"), Qt::Horizontal, tr("Longitude"));
-    modelFarm->setHeaderData(modelFarm->fieldIndex("latitude"), Qt::Horizontal, tr("Latitude"));
-    modelFarm->setHeaderData(modelFarm->fieldIndex("ip"), Qt::Horizontal, tr("ip"));
-    modelFarm->setHeaderData(modelFarm->fieldIndex("port"), Qt::Horizontal, tr("port"));
-    modelFarm->setHeaderData(modelFarm->fieldIndex("NTRIP"), Qt::Horizontal, tr("NTRIP"));
+    model->setHeaderData(model->fieldIndex("name"), Qt::Horizontal, tr("Name"));
+    if (bShowAll)
+    {
+        model->setHeaderData(model->fieldIndex("longitude"), Qt::Horizontal, tr("Longitude"));
+        model->setHeaderData(model->fieldIndex("latitude"), Qt::Horizontal, tr("Latitude"));
+        model->setHeaderData(model->fieldIndex("ip"), Qt::Horizontal, tr("ip"));
+        model->setHeaderData(model->fieldIndex("port"), Qt::Horizontal, tr("port"));
+        model->setHeaderData(model->fieldIndex("NTRIP"), Qt::Horizontal, tr("NTRIP"));
+    }
 
     // Populate the model:
-    if (!modelFarm->select()) {
-        showError(modelFarm->lastError());
-        return;
+    if (!model->select()) {
+        showError(model->lastError());
+        return model;
     }
 
     // Set the model and hide the ID column:
-    uiFarmTable->setModel(modelFarm);
+    uiFarmTable->setModel(model);
     //ui.locationTable->setItemDelegate(new BookDelegate(ui.locationTable));
-    uiFarmTable->setColumnHidden(modelFarm->fieldIndex("id"), true);
+    uiFarmTable->setColumnHidden(model->fieldIndex("id"), true);
+    if (!bShowAll)
+    {
+        uiFarmTable->setColumnHidden(model->fieldIndex("longitude"), true);
+        uiFarmTable->setColumnHidden(model->fieldIndex("latitude"), true);
+        uiFarmTable->setColumnHidden(model->fieldIndex("ip"), true);
+        uiFarmTable->setColumnHidden(model->fieldIndex("port"), true);
+        uiFarmTable->setColumnHidden(model->fieldIndex("NTRIP"), true);
+        uiFarmTable->setColumnHidden(model->fieldIndex("user"), true);
+        uiFarmTable->setColumnHidden(model->fieldIndex("password"), true);
+        uiFarmTable->setColumnHidden(model->fieldIndex("stream"), true);
+        uiFarmTable->setColumnHidden(model->fieldIndex("autoconnect"), true);
+    };
     uiFarmTable->setSelectionMode(QAbstractItemView::SingleSelection);
-    uiFarmTable->setCurrentIndex(modelFarm->index(0, 0));
+    uiFarmTable->setCurrentIndex(model->index(0, 0));
 
-    QDataWidgetMapper *mapperFarm = new QDataWidgetMapper(this);
-    mapperFarm->setModel(modelFarm);
-
-    mapperFarm->addMapping(this->findChild<QDoubleSpinBox*>("refSendLatBox"), modelFarm->fieldIndex("latitude"));
-    mapperFarm->addMapping(this->findChild<QDoubleSpinBox*>("refSendLonBox"), modelFarm->fieldIndex("longitude"));
-
-    connect(uiFarmTable->selectionModel(),&QItemSelectionModel::currentRowChanged,mapperFarm,&QDataWidgetMapper::setCurrentModelIndex);
+    if (bShowAll)
+    {
+        QDataWidgetMapper *mapperFarm = new QDataWidgetMapper(this);
+        mapperFarm->setModel(model);
+        mapperFarm->addMapping(this->findChild<QDoubleSpinBox*>("refSendLatBox"), model->fieldIndex("latitude"));
+        mapperFarm->addMapping(this->findChild<QDoubleSpinBox*>("refSendLonBox"), model->fieldIndex("longitude"));
+        connect(uiFarmTable->selectionModel(),&QItemSelectionModel::currentRowChanged,mapperFarm,&QDataWidgetMapper::setCurrentModelIndex);
+    }    else
+    {
+        uiFarmTable->resizeColumnsToContents();
+        uiFarmTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    }
+    return model;
 }
 
 
@@ -629,6 +691,8 @@ void MainWindow::onUpdateLogGraph()
         }
         qDebug() << "First element:" << iFirstelement << ", time: " << firsttime;
         qDebug() << "Last element:" << iLastelement << ", time: " << lasttime;
+        ui->minEdit->setText(QString::number(minvalue));
+        ui->maxEdit->setText(QString::number(maxvalue));
         QChart* chartLog2=&chartLog;
         chartLog2->axes(Qt::Horizontal).first()->setRange(firsttime, lasttime);
         chartLog2->axes(Qt::Vertical).first()->setRange(minvalue, maxvalue*1.1);
@@ -661,33 +725,47 @@ void MainWindow::onLogSliderChange()
     };
 }
 
-void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& previous)
+void MainWindow::onSelectedFarmGeneral(QSqlRelationalTableModel *model,QSqlRelationalTableModel *modelFld,QSqlRelationalTableModel *modelPth,const QModelIndex& current, const QModelIndex& previous,bool bAct)
 {
-    //           QMessageBox msg;
+    qDebug() << "onSelectedFarm";
     int row = current.row();
-    int id = modelFarm->data(modelFarm->index(row, 0)).toInt();
 
-    double lon = modelFarm->data(modelFarm->index(row, 2)).toDouble();
-    double lat = modelFarm->data(modelFarm->index(row, 3)).toDouble();
-    ui->mapWidgetFields->setEnuRef(lat,lon,0);
-    ui->mapWidgetFields->clearAllFields();
-    ui->mapWidgetFields->clearAllPaths();
-    ui->mapWidget->setEnuRef(lat,lon,0);
-    ui->mapWidgetLog->setEnuRef(lat,lon,0);
+    int id = model->data(model->index(row, 0)).toInt();
 
+    double lon = model->data(model->index(row, 2)).toDouble();
+    double lat = model->data(model->index(row, 3)).toDouble();
+
+    MapWidget* activeMap;
+    if (bAct)
+    {
+        activeMap=ui->mapWidgetFields;
+        ui->mapWidget->setEnuRef(lat,lon,0);
+    } else
+    {
+        activeMap=ui->mapWidgetLog;
+    }
+    activeMap->setEnuRef(lat,lon,0);
+    activeMap->clearAllFields();
+    activeMap->clearAllPaths();
+    activeMap->clearTrace();
     // Get the selected value from the first table view
     QVariant selectedValue = id;
 
     // Construct a new query based on the selected value
     QString filter = QString("location = %1").arg(id);
-
     // Set the new query for the QSqlRelationalTableModel
-    modelField->setFilter(filter);
-    modelField->select();
+    modelFld->setFilter(filter);
+    modelFld->select();
     //To make sure the path table view is empty until a field has been selected
     QString filter2 = QString("field = %1").arg(0);
-    modelPath->setFilter(filter2);
-    modelPath->select();
+    modelPth->setFilter(filter2);
+    modelPth->select();
+    if (!bAct)
+    {
+        QString filter3 = QString("field = %1").arg(0);
+        modelTestLog->setFilter(filter3);
+        modelTestLog->select();
+    }
 
     // Execute the SQL query
     QString querystring= QString("SELECT * FROM fields WHERE location = %1").arg(selectedValue.toString());
@@ -698,123 +776,190 @@ void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& p
         // Access data for each record
         QString boundaryXML= query.value("boundaryXML").toString();
         QXmlStreamReader xmlData(boundaryXML);
-        ui->mapWidgetFields->loadXMLRoute(&xmlData,true);
+        activeMap->loadXMLRoute(&xmlData,true);
     }
-    //            if (ui->fieldTable->model()->rowCount()>0)
-    if (ui->mapWidgetFields->getFieldNum()>0)
+    if (activeMap->getFieldNum()>0)
     {
-        std::array<double, 4> extremes_m=ui->mapWidgetFields->findExtremeValuesFieldBorders();
+        std::array<double, 4> extremes_m=activeMap->findExtremeValuesFieldBorders();
         double fieldareawidth_m=extremes_m[2]-extremes_m[0];
         double fieldareaheight_m=extremes_m[3]-extremes_m[1];
         double offsetx_m=(extremes_m[2]+extremes_m[0])/2;
         double offsety_m=(extremes_m[3]+extremes_m[1])/2;
         double scalex=0.5/(fieldareawidth_m);
         double scaley=0.5/(fieldareaheight_m);
-        /*                msg.setText("Width: " + QString::number(fieldareawidth_m) + " Height: " + QString::number(fieldareaheight_m));
-                msg.exec();
-                msg.setText("Offset: " + QString::number(offsetx_m) + " (x); " + QString::number(offsety_m) + " (y)" );
-                msg.exec();*/
-        ui->mapWidgetFields->moveView(offsetx_m, offsety_m);
-        ui->mapWidgetFields->setScaleFactor(std::min(scalex,scaley));
+
+        if (bAct)
+        {
         ui->mapWidget->moveView(offsetx_m, offsety_m);
         ui->mapWidget->setScaleFactor(std::min(scalex,scaley));
-        //                ui->fieldTable->selectRow(0);
+        } else
+        {
+        }
+    activeMap->moveView(offsetx_m, offsety_m);
+    activeMap->setScaleFactor(std::min(scalex,scaley));
     } else
     {
-        ui->mapWidgetFields->moveView(0, 0);
+        if (bAct)
+        {
         ui->mapWidget->moveView(0, 0);
         // If no fields set a zoom matching a with of about 500 m -> scalefactor=0.5/500=0.001
-        ui->mapWidgetFields->setScaleFactor(0.001);
         ui->mapWidget->setScaleFactor(0.001);
+        }
+        activeMap->moveView(0, 0);
+        // If no fields set a zoom matching a with of about 500 m -> scalefactor=0.5/500=0.001
+        activeMap->setScaleFactor(0.001);
     }/*
             if (ui->pathTable->model()->rowCount()>0)
             {
                 ui->pathTable->selectRow(0);
             }*/
-    on_ntripDisconnectButton_clicked();
-    ntripConnect(row);
+    if (bAct)
+    {
+        on_ntripDisconnectButton_clicked();
+        ntripConnect(row);
+    }
+    qDebug() << "onSelectedFarm END";
+}
+
+void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& previous)
+{
+    onSelectedFarmGeneral(modelFarm,modelField,modelPath,current, previous,true);
+}
+
+void MainWindow::onSelectedFarmLog(const QModelIndex& current, const QModelIndex& previous)
+{
+    onSelectedFarmGeneral(modelFarmLog,modelFieldLog,modelPathLog,current, previous,false);
+}
+
+void MainWindow::onSelectedFieldGeneral(QSqlRelationalTableModel *model,QSqlRelationalTableModel *modelPth,const QModelIndex& current, const QModelIndex& previous, bool bAct)
+{
+    MapWidget* activeMap;
+    if (bAct)
+    {
+        activeMap=ui->mapWidgetFields;
+    } else
+    {
+        activeMap=ui->mapWidgetLog;
+    }
+
+    int row = current.row();
+
+    // Retrieve the data of the selected row if needed
+    int id = model->data(model->index(row, 0)).toInt();
+
+    ui->mapWidgetFields->setFieldNow(row);
+
+    //MapWidget *mapFields=;
+    QComboBox *selectedRoute=ui->mapRouteBox;
+
+    if (bAct)
+    {
+        QLabel *areaLabel=ui->label_area_ha;
+        MapRoute border=activeMap->getField();
+        double area=border.getArea();
+        areaLabel->setText(QString::number(area));
+        ui->mapWidget->clearAllPaths(); // Drive widget
+    };
+    activeMap->clearAllPaths();
+
+    // Construct a new query based on the selected value
+    QString filter = QString("field = %1").arg(id);
+
+    // Set the new query for the QSqlRelationalTableModel
+    modelPth->setFilter(filter);
+    modelPth->select();
+
+    // Clear the existing items in the combobox
+    selectedRoute->clear();
+
+    // Iterate through the rows in the model and add items to the combobox
+    for (int row = 0; row < modelPth->rowCount(); ++row) {
+        // Assuming "id" is in column 0 and "name" is in column 1
+        QVariant id = modelPth->data(modelPth->index(row, 0));
+        QVariant name = modelPth->data(modelPth->index(row, 1));
+
+        // Add the item to the combobox
+        selectedRoute->addItem(name.toString(), id);
+    }
+
+    // Execute the SQL query
+    QString querystring= QString("SELECT * FROM paths WHERE field = %1").arg(QString::number(id));
+    QSqlQuery query(querystring);
+    //     QMessageBox msg;
+    while (query.next()) {
+        // Access data for each record
+        QString pathXML= query.value("xml").toString();
+        QXmlStreamReader xmlData(pathXML);
+        QXmlStreamReader xmlData2(pathXML);
+        activeMap->loadXMLRoute(&xmlData,false);
+        if (bAct)
+        {
+            ui->mapWidget->loadXMLRoute(&xmlData2,false); // Drive-widget
+        };
+        //           msg.setText("Looping!");
+        //           msg.exec();
+    }
+    if (bAct)
+    {
+        ui->mapWidget->update(); // Drive-widget
+    }
+    activeMap->setBorderFocus(true);
+    //       mapFields->setRouteNow();   // Make sure that no route is set automatically (in order to make it easier to edit)
+}
+
+void MainWindow::onSelectedFieldLog(const QModelIndex& current, const QModelIndex& previous)
+{
+    onSelectedFieldGeneral(modelFieldLog,modelPathLog,current, previous,false);
 }
 
 void MainWindow::onSelectedField(const QModelIndex& current, const QModelIndex& previous)
 {
-int row = current.row();
-
-// Retrieve the data of the selected row if needed
-int id = modelField->data(modelField->index(row, 0)).toInt();
-
-ui->mapWidgetFields->setFieldNow(row);
-
-//MapWidget *mapFields=;
-QLabel *areaLabel=ui->label_area_ha;
-QComboBox *selectedRoute=ui->mapRouteBox;
-
-
-MapRoute border=ui->mapWidgetFields->getField();
-double area=border.getArea();
-areaLabel->setText(QString::number(area));
-ui->mapWidgetFields->clearAllPaths();
-ui->mapWidget->clearAllPaths(); // Drive widget
-
-// Construct a new query based on the selected value
-QString filter = QString("field = %1").arg(id);
-
-// Set the new query for the QSqlRelationalTableModel
-modelPath->setFilter(filter);
-modelPath->select();
-
-// Clear the existing items in the combobox
-selectedRoute->clear();
-
-// Iterate through the rows in the model and add items to the combobox
-for (int row = 0; row < modelPath->rowCount(); ++row) {
-    // Assuming "id" is in column 0 and "name" is in column 1
-    QVariant id = modelPath->data(modelPath->index(row, 0));
-    QVariant name = modelPath->data(modelPath->index(row, 1));
-
-    // Add the item to the combobox
-    selectedRoute->addItem(name.toString(), id);
-}
-
-// Execute the SQL query
-QString querystring= QString("SELECT * FROM paths WHERE field = %1").arg(QString::number(id));
-QSqlQuery query(querystring);
-//     QMessageBox msg;
-while (query.next()) {
-    // Access data for each record
-    QString pathXML= query.value("xml").toString();
-    QXmlStreamReader xmlData(pathXML);
-    QXmlStreamReader xmlData2(pathXML);
-    ui->mapWidgetFields->loadXMLRoute(&xmlData,false);
-    ui->mapWidget->loadXMLRoute(&xmlData2,false); // Drive-widget
-    //           msg.setText("Looping!");
-    //           msg.exec();
-}
-ui->mapWidget->update(); // Drive-widget
-ui->mapWidgetFields->setBorderFocus(true);
-//       mapFields->setRouteNow();   // Make sure that no route is set automatically (in order to make it easier to edit)
+    onSelectedFieldGeneral(modelField,modelPath,current, previous,true);
 };
+
+void MainWindow::onSelectedPathGeneral(QSqlRelationalTableModel *model,const QModelIndex& current, const QModelIndex& previous, bool bAct)
+{
+ //   if (previous.row()!=-1)   // Something actually selected
+ //   {
+        ui->mapWidgetFields->setBorderFocus(false);
+        ui->mapWidgetFields->update();
+        int row = current.row();
+
+        // Retrieve the data of the selected row if needed
+        int id = model->data(model->index(row, 0)).toInt();
+        if (bAct)
+        {
+        int id = model->data(model->index(row, 0)).toInt();
+        QString filter = QString("path = %1").arg(id);
+        modelTestLog->setFilter(filter);
+        modelTestLog->select();
+        }
+//    }
+}
 
 
 void MainWindow::onSelectedPath(const QModelIndex& current, const QModelIndex& previous)
-    {
-      if (previous.row()!=-1)   // Something actually selected
-          {
-           ui->mapWidgetFields->setBorderFocus(false);
-           ui->mapWidgetFields->update();
-           int row = current.row();
+{
+    onSelectedPathGeneral(modelPath,current, previous,false);
+};
 
-           // Retrieve the data of the selected row if needed
-           int id = modelPath->data(modelPath->index(row, 0)).toInt();
-           QMessageBox msg;
-           msg.setText("Selected path! Row: " + QString::number(row) + ", previous row: " + QString::number(previous.row()) + "id: " +QString::number(id));
-           msg.exec();
-          }
-  };
+void MainWindow::onSelectedPathLog(const QModelIndex& current, const QModelIndex& previous)
+{
+    onSelectedPathGeneral(modelPathLog,current, previous,true);
+};
 
-void MainWindow::onLoadLogFile()
+void MainWindow::onSelectedLog(const QModelIndex& current, const QModelIndex& previous)
+{
+    int row = current.row();
+    QString filename = modelTestLog->data(modelTestLog->index(row, 1)).toString();
+    onLoadLogFile(filename);
+}
+
+void MainWindow::onLoadLogFile(QString filename)
 {
     // Handle the file selection and update the line edit
-    QString filename = QFileDialog::getOpenFileName(this, "Open File", "", "CSV Files (*.csv);;All Files (*)");
+//    filename = QFileDialog::getOpenFileName(this, "Open File", "", "CSV Files (*.csv);;All Files (*)");
+    filename="/home/biophysics/Documents/logs/"+filename;
     QVector<LocPoint> mTrace;
     coords_polar vehicle_polar;
     coords_cartesian vehicle_enu;
@@ -989,7 +1134,6 @@ MainWindow::~MainWindow()
 bool MainWindow::eventFilter(QObject *object, QEvent *e)
 {
     Q_UNUSED(object);
-
     if (e->type() == QEvent::KeyPress)
     {
         QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
@@ -1319,7 +1463,6 @@ void MainWindow::timerSlot()
         if (car->pollData() && ind > largest) {
             largest = ind;
         }
-
         ind++;
     }
 
@@ -3217,7 +3360,7 @@ void MainWindow::timerSlotRtcm()
                         ui->refSendAntHBox->value());
 
             emit rtcmReceivedStep1(data);
-            mTcpServer->broadcastData(data);
+            mTcpServerRtcm->broadcastData(data);
         }
     }
 }
@@ -3290,14 +3433,14 @@ void MainWindow::on_refGetButton_clicked()
 void MainWindow::on_tcpServerBox_toggled(bool checked)
 {
     if (checked) {
-        if (!mTcpServer->startTcpServer(ui->tcpServerPortBox->value())) {
+        if (!mTcpServerRtcm->startTcpServer(ui->tcpServerPortBox->value())) {
             QMessageBox::warning(this, "TCP Server Error",
                                  "Creating TCP server for RTCM data failed. Make sure that the port is not "
                                  "already in use.");
             ui->tcpServerBox->setChecked(false);
         }
     } else {
-        mTcpServer->stopServer();
+        mTcpServerRtcm->stopServer();
     }
 }
 

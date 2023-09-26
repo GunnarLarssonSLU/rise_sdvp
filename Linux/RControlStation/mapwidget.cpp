@@ -1681,8 +1681,25 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
     if (mDrawGrid) {
         paintGrid(painter,pen, drawTrans, txtTrans, width, height, stepGrid, txt, pt_txt, textColor, zeroAxisColor, firstAxisColor,secondAxisColor,zeroAxisWidth);
     }
+
+    // Draw routes
+    bool isSelected;
+    // Draw fields
+    for (int fn = 0;fn < mFields->size();fn++) {
+        isSelected= (mFields->mRouteNow == fn) && (focusBorder==true);
+        MapRoute &fieldNow = mFields->at(fn);
+        fieldNow.paintBorder(painter, pen, isSelected, mScaleFactor, drawTrans);
+    }
+
+    for (int rn = 0;rn < mPaths->size();rn++) {
+        MapRoute &routeNow = mPaths->at(rn);
+        isSelected= (mPaths->mRouteNow == rn) && (focusBorder==false);
+        routeNow.paintPath(this, painter, pen, isSelected, mScaleFactor, drawTrans, txt, pt_txt, rect_txt, txtTrans, highQuality);
+    }
+
     //paintInfoTraces();
     mVisibleInfoTracePoints.clear();
+
 
     // Draw info trace
     int info_segments = 0;
@@ -1697,22 +1714,6 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
 //    qDebug() << "Middle painting";
 
     paintCarTraces(painter,pen,drawTrans);
-    // Draw fields
-    bool isSelected;
-    for (int fn = 0;fn < mFields->size();fn++) {
-        isSelected= (mFields->mRouteNow == fn) && (focusBorder==true);
-        MapRoute &fieldNow = mFields->at(fn);
-        fieldNow.paintBorder(painter, pen, isSelected, mScaleFactor, drawTrans);
-    }
-
-    // Draw routes
-    isSelected;
-    for (int rn = 0;rn < mPaths->size();rn++) {
-        MapRoute &routeNow = mPaths->at(rn);
-        isSelected= (mPaths->mRouteNow == rn) && (focusBorder==false);
-        routeNow.paintPath(this, painter, pen, isSelected, mScaleFactor, drawTrans, txt, pt_txt, rect_txt, txtTrans, highQuality);
-    }
-
 
     // Map module painting
     painter.save();
