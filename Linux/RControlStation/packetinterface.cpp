@@ -205,6 +205,12 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         emit printReceived(id, QString::fromLatin1(tmpArray));
     } break;
 
+    case CMD_PRINTLOG: {
+        QByteArray tmpArray = QByteArray::fromRawData((const char*)data, len);
+        tmpArray[len] = '\0';
+        emit logReceived(id, QString::fromLatin1(tmpArray));
+    } break;
+
     case CMD_GET_ENU_REF: {
         int32_t ind = 0;
         double lat, lon, height;

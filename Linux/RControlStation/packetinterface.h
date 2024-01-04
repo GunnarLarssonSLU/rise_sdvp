@@ -83,6 +83,7 @@ signals:
     void dataToSend(QByteArray &data);
     void packetReceived(quint8 id, CMD_PACKET cmd, const QByteArray &data);
     void printReceived(quint8 id, QString str);
+    void logReceived(quint8 id, QString str);
     void stateReceived(quint8 id, CAR_STATE state);
     void vescFwdReceived(quint8 id, QByteArray data);
     void ackReceived(quint8 id, CMD_PACKET cmd, QString msg);

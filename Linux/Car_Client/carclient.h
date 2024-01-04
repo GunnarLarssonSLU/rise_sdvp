@@ -163,6 +163,7 @@ private:
 
     bool setUnixTime(qint64 t);
     void printTerminal(QString str);
+    void printLog(QString str);
     bool waitProcess(QProcess &process, int timeoutMs = 300000);
 
 };

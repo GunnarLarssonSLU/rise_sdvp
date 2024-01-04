@@ -27,6 +27,7 @@
 #include <QNetworkInterface>
 #include <QBuffer>
 #include "rtcm3_simple.h"
+#include "utility.h"
 
 namespace {
 void rtcm_rx(uint8_t *data, int len, int type) {
@@ -136,6 +137,7 @@ CarClient::CarClient(QObject *parent) : QObject(parent)
     connect(mCamera->video(), SIGNAL(imageCaptured(QImage)),
             this, SLOT(cameraImageCaptured(QImage)));
 #endif
+    logLineUsbReceived(0, "All Started!");
 }
 
 CarClient::~CarClient()
@@ -157,6 +159,7 @@ void CarClient::connectSerial(QString port, int baudrate)
     mSettings.serialBaud = baudrate;
 
     if(!mSerialPort->isOpen()) {
+        qDebug() << "Serial port connection failed";
         return;
     }
 
@@ -561,6 +564,7 @@ void CarClient::packetDataToSend(QByteArray &data)
     if (id == mCarId || id == 255) {
         if (cmd == CMD_CAMERA_STREAM_START) {
 #if HAS_CAMERA
+            qDebug() << "in CarClient::packetDataToSend. Sending camera feed";
             int camera = vb.vbPopFrontInt16();
             mCameraJpgQuality = vb.vbPopFrontInt16();
             int width = vb.vbPopFrontInt16();
@@ -603,6 +607,26 @@ void CarClient::packetDataToSend(QByteArray &data)
                 packetConsumed = true;
 #endif
             }
+
+
+
+            if (str == "help") {
+                printTerminal("lsusb\n"
+                              "  Print information about connected usbs.");
+                printTerminal("list_ttys\n"
+                              "  Print information about connected ttys.");
+            }
+            if (str=="lsusb")
+            {
+                std::string resultstr=utility::systemcmd("lsusb");
+                printTerminal(resultstr.c_str());
+            }
+            if (str=="list_ttys")
+            {
+                std::string resultstr=utility::systemcmd("ls /dev/tty*");
+                printTerminal(resultstr.c_str());
+            }
+
         } else if (cmd == CMD_CLEAR_UWB_ANCHORS) {
             mUwbAnchorsNow.clear();
         } else if (cmd == CMD_ADD_UWB_ANCHOR) {
@@ -618,11 +642,11 @@ void CarClient::packetDataToSend(QByteArray &data)
     if (!packetConsumed) {
     	qDebug() << "Try to send to serial port";
         if (mSerialPort->isOpen()) {
-        	qDebug() << "Worked";
+            qDebug() << "Packet sent (port open)";
             mSerialPort->writeData(data);
         } else
         {
-        	qDebug() << "Did not worked";
+            qDebug() << "Packet not sent (port closed)";
 
         }
 
@@ -693,7 +717,7 @@ void CarClient::reconnectTimerSlot()
 void CarClient::logFlushTimerSlot()
 {
     if (mLog.isOpen()) {
-        mLog.flush();
+//        mLog.flush();
     }
 }
 
@@ -724,14 +748,14 @@ void CarClient::carPacketRx(quint8 id, CMD_PACKET cmd, const QByteArray &data)
     }
 
     if (id != 254) {
-        qDebug() << "In CarClient::carPacketRx. Car: " << id;
+//        qDebug() << "In CarClient::carPacketRx. Car: " << id;
         mCarId = id;
 
         if (QString::compare(mHostAddress.toString(), "0.0.0.0") != 0) {
-            qDebug() << "datagramming";
+//            qDebug() << "datagramming";
             mUdpSocket->writeDatagram(toSend, mHostAddress, mUdpPort);
         }
-        qDebug() << "tcpservering";
+//        qDebug() << "tcpservering";
         mTcpServer->packet()->sendPacket(toSend);
     }
 }
@@ -741,6 +765,7 @@ void CarClient::logLineUsbReceived(quint8 id, QString str)
     (void)id;
 
     if (mLog.isOpen()) {
+        qDebug() << "Writing to log: " << str;
         mLog.write(str.toLocal8Bit());
     }
 }
@@ -1000,6 +1025,15 @@ void CarClient::printTerminal(QString str)
     packet.append((char)CMD_PRINTF);
     packet.append(str.toLocal8Bit());
     carPacketRx(mCarId, CMD_PRINTF, packet);
+}
+
+void CarClient::printLog(QString str)
+{
+    QByteArray packet;
+    packet.append((quint8)mCarId);
+    packet.append((char)CMD_PRINTLOG);
+    packet.append(str.toLocal8Bit());
+    carPacketRx(mCarId, CMD_PRINTLOG, packet);
 }
 
 bool CarClient::waitProcess(QProcess &process, int timeoutMs)
