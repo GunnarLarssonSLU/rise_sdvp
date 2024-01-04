@@ -8,6 +8,7 @@ ifeq ($(USE_OPT),)
   USE_OPT = -O2 -ggdb -fomit-frame-pointer -falign-functions=16 -std=gnu99
   USE_OPT += -DBOARD_OTG_NOVBUSSENS -DSTM32F405xx $(build_args)
   USE_OPT += -fsingle-precision-constant -Wdouble-promotion
+  USE_OPT += --specs=nosys.specs
 endif
 
 # C specific options here (added to USE_OPT).
@@ -18,6 +19,9 @@ endif
 # C++ specific options here (added to USE_OPT).
 ifeq ($(USE_CPPOPT),)
   USE_CPPOPT = -fno-rtti
+  #Newlib
+  USE_CPPOPT += --specs=nosys.specs
+#  USE_CPPOPT = -nostdlib
 endif
 
 # Enable this if you want the linker to remove unused code and data
@@ -28,6 +32,8 @@ endif
 # Linker extra options here.
 ifeq ($(USE_LDOPT),)
   USE_LDOPT = 
+#  USE_LDOPT = --specs=nano.specs
+#  USE_LDOPT = -nostdlib
 endif
 
 # Enable this if you want link time optimizations (LTO)
@@ -225,6 +231,9 @@ SZ   = $(TRGT)size
 HEX  = $(CP) -O ihex
 BIN  = $(CP) -O binary
 
+$(info CC="$(CC)")
+$(info LD="$(LD)")
+
 # ARM-specific options here
 AOPT =
 
@@ -278,14 +287,16 @@ build/$(PROJECT).bin: build/$(PROJECT).elf
 
 # Program
 upload: build/$(PROJECT).bin
-	openocd -f board/stm32f4discovery.cfg -c "reset_config trst_only combined" -c "program build/$(PROJECT).elf verify reset exit" # For openocd 0.9
+#	openocd -f board/stm32f4discovery.cfg -c "reset_config trst_only combined" -c "program build/$(PROJECT).elf verify reset exit" # For openocd 0.9
+	openocd -d -f board/stm32f4discovery.cfg -c "reset_config trst_only combined" -c "program build/$(PROJECT).elf verify reset exit" # For openocd 0.9
 
 #program with olimex arm-usb-tiny-h and jtag-swd adapter board. needs openocd>=0.9
 upload-olimex: build/$(PROJECT).bin
 	openocd -f interface/ftdi/olimex-arm-usb-tiny-h.cfg -f interface/ftdi/olimex-arm-jtag-swd.cfg -c "set WORKAREASIZE 0x2000" -f target/stm32f4x.cfg -c "program build/$(PROJECT).elf verify reset"
 
 debug-start:
-	openocd -f stm32-bv_openocd.cfg
+#	openocd -f stm32-bv_openocd.cfg
+	openocd -f stm32-bv_openocd.cfg -d
 	
 upload_remote: build/$(PROJECT).bin
 #	./upload_remote build/$(PROJECT).bin pi 10.1.151.19 22 pi_gpio

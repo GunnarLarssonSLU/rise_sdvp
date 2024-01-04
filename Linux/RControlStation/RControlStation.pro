@@ -12,9 +12,10 @@ QT       += network
 QT       += opengl
 QT       += quick
 QT       += quickcontrols2
-QT		 += gamepad
+QT	 += gamepad
 QT       +=sql
 QT       +=charts
+QT       +=sensors
 
 CONFIG   += c++11
 
@@ -80,7 +81,10 @@ contains(DEFINES, HAS_ASSIMP) {
     LIBS += -lassimp
 }
 
+LIBS += -L/home/gunnar/code/openssl-1.1.1q -lcrypto -L/path/to/openssl-1.1.1q -lssl
+
 SOURCES += main.cpp\
+    CompassWidget.cpp \
     checkboxdelegate.cpp \
         mainwindow.cpp \
     qcustomplot.cpp \
@@ -121,6 +125,7 @@ SOURCES += main.cpp\
     wireguard.cpp
 
 HEADERS  += mainwindow.h \
+    CompassWidget.h \
     checkboxdelegate.h \
     qcustomplot.h \
     datatypes.h \

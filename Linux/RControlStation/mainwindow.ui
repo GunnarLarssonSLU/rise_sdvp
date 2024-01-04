@@ -28,12 +28,12 @@
        <enum>QTabWidget::North</enum>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tabFarm">
        <attribute name="icon">
         <iconset>
-         <normaloff>../../../512px-Font_Awesome_5_solid_seedling.svg.png</normaloff>../../../512px-Font_Awesome_5_solid_seedling.svg.png</iconset>
+         <normaloff>512px-Font_Awesome_5_solid_seedling.svg.png</normaloff>512px-Font_Awesome_5_solid_seedling.svg.png</iconset>
        </attribute>
        <attribute name="title">
         <string/>
@@ -727,7 +727,7 @@
       <widget class="QWidget" name="tabVehicles">
        <attribute name="icon">
         <iconset>
-         <normaloff>../../../1401952054.png</normaloff>../../../1401952054.png</iconset>
+         <normaloff>tractor.png</normaloff>tractor.png</iconset>
        </attribute>
        <attribute name="title">
         <string/>
@@ -1277,7 +1277,7 @@
                <enum>QTabWidget::Rounded</enum>
               </property>
               <property name="currentIndex">
-               <number>0</number>
+               <number>1</number>
               </property>
               <property name="usesScrollButtons">
                <bool>false</bool>
@@ -2019,8 +2019,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>216</width>
-                     <height>749</height>
+                     <width>268</width>
+                     <height>975</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_23">

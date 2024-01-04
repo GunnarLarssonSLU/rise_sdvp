@@ -105,7 +105,8 @@ int main(int argc, char *argv[])
     QString logUsbDir = QDir::currentPath() + "/logs";
     bool inputRtcm = false;
 //    QString ttyPortRtcm = "/dev/ttyUSB0";
-    QString ttyPortRtcm = "/dev/ttyACMO";
+//    QString ttyPortRtcm = "/dev/ttyACMO";
+    QString ttyPortRtcm = "/dev/ttyACM0";
     int rtcmBaud = 9600;
     bool useChronos = false;
     int chronosTxId = -1;
@@ -467,6 +468,7 @@ int main(int argc, char *argv[])
 #endif
 
     car.setCarIdToSet(carId);
+    qDebug() << "TTY port:" << ttyPort;
 
     if (!ttyPort.isEmpty()) {
         qDebug() << "Connecting to a car";

@@ -75,6 +75,10 @@ bool Camera::openCamera(int cameraIndex)
 
     QList<QCameraInfo> availableCameras = QCameraInfo::availableCameras();
 
+    qDebug() << "cameraIndex:" << cameraIndex;
+    for (const QCameraInfo &cameraInfo : availableCameras)
+        qDebug() << cameraInfo.deviceName();
+
     if (availableCameras.size() > cameraIndex) {
         mCamera = new QCamera(availableCameras.at(cameraIndex), this);
         mCamera->setViewfinder(mVid);
@@ -100,6 +104,8 @@ void Camera::closeCamera()
 
 bool Camera::startCameraStream(int width, int height, int fps)
 {
+    qDebug() << "In Camera::startCameraStream";
+    qDebug() << "Parameters: width: " << width << ", height: " << height << ", fps: " << fps;
     int res = false;
 
     if (mCamera) {
@@ -128,6 +134,7 @@ bool Camera::startCameraStream(int width, int height, int fps)
         mCamera->start();
 
         res = true;
+        qWarning() << "Camera open";
     } else {
         qWarning() << "No camera open";
     }

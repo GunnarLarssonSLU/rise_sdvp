@@ -1790,29 +1790,29 @@ void MapWidget::paintUnitZoomGeneralinfo(QPainter &painter,QFont font, QTransfor
     if (mDrawGrid) {
         double res = stepGrid / 1000.0;
         if (res >= 1000.0) {
-            txt.sprintf("Grid res: %.0f km", res / 1000.0);
+            txt.asprintf("Grid res: %.0f km", res / 1000.0);
         } else if (res >= 1.0) {
-            txt.sprintf("Grid res: %.0f m", res);
+            txt.asprintf("Grid res: %.0f m", res);
         } else {
-            txt.sprintf("Grid res: %.0f cm", res * 100.0);
+            txt.asprintf("Grid res: %.0f cm", res * 100.0);
         }
         painter.drawText(width - txtOffset, start_txt, txt);
         start_txt += txt_row_h;
     }
 
     // Draw zoom level
-    txt.sprintf("Zoom: %.7f", mScaleFactor);
+    txt.asprintf("Zoom: %.7f", mScaleFactor);
     painter.drawText(width - txtOffset, start_txt, txt);
     start_txt += txt_row_h;
 
     // Draw OSM zoom level
     if (mDrawOpenStreetmap) {
-        txt.sprintf("OSM zoom: %d", mOsmZoomLevel);
+        txt.asprintf("OSM zoom: %d", mOsmZoomLevel);
         painter.drawText(width - txtOffset, start_txt, txt);
         start_txt += txt_row_h;
 
         if (mDrawOsmStats) {
-            txt.sprintf("DL Tiles: %d", mOsm->getTilesDownloaded());
+            txt.asprintf("DL Tiles: %d", mOsm->getTilesDownloaded());
             painter.drawText(width - txtOffset, start_txt, txt);
             start_txt += txt_row_h;
 

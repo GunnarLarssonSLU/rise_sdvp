@@ -30,6 +30,7 @@
 #include "imagewidget.h"
 
 #ifdef HAS_OPENGL
+#include "CompassWidget.h"
 #include "orientationwidget.h"
 #endif
 
@@ -82,6 +83,7 @@ private slots:
     void udpReadReady();
     void tcpRx(QByteArray &data);
     void terminalPrint(quint8 id, QString str);
+    void logPrint(quint8 id, QString str);
     void vescFwdReceived(quint8 id, QByteArray data);
     void routePointSet(LocPoint pos);
     void lastRoutePointRemoved();
@@ -134,6 +136,7 @@ private:
     PacketInterface *mPacketInterface;
 
 #ifdef HAS_OPENGL
+    CompassWidget *mCompassWidget;
     OrientationWidget *mOrientationWidget;
 #endif
 

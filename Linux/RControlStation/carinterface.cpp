@@ -52,8 +52,10 @@ CarInterface::CarInterface(QWidget *parent) :
 
 #ifdef HAS_OPENGL
     mOrientationWidget = new OrientationWidget(this);
+    mCompassWidget = new CompassWidget(this);
     ui->orientationLayout->removeItem(ui->orientationSpacer);
     ui->orientationLayout->insertWidget(0, mOrientationWidget, 1);
+    ui->orientationLayout->insertWidget(1, mCompassWidget, 2);
 #endif
 
     ui->tabWidget->removeTab(6);
@@ -166,7 +168,6 @@ void CarInterface::setStateData(CAR_STATE data)
     fwStrLog1.sprintf("ZZ %d.%d", data.fw_major, data.fw_minor);
     ui->fwLabel->setText(fwStrLog1);
 
-
     // Speed bar
     QString speedTxt;
     speedTxt.sprintf("Speed: %.2f km/h", data.speed * 3.6);
@@ -226,12 +227,7 @@ void CarInterface::setStateData(CAR_STATE data)
         loc_uwb.setXY(data.px_uwb, data.py_uwb);
         ap_goal.setXY(data.ap_goal_px, data.ap_goal_py);
         ap_goal.setRadius(data.ap_rad);
-//        LocPoint locTemporarySolution=loc_gps;
-//        locTemporarySolution.setYaw(data.yaw * M_PI / 180.0);
-//        locTemporarySolution.setXY(data.px, data.py);
-//        locTemporarySolution.setSpeed(data.speed);
         car->setLocation(loc);
-//        car->setLocation(locTemporarySolution);  // OBS OBS OBS NÖDLÖSNING!!
         car->setLocationGps(loc_gps);
         car->setLocationUwb(loc_uwb);
         car->setApGoal(ap_goal);
@@ -302,6 +298,8 @@ void CarInterface::setPacketInterface(PacketInterface *packetInterface)
             mPacketInterface, SLOT(sendTerminalCmd(quint8,QString)));
     connect(mPacketInterface, SIGNAL(printReceived(quint8,QString)),
             this, SLOT(terminalPrint(quint8,QString)));
+    connect(mPacketInterface, SIGNAL(logReceived(quint8,QString)),
+            this, SLOT(logPrint(quint8,QString)));
     connect(this, SIGNAL(forwardVesc(quint8,QByteArray)),
             mPacketInterface, SLOT(forwardVesc(quint8,QByteArray)));
     connect(mPacketInterface, SIGNAL(vescFwdReceived(quint8,QByteArray)),
@@ -467,6 +465,13 @@ void CarInterface::tcpRx(QByteArray &data)
 }
 
 void CarInterface::terminalPrint(quint8 id, QString str)
+{
+    if (id == mId || id == 255) {
+        ui->terminalBrowser->append(str);
+    }
+}
+
+void CarInterface::logPrint(quint8 id, QString str)
 {
     if (id == mId || id == 255) {
         ui->terminalBrowser->append(str);

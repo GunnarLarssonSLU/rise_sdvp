@@ -57,7 +57,7 @@ double sign(double x);
 int truncateNumber(double *number, double min, double max);
 void normAngle(double *angle);
 bool waitSignal(QObject *sender, const char *signal, int timeoutMs);
-
+std::string systemcmd(const char* command);
 }
 
 #endif /* BUFFER_H_ */

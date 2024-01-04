@@ -98,8 +98,8 @@ void PacketInterface::processData(QByteArray &data)
     unsigned char rx_data;
     const int rx_timeout = 50;
 
-    qDebug() << "in packetinterface::processData";
-    qDebug() << data;
+//    qDebug() << "in packetinterface::processData";
+//    qDebug() << data;
     for(int i = 0;i < data.length();i++) {
         rx_data = data[i];
 
@@ -172,7 +172,7 @@ void PacketInterface::processData(QByteArray &data)
                 if (crc16(mRxBuffer, mPayloadLength) ==
                         ((unsigned short)mCrcHigh << 8 | (unsigned short)mCrcLow)) {
                     // Packet received!
-                    qDebug() << "Ready to process packet";
+//                    qDebug() << "Ready to process packet";
                     processPacket(mRxBuffer, mPayloadLength);
                 }
             }
@@ -208,6 +208,12 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
 
     switch (cmd) {
     case CMD_PRINTF: {
+        QByteArray tmpArray = QByteArray::fromRawData((const char*)data, len);
+        tmpArray[len] = '\0';
+        emit printReceived(id, QString::fromLatin1(tmpArray));
+    } break;
+
+    case CMD_PRINTLOG: {
         QByteArray tmpArray = QByteArray::fromRawData((const char*)data, len);
         tmpArray[len] = '\0';
         emit printReceived(id, QString::fromLatin1(tmpArray));
@@ -1346,6 +1352,7 @@ void PacketInterface::mrOverridePower(quint8 id, double fl_f, double bl_l, doubl
 void PacketInterface::startCameraStream(quint8 id, int camera, int quality,
                                         int width, int height, int fps, int skip)
 {
+    qWarning() << "In PacketInterface::startCameraStream";
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_CAMERA_STREAM_START;

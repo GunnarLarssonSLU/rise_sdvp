@@ -352,6 +352,7 @@ void OsmClient::fileDownloaded(QNetworkReply *pReply)
             case 1:
                 path = mCacheDir + "/" + QString::number(zoom) + "/" +
                         QString::number(y) + "/" + QString::number(x) + ".jpeg";
+                qDebug() << path;
                 break;
                 // If OpenStreetMap
             case 2:

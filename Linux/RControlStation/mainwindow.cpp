@@ -40,7 +40,7 @@
 
 using namespace QtCharts;
 
-#include <QtCharts/QChartView>>
+#include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
 #include <QListView>
 #include <QStringListModel>
@@ -120,6 +120,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     bLogLoaded=false;
     stepsize=1;
+
+
 
 
     checkboxdelegate=new CheckBoxDelegate();

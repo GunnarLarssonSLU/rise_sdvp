@@ -31,7 +31,7 @@
         <enum>QTabWidget::Triangular</enum>
        </property>
        <property name="currentIndex">
-        <number>0</number>
+        <number>8</number>
        </property>
        <property name="tabsClosable">
         <bool>false</bool>
@@ -53,12 +53,12 @@
            <item>
             <spacer name="orientationSpacer">
              <property name="orientation">
-              <enum>Qt::Vertical</enum>
+              <enum>Qt::Horizontal</enum>
              </property>
              <property name="sizeHint" stdset="0">
               <size>
-               <width>20</width>
-               <height>40</height>
+               <width>40</width>
+               <height>20</height>
               </size>
              </property>
             </spacer>
@@ -1191,6 +1191,26 @@
            <width>113</width>
            <height>25</height>
           </rect>
+         </property>
+        </widget>
+       </widget>
+       <widget class="QWidget" name="tabLog">
+        <attribute name="title">
+         <string>Logging</string>
+        </attribute>
+        <widget class="QTextBrowser" name="LogBrowser">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>649</width>
+           <height>283</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Monospace</family>
+          </font>
          </property>
         </widget>
        </widget>

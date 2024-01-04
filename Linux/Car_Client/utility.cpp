@@ -20,6 +20,7 @@
 #include <QDateTime>
 #include <QEventLoop>
 #include <QTimer>
+#include <iostream>
 
 namespace {
 inline double roundDouble(double x) {
@@ -425,5 +426,35 @@ bool waitSignal(QObject *sender, const char *signal, int timeoutMs)
 
     return timeoutTimer.isActive();
 }
+
+
+
+std::string systemcmd(const char* command)
+{
+FILE* pipe = popen(command, "r");
+if (!pipe) {
+    return "popen failed!";
+}
+
+// Read the command output
+char buffer[128];
+std::string result;
+while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+    result += buffer;
+}
+
+// Close the pipe
+int status = pclose(pipe);
+if (status == -1) {
+    return "pclose failed!";
+}
+
+// Print the command output
+std::cout << "Command output:\n" << result;
+
+return result;
+}
+
+
 
 }
