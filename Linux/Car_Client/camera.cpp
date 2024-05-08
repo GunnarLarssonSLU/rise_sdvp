@@ -19,20 +19,27 @@
 #include "utility.h"
 
 #include <QDebug>
-#include <QCameraInfo>
+#include <QMediaDevices>
+#include <QCameraDevice>
+#include <QMediaCaptureSession>
+//#include <QCameraInfo>
 #include <QFile>
-#include <QCameraViewfinderSettings>
+#include <QCameraFormat>
+//#include <QCameraViewfinderSettings>
 #include <QTime>
 
-MyVideoSurface::MyVideoSurface(QObject *parent) : QAbstractVideoSurface(parent)
+//MyVideoSurface::MyVideoSurface(QObject *parent) : QAbstractVideoSurface(parent)
+MyVideoSurface::MyVideoSurface(QObject *parent) : QVideoSink(parent)
 {
 
 }
 
-QList<QVideoFrame::PixelFormat> MyVideoSurface::supportedPixelFormats(QAbstractVideoBuffer::HandleType) const
+//QList<QVideoFrame::PixelFormat> MyVideoSurface::supportedPixelFormats(QAbstractVideoBuffer::HandleType) const
+QList<QVideoFrameFormat::PixelFormat> MyVideoSurface::supportedPixelFormats(QVideoFrame::HandleType) const
 {
-    QList<QVideoFrame::PixelFormat> result;
-    result  << QVideoFrame::Format_RGB32 << QVideoFrame::Format_RGB24;
+    QList<QVideoFrameFormat::PixelFormat> result;
+    result  << QVideoFrameFormat::Format_RGBX8888;
+//    result  << QVideoFrame::Format_RGB32 << QVideoFrame::Format_RGB24;
     return result;
 }
 
@@ -42,10 +49,14 @@ bool MyVideoSurface::present(const QVideoFrame &frame)
 
 //    qDebug() << "Frame received";
 
-    localCopy.map(QAbstractVideoBuffer::ReadOnly);
+    localCopy.map(QVideoFrame::ReadOnly);
+//    localCopy.map(QAbstractVideoBuffer::ReadOnly);
 
-    QImage img(localCopy.bits(), localCopy.width(), localCopy.height(),
-               QVideoFrame::imageFormatFromPixelFormat(localCopy.pixelFormat()));
+    QImage img(localCopy.bits(0), localCopy.width(), localCopy.height(),
+               QVideoFrameFormat::imageFormatFromPixelFormat(localCopy.pixelFormat()));
+
+//    QImage img(localCopy.bits(), localCopy.width(), localCopy.height(),
+//               QVideoFrame::imageFormatFromPixelFormat(localCopy.pixelFormat()));
 
     emit imageCaptured(img);
 
@@ -73,17 +84,25 @@ bool Camera::openCamera(int cameraIndex)
 {
     int res = false;
 
-    QList<QCameraInfo> availableCameras = QCameraInfo::availableCameras();
+//    QList<QCameraDevice> availableCameras = QCameraDevice::availableCameras();
+    const QList<QCameraDevice> availableCameras = QMediaDevices::videoInputs();
 
     qDebug() << "cameraIndex:" << cameraIndex;
-    for (const QCameraInfo &cameraInfo : availableCameras)
-        qDebug() << cameraInfo.deviceName();
+    for (const QCameraDevice &cameraInfo : availableCameras)
+ //       qDebug() << cameraInfo.deviceName();
 
     if (availableCameras.size() > cameraIndex) {
         mCamera = new QCamera(availableCameras.at(cameraIndex), this);
-        mCamera->setViewfinder(mVid);
-        mCamera->setCaptureMode(QCamera::CaptureViewfinder);
-        mCamera->load();
+//        mCamera->setViewfinder(mVid);
+//        mCamera->setCaptureMode(QCamera::CaptureViewfinder);
+//        mCamera->load();
+
+        QMediaCaptureSession mediaCaptureSession;
+//        mediaCaptureSession.setCamera(&mCamera);
+        mediaCaptureSession.setCamera(mCamera);
+//        mediaCaptureSession.setVideoOutput(&mVid);
+        mediaCaptureSession.setVideoOutput(mVid);
+
         utility::waitSignal(mCamera, SIGNAL(stateChanged(QCamera::State)), 1000);
         res = true;
     } else {
@@ -109,7 +128,9 @@ bool Camera::startCameraStream(int width, int height, int fps)
     int res = false;
 
     if (mCamera) {
-        QCameraViewfinderSettings vfSet = mCamera->viewfinderSettings();
+        /*
+        QCameraFormat vfSet = mCamera->viewfinderSettings();
+        //QCameraViewfinderSettings vfSet = mCamera->viewfinderSettings();
 
         if (fps > 0) {
             vfSet.setMinimumFrameRate(fps);
@@ -119,6 +140,10 @@ bool Camera::startCameraStream(int width, int height, int fps)
         if (width > 0 && height > 0) {
             vfSet.setResolution(width, height);
         }
+        */
+
+
+
 
 //        auto a = mCamera->supportedViewfinderPixelFormats();
 //        if (a.contains(QVideoFrame::Format_RGB24)) {
@@ -130,7 +155,7 @@ bool Camera::startCameraStream(int width, int height, int fps)
 //        vfSet.setPixelFormat(QVideoFrame::Format_Jpeg);
 //        vfSet.setPixelFormat(QVideoFrame::Format_YUYV);
 
-        mCamera->setViewfinderSettings(vfSet);
+        // mCamera->setViewfinderSettings(vfSet);
         mCamera->start();
 
         res = true;
@@ -145,7 +170,8 @@ bool Camera::startCameraStream(int width, int height, int fps)
 QString Camera::cameraInfo()
 {
     QString res;
-
+    QTextStream out(&res);
+/*
     if (mCamera) {
         res += "Locks supported: " + QString::number(mCamera->supportedLocks(), 16) + "\n";
 
@@ -167,6 +193,17 @@ QString Camera::cameraInfo()
             res.chop(1);
         }
     }
+*/
+    const QList<QCameraFormat> videoFormats = mCamera->cameraDevice().videoFormats();
+
+    for (const QCameraFormat &format : videoFormats)
+    {
+        out << QVideoFrameFormat::pixelFormatToString(format.pixelFormat())
+                 << " (" << format.resolution().width()
+                 << ")x(" << format.resolution().height()
+                 << ") " << format.minFrameRate()
+                 << '-' << format.maxFrameRate() << "FPS";
+    }
 
     return res;
 }
@@ -176,9 +213,14 @@ bool Camera::isLoaded()
     bool res = false;
 
     if (mCamera) {
-        if (mCamera->state() == QCamera::LoadedState ||
+/*        if (mCamera->state() == QCamera::LoadedState ||
                 mCamera->status() == QCamera::ActiveStatus) {
             res = true;
+        }
+*/
+        if (mCamera->isActive())
+        {
+            res=true;
         }
     }
 

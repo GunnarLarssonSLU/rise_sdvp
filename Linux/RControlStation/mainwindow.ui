@@ -28,7 +28,7 @@
        <enum>QTabWidget::North</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tabFarm">
        <attribute name="icon">
@@ -47,21 +47,31 @@
           <x>0</x>
           <y>0</y>
           <width>759</width>
-          <height>512</height>
+          <height>543</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridlayout_3">
-         <item row="2" column="2">
-          <widget class="QPushButton" name="pushButton_farm">
-           <property name="text">
-            <string>Add farm</string>
+         <item row="4" column="2">
+          <widget class="QLineEdit" name="fieldnameEdit">
+           <property name="enabled">
+            <bool>true</bool>
            </property>
           </widget>
          </item>
-         <item row="11" column="2">
-          <widget class="QPushButton" name="pushButton_path">
+         <item row="0" column="3">
+          <widget class="QLabel" name="label_11">
            <property name="text">
-            <string>Add path</string>
+            <string>Boundary</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+           </property>
+          </widget>
+         </item>
+         <item row="10" column="0">
+          <widget class="QLabel" name="label_6">
+           <property name="text">
+            <string>Path name:</string>
            </property>
           </widget>
          </item>
@@ -72,6 +82,30 @@
            </property>
           </widget>
          </item>
+         <item row="7" column="2">
+          <widget class="QPushButton" name="pushButton_field">
+           <property name="text">
+            <string>Add field</string>
+           </property>
+          </widget>
+         </item>
+         <item row="8" column="0">
+          <widget class="QLabel" name="labelArea">
+           <property name="text">
+            <string>Area:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="11" column="2">
+          <widget class="QPushButton" name="pushButton_path">
+           <property name="text">
+            <string>Add path</string>
+           </property>
+          </widget>
+         </item>
+         <item row="10" column="2">
+          <widget class="QLineEdit" name="pathnameEdit"/>
+         </item>
          <item row="9" column="2">
           <widget class="QTableView" name="pathTable">
            <property name="selectionBehavior">
@@ -79,10 +113,17 @@
            </property>
           </widget>
          </item>
-         <item row="8" column="2">
-          <widget class="QLabel" name="label_area_ha">
+         <item row="1" column="2">
+          <widget class="QLineEdit" name="locationnameEdit">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_16">
            <property name="text">
-            <string/>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Name:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
          </item>
@@ -93,6 +134,54 @@
            </property>
            <property name="alignment">
             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="labelFields">
+           <property name="text">
+            <string>Fields</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="labelFarm">
+           <property name="text">
+            <string>Farm</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+           </property>
+          </widget>
+         </item>
+         <item row="8" column="2">
+          <widget class="QLabel" name="label_area_ha">
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="2">
+          <widget class="QTableView" name="fieldTable">
+           <property name="selectionBehavior">
+            <enum>QAbstractItemView::SelectRows</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="labelFieldname">
+           <property name="text">
+            <string>Field name:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="2">
+          <widget class="QPushButton" name="pushButton_farm">
+           <property name="text">
+            <string>Add farm</string>
            </property>
           </widget>
          </item>
@@ -115,92 +204,10 @@
            </property>
           </widget>
          </item>
-         <item row="0" column="0">
-          <widget class="QLabel" name="labelFarm">
+         <item row="12" column="2">
+          <widget class="QPushButton" name="pushButton_ImportPath">
            <property name="text">
-            <string>Farm</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="3">
-          <widget class="QLabel" name="label_11">
-           <property name="text">
-            <string>Boundary</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="2">
-          <widget class="QLineEdit" name="locationnameEdit">
-           <property name="enabled">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="2">
-          <widget class="QLineEdit" name="fieldnameEdit">
-           <property name="enabled">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="2">
-          <widget class="QTableView" name="fieldTable">
-           <property name="selectionBehavior">
-            <enum>QAbstractItemView::SelectRows</enum>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
-          <widget class="QLabel" name="labelFields">
-           <property name="text">
-            <string>Fields</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="0">
-          <widget class="QLabel" name="labelFieldname">
-           <property name="text">
-            <string>Field name:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_16">
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Name:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item row="8" column="0">
-          <widget class="QLabel" name="labelArea">
-           <property name="text">
-            <string>Area:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="7" column="2">
-          <widget class="QPushButton" name="pushButton_field">
-           <property name="text">
-            <string>Add field</string>
-           </property>
-          </widget>
-         </item>
-         <item row="10" column="2">
-          <widget class="QLineEdit" name="pathnameEdit"/>
-         </item>
-         <item row="10" column="0">
-          <widget class="QLabel" name="label_6">
-           <property name="text">
-            <string>Path name:</string>
+            <string>Import path</string>
            </property>
           </widget>
          </item>
@@ -278,7 +285,7 @@
         <property name="geometry">
          <rect>
           <x>690</x>
-          <y>510</y>
+          <y>560</y>
           <width>661</width>
           <height>391</height>
          </rect>
@@ -474,7 +481,7 @@
         <property name="geometry">
          <rect>
           <x>0</x>
-          <y>510</y>
+          <y>540</y>
           <width>691</width>
           <height>381</height>
          </rect>
@@ -965,7 +972,7 @@
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
-          <widget class="MapWidget" name="mapWidget" native="true">
+          <widget class="MapWidget" name="mapLiveWidget" native="true">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
              <horstretch>1</horstretch>
@@ -1277,7 +1284,7 @@
                <enum>QTabWidget::Rounded</enum>
               </property>
               <property name="currentIndex">
-               <number>1</number>
+               <number>0</number>
               </property>
               <property name="usesScrollButtons">
                <bool>false</bool>

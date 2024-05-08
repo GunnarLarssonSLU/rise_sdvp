@@ -120,6 +120,9 @@ public:
     int16_t ap_route_left;
     double px_uwb;
     double py_uwb;
+    double log1;
+    double log2;
+    double log3;
 
     QList<double> accelList() {
         QList<double> a;
