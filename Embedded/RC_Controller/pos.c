@@ -73,6 +73,7 @@ static mc_values m_mc_val_right;
 #endif
 static float m_yaw_imu_clamp;
 static bool m_yaw_imu_clamp_set;
+static int iDebug;
 
 // Private functions
 static void cmd_terminal_delay_info(int argc, const char **argv);
@@ -80,6 +81,9 @@ static void cmd_terminal_gps_corr_info(int argc, const char **argv);
 static void cmd_terminal_delay_comp(int argc, const char **argv);
 static void cmd_terminal_print_sat_info(int argc, const char **argv);
 static void cmd_terminal_sat_info(int argc, const char **argv);
+static void cmd_terminal_testGL(int argc, const char **argv);
+static void cmd_terminal_setpos(int argc, const char **argv);
+static void cmd_terminal_debug(int argc, const char **argv);
 static void mpu9150_read(float *accel, float *gyro, float *mag);
 static void update_orientation_angles(float *accel, float *gyro, float *mag, float dt);
 static void init_gps_local(GPS_STATE *gps);
@@ -101,6 +105,7 @@ static void mr_update_pos(POS_STATE *pos, float dt);
 #endif
 
 void pos_init(void) {
+	commands_printf("Initializing\n");
 	ahrs_init_attitude_info(&m_att);
 	m_attitude_init_done = false;
 	memset(&m_pos, 0, sizeof(m_pos));
@@ -118,6 +123,7 @@ void pos_init(void) {
 	memset(&m_gpgsv_last, 0, sizeof(m_gpgsv_last));
 	memset(&m_glgsv_last, 0, sizeof(m_glgsv_last));
 	m_print_sat_prn = 0;
+	iDebug=0;
 
 #if HAS_DIFF_STEERING
 	m_vesc_left_now = true;
@@ -132,9 +138,11 @@ void pos_init(void) {
 	chMtxObjectInit(&m_mutex_gps);
 
 #if HAS_BMI160
+	commands_printf("Has BMI 160\n");
 	bmi160_wrapper_init(500);
 	bmi160_wrapper_set_read_callback(mpu9150_read);
 #else
+	commands_printf("Uses MPU 9150\n");
 	mpu9150_init();
 	chThdSleepMilliseconds(1000);
 	led_write(LED_RED, 1);
@@ -156,6 +164,8 @@ void pos_init(void) {
 
 	ublox_set_rx_callback_relposned(ublox_relposned_rx);
 	ublox_set_rx_callback_rawx(ubx_rx_rawx);
+
+	commands_printf("Communicate VESC\n");
 
 #if MAIN_MODE == MAIN_MODE_CAR
 	bldc_interface_set_rx_value_func(mc_values_received);
@@ -202,6 +212,24 @@ void pos_init(void) {
 			cmd_terminal_print_sat_info);
 
 	terminal_register_command_callback(
+			"pos_print_testGL",
+			"Output log data to understand how the IMU etc. work.",
+			0,
+			cmd_terminal_testGL);
+
+	terminal_register_command_callback(
+			"setpos",
+			"Set x, y and angle",
+			0,
+			cmd_terminal_setpos);
+
+	terminal_register_command_callback(
+			"debug",
+			"Turn on/off debug info",
+			0,
+			cmd_terminal_debug);
+
+	terminal_register_command_callback(
 			"pos_sat_info",
 			"Print and plot information about a satellite.\n"
 			"  0 - Disabled\n"
@@ -210,6 +238,8 @@ void pos_init(void) {
 			cmd_terminal_sat_info);
 
 	(void)save_pos_history();
+	commands_printf("Done initializing! \n");
+
 }
 
 void pos_pps_cb(EXTDriver *extp, expchannel_t channel) {
@@ -298,6 +328,7 @@ float pos_get_speed(void) {
 void pos_set_xya(float x, float y, float angle) {
 	chMtxLock(&m_mutex_pos);
 	chMtxLock(&m_mutex_gps);
+	commands_printf("In Pos Set XYA\n");
 
 	m_pos.px = x;
 	m_pos.py = y;
@@ -426,6 +457,10 @@ bool pos_input_nmea(const char *data) {
 		m_gps.y = (v + gga.height) * cosp * sinl;
 		m_gps.z = (v * (D(1.0) - e2) + gga.height) * sinp;
 
+//		commands_printf("Local init done: %d\n", m_gps.local_init_done);
+		//		commands_printf("Lat.: %f\n", m_gps.lat);
+		//		commands_printf("Lon.: %f\n", m_gps.lon);
+
 		// Continue if ENU frame is initialized
 		if (m_gps.local_init_done) {
 			float dx = (float)(m_gps.x - m_gps.ix);
@@ -445,6 +480,11 @@ bool pos_input_nmea(const char *data) {
 			px -= c_yaw * main_config.gps_ant_x - s_yaw * main_config.gps_ant_y;
 			py -= s_yaw * main_config.gps_ant_x + c_yaw * main_config.gps_ant_y;
 
+			if(iDebug==1) {
+			commands_printf("dx: %f\n", dx);
+			commands_printf("x: %f\n", m_gps.x);
+			commands_printf("ix: %f\n", m_gps.ix);
+			};
 			chMtxLock(&m_mutex_pos);
 
 			m_pos.px_gps_last = m_pos.px_gps;
@@ -452,11 +492,19 @@ bool pos_input_nmea(const char *data) {
 			m_pos.pz_gps_last = m_pos.pz_gps;
 			m_pos.gps_ms_last = m_pos.gps_ms;
 
+			//			commands_printf("px gps: %f\n", m_pos.px_gps_last);
+			//			commands_printf("py gps: %f\n", m_pos.py_gps_last);
+//			commands_printf("pz gps: %f\n", m_pos.pz_gps_last);
+
 			m_pos.px_gps = px;
 			m_pos.py_gps = py;
 			m_pos.pz_gps = m_gps.lz;
 			m_pos.gps_ms = m_gps.ms;
 			m_pos.gps_fix_type = m_gps.fix_type;
+
+			//			commands_printf("px: %f\n", px);
+			//			commands_printf("py: %f\n", py);
+			//			commands_printf("pz: %f\n", m_gps.lz);
 
 			// Correct position
 			// Optionally require RTK and good ublox quality indication.
@@ -511,6 +559,7 @@ int pos_time_since_gps_corr(void) {
 }
 
 void pos_base_rtcm_obs(rtcm_obs_header_t *header, rtcm_obs_t *obs, int obs_num) {
+	//	commands_printf("In Pos Base RTCM\n");
 	float snr = 0.0;
 	float snr_base = 0.0;
 	bool lock = false;
@@ -737,12 +786,135 @@ static void cmd_terminal_sat_info(int argc, const char **argv) {
 	}
 }
 
+static void cmd_terminal_setpos(int argc, const char **argv) {
+	float x,y,z;
+	sscanf(argv[1], "%f", &x);
+	sscanf(argv[2], "%f", &y);
+	sscanf(argv[3], "%f", &z);
+	commands_printf("x: %f\n",x);
+	commands_printf("y: %f\n",y);
+	commands_printf("z: %f\n",z);
+}
+
+static void cmd_terminal_debug(int argc, const char **argv) {
+	sscanf(argv[1], "%i", &iDebug);
+	commands_printf("Debug: %i\n",iDebug);
+}
+
+static void cmd_terminal_testGL(int argc, const char **argv) {
+	commands_printf(
+			"m_mag[0]       : %f\n"
+			"m_mag[1]       : %f\n"
+			"m_mag[2]       : %f\n",
+			m_mag[0],
+			m_mag[1],
+			m_mag[2]);
+
+	commands_printf(
+			"m_mag_raw[0]       : %f\n"
+			"m_mag_raw[1]       : %f\n"
+			"m_mag_raw[2]       : %f\n",
+			m_mag_raw[0],
+			m_mag_raw[1],
+			m_mag_raw[2]);
+
+	commands_printf(
+			"m_gyro[0]       : %f\n"
+			"m_gyro[1]       : %f\n"
+			"m_gyro[2]       : %f\n",
+			m_gyro[0],
+			m_gyro[1],
+			m_gyro[2]);
+
+	commands_printf(
+			"m_accel[0]       : %f\n"
+			"m_accel[1]       : %f\n"
+			"m_accel[2]       : %f\n",
+			m_accel[0],
+			m_accel[1],
+			m_accel[2]);
+
+	commands_printf("GPS\n"
+			"latitude:       : %f\n"
+			"longitude   	 : %f\n"
+			"height			 : %f\n"
+			"x			     : %f\n"
+			"y			     : %f\n"
+			"z			     : %f\n",
+			m_gps.lat,
+			m_gps.lon,
+			m_gps.height,
+			m_gps.x,
+			m_gps.y,
+			m_gps.z);
+
+	commands_printf("POS\n"
+			"roll:       : %f\n"
+			"pitch   	 : %f\n"
+			"yaw			 : %f\n"
+			"speed			     : %f\n"
+			"vx			     : %f\n"
+			"vy			     : %f\n"
+			"px			     : %f\n"
+			"py			     : %f\n"
+			"pz			     : %f\n",
+			m_pos.roll,
+			m_pos.pitch,
+			m_pos.yaw,
+			m_pos.speed,
+			m_pos.vx,
+			m_pos.vy,
+			m_pos.px,
+			m_pos.py,
+			m_pos.pz);
+
+/*
+ *
+ * static ATTITUDE_INFO m_att;
+static POS_STATE m_pos;
+static GPS_STATE m_gps;
+static bool m_attitude_init_done;
+static float m_accel[3];
+static float m_gyro[3];
+static float m_mag[3];
+static float m_mag_raw[3];
+static mc_values m_mc_val;
+static float m_imu_yaw_offset;
+static mutex_t m_mutex_pos;
+static mutex_t m_mutex_gps;
+static int32_t m_ms_today;
+static bool m_ubx_pos_valid;
+static int32_t m_nma_last_time;
+static POS_POINT m_pos_history[POS_HISTORY_LEN];
+static int m_pos_history_ptr;
+static bool m_pos_history_print;
+static bool m_gps_corr_print;
+static bool m_en_delay_comp;
+static int32_t m_pps_cnt;
+static nmea_gsv_info_t m_gpgsv_last;
+static nmea_gsv_info_t m_glgsv_last;
+static int m_print_sat_prn;
+#if HAS_DIFF_STEERING
+static bool m_vesc_left_now;
+static mc_values m_mc_val_right;
+#endif
+static float m_yaw_imu_clamp;
+static bool m_yaw_imu_clamp_set;
+ *
+ *
+ */
+
+};
+
 static void mpu9150_read(float *accel, float *gyro, float *mag) {
 	static unsigned int cnt_last = 0;
 	volatile unsigned int cnt = TIM6->CNT;
 	unsigned int time_elapsed = (cnt - cnt_last) % 65536;
 	cnt_last = cnt;
 	float dt = (float)time_elapsed / (float)ITERATION_TIMER_FREQ;
+
+	commands_printf("in mpu9150_read");
+
 
 	update_orientation_angles(accel, gyro, mag, dt);
 
@@ -752,6 +924,7 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 	mc_read_cnt++;
 
 #if HAS_DIFF_STEERING
+	commands_printf("has diff sterring");
 	if (mc_read_cnt >= 5) {
 		mc_read_cnt = 0;
 
@@ -768,11 +941,13 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 		comm_can_unlock_vesc();
 	}
 #else
+	commands_printf("has not diff sterring");
 	if (mc_read_cnt >= 10) {
 		mc_read_cnt = 0;
 		bldc_interface_get_values();
 
 #if HAS_HYDRAULIC_DRIVE
+		commands_printf("has hydraulic drive");
 		float turn_rad_rear = 0.0;
 		float angle_diff = 0.0;
 		float distance = hydraulic_get_distance(true);
@@ -833,6 +1008,9 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 }
 
 static void update_orientation_angles(float *accel, float *gyro, float *mag, float dt) {
+
+	//	commands_printf("In update orientation angles:\n");
+	//  ÄR HÄR MYCKET
 	gyro[0] = gyro[0] * M_PI / 180.0;
 	gyro[1] = gyro[1] * M_PI / 180.0;
 	gyro[2] = gyro[2] * M_PI / 180.0;
@@ -1013,6 +1191,7 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 }
 
 static void init_gps_local(GPS_STATE *gps) {
+	//	commands_printf("In init gps local:\n");
 	gps->ix = gps->x;
 	gps->iy = gps->y;
 	gps->iz = gps->z;
@@ -1103,6 +1282,7 @@ static POS_POINT get_closest_point_to_time(int32_t time) {
 }
 
 static void correct_pos_gps(POS_STATE *pos) {
+	//	commands_printf("In correct pos gps:\n");
 #if MAIN_MODE == MAIN_MODE_MULTIROTOR
 	pos->gps_corr_cnt = sqrtf(SQ(pos->px_gps - pos->px_gps_last) +
 			SQ(pos->py_gps - pos->py_gps_last));
@@ -1140,6 +1320,14 @@ static void correct_pos_gps(POS_STATE *pos) {
 	// Position
 	float gain = main_config.gps_corr_gain_stat +
 			main_config.gps_corr_gain_dyn * pos->gps_corr_cnt;
+
+
+//	if(iDebug==1)
+//	{
+	commands_printf("gps_corr_gain_stat: %f\n",main_config.gps_corr_gain_stat);
+	commands_printf("dyn tot: %f\n",main_config.gps_corr_gain_dyn * pos->gps_corr_cnt);
+	commands_printf("gain: %f\n",gain);
+//	};
 
 	POS_POINT closest = get_closest_point_to_time(m_en_delay_comp ? pos->gps_ms : m_ms_today);
 	POS_POINT closest_corr = closest;
@@ -1359,6 +1547,7 @@ static void mc_values_received(mc_values *val) {
 
 static void car_update_pos(float distance, float turn_rad_rear, float angle_diff, float speed) {
 	chMtxLock(&m_mutex_pos);
+//	commands_printf("In Car update pos:\n");
 
 	if (fabsf(distance) > 1e-6) {
 		float angle_rad = -m_pos.yaw * M_PI / 180.0;
@@ -1388,6 +1577,7 @@ static void car_update_pos(float distance, float turn_rad_rear, float angle_diff
 }
 
 #endif
+/*
 
 #if MAIN_MODE == MAIN_MODE_MULTIROTOR
 static void srf_distance_received(float distance) {
@@ -1401,7 +1591,6 @@ static void srf_distance_received(float distance) {
 
 	chMtxUnlock(&m_mutex_pos);
 }
-
 static void mr_update_pos(POS_STATE *pos, float dt) {
 	float roll = pos->roll + pos->tilt_roll_err;
 	float pitch = pos->pitch + pos->tilt_pitch_err;
@@ -1456,3 +1645,4 @@ static void mr_update_pos(POS_STATE *pos, float dt) {
 	pos->speed = sqrtf(SQ(pos->vx) + SQ(pos->vy));
 }
 #endif
+*/

@@ -195,7 +195,7 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     CMD_PACKET cmd = (CMD_PACKET)(quint8)data[0];
     data++;
     len--;
-
+    qDebug() << "Mottaget kommando: " << cmd;
     emit packetReceived(id, cmd, pkt);
 
     switch (cmd) {
@@ -409,6 +409,7 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     } break;
 
     case CMD_CAMERA_IMAGE: {
+        qDebug() << "Camera Image!";
         emit cameraImageReceived(id, QImage::fromData(data, len), len);
     } break;
 
@@ -449,6 +450,10 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         state.ap_route_left = utility::buffer_get_int16(data, &ind);
         state.px_uwb = utility::buffer_get_double32(data, 1e4, &ind);
         state.py_uwb = utility::buffer_get_double32(data, 1e4, &ind);
+        state.log1 = utility::buffer_get_double32(data, 1e4, &ind);
+        state.log2 = utility::buffer_get_double32(data, 1e4, &ind);
+        state.log3 = utility::buffer_get_double32(data, 1e4, &ind);
+
         emit stateReceived(id, state);
     } break;
 
@@ -600,8 +605,9 @@ bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_pac
     QByteArray sendData = QByteArray::fromRawData((char*)mSendBufferAck, ind);
 //    qDebug() << "Sending over something else:";
 //    qDebug() << "data(2):" << sendData.at(2);
-    qDebug() << "data(3):" << (int) sendData.at(3);
-    qDebug() << "data(4):" << (int) sendData.at(4);
+
+//    qDebug() << "data(3):" << (int) sendData.at(3);
+//    qDebug() << "data(4):" << (int) sendData.at(4);
 
     emit dataToSend(sendData);
 
@@ -1176,7 +1182,7 @@ void PacketInterface::sendTerminalCmd(quint8 id, QString cmd)
 
 void PacketInterface::forwardVesc(quint8 id, QByteArray data)
 {
-	qDebug() << "Setting forward to VESC";
+//	qDebug() << "Setting forward to VESC";
 
 	QByteArray packet;
     packet.clear();
@@ -1188,7 +1194,7 @@ void PacketInterface::forwardVesc(quint8 id, QByteArray data)
 
 void PacketInterface::setRcControlCurrent(quint8 id, double current, double steering)
 {
-	qDebug() << "Setting Current";
+//	qDebug() << "Setting Current";
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_RC_CONTROL;
@@ -1200,7 +1206,7 @@ void PacketInterface::setRcControlCurrent(quint8 id, double current, double stee
 
 void PacketInterface::setRcControlCurrentBrake(quint8 id, double current, double steering)
 {
-	qDebug() << "Setting Current Brake";
+//	qDebug() << "Setting Current Brake";
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_RC_CONTROL;
@@ -1212,7 +1218,7 @@ void PacketInterface::setRcControlCurrentBrake(quint8 id, double current, double
 
 void PacketInterface::setRcControlDuty(quint8 id, double duty, double steering)
 {
-    qDebug() << "Setting Duty (PacketInterface): " << duty << ":: " << steering ;
+//    qDebug() << "Setting Duty (PacketInterface): " << duty << ":: " << steering ;
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_RC_CONTROL;
@@ -1224,7 +1230,7 @@ void PacketInterface::setRcControlDuty(quint8 id, double duty, double steering)
 
 void PacketInterface::setRcControlPid(quint8 id, double speed, double steering)
 {
-	qDebug() << "Setting PID";
+//	qDebug() << "Setting PID";
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_RC_CONTROL;
@@ -1236,6 +1242,7 @@ void PacketInterface::setRcControlPid(quint8 id, double speed, double steering)
 
 void PacketInterface::setPos(quint8 id, double x, double y, double angle)
 {
+    qDebug() << "Set pos: " << x << " (x), " << y << " (y)";
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_SET_POS;
@@ -1346,6 +1353,7 @@ void PacketInterface::mrOverridePower(quint8 id, double fl_f, double bl_l, doubl
 void PacketInterface::startCameraStream(quint8 id, int camera, int quality,
                                         int width, int height, int fps, int skip)
 {
+    qDebug () << "In startCameraStream";
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_CAMERA_STREAM_START;

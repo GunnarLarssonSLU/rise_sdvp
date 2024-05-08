@@ -151,12 +151,18 @@ bool NmeaServer::sendNmeaGga(NmeaServer::nmea_gga_info_t &nmea)
     int frac_s = fmod(nmea.t_tow, 1.0) * 100.0;
 
     QString nmea_str;
-    nmea_str.sprintf("$GPGGA,%02d%02d%02d.%02d,"
+    nmea_str.asprintf("$GPGGA,%02d%02d%02d.%02d,"
                      "%02d%010.7f,%c,%03d%010.7f,%c,"
                      "%01d,%02d,%.1f,%.2f,M,,M,,",
                      hour, min, sec, frac_s,
                      lat_deg, lat_min, lat_dir, lon_deg, lon_min, lon_dir,
                      nmea.fix_type, nmea.n_sat, nmea.h_dop, nmea.height);
+/*  nmea_str.sprintf("$GPGGA,%02d%02d%02d.%02d,"
+                     "%02d%010.7f,%c,%03d%010.7f,%c,"
+                     "%01d,%02d,%.1f,%.2f,M,,M,,",
+                     hour, min, sec, frac_s,
+                     lat_deg, lat_min, lat_dir, lon_deg, lon_min, lon_dir,
+                     nmea.fix_type, nmea.n_sat, nmea.h_dop, nmea.height);*/
     nmea_str.append("*    ");
     QByteArray nmea_bytes = nmea_str.toLocal8Bit();
     nmea_append_checksum(nmea_bytes.data(), nmea_bytes.size());
@@ -196,8 +202,10 @@ bool NmeaServer::sendNmeaZda(quint16 wn, double tow)
     int frac_s = fmod(tow, 1.0) * 100.0;
 
     QString nmea_str;
-    nmea_str.sprintf("$GPZDA,%02d%02d%02d.%02d,%02d,%02d,%04d,00,00",
+    nmea_str.asprintf("$GPZDA,%02d%02d%02d.%02d,%02d,%02d,%04d,00,00",
                      hour, min, sec, frac_s, day, month, year);
+/*    nmea_str.sprintf("$GPZDA,%02d%02d%02d.%02d,%02d,%02d,%04d,00,00",
+                     hour, min, sec, frac_s, day, month, year);*/
     nmea_str.append("*    ");
     QByteArray nmea_bytes = nmea_str.toLocal8Bit();
     nmea_append_checksum(nmea_bytes.data(), nmea_bytes.size());
@@ -251,7 +259,7 @@ bool NmeaServer::sendNmeaRmc(NmeaServer::nmea_rmc_info_t &nmea)
     velocity = MS2KNOTTS(nmea.vel_x, nmea.vel_y, nmea.vel_z);
 
     QString nmea_str;
-    nmea_str.sprintf("$GPRMC,%02d%02d%02d.%02d,A,"
+    nmea_str.asprintf("$GPRMC,%02d%02d%02d.%02d,A,"
                      "%02d%010.7f,%c,%03d%010.7f,%c,"
                      "%06.2f,%05.1f,"
                      "%02d%02d%02d,"
@@ -260,6 +268,15 @@ bool NmeaServer::sendNmeaRmc(NmeaServer::nmea_rmc_info_t &nmea)
                      lat_deg, lat_min, lat_dir, lon_deg, lon_min, lon_dir,
                      velocity, course * (180.0 / M_PI),
                      day, month, year % 100);
+/*    nmea_str.sprintf("$GPRMC,%02d%02d%02d.%02d,A,"
+                     "%02d%010.7f,%c,%03d%010.7f,%c,"
+                     "%06.2f,%05.1f,"
+                     "%02d%02d%02d,"
+                     ",",
+                     hour, min, sec, frac_s,
+                     lat_deg, lat_min, lat_dir, lon_deg, lon_min, lon_dir,
+                     velocity, course * (180.0 / M_PI),
+                     day, month, year % 100);*/
     nmea_str.append("*    ");
     QByteArray nmea_bytes = nmea_str.toLocal8Bit();
     nmea_append_checksum(nmea_bytes.data(), nmea_bytes.size());

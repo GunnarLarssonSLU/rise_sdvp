@@ -54,15 +54,15 @@ CarInterface::CarInterface(QWidget *parent) :
     mOrientationWidget = new OrientationWidget(this);
     mCompassWidget = new CompassWidget(this);
     ui->orientationLayout->removeItem(ui->orientationSpacer);
-    ui->orientationLayout->insertWidget(0, mOrientationWidget, 1);
-    ui->orientationLayout->insertWidget(1, mCompassWidget, 2);
+    ui->orientationLayout->insertWidget(0, mCompassWidget, 1);
+    ui->orientationLayout->insertWidget(1, mOrientationWidget, 2);
 #endif
 
-    ui->tabWidget->removeTab(6);
- //   ui->tabWidget->removeTab(5);
-    ui->tabWidget->removeTab(4);
-//    ui->tabWidget->removeTab(2);
-//    ui->tabWidget->removeTab(0);
+//    ui->tabWidget->removeTab(6);
+//    ui->tabWidget->removeTab(5); //
+//    ui->tabWidget->removeTab(4);
+//    ui->tabWidget->removeTab(2); //
+//    ui->tabWidget->removeTab(0); //
 
     memset(&mLastCarState, 0, sizeof(CAR_STATE));
 
@@ -150,6 +150,10 @@ void CarInterface::setOrientation(double roll, double pitch, double yaw)
 
 void CarInterface::setStateData(CAR_STATE data)
 {
+    qDebug() << "x (car): " << data.px << ", y (car): " << data.py;
+    qDebug() << "x (gps): " << data.px_gps << ", y (gps): " << data.py_gps;
+    qDebug() << "x (uwb): " << data.px_uwb << ", " << ", y (uwb): " << data.py_uwb;
+
     mLastCarState = data;
 
     ui->imuPlot->addSample(data.accel, data.gyro, data.mag);
@@ -161,13 +165,13 @@ void CarInterface::setStateData(CAR_STATE data)
     setFirmwareVersion(qMakePair(data.fw_major, data.fw_minor));
 
     QString fwStr2;
-    fwStr2.sprintf("ZZ %d.%d", data.fw_major, data.fw_minor);
+    fwStr2.sprintf("Ver. %d.%d", data.fw_major, data.fw_minor);
     ui->fwLabel->setText(fwStr2);
-
+/*
     QString fwStrLog1;
     fwStrLog1.sprintf("ZZ %d.%d", data.fw_major, data.fw_minor);
     ui->fwLabel->setText(fwStrLog1);
-
+*/
     // Speed bar
     QString speedTxt;
     speedTxt.sprintf("Speed: %.2f km/h", data.speed * 3.6);
@@ -178,13 +182,13 @@ void CarInterface::setStateData(CAR_STATE data)
     ui->tempFetBar->setValue(data.temp_fet);
 
     // Battery bar
+//    qDebug() << "V in: " << data.vin;
     double battp = utility::map(data.vin, 34.0, 42.0, 0.0, 100.0);
     if (battp < 0.0) {
         battp = 0.0;
     }
     QString battTxt;
     battTxt.sprintf("Battery: %.1f %% (%.2f V)", battp, data.vin);
-//    battTxt.sprintf("Ver: %.1f %% (%.2f V)", battp, 1.0*data.temp_fet);
 
     if (battp > 100.0) {
         battp = 100.0;
@@ -226,14 +230,56 @@ void CarInterface::setStateData(CAR_STATE data)
         loc_gps.setXY(data.px_gps, data.py_gps);
         loc_uwb.setXY(data.px_uwb, data.py_uwb);
         ap_goal.setXY(data.ap_goal_px, data.ap_goal_py);
+
+
+//        qDebug() << "roll: " << data.roll << ", pitch: " << data.pitch << ", yaw: " << data.yaw;
+//        qDebug() << "accel. [0]: " << data.accel[0] << ", [1]: " << data.accel[1] << ", [2]: " << data.accel[0];
+//        qDebug() << "gyro. [0]: " << data.gyro[0] << ", [1]: " << data.gyro[1] << ", [2]: " << data.gyro[0];
+//        qDebug() << "mag. [0]: " << data.mag[0] << ", [1]: " << data.mag[1] << ", [2]: " << data.mag[0];
+
+        /*
+         *
+         *
+         *
+
+        state.roll = utility::buffer_get_double32(data, 1e6, &ind);
+        state.pitch = utility::buffer_get_double32(data, 1e6, &ind);
+        state.yaw = utility::buffer_get_double32(data, 1e6, &ind);
+        state.accel[0] = utility::buffer_get_double32(data, 1e6, &ind);
+        state.accel[1] = utility::buffer_get_double32(data, 1e6, &ind);
+        state.accel[2] = utility::buffer_get_double32(data, 1e6, &ind);
+        state.gyro[0] = utility::buffer_get_double32(data, 1e6, &ind);
+        state.gyro[1] = utility::buffer_get_double32(data, 1e6, &ind);
+        state.gyro[2] = ut
+] = utility::buffer_get_double32(data, 1e6, &ind);
+        state.mag[2] = utility::buffer_get_double32(data, 1e6, &ind);
+        state.px = utility::buffer_get_double32(data, 1e4, &ind);
+        state.py = utility::buffer_get_double32(data, 1e4, &ind);
+        state.speed = utility::buffer_get_double32(data, 1e6, &ind);
+        state.vin = utility::buffer_get_double32(data, 1e6, &ind);
+        state.temp_fet = utility::buffer_get_double32(data, 1e6, &ind);
+        state.mc_fault = (mc_fault_code)data[ind++];
+        state.px_gps = utility::buffer_get_double32(data, 1e4, &ind);
+        state.py_gps = utility::buffer_get_double32(data, 1e4, &ind);
+        state.ap_goal_px = utility::buffer_get_double32(data, 1e4, &ind);
+        state.ap_goal_py = utility::buffer_get_double32(data, 1e4, &ind);
+        state.ap_rad = utility::buffer_get_double32(data, 1e6, &ind);
+        state.ms_today = utility::buffer_get_int32(data, &ind);
+        state.ap_route_left = utility::buffer_get_int16(data, &ind);
+        state.px_uwb = utility::buffer_get_double32(data, 1e4, &ind);
+        state.py_uwb = utility::buffer_get_double32(data, 1e4, &ind);
+        state.log1 = utility::buffer_get_double32(data, 1e4, &ind);
+        state.log2 = utility::buffer_get_double32(data, 1e4, &ind);
+        state.log3 = utility::buffer_get_double32(data, 1e4, &ind);
+        */
+
         ap_goal.setRadius(data.ap_rad);
-        car->setLocation(loc);
+//        car->setLocation(loc);
         car->setLocationGps(loc_gps);
         car->setLocationUwb(loc_uwb);
         car->setApGoal(ap_goal);
         car->setTime(data.ms_today);
         /*
-
         //QList<LocPoint> bounds = mMap->getRoute(ui->boundsRouteSpinBox->value());
         QList<LocPoint> bounds = mMap->getRoute(0);
         if (RouteMagic::isPointOutside(loc, bounds))
@@ -314,14 +360,6 @@ void CarInterface::setPacketInterface(PacketInterface *packetInterface)
             this, SLOT(nmeaReceived(quint8,QByteArray)));
     connect(mPacketInterface, SIGNAL(configurationReceived(quint8,MAIN_CONFIG)),
             this, SLOT(configurationReceived(quint8,MAIN_CONFIG)));
-/*    connect(mPacketInterface, SIGNAL(plotInitReceived(quint8,QString,QString)),
-            this, SLOT(plotInitReceived(quint8,QString,QString)));
-    connect(mPacketInterface, SIGNAL(plotDataReceived(quint8,double,double)),
-            SLOT(plotDataReceived(quint8,double,double)));
-    connect(mPacketInterface, SIGNAL(plotAddGraphReceived(quint8,QString)),
-            this, SLOT(plotAddGraphReceived(quint8,QString)));
-    connect(mPacketInterface, SIGNAL(plotSetGraphReceived(quint8,int)),
-            this, SLOT(plotSetGraphReceived(quint8,int)));*/
     connect(mPacketInterface, SIGNAL(cameraImageReceived(quint8,QImage,int)),
             this, SLOT(cameraImageReceived(quint8,QImage,int)));
     connect(this, SIGNAL(ioBoardSetPwm(quint8,quint8,double)),
@@ -332,14 +370,14 @@ void CarInterface::setControlValues(double throttle, double steering, double max
 {
     if (ui->keyboardControlBox->isChecked()) {
         if (fabs(throttle) < 0.005) {
-            qDebug() << "emit setRcCurrent: 0 :: " << steering;
+//            qDebug() << "emit setRcCurrent: 0 :: " << steering;
             emit setRcCurrent(mId, 0.0, steering);
         } else {
             if (currentMode) {
-                qDebug() << "emit setRcCurrent: " << (throttle * 80.0 * max) << " :: " << steering;
+ //               qDebug() << "emit setRcCurrent: " << (throttle * 80.0 * max) << " :: " << steering;
                 emit setRcCurrent(mId, throttle * 80.0 * max, steering);
             } else {
-                qDebug() << "emit setRcDuty: " << (throttle * max) << " :: " << steering;
+ //               qDebug() << "emit setRcDuty: " << (throttle * max) << " :: " << steering;
                 emit setRcDuty(mId, throttle * max, steering);
             }
         }
@@ -548,7 +586,7 @@ void CarInterface::nmeaReceived(quint8 id, QByteArray nmea_msg)
             if (car) {
                 LocPoint loc_gps = car->getLocationGps();
                 loc_gps.setInfo(ui->nmeaWidget->fixType());
-                car->setLocationGps(loc_gps);
+//                car->setLocationGps(loc_gps);
             }
         }
     }
@@ -593,6 +631,7 @@ void CarInterface::loadMagCal()
 
 void CarInterface::cameraImageReceived(quint8 id, QImage image, int bytes)
 {
+    qDebug() << "In cameraImageReceived!";
     if (id == mId || id == 255) {
         mImageByteCnt += bytes;
         mImageCnt++;
@@ -1005,11 +1044,13 @@ void CarInterface::on_camStartButton_clicked()
                                             ui->camHeightBox->value(),
                                             ui->camFpsBox->value(),
                                             ui->camSkipBox->value());
+        qDebug() << "Start Camera!";
     }
 }
 
 void CarInterface::on_camStopButton_clicked()
 {
+    qDebug() << "Stop Camera!";
     mPacketInterface->startCameraStream(mId, -1, 0, 0, 0, 0, 0);
     ui->camWidget->setPixmap(QPixmap());
 

@@ -179,7 +179,8 @@ void RtcmClient::tcpInputConnected()
         if (mNtripUser.size() > 0 || mNtripPassword.size() > 0) {
             QString authStr = mNtripUser + ":" + mNtripPassword;
             QByteArray auth;
-            auth.append(authStr);
+//            auth.append(authStr);
+            auth.append(authStr.toUtf8());
             msg += "Authorization: Basic " + auth.toBase64() + "\r\n";
         }
 

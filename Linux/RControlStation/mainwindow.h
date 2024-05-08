@@ -219,9 +219,6 @@ private slots:
     void on_actionTestIntersection_triggered();
     void on_actionSaveSelectedRouteAsDriveFile_triggered();
     void on_actionLoadDriveFile_triggered();
-//    void on_mapSaveAsPdfButton_clicked();
-//    void on_mapSaveAsPngButton_clicked();
-//    void on_mapSaveRetakeButton_clicked();
     void on_modeRouteButton_toggled(bool checked);
     void on_uploadAnchorButton_clicked();
     void on_anchorIdBox_valueChanged(int arg1);
@@ -332,6 +329,7 @@ private:
     void showError(const QSqlError &err);
     void handleAddFieldButton();
     void handleAddFarmButton();
+    void handleImportPathButton();
     QSqlRelationalTableModel *modelFarm;
     QSqlRelationalTableModel *modelFarmLog;
     QSqlRelationalTableModel *modelField;
@@ -366,9 +364,10 @@ public:
 };
 
 
-
-void addField(QSqlQuery &q, const QString &title, const QVariant &locationId);
-QVariant addLocation(QSqlQuery &q, const QString &name);
+void addField(const QString &title, const QVariant &locationId);
+QVariant addLocation(const QString &name);
+QString readXmlToString(const QString& filePath);
+void addPath(const QString &name,const QString &xmlstring, const QVariant &locationId);
 void deleteField(const QVariant &fieldId);
 
 coords_matrix toOrientationMatrix(coords_polar cp);

@@ -25,15 +25,21 @@
 
 #include <QObject>
 #include <QCamera>
-#include <QAbstractVideoSurface>
+#include <QMediaDevices>
 
-class MyVideoSurface : public QAbstractVideoSurface
+//#include <QAbstractVideoSurface>
+#include <QVideoSink>
+
+//class MyVideoSurface : public QAbstractVideoSurface
+class MyVideoSurface : public QVideoSink
 {
     Q_OBJECT
 public:
     MyVideoSurface(QObject* parent = nullptr);
-    QList<QVideoFrame::PixelFormat>
-    supportedPixelFormats(QAbstractVideoBuffer::HandleType h) const;
+    QList<QVideoFrameFormat::PixelFormat>
+//    QList<QVideoFrame::PixelFormat>
+//    supportedPixelFormats(QAbstractVideoBuffer::HandleType h) const;
+    supportedPixelFormats(QVideoFrame::HandleType h) const;
     bool present(const QVideoFrame &frame);
 
 signals:

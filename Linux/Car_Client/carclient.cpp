@@ -50,6 +50,7 @@ CarClient::CarClient(QObject *parent) : QObject(parent)
 
     mSerialPort = new SerialPort(this);
     mSerialPortRtcm = new QSerialPort(this);
+    mSerialPortArduino = new QSerialPort(this);
     mPacketInterface = new PacketInterface(this);
     mRtcmBroadcaster = new TcpBroadcast(this);
     mUbxBroadcaster = new TcpBroadcast(this);
@@ -92,8 +93,12 @@ CarClient::CarClient(QObject *parent) : QObject(parent)
             this, SLOT(serialPortError(int)));
     connect(mSerialPortRtcm, SIGNAL(readyRead()),
             this, SLOT(serialRtcmDataAvailable()));
+    connect(mSerialPortArduino, SIGNAL(readyRead()),
+            this, SLOT(serialArduinoDataAvailable()));
     connect(mSerialPortRtcm, SIGNAL(error(QSerialPort::SerialPortError)),
             this, SLOT(serialRtcmPortError(QSerialPort::SerialPortError)));
+    connect(mSerialPortArduino, SIGNAL(error(QSerialPort::SerialPortError)),
+            this, SLOT(serialArduinoPortError(QSerialPort::SerialPortError)));
     connect(mTcpSocket, SIGNAL(readyRead()), this, SLOT(tcpDataAvailable()));
     connect(mTcpSocket, SIGNAL(connected()), this, SLOT(tcpConnected()));
     connect(mTcpSocket, SIGNAL(disconnected()), this, SLOT(tcpDisconnected()));
@@ -195,6 +200,33 @@ void CarClient::connectSerialRtcm(QString port, int baudrate)
     mSerialPortRtcm->setFlowControl(QSerialPort::NoFlowControl);
 }
 
+void CarClient::connectSerialArduino(QString port, int baudrate)
+{
+    if(mSerialPortArduino->isOpen()) {
+        mSerialPortArduino->close();
+    }
+
+    mSerialPortArduino->setPortName(port);
+    mSerialPortArduino->open(QIODevice::ReadWrite);
+
+    mSettings.serialArduinoConnect = true;
+    mSettings.serialArduinoPort = port;
+    mSettings.serialArduinoBaud = baudrate;
+
+    if(!mSerialPortArduino->isOpen()) {
+        return;
+    }
+
+    qDebug() << "Serial port Arduino connected";
+    qDebug() << "Baudrate: " << baudrate;
+
+    mSerialPortArduino->setBaudRate(baudrate);
+    mSerialPortArduino->setDataBits(QSerialPort::Data8);
+    mSerialPortArduino->setParity(QSerialPort::NoParity);
+    mSerialPortArduino->setStopBits(QSerialPort::OneStop);
+    mSerialPortArduino->setFlowControl(QSerialPort::NoFlowControl);
+}
+
 void CarClient::startRtcmServer(int port)
 {
     mRtcmBroadcaster->startTcpServer(port);
@@ -276,7 +308,8 @@ void CarClient::rtcmRx(QByteArray data, int type)
 
     // Print the packet in the car terminal. NOTE: This is for debugging
     for (int i = 0;i < data.size();i++) {
-        str.append(QString().sprintf("%02X ", data.at(i)));
+        str.append(QString().asprintf("%02X ", data.at(i)));
+//        str.append(QString().sprintf("%02X ", data.at(i)));
         if (i >= 50) {
             break;
         }
@@ -506,6 +539,17 @@ void CarClient::serialRtcmDataAvailable()
     }
 }
 
+void CarClient::serialArduinoDataAvailable()
+{
+    qDebug() << "Receiving!!";
+    while (mSerialPortArduino->bytesAvailable() > 0) {
+        QByteArray data = mSerialPortArduino->readAll();
+        for (int i = 0;i < data.size();i++) {
+            qDebug() << (uint8_t)data.at(i);
+        }
+    }
+}
+
 void CarClient::serialRtcmPortError(QSerialPort::SerialPortError error)
 {
     QString message;
@@ -543,6 +587,45 @@ void CarClient::serialRtcmPortError(QSerialPort::SerialPortError error)
         }
     }
 }
+
+void CarClient::serialArduinoPortError(QSerialPort::SerialPortError error)
+{
+    QString message;
+    switch (error) {
+    case QSerialPort::NoError:
+        break;
+    case QSerialPort::DeviceNotFoundError:
+        message = tr("Device not found");
+        break;
+    case QSerialPort::OpenError:
+        message = tr("Can't open device");
+        break;
+    case QSerialPort::NotOpenError:
+        message = tr("Not open error");
+        break;
+    case QSerialPort::ResourceError:
+        message = tr("Port disconnected");
+        break;
+    case QSerialPort::PermissionError:
+        message = tr("Permission error");
+        break;
+    case QSerialPort::UnknownError:
+        message = tr("Unknown error");
+        break;
+    default:
+        message = "Error number: " + QString::number(error);
+        break;
+    }
+
+    if(!message.isEmpty()) {
+        qDebug() << "Serial error:" << message;
+
+        if(mSerialPortArduino->isOpen()) {
+            mSerialPortArduino->close();
+        }
+    }
+}
+
 
 void CarClient::packetDataToSend(QByteArray &data)
 {
@@ -615,6 +698,8 @@ void CarClient::packetDataToSend(QByteArray &data)
                               "  Print information about connected usbs.");
                 printTerminal("list_ttys\n"
                               "  Print information about connected ttys.");
+                printTerminal("is_arduino_online\n"
+                              "  Print information about connected arduino.");
             }
             if (str=="lsusb")
             {
@@ -625,6 +710,13 @@ void CarClient::packetDataToSend(QByteArray &data)
             {
                 std::string resultstr=utility::systemcmd("ls /dev/tty*");
                 printTerminal(resultstr.c_str());
+            }
+            if (str=="is_arduino_online")
+            {
+                if(mSerialPortRtcm->isOpen())
+                    {
+                    printTerminal("Arduino port open!\n");
+                    }
             }
 
         } else if (cmd == CMD_CLEAR_UWB_ANCHORS) {
@@ -695,6 +787,12 @@ void CarClient::reconnectTimerSlot()
         qDebug() << "Trying to reconnect RTCM serial...";
         connectSerialRtcm(mSettings.serialRtcmPort, mSettings.serialRtcmBaud);
     }
+
+    if (mSettings.serialArduinoConnect && !mSerialPortArduino->isOpen()) {
+        qDebug() << "Trying to reconnect Arduino serial...";
+        connectSerialArduino(mSettings.serialArduinoPort, mSettings.serialArduinoBaud);
+    }
+
 
     if (mSettings.nmeaConnect && !mTcpConnected) {
         qDebug() << "Trying to reconnect nmea tcp...";
@@ -835,7 +933,8 @@ void CarClient::rxRawx(ubx_rxm_rawx rawx)
 //        now.tv_usec = dateGps.time().msec() * 1000.0;
 //        rc = settimeofday(&now, NULL);
 
-        if(setUnixTime(dateGps.toTime_t())) {
+//        if(setUnixTime(dateGps.toTime_t())) {
+          if(setUnixTime(dateGps.toSecsSinceEpoch())) {
             qDebug() << "Sucessfully updated system time";
             restartRtklib();
         } else {

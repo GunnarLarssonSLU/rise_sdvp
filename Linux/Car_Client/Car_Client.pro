@@ -34,16 +34,18 @@ SOURCES += main.cpp \
     carclient.cpp \
     locpoint.cpp \
     rtcm3_simple.c \
-    serialport.cpp \
     ublox.cpp \
     nmeaserver.cpp \
     packet.cpp \
+    serialport.cpp \
     tcpserversimple.cpp \
     chronos.cpp \
     rtcmclient.cpp \
     chronoscomm.cpp \
     vbytearrayle.cpp \
     vbytearray.cpp
+
+#
 
 HEADERS += \
     carstatebroadcaster.h \
@@ -54,10 +56,10 @@ HEADERS += \
     datatypes.h \
     locpoint.h \
     rtcm3_simple.h \
-    serialport.h \
     ublox.h \
     nmeaserver.h \
     packet.h \
+    serialport.h \
     tcpserversimple.h \
     chronos.h \
     rtcmclient.h \
@@ -65,6 +67,7 @@ HEADERS += \
     vbytearrayle.h \
     vbytearray.h
 
+#
 RESOURCES += \
     res.qrc
 

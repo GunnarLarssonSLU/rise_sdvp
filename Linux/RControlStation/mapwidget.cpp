@@ -2523,8 +2523,9 @@ void MapWidget::updateTraces()
     {
         // Store trace for the selected car
         if (mTraceCar >= 0) {
+            CarInfo &carInfo = mCarInfo[0];
             for (int i = 0;i < mCarInfo.size();i++) {
-                CarInfo &carInfo = mCarInfo[i];
+                carInfo = mCarInfo[i];
                 if (carInfo.getId() == mTraceCar) {
                     if (mCarTrace.isEmpty()) {
                         mCarTrace.append(carInfo.getLocation());
@@ -2548,6 +2549,10 @@ void MapWidget::updateTraces()
                     }
                 }
             }
+//            qDebug() << "---";
+//            qDebug() << carInfo.getLocation().getX();
+//            qDebug() << carInfo.getLocationGps().getX();
+//            qDebug() << carInfo.getLocationUwb().getX();
         }
 
         // Truncate traces

@@ -904,6 +904,11 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				buffer_append_float32(m_send_buffer, pos_uwb.px, 1e4, &send_index); // 103
 				buffer_append_float32(m_send_buffer, pos_uwb.py, 1e4, &send_index); // 107
 			}
+			float logtmp;
+			logtmp=0;
+			buffer_append_float32(m_send_buffer, showData, 1e4, &send_index); // 111
+			buffer_append_float32(m_send_buffer, logtmp, 1e4, &send_index); // 115
+			buffer_append_float32(m_send_buffer, logtmp, 1e4, &send_index); // 119
 			commands_send_packet(m_send_buffer, send_index);
 		} break;
 
@@ -936,20 +941,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 //			mode=RC_MODE_DUTY;
 			switch (mode) {
 			case RC_MODE_CURRENT:
-//				showData=111;
 				if (!main_config.car.disable_motor) {
-//					#if IS_DRANGEN
-		//				comm_can_lock_vesc();
-		//				comm_can_set_vesc_id(0);
-		//				throttle*=50.0;
-//						comm_can_set_vesc_id(VESC_THROTTLE_ID);
-//						showData=10+throttle;
-		//				bldc_interface_set_current(steering);
-		//				comm_can_set_vesc_id(VESC_STEERING_ID);
-		//				bldc_interface_set_current(steering);
-		//				comm_can_unlock_vesc();
-//					#endif
-
 					#if IS_ALL_ELECTRIC
 					showData=10;
 					comm_can_lock_vesc();
@@ -972,20 +964,8 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 						comm_can_unlock_vesc();
 					#else
 						#if HAS_HYDRAULIC_DRIVE
-						/*
-						/// TEMPORARY REMOVE SOON!!! START
-							comm_can_lock_vesc();
-						comm_can_set_vesc_id(113);
-						bldc_interface_set_duty_cycle(0.2);
-						comm_can_unlock_vesc();
-						comm_can_set_vesc_id(113);
-						bldc_interface_set_duty_cycle(0.3);
-						/// TEMPORARY REMOVE SOON!!! END
-						// REMOVE COMMENT FOR NEXT ONE!!!
-						*/
 							hydraulic_set_speed(throttle / 10);
 						#else
-//							showData=100+DIFF_THROTTLE_VESC_RIGHT+throttle;
 							comm_can_lock_vesc();
 							comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
 							bldc_interface_set_duty_cycle(throttle);

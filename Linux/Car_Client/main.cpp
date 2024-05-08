@@ -107,7 +107,10 @@ int main(int argc, char *argv[])
 //    QString ttyPortRtcm = "/dev/ttyUSB0";
 //    QString ttyPortRtcm = "/dev/ttyACMO";
     QString ttyPortRtcm = "/dev/ttyACM0";
+    bool inputArduino = true;
+    QString ttyPortArduino = "/dev/ttyACM0";
     int rtcmBaud = 9600;
+    int arduinoBaud = 9600;
     bool useChronos = false;
     int chronosTxId = -1;
     QString chronosHostAddr;
@@ -536,6 +539,10 @@ int main(int argc, char *argv[])
 
     if (inputRtcm) {
         car.connectSerialRtcm(ttyPortRtcm, rtcmBaud);
+    }
+
+    if (inputArduino) {
+        car.connectSerialArduino(ttyPortArduino, arduinoBaud);
     }
 
     if (useChronos) {

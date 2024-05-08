@@ -28,7 +28,9 @@
 #include <QImage>
 #include "packetinterface.h"
 #include "tcpbroadcast.h"
+//#include <QSerialPort>
 #include "serialport.h"
+#include <serialport.h>
 #include "ublox.h"
 #include "tcpserversimple.h"
 #include "rtcmclient.h"
@@ -52,6 +54,9 @@ public:
         bool serialRtcmConnect;
         QString serialRtcmPort;
         int serialRtcmBaud;
+        bool serialArduinoConnect;
+        QString serialArduinoPort;
+        int serialArduinoBaud;
         bool nmeaConnect;
         QString nmeaServer;
         int nmeaPort;
@@ -61,6 +66,7 @@ public:
     ~CarClient();
     void connectSerial(QString port, int baudrate = 115200);
     void connectSerialRtcm(QString port, int baudrate = 9600);
+    void connectSerialArduino(QString port, int baudrate = 9600);
     void startRtcmServer(int port = 8200);
     void startUbxServer(int port = 8210);
     void startLogServer(int port = 8410);
@@ -92,7 +98,9 @@ signals:
 public slots:
     void serialDataAvailable();
     void serialPortError(int error);
+    void serialArduinoDataAvailable();
     void serialRtcmDataAvailable();
+    void serialArduinoPortError(QSerialPort::SerialPortError error);
     void serialRtcmPortError(QSerialPort::SerialPortError error);
     void packetDataToSend(QByteArray &data);
     void tcpDataAvailable();
@@ -125,6 +133,7 @@ private:
     TcpBroadcast *mLogBroadcaster;
     SerialPort *mSerialPort;
     QSerialPort *mSerialPortRtcm;
+    QSerialPort *mSerialPortArduino;
     QTcpSocket *mTcpSocket;
     TcpServerSimple *mTcpServer;
     RtcmClient *mRtcmClient;
