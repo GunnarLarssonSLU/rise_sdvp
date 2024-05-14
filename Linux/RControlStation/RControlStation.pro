@@ -89,6 +89,7 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     qcustomplot.cpp \
     packetinterface.cpp \
+    sensorplot.cpp \
     utility.cpp \
     mapwidget.cpp \
     carinfo.cpp \
@@ -130,6 +131,7 @@ HEADERS  += mainwindow.h \
     qcustomplot.h \
     datatypes.h \
     packetinterface.h \
+    sensorplot.h \
     utility.h \
     mapwidget.h \
     carinfo.h \
@@ -181,6 +183,7 @@ FORMS    += mainwindow.ui \
     intersectiontest.ui \
     ncom.ui \
     correctionanalysis.ui \
+    sensorplot.ui \
     wireguard.ui
 
 contains(DEFINES, HAS_OPENGL) {
