@@ -157,6 +157,7 @@ void CarInterface::setStateData(CAR_STATE data)
     mLastCarState = data;
 
     ui->imuPlot->addSample(data.accel, data.gyro, data.mag);
+    ui->sensorPlot->addSample(data.accel, data.gyro, data.mag);
 
     // Firmware label
     QString fwStr;
@@ -462,7 +463,7 @@ void CarInterface::toggleCameraFullscreen()
 void CarInterface::showAutoPilotConfiguration()
 {
     on_confReadButton_clicked();
-    ui->tabWidget->setCurrentIndex(ui->tabWidget->indexOf(ui->tab_5));
+    ui->tabWidget->setCurrentIndex(ui->tabWidget->indexOf(ui->tabSettings));
     ui->confCommonWidget->showAutoPilotConfiguration();
 
 }

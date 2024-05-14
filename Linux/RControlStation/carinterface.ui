@@ -31,7 +31,7 @@
         <enum>QTabWidget::Triangular</enum>
        </property>
        <property name="currentIndex">
-        <number>1</number>
+        <number>9</number>
        </property>
        <property name="tabsClosable">
         <bool>false</bool>
@@ -128,7 +128,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="tab_5">
+       <widget class="QWidget" name="tabSettings">
         <attribute name="icon">
          <iconset resource="resources.qrc">
           <normaloff>:/models/Icons/Settings-96.png</normaloff>:/models/Icons/Settings-96.png</iconset>
@@ -506,7 +506,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="tab_7">
+       <widget class="QWidget" name="tabCamera">
         <attribute name="icon">
          <iconset resource="resources.qrc">
           <normaloff>:/models/Icons/Google Images-96.png</normaloff>:/models/Icons/Google Images-96.png</iconset>
@@ -670,7 +670,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="tab_6">
+       <widget class="QWidget" name="tabGPS">
         <attribute name="icon">
          <iconset resource="resources.qrc">
           <normaloff>:/models/Icons/Satellite-96.png</normaloff>:/models/Icons/Satellite-96.png</iconset>
@@ -687,7 +687,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="tab_2">
+       <widget class="QWidget" name="tabIMU">
         <property name="enabled">
          <bool>false</bool>
         </property>
@@ -707,7 +707,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="tab_3">
+       <widget class="QWidget" name="tabTerminal">
         <attribute name="icon">
          <iconset resource="resources.qrc">
           <normaloff>:/models/Icons/Console-96.png</normaloff>:/models/Icons/Console-96.png</iconset>
@@ -944,7 +944,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="tab">
+       <widget class="QWidget" name="tabCalibration">
         <attribute name="title">
          <string>Calibration</string>
         </attribute>
@@ -1214,6 +1214,25 @@
          </property>
         </widget>
        </widget>
+       <widget class="QWidget" name="tabSensors">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <attribute name="icon">
+         <iconset theme="applications-science"/>
+        </attribute>
+        <attribute name="title">
+         <string/>
+        </attribute>
+        <attribute name="toolTip">
+         <string>IMU realtime</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_4">
+         <item>
+          <widget class="SensorPlot" name="sensorPlot" native="true"/>
+         </item>
+        </layout>
+       </widget>
       </widget>
      </item>
      <item>
@@ -1377,6 +1396,12 @@
    <class>ImuPlot</class>
    <extends>QWidget</extends>
    <header>imuplot.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>SensorPlot</class>
+   <extends>QWidget</extends>
+   <header>sensorplot.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
