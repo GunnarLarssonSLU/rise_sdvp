@@ -211,6 +211,9 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         QByteArray tmpArray((const char*)data, len);
         tmpArray.append('\0');
         qDebug() << "TEST:::::::::::::::" << tmpArray;
+        qDebug() << "Length: " << len;
+        qDebug() << "Before: " << data;
+        qDebug()<< "After: " << tmpArray;
         emit printReceived(id, QString::fromLatin1(tmpArray));
 //        emit printReceived(id, QString::fromLatin1("Hej!"));
     } break;
