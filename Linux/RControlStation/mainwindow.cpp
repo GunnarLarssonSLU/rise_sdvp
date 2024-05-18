@@ -827,7 +827,7 @@ void MainWindow::onSelectedFarmGeneral(QSqlRelationalTableModel *model,QSqlRelat
             {
                 ui->pathTable->selectRow(0);
             }*/
-    mPacketInterface->setPos(0, 200, 300, 0);
+//    mPacketInterface->setPos(0, 200, 300, 0);
     if (bAct)
     {
         on_ntripDisconnectButton_clicked();
@@ -919,7 +919,6 @@ void MainWindow::onSelectedFieldGeneral(QSqlRelationalTableModel *model,QSqlRela
         ui->mapLiveWidget->update(); // Drive-widget
     }
     activeMap->setBorderFocus(true);
-    mPacketInterface->setPos(0, 400, 200, 0);
     //       mapFields->setRouteNow();   // Make sure that no route is set automatically (in order to make it easier to edit)
 }
 

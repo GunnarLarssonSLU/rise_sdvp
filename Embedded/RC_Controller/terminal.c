@@ -279,7 +279,7 @@ void terminal_process_string(char *str) {
 			}
 		}
 
-		commands_printf(" ");
+//		commands_printf(" ");
 	} else {
 		bool found = false;
 		for (int i = 0;i < callback_write;i++) {

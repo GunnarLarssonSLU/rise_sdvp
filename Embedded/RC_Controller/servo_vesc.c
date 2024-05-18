@@ -209,7 +209,7 @@ static void terminal_state(int argc, const char **argv) {
 		chThdSleepMilliseconds(100);
 	}
 
-	commands_printf(" ");
+//	commands_printf(" ");
 }
 
 // AS5047

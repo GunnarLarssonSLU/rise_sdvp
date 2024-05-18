@@ -195,14 +195,14 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     CMD_PACKET cmd = (CMD_PACKET)(quint8)data[0];
     data++;
     len--;
-    qDebug() << "Mottaget kommando: " << cmd;
+//    qDebug() << "Mottaget kommando: " << cmd;
     emit packetReceived(id, cmd, pkt);
 
     switch (cmd) {
     case CMD_PRINTF: {
-        QByteArray tmpArray = QByteArray::fromRawData((const char*)data, len);
-        tmpArray[len] = '\0';
-        emit printReceived(id, QString::fromLatin1(tmpArray));
+ //       QByteArray tmpArray = QByteArray::fromRawData((const char*)data, len);
+ //       tmpArray[len] = '\0';
+ //       emit printReceived(id, QString::fromLatin1(tmpArray));
     } break;
 
     case CMD_PRINTLOG: {
@@ -235,11 +235,11 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
             p.setTime(utility::buffer_get_int32(data, &ind));
             p.setAttributes(utility::buffer_get_uint32(data, &ind));
             route.append(p);
-        }
 
         emit routePartReceived(id, routeLen, route);
     } break;
 
+    }
     case CMD_SEND_RTCM_USB: {
         QByteArray tmpArray((char*)data, len);
         emit rtcmUsbReceived(id, tmpArray);

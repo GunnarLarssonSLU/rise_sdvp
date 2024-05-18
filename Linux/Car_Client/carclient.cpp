@@ -691,8 +691,6 @@ void CarClient::packetDataToSend(QByteArray &data)
 #endif
             }
 
-
-
             if (str == "help") {
                 printTerminal("lsusb\n"
                               "  Print information about connected usbs.");
@@ -718,7 +716,6 @@ void CarClient::packetDataToSend(QByteArray &data)
                     printTerminal("Arduino port open!\n");
                     }
             }
-
         } else if (cmd == CMD_CLEAR_UWB_ANCHORS) {
             mUwbAnchorsNow.clear();
         } else if (cmd == CMD_ADD_UWB_ANCHOR) {

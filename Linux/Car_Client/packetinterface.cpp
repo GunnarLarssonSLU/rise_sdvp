@@ -208,9 +208,11 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
 
     switch (cmd) {
     case CMD_PRINTF: {
-        QByteArray tmpArray = QByteArray::fromRawData((const char*)data, len);
-        tmpArray[len] = '\0';
+        QByteArray tmpArray((const char*)data, len);
+        tmpArray.append('\0');
+        qDebug() << "TEST:::::::::::::::" << tmpArray;
         emit printReceived(id, QString::fromLatin1(tmpArray));
+//        emit printReceived(id, QString::fromLatin1("Hej!"));
     } break;
 
     case CMD_PRINTLOG: {
