@@ -913,8 +913,14 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 	cnt_last = cnt;
 	float dt = (float)time_elapsed / (float)ITERATION_TIMER_FREQ;
 
-	commands_printf("in mpu9150_read");
-
+/*	commands_printf("in mpu9150_read");
+	commands_printf("accel			     : %f\n"
+	"gyro			     : %f\n"
+	"mag			     : %f\n",
+	accel,
+	gyro,
+	mag);
+*/
 
 	update_orientation_angles(accel, gyro, mag, dt);
 
@@ -924,7 +930,6 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 	mc_read_cnt++;
 
 #if HAS_DIFF_STEERING
-	commands_printf("has diff sterring");
 	if (mc_read_cnt >= 5) {
 		mc_read_cnt = 0;
 
@@ -941,13 +946,13 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 		comm_can_unlock_vesc();
 	}
 #else
-	commands_printf("has not diff sterring");
+//	commands_printf("has not diff sterring");
 	if (mc_read_cnt >= 10) {
 		mc_read_cnt = 0;
 		bldc_interface_get_values();
 
 #if HAS_HYDRAULIC_DRIVE
-		commands_printf("has hydraulic drive");
+//--		commands_printf("has hydraulic drive");
 		float turn_rad_rear = 0.0;
 		float angle_diff = 0.0;
 		float distance = hydraulic_get_distance(true);

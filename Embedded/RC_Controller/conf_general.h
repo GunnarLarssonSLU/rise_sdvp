@@ -48,9 +48,9 @@
 //#define EBIKE_BENJAMIN // Benjamins ebike
 
 
-#define IS_DRANGEN
+//#define IS_DRANGEN
 
-//#define IS_MACTRAC
+#define IS_MACTRAC
 
 // MacTrac
 // Steering Center: 210

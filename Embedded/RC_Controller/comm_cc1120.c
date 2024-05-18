@@ -113,7 +113,7 @@ static void rx_func(uint8_t *data, int len, int rssi, int lqi, bool crc_ok) {
 
 	(void)data;
 
-	commands_printf(" ");
+//	commands_printf(" ");
 #else
 	(void)rssi;
 	(void)lqi;

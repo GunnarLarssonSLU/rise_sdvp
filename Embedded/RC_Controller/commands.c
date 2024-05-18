@@ -873,8 +873,8 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			}
 			buffer_append_float32(m_send_buffer, pos.speed, 1e6, &send_index); // 64
 			#ifdef USE_ADCONV_FOR_VIN
-//						buffer_append_float32(m_send_buffer, adconv_get_vin(), 1e6, &send_index); // 68
-				buffer_append_float32(m_send_buffer, showData, 1e6, &send_index); // 68
+						buffer_append_float32(m_send_buffer, adconv_get_vin(), 1e6, &send_index); // 68
+//				buffer_append_float32(m_send_buffer, showData, 1e6, &send_index); // 68
 
 				////						float tot = comm_can_io_board_as5047_angle();
 		//				buffer_append_float32(m_send_buffer, showData, 1e6, &send_index); // 68
@@ -900,9 +900,17 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			if (main_config.car.use_uwb_pos) {
 				buffer_append_float32(m_send_buffer, pos.px, 1e4, &send_index); // 103
 				buffer_append_float32(m_send_buffer, pos.py, 1e4, &send_index); // 107
+				commands_printf("pos.px			     : %f\n"
+				"pos.py			     : %f\n",
+				pos.px,
+				pos.py);
 			} else {
 				buffer_append_float32(m_send_buffer, pos_uwb.px, 1e4, &send_index); // 103
 				buffer_append_float32(m_send_buffer, pos_uwb.py, 1e4, &send_index); // 107
+				commands_printf("pos_uwb.px			     : %f\n"
+				"pos_uwb.py			     : %f\n",
+				pos_uwb.px,
+				pos_uwb.py);
 			}
 			float logtmp;
 			logtmp=0;

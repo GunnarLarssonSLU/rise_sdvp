@@ -103,12 +103,15 @@ int main(int argc, char *argv[])
     int tcpPort = 8300;
     bool logUsb = false;
     QString logUsbDir = QDir::currentPath() + "/logs";
+//    bool inputRtcm = true;
     bool inputRtcm = false;
 //    QString ttyPortRtcm = "/dev/ttyUSB0";
 //    QString ttyPortRtcm = "/dev/ttyACMO";
     QString ttyPortRtcm = "/dev/ttyACM0";
-    bool inputArduino = true;
-    QString ttyPortArduino = "/dev/ttyACM0";
+//    bool inputArduino = true;
+    bool inputArduino = false;
+//    QString ttyPortArduino = "/dev/ttyACM0";
+    QString ttyPortArduino = "NOTHING";
     int rtcmBaud = 9600;
     int arduinoBaud = 9600;
     bool useChronos = false;

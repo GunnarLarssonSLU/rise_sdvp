@@ -150,9 +150,11 @@ void CarInterface::setOrientation(double roll, double pitch, double yaw)
 
 void CarInterface::setStateData(CAR_STATE data)
 {
+    qDebug() << ":::CarInterface::setStateData:::";
     qDebug() << "x (car): " << data.px << ", y (car): " << data.py;
     qDebug() << "x (gps): " << data.px_gps << ", y (gps): " << data.py_gps;
     qDebug() << "x (uwb): " << data.px_uwb << ", " << ", y (uwb): " << data.py_uwb;
+    qDebug() << ":::   :::";
 
     mLastCarState = data;
 
@@ -233,10 +235,12 @@ void CarInterface::setStateData(CAR_STATE data)
         ap_goal.setXY(data.ap_goal_px, data.ap_goal_py);
 
 
-//        qDebug() << "roll: " << data.roll << ", pitch: " << data.pitch << ", yaw: " << data.yaw;
-//        qDebug() << "accel. [0]: " << data.accel[0] << ", [1]: " << data.accel[1] << ", [2]: " << data.accel[0];
-//        qDebug() << "gyro. [0]: " << data.gyro[0] << ", [1]: " << data.gyro[1] << ", [2]: " << data.gyro[0];
-//        qDebug() << "mag. [0]: " << data.mag[0] << ", [1]: " << data.mag[1] << ", [2]: " << data.mag[0];
+        qDebug() << "px (gps): " << data.px_gps << ", py (gps): " << data.py_gps ;
+        qDebug() << "px (uwb): " << data.px_uwb << ", py (uwb): " << data.py_uwb ;
+        qDebug() << "roll: " << data.roll << ", pitch: " << data.pitch << ", yaw: " << data.yaw;
+        qDebug() << "accel. [0]: " << data.accel[0] << ", [1]: " << data.accel[1] << ", [2]: " << data.accel[0];
+        qDebug() << "gyro. [0]: " << data.gyro[0] << ", [1]: " << data.gyro[1] << ", [2]: " << data.gyro[0];
+        qDebug() << "mag. [0]: " << data.mag[0] << ", [1]: " << data.mag[1] << ", [2]: " << data.mag[0];
 
         /*
          *
@@ -275,7 +279,7 @@ void CarInterface::setStateData(CAR_STATE data)
         */
 
         ap_goal.setRadius(data.ap_rad);
-//        car->setLocation(loc);
+        car->setLocation(loc);
         car->setLocationGps(loc_gps);
         car->setLocationUwb(loc_uwb);
         car->setApGoal(ap_goal);
