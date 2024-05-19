@@ -195,14 +195,20 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     CMD_PACKET cmd = (CMD_PACKET)(quint8)data[0];
     data++;
     len--;
-//    qDebug() << "Mottaget kommando: " << cmd;
     emit packetReceived(id, cmd, pkt);
 
     switch (cmd) {
     case CMD_PRINTF: {
- //       QByteArray tmpArray = QByteArray::fromRawData((const char*)data, len);
- //       tmpArray[len] = '\0';
- //       emit printReceived(id, QString::fromLatin1(tmpArray));
+//        QByteArray tmpArray = QByteArray::fromRawData((const char*)data, len);
+//        tmpArray[len] = '\0';
+//        emit printReceived(id, QString::fromLatin1(tmpArray));
+
+        QByteArray tmpArray((const char*)data, len);
+        tmpArray.append('\0');
+        emit printReceived(id, QString::fromLatin1(tmpArray));
+
+
+
     } break;
 
     case CMD_PRINTLOG: {
@@ -217,6 +223,10 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         lat = utility::buffer_get_double64(data, 1e16, &ind);
         lon = utility::buffer_get_double64(data, 1e16, &ind);
         height = utility::buffer_get_double32(data, 1e3, &ind);
+        qDebug() << ":::Get ENU ref:::";
+        qDebug() << "Lat.: " << lat;
+        qDebug() << "Lon.: " << lon;
+        qDebug() << "Height.: " << height;
         emit enuRefReceived(id, lat, lon, height);
     } break;
 
@@ -453,6 +463,9 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         state.log1 = utility::buffer_get_double32(data, 1e4, &ind);
         state.log2 = utility::buffer_get_double32(data, 1e4, &ind);
         state.log3 = utility::buffer_get_double32(data, 1e4, &ind);
+        qDebug() << "::: GetState:::";
+        qDebug() << "px: " << state.px;
+        qDebug() << "py: " << state.py;
 
         emit stateReceived(id, state);
     } break;
@@ -958,6 +971,10 @@ bool PacketInterface::setEnuRef(quint8 id, double *llh, int retries)
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_SET_ENU_REF;
+    qDebug() << "::Set Enu Ref:::";
+    qDebug() << "Lat.: " << llh[0];
+    qDebug() << "Lon.: " << llh[1];
+    qDebug() << "Hei.: " << llh[2];
     utility::buffer_append_double64(mSendBuffer, llh[0], 1e16, &send_index);
     utility::buffer_append_double64(mSendBuffer, llh[1], 1e16, &send_index);
     utility::buffer_append_double32(mSendBuffer, llh[2], 1e3, &send_index);

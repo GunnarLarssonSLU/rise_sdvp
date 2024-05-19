@@ -31,7 +31,7 @@
         <enum>QTabWidget::Triangular</enum>
        </property>
        <property name="currentIndex">
-        <number>9</number>
+        <number>1</number>
        </property>
        <property name="tabsClosable">
         <bool>false</bool>
@@ -431,6 +431,20 @@
             </item>
             <item row="0" column="0">
              <widget class="QComboBox" name="vehicletypeBox"/>
+            </item>
+            <item row="6" column="0">
+             <widget class="QDoubleSpinBox" name="implementXposBox">
+              <property name="prefix">
+               <string>Impl. distance ahead:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="1">
+             <widget class="QDoubleSpinBox" name="implementYposBox">
+              <property name="prefix">
+               <string>Impl. distance side:</string>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
@@ -1219,7 +1233,8 @@
          <bool>false</bool>
         </property>
         <attribute name="icon">
-         <iconset theme="applications-science"/>
+         <iconset theme="applications-science">
+          <normaloff>.</normaloff>.</iconset>
         </attribute>
         <attribute name="title">
          <string/>

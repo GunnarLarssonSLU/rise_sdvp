@@ -105,7 +105,7 @@ static void mr_update_pos(POS_STATE *pos, float dt);
 #endif
 
 void pos_init(void) {
-	commands_printf("Initializing\n");
+	commands_printf("Initializing Pos.\n");
 	ahrs_init_attitude_info(&m_att);
 	m_attitude_init_done = false;
 	memset(&m_pos, 0, sizeof(m_pos));
@@ -330,6 +330,8 @@ void pos_set_xya(float x, float y, float angle) {
 	chMtxLock(&m_mutex_gps);
 	commands_printf("In Pos Set XYA\n");
 
+	commands_printf("Setting position to (x,y,z): %f, %f %f", x,y,angle);
+
 	m_pos.px = x;
 	m_pos.py = y;
 	m_pos.yaw = angle;
@@ -361,6 +363,16 @@ void pos_set_enu_ref(double lat, double lon, double height) {
 	m_gps.ix = x;
 	m_gps.iy = y;
 	m_gps.iz = z;
+
+	if(iDebug==2) {
+		commands_printf(":::Pos Set Enu Ref::: %f\n");
+		commands_printf("x: %f\n", m_gps.ix);
+		commands_printf("y: %f\n", m_gps.iy);
+		commands_printf("z: %f\n", m_gps.iz);
+		commands_printf("lat: %f\n", lat);
+		commands_printf("lon: %f\n", lon);
+		commands_printf("height: %f\n", height);
+	}
 
 	float so = sinf((float)lon * M_PI / 180.0);
 	float co = cosf((float)lon * M_PI / 180.0);
@@ -457,15 +469,25 @@ bool pos_input_nmea(const char *data) {
 		m_gps.y = (v + gga.height) * cosp * sinl;
 		m_gps.z = (v * (D(1.0) - e2) + gga.height) * sinp;
 
-//		commands_printf("Local init done: %d\n", m_gps.local_init_done);
-		//		commands_printf("Lat.: %f\n", m_gps.lat);
-		//		commands_printf("Lon.: %f\n", m_gps.lon);
+		if(iDebug==1) {
 
+		commands_printf("Local init done: %d\n", m_gps.local_init_done);
+				commands_printf("Lat.: %f\n", m_gps.lat);
+				commands_printf("Lon.: %f\n", m_gps.lon);
+				commands_printf("x: %f\n", m_gps.x);
+				commands_printf("y: %f\n", m_gps.y);
+				commands_printf("z: %f\n", m_gps.z);
+		};
 		// Continue if ENU frame is initialized
 		if (m_gps.local_init_done) {
 			float dx = (float)(m_gps.x - m_gps.ix);
 			float dy = (float)(m_gps.y - m_gps.iy);
 			float dz = (float)(m_gps.z - m_gps.iz);
+			if(iDebug==1) {
+			commands_printf("dx: %f\n", dx);
+			commands_printf("dy: %f\n", dy);
+			commands_printf("dz: %f\n", dz);
+			};
 
 			m_gps.lx = m_gps.r1c1 * dx + m_gps.r1c2 * dy + m_gps.r1c3 * dz;
 			m_gps.ly = m_gps.r2c1 * dx + m_gps.r2c2 * dy + m_gps.r2c3 * dz;
@@ -473,12 +495,24 @@ bool pos_input_nmea(const char *data) {
 
 			float px = m_gps.lx;
 			float py = m_gps.ly;
-
+			if(iDebug==1) {
+/*			commands_printf("r1c1: %f\n", m_gps.r1c1);
+			commands_printf("r1c2: %f\n", m_gps.r1c2);
+			commands_printf("r1c3: %f\n", m_gps.r1c3);*/
+			commands_printf("px: %f\n", px);
+			commands_printf("py: %f\n", py);
+			};
 			// Apply antenna offset
 			const float s_yaw = sinf(-m_pos.yaw * M_PI / 180.0);
 			const float c_yaw = cosf(-m_pos.yaw * M_PI / 180.0);
 			px -= c_yaw * main_config.gps_ant_x - s_yaw * main_config.gps_ant_y;
 			py -= s_yaw * main_config.gps_ant_x + c_yaw * main_config.gps_ant_y;
+
+			if(iDebug==1) {
+			commands_printf("::Antenna offset done::\n");
+			commands_printf("px: %f\n", px);
+			commands_printf("py: %f\n", py);
+			};
 
 			if(iDebug==1) {
 			commands_printf("dx: %f\n", dx);
@@ -492,10 +526,14 @@ bool pos_input_nmea(const char *data) {
 			m_pos.pz_gps_last = m_pos.pz_gps;
 			m_pos.gps_ms_last = m_pos.gps_ms;
 
+			if(iDebug==1) {
+
 			//			commands_printf("px gps: %f\n", m_pos.px_gps_last);
 			//			commands_printf("py gps: %f\n", m_pos.py_gps_last);
 //			commands_printf("pz gps: %f\n", m_pos.pz_gps_last);
+			};
 
+			// Set position of car
 			m_pos.px_gps = px;
 			m_pos.py_gps = py;
 			m_pos.pz_gps = m_gps.lz;
@@ -1369,9 +1407,11 @@ static void correct_pos_gps(POS_STATE *pos) {
 
 	utils_step_towards(&closest_corr.px, pos->px_gps, gain);
 	utils_step_towards(&closest_corr.py, pos->py_gps, gain);
+	// Explain what thjis does
 	pos->px += closest_corr.px - closest.px;
 	pos->py += closest_corr.py - closest.py;
 
+	// Fill history?
 	pos->gps_ang_corr_x_last_gps = pos->px_gps;
 	pos->gps_ang_corr_y_last_gps = pos->py_gps;
 	pos->gps_ang_corr_last_gps_ms = pos->gps_ms;
