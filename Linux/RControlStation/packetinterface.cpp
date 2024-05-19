@@ -466,6 +466,10 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         qDebug() << "::: GetState:::";
         qDebug() << "px: " << state.px;
         qDebug() << "py: " << state.py;
+        qDebug() << "px - gps: " << state.px_gps;
+        qDebug() << "py - gps: " << state.py_gps;
+        qDebug() << "px - uwb: " << state.px_uwb;
+        qDebug() << "py - uwb: " << state.py_uwb;
 
         emit stateReceived(id, state);
     } break;

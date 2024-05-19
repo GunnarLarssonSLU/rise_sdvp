@@ -242,42 +242,6 @@ void CarInterface::setStateData(CAR_STATE data)
         qDebug() << "gyro. [0]: " << data.gyro[0] << ", [1]: " << data.gyro[1] << ", [2]: " << data.gyro[0];
         qDebug() << "mag. [0]: " << data.mag[0] << ", [1]: " << data.mag[1] << ", [2]: " << data.mag[0];
 
-        /*
-         *
-         *
-         *
-
-        state.roll = utility::buffer_get_double32(data, 1e6, &ind);
-        state.pitch = utility::buffer_get_double32(data, 1e6, &ind);
-        state.yaw = utility::buffer_get_double32(data, 1e6, &ind);
-        state.accel[0] = utility::buffer_get_double32(data, 1e6, &ind);
-        state.accel[1] = utility::buffer_get_double32(data, 1e6, &ind);
-        state.accel[2] = utility::buffer_get_double32(data, 1e6, &ind);
-        state.gyro[0] = utility::buffer_get_double32(data, 1e6, &ind);
-        state.gyro[1] = utility::buffer_get_double32(data, 1e6, &ind);
-        state.gyro[2] = ut
-] = utility::buffer_get_double32(data, 1e6, &ind);
-        state.mag[2] = utility::buffer_get_double32(data, 1e6, &ind);
-        state.px = utility::buffer_get_double32(data, 1e4, &ind);
-        state.py = utility::buffer_get_double32(data, 1e4, &ind);
-        state.speed = utility::buffer_get_double32(data, 1e6, &ind);
-        state.vin = utility::buffer_get_double32(data, 1e6, &ind);
-        state.temp_fet = utility::buffer_get_double32(data, 1e6, &ind);
-        state.mc_fault = (mc_fault_code)data[ind++];
-        state.px_gps = utility::buffer_get_double32(data, 1e4, &ind);
-        state.py_gps = utility::buffer_get_double32(data, 1e4, &ind);
-        state.ap_goal_px = utility::buffer_get_double32(data, 1e4, &ind);
-        state.ap_goal_py = utility::buffer_get_double32(data, 1e4, &ind);
-        state.ap_rad = utility::buffer_get_double32(data, 1e6, &ind);
-        state.ms_today = utility::buffer_get_int32(data, &ind);
-        state.ap_route_left = utility::buffer_get_int16(data, &ind);
-        state.px_uwb = utility::buffer_get_double32(data, 1e4, &ind);
-        state.py_uwb = utility::buffer_get_double32(data, 1e4, &ind);
-        state.log1 = utility::buffer_get_double32(data, 1e4, &ind);
-        state.log2 = utility::buffer_get_double32(data, 1e4, &ind);
-        state.log3 = utility::buffer_get_double32(data, 1e4, &ind);
-        */
-
         ap_goal.setRadius(data.ap_rad);
         car->setLocation(loc);
         car->setLocationGps(loc_gps);
@@ -920,15 +884,6 @@ void CarInterface::on_endCalibration1Button_clicked()
            double dalpha3=std::fmod(dalpha2+M_PI/2,M_PI)-M_PI/2;
            alphas.push_back(dalpha3);
            oldalpha=alpha;
-/*           qDebug() << "X: " << QString("%1").arg(Xvalue,0,'g',13);
-           qDebug() << "Y: " << QString("%1").arg(Yvalue,0,'g',13);
-           qDebug() << "alpha: " << QString("%1").arg(alpha,0,'g',13);
-           qDebug() << "dx: " << QString("%1").arg(dx,0,'g',13);
-           qDebug() << "dy: " << QString("%1").arg(dy,0,'g',13);
-           qDebug() << "stepsize_m: " << QString("%1").arg(stepsize_m,0,'g',13);
-           qDebug() << "dalpha: " << QString("%1").arg(dalpha,0,'g',13);
-           qDebug() << "dalpha2: " << QString("%1").arg(dalpha2,0,'g',13);
-           qDebug() << "dalpha3: " << QString("%1").arg(dalpha3,0,'g',13);*/
         }
     }
     double averageangle = std::accumulate(alphas.begin(), alphas.end(), 0.0) / alphas.size();

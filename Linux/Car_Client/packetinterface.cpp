@@ -203,24 +203,23 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
 
     if (!((cmd==63) || (cmd==82) || (cmd==120)))
     {
-        qDebug() << "Kommando: " << cmd;
+  //      qDebug() << "Kommando: " << cmd;
     }
 
     switch (cmd) {
     case CMD_PRINTF: {
         QByteArray tmpArray((const char*)data, len);
         tmpArray.append('\0');
-        qDebug() << "TEST:::::::::::::::" << tmpArray;
-        qDebug() << "Length: " << len;
-        qDebug() << "Before: " << data;
-        qDebug()<< "After: " << tmpArray;
         emit printReceived(id, QString::fromLatin1(tmpArray));
 //        emit printReceived(id, QString::fromLatin1("Hej!"));
     } break;
 
     case CMD_PRINTLOG: {
-        QByteArray tmpArray = QByteArray::fromRawData((const char*)data, len);
-        tmpArray[len] = '\0';
+//        QByteArray tmpArray = QByteArray::fromRawData((const char*)data, len);
+//        tmpArray[len] = '\0';
+//        emit printReceived(id, QString::fromLatin1(tmpArray));
+        QByteArray tmpArray((const char*)data, len);
+        tmpArray.append('\0');
         emit printReceived(id, QString::fromLatin1(tmpArray));
     } break;
 
