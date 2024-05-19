@@ -920,7 +920,7 @@ void CarInterface::on_endCalibration1Button_clicked()
            double dalpha3=std::fmod(dalpha2+M_PI/2,M_PI)-M_PI/2;
            alphas.push_back(dalpha3);
            oldalpha=alpha;
-           qDebug() << "X: " << QString("%1").arg(Xvalue,0,'g',13);
+/*           qDebug() << "X: " << QString("%1").arg(Xvalue,0,'g',13);
            qDebug() << "Y: " << QString("%1").arg(Yvalue,0,'g',13);
            qDebug() << "alpha: " << QString("%1").arg(alpha,0,'g',13);
            qDebug() << "dx: " << QString("%1").arg(dx,0,'g',13);
@@ -928,7 +928,7 @@ void CarInterface::on_endCalibration1Button_clicked()
            qDebug() << "stepsize_m: " << QString("%1").arg(stepsize_m,0,'g',13);
            qDebug() << "dalpha: " << QString("%1").arg(dalpha,0,'g',13);
            qDebug() << "dalpha2: " << QString("%1").arg(dalpha2,0,'g',13);
-           qDebug() << "dalpha3: " << QString("%1").arg(dalpha3,0,'g',13);
+           qDebug() << "dalpha3: " << QString("%1").arg(dalpha3,0,'g',13);*/
         }
     }
     double averageangle = std::accumulate(alphas.begin(), alphas.end(), 0.0) / alphas.size();

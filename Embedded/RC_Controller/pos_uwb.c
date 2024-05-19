@@ -161,6 +161,7 @@ void pos_uwb_clear_anchors(void) {
 
 void pos_uwb_get_pos(POS_STATE *p) {
 	chMtxLock(&m_mutex_pos);
+	//Set car pos to uwb pos?
 	p->px = m_uwb_state.px;
 	p->py = m_uwb_state.py;
 	p->speed = m_uwb_state.speed;
