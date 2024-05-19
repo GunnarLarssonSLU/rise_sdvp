@@ -745,7 +745,7 @@ void MainWindow::onSelectedFarmGeneral(QSqlRelationalTableModel *model,QSqlRelat
     {
         activeMap=ui->mapWidgetFields;
 
-        double llh[3]={lon,lat,0};
+        double llh[3]={lat,lon,0};
         mPacketInterface->setEnuRef(ui->mapCarBox->value(), llh);
 
         ui->mapLiveWidget->setEnuRef(lat,lon,0);

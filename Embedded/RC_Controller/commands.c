@@ -56,6 +56,8 @@ static virtual_timer_t vt;
 static mutex_t m_print_gps;
 static bool m_init_done = false;
 
+static int iDebug;
+
 // Private functions
 static void stop_forward(void *p);
 static void rtcm_rx(uint8_t *data, int len, int type);
@@ -870,6 +872,13 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			} else {
 				buffer_append_float32(m_send_buffer, pos.px, 1e4, &send_index); // 56
 				buffer_append_float32(m_send_buffer, pos.py, 1e4, &send_index); // 60
+				if (iDebug==1)
+				{
+				commands_printf("pos.px			     : %f\n"
+				"pos.py			     : %f\n",
+				pos.px,
+				pos.py);
+				}
 			}
 			buffer_append_float32(m_send_buffer, pos.speed, 1e6, &send_index); // 64
 			#ifdef USE_ADCONV_FOR_VIN
@@ -898,19 +907,11 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			buffer_append_int32(m_send_buffer, pos_get_ms_today(), &send_index); // 97
 			buffer_append_int16(m_send_buffer, autopilot_get_route_left(), &send_index); // 99
 			if (main_config.car.use_uwb_pos) {
-				buffer_append_float32(m_send_buffer, pos_uwb.px, 1e4, &send_index); // 103
-				buffer_append_float32(m_send_buffer, pos_uwb.py, 1e4, &send_index); // 107
-				commands_printf("pos_uwb.px			     : %f\n"
-				"pos_uwb.py			     : %f\n",
-				pos_uwb.px,
-				pos_uwb.py);
-			} else {
 				buffer_append_float32(m_send_buffer, pos.px, 1e4, &send_index); // 103
 				buffer_append_float32(m_send_buffer, pos.py, 1e4, &send_index); // 107
-				commands_printf("pos.px			     : %f\n"
-				"pos.py			     : %f\n",
-				pos.px,
-				pos.py);
+			} else {
+				buffer_append_float32(m_send_buffer, pos_uwb.px, 1e4, &send_index); // 103
+				buffer_append_float32(m_send_buffer, pos_uwb.py, 1e4, &send_index); // 107
 			}
 			float logtmp;
 			logtmp=0;

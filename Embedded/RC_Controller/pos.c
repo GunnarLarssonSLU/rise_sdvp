@@ -328,10 +328,10 @@ float pos_get_speed(void) {
 void pos_set_xya(float x, float y, float angle) {
 	chMtxLock(&m_mutex_pos);
 	chMtxLock(&m_mutex_gps);
-	commands_printf("In Pos Set XYA\n");
-
-	commands_printf("Setting position to (x,y,z): %f, %f %f", x,y,angle);
-
+	if (iDebug==1) {
+		commands_printf("In Pos Set XYA\n");
+		commands_printf("Setting position to (x,y,z): %f, %f %f", x,y,angle);
+	}
 	m_pos.px = x;
 	m_pos.py = y;
 	m_pos.yaw = angle;
@@ -365,7 +365,7 @@ void pos_set_enu_ref(double lat, double lon, double height) {
 	m_gps.iz = z;
 
 	if(iDebug==2) {
-		commands_printf(":::Pos Set Enu Ref::: %f\n");
+		commands_printf(":::Pos Set Enu Ref:::\n");
 		commands_printf("x: %f\n", m_gps.ix);
 		commands_printf("y: %f\n", m_gps.iy);
 		commands_printf("z: %f\n", m_gps.iz);
@@ -471,7 +471,7 @@ bool pos_input_nmea(const char *data) {
 
 		if(iDebug==1) {
 
-		commands_printf("Local init done: %d\n", m_gps.local_init_done);
+		commands_printf("::::::::::::::::::::Local init done: %d\n", m_gps.local_init_done);
 				commands_printf("Lat.: %f\n", m_gps.lat);
 				commands_printf("Lon.: %f\n", m_gps.lon);
 				commands_printf("x: %f\n", m_gps.x);
@@ -496,11 +496,11 @@ bool pos_input_nmea(const char *data) {
 			float px = m_gps.lx;
 			float py = m_gps.ly;
 			if(iDebug==1) {
-/*			commands_printf("r1c1: %f\n", m_gps.r1c1);
-			commands_printf("r1c2: %f\n", m_gps.r1c2);
-			commands_printf("r1c3: %f\n", m_gps.r1c3);*/
-			commands_printf("px: %f\n", px);
-			commands_printf("py: %f\n", py);
+				commands_printf("r1c1: %f\n", m_gps.r1c1);
+				commands_printf("r1c2: %f\n", m_gps.r1c2);
+				commands_printf("r1c3: %f\n", m_gps.r1c3);
+				commands_printf("px: %f\n", px);
+				commands_printf("py: %f\n", py);
 			};
 			// Apply antenna offset
 			const float s_yaw = sinf(-m_pos.yaw * M_PI / 180.0);
@@ -509,15 +509,15 @@ bool pos_input_nmea(const char *data) {
 			py -= s_yaw * main_config.gps_ant_x + c_yaw * main_config.gps_ant_y;
 
 			if(iDebug==1) {
-			commands_printf("::Antenna offset done::\n");
-			commands_printf("px: %f\n", px);
-			commands_printf("py: %f\n", py);
+				commands_printf("::Antenna offset done::\n");
+				commands_printf("px: %f\n", px);
+				commands_printf("py: %f\n", py);
 			};
 
 			if(iDebug==1) {
-			commands_printf("dx: %f\n", dx);
-			commands_printf("x: %f\n", m_gps.x);
-			commands_printf("ix: %f\n", m_gps.ix);
+				commands_printf("dx: %f\n", dx);
+				commands_printf("x: %f\n", m_gps.x);
+				commands_printf("ix: %f\n", m_gps.ix);
 			};
 			chMtxLock(&m_mutex_pos);
 
@@ -544,11 +544,30 @@ bool pos_input_nmea(const char *data) {
 			//			commands_printf("py: %f\n", py);
 			//			commands_printf("pz: %f\n", m_gps.lz);
 
+			if(iDebug==4) {
+				if (main_config.gps_comp)
+				{
+						commands_printf("main_config.gps_comp");
+				}
+				if (!main_config.gps_req_rtk || (gga.fix_type == 4 || gga.fix_type == 5))
+				{
+						commands_printf("(!main_config.gps_req_rtk || (gga.fix_type == 4 || gga.fix_type == 5))");
+				}
+				if (!main_config.gps_use_ubx_info || m_ubx_pos_valid)
+				{
+						commands_printf("(!main_config.gps_use_ubx_info || m_ubx_pos_valid)");
+				}
+			}
+
 			// Correct position
 			// Optionally require RTK and good ublox quality indication.
 			if (main_config.gps_comp &&
 					(!main_config.gps_req_rtk || (gga.fix_type == 4 || gga.fix_type == 5)) &&
 					(!main_config.gps_use_ubx_info || m_ubx_pos_valid)) {
+
+				if(iDebug==4) {
+				commands_printf("Compensation!");
+				}
 
 				m_pos.gps_last_corr_diff = sqrtf(SQ(m_pos.px - m_pos.px_gps) +
 						SQ(m_pos.py - m_pos.py_gps));
@@ -564,6 +583,12 @@ bool pos_input_nmea(const char *data) {
 					m_pos.pz = m_pos.pz_gps - m_pos.gps_ground_level;
 				}
 #endif
+			} else
+			{
+				if(iDebug==4) {
+				commands_printf("No compensation!");
+				correct_pos_gps(&m_pos);
+				}
 			}
 
 			m_pos.gps_corr_cnt = 0.0;
@@ -1365,12 +1390,12 @@ static void correct_pos_gps(POS_STATE *pos) {
 			main_config.gps_corr_gain_dyn * pos->gps_corr_cnt;
 
 
-//	if(iDebug==1)
-//	{
+	if(iDebug==4)
+	{
 	commands_printf("gps_corr_gain_stat: %f\n",main_config.gps_corr_gain_stat);
 	commands_printf("dyn tot: %f\n",main_config.gps_corr_gain_dyn * pos->gps_corr_cnt);
 	commands_printf("gain: %f\n",gain);
-//	};
+	};
 
 	POS_POINT closest = get_closest_point_to_time(m_en_delay_comp ? pos->gps_ms : m_ms_today);
 	POS_POINT closest_corr = closest;
@@ -1407,14 +1432,19 @@ static void correct_pos_gps(POS_STATE *pos) {
 
 	utils_step_towards(&closest_corr.px, pos->px_gps, gain);
 	utils_step_towards(&closest_corr.py, pos->py_gps, gain);
-	// Explain what thjis does
+	// Explain what this does
 	pos->px += closest_corr.px - closest.px;
 	pos->py += closest_corr.py - closest.py;
-
+	if(iDebug==4)
+	{
+	commands_printf("Px: %.1f m, Py: %.1f m",
+			(double)pos->px, (double)pos->py);
+	}
 	// Fill history?
 	pos->gps_ang_corr_x_last_gps = pos->px_gps;
 	pos->gps_ang_corr_y_last_gps = pos->py_gps;
 	pos->gps_ang_corr_last_gps_ms = pos->gps_ms;
+
 
 	// Update multirotor state
 #if MAIN_MODE == MAIN_MODE_MULTIROTOR
@@ -1592,8 +1622,11 @@ static void mc_values_received(mc_values *val) {
 
 static void car_update_pos(float distance, float turn_rad_rear, float angle_diff, float speed) {
 	chMtxLock(&m_mutex_pos);
-//	commands_printf("In Car update pos:\n");
-
+	if(iDebug==4) {
+	commands_printf("In Car update pos - in:\n");
+	commands_printf("px: %f, py: %f\n", m_pos.px, m_pos.py);
+	commands_printf("dist: %f, turn_rad_rear: %f, angle_diff: %f, speed: %f\n", distance, turn_rad_rear,angle_diff,speed);
+	}
 	if (fabsf(distance) > 1e-6) {
 		float angle_rad = -m_pos.yaw * M_PI / 180.0;
 
@@ -1611,6 +1644,10 @@ static void car_update_pos(float distance, float turn_rad_rear, float angle_diff
 			m_pos.yaw = -angle_rad * 180.0 / M_PI;
 			utils_norm_angle(&m_pos.yaw);
 		}
+	}
+	if(iDebug==4) {
+	commands_printf("In Car update pos - out:\n");
+	commands_printf("px: %f, py: %f\n", m_pos.px, m_pos.py);
 	}
 
 	m_pos.speed = speed;
