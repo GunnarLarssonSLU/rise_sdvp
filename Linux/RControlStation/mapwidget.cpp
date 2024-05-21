@@ -2032,9 +2032,6 @@ void MapWidget::paintCar(CarInfo &carInfo,QPainter &painter,QPen &pen, QTransfor
 
     double x = pos.getX() * 1000.0;
     double y = pos.getY() * 1000.0;
-    qDebug() << "In paintCar";
-    qDebug() << "x: " << x;
-    qDebug() << "y: " << y;
     double x_gps = pos_gps.getX() * 1000.0;
     double y_gps = pos_gps.getY() * 1000.0;
     double angle = pos.getYaw() * 180.0 / M_PI;

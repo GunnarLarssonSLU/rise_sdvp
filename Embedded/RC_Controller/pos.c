@@ -558,7 +558,7 @@ bool pos_input_nmea(const char *data) {
 						commands_printf("(!main_config.gps_use_ubx_info || m_ubx_pos_valid)");
 				}
 			}
-
+/*
 			// Correct position
 			// Optionally require RTK and good ublox quality indication.
 			if (main_config.gps_comp &&
@@ -568,7 +568,7 @@ bool pos_input_nmea(const char *data) {
 				if(iDebug==4) {
 				commands_printf("Compensation!");
 				}
-
+*/
 				m_pos.gps_last_corr_diff = sqrtf(SQ(m_pos.px - m_pos.px_gps) +
 						SQ(m_pos.py - m_pos.py_gps));
 
@@ -583,13 +583,13 @@ bool pos_input_nmea(const char *data) {
 					m_pos.pz = m_pos.pz_gps - m_pos.gps_ground_level;
 				}
 #endif
-			} else
+/*			} else
 			{
 				if(iDebug==4) {
 				commands_printf("No compensation!");
 				correct_pos_gps(&m_pos);
 				}
-			}
+			}*/
 
 			m_pos.gps_corr_cnt = 0.0;
 
