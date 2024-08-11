@@ -252,7 +252,7 @@ protected:
     void mouseReleaseEvent(QMouseEvent *e) override;
     void wheelEvent(QWheelEvent *e) override;
     bool event(QEvent *event) override;
-
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
 private:
     QList<CarInfo> mCarInfo;
     QVector<LocPoint> mCarTrace;

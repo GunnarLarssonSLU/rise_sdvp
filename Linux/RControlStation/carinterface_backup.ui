@@ -1,0 +1,1464 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>CarInterface</class>
+ <widget class="QWidget" name="CarInterface">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>846</width>
+    <height>476</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout_5">
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QTabWidget" name="tabWidget">
+       <property name="tabPosition">
+        <enum>QTabWidget::South</enum>
+       </property>
+       <property name="tabShape">
+        <enum>QTabWidget::Triangular</enum>
+       </property>
+       <property name="currentIndex">
+        <number>9</number>
+       </property>
+       <property name="tabsClosable">
+        <bool>false</bool>
+       </property>
+       <widget class="QWidget" name="orientationTab">
+        <attribute name="icon">
+         <iconset resource="resources.qrc">
+          <normaloff>:/models/Icons/Orthogonal View-96.png</normaloff>:/models/Icons/Orthogonal View-96.png</iconset>
+        </attribute>
+        <attribute name="title">
+         <string/>
+        </attribute>
+        <attribute name="toolTip">
+         <string>Orientation</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_15">
+         <item>
+          <layout class="QVBoxLayout" name="orientationLayout">
+           <item>
+            <spacer name="orientationSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QProgressBar" name="rollBar">
+             <property name="minimum">
+              <number>-180</number>
+             </property>
+             <property name="maximum">
+              <number>180</number>
+             </property>
+             <property name="value">
+              <number>0</number>
+             </property>
+             <property name="format">
+              <string>Roll: %v°</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QProgressBar" name="pitchBar">
+             <property name="minimum">
+              <number>-180</number>
+             </property>
+             <property name="maximum">
+              <number>180</number>
+             </property>
+             <property name="value">
+              <number>0</number>
+             </property>
+             <property name="format">
+              <string>Pitch %v°</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QProgressBar" name="yawBar">
+             <property name="minimum">
+              <number>-180</number>
+             </property>
+             <property name="maximum">
+              <number>180</number>
+             </property>
+             <property name="value">
+              <number>0</number>
+             </property>
+             <property name="format">
+              <string>Yaw: %v°</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QProgressBar" name="speedBar">
+             <property name="maximum">
+              <number>120</number>
+             </property>
+             <property name="value">
+              <number>0</number>
+             </property>
+             <property name="format">
+              <string>Speed: %v km/h</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="tabSettings">
+        <attribute name="icon">
+         <iconset resource="resources.qrc">
+          <normaloff>:/models/Icons/Settings-96.png</normaloff>:/models/Icons/Settings-96.png</iconset>
+        </attribute>
+        <attribute name="title">
+         <string/>
+        </attribute>
+        <attribute name="toolTip">
+         <string>Configuration</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_6">
+         <item>
+          <widget class="QGroupBox" name="groupBox_4">
+           <property name="title">
+            <string>Car Settings</string>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_3">
+            <property name="topMargin">
+             <number>6</number>
+            </property>
+            <property name="rightMargin">
+             <number>6</number>
+            </property>
+            <property name="bottomMargin">
+             <number>6</number>
+            </property>
+            <property name="spacing">
+             <number>3</number>
+            </property>
+            <item row="2" column="0">
+             <widget class="QDoubleSpinBox" name="confTurnRadBox">
+              <property name="prefix">
+               <string>Turn Radius: </string>
+              </property>
+              <property name="suffix">
+               <string> m</string>
+              </property>
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="maximum">
+               <double>1000.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QDoubleSpinBox" name="confWheelDiamBox">
+              <property name="prefix">
+               <string>Wheel Diameter: </string>
+              </property>
+              <property name="suffix">
+               <string> m</string>
+              </property>
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="maximum">
+               <double>1000.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="2">
+             <widget class="QDoubleSpinBox" name="confMotorPoleBox">
+              <property name="prefix">
+               <string>Motor Poles: </string>
+              </property>
+              <property name="decimals">
+               <number>0</number>
+              </property>
+              <property name="minimum">
+               <double>2.000000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>1000.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>2.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="0">
+             <widget class="QDoubleSpinBox" name="confServoPGainBox">
+              <property name="prefix">
+               <string>Servo P Gain:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="8" column="0">
+             <widget class="QCheckBox" name="confMiscDisableMotorBox">
+              <property name="text">
+               <string>Disable Motor</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QDoubleSpinBox" name="confSteeringRampBox">
+              <property name="prefix">
+               <string>Steering Ramp: </string>
+              </property>
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="maximum">
+               <double>1000.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="2">
+             <widget class="QDoubleSpinBox" name="confServoDGainBox">
+              <property name="prefix">
+               <string>Servo D Gain:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="0">
+             <widget class="QDoubleSpinBox" name="confAngleMinBox">
+              <property name="prefix">
+               <string>Max degree left:</string>
+              </property>
+              <property name="minimum">
+               <double>-99.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QDoubleSpinBox" name="confGearRatioBox">
+              <property name="prefix">
+               <string>Gear Ratio: </string>
+              </property>
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="minimum">
+               <double>-1000.000000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>1000.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="2">
+             <widget class="QCheckBox" name="confUseUwbPosBox">
+              <property name="text">
+               <string>Use UWB Position</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="2">
+             <widget class="QDoubleSpinBox" name="confYawImuGainBox">
+              <property name="toolTip">
+               <string>IMU gain vs odometry gain. Higer values give the IMU more gain.</string>
+              </property>
+              <property name="prefix">
+               <string>Yaw IMU Gain: </string>
+              </property>
+              <property name="decimals">
+               <number>5</number>
+              </property>
+              <property name="maximum">
+               <double>1000.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.010000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="0" colspan="2">
+             <widget class="QCheckBox" name="confOdometryYawBox">
+              <property name="text">
+               <string>Use Odometry for YAW correction</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="1">
+             <widget class="QDoubleSpinBox" name="confServoIGainBox">
+              <property name="prefix">
+               <string>Servo I Gain:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="QDoubleSpinBox" name="confAngleMaxBox">
+              <property name="prefix">
+               <string>Max degree right:</string>
+              </property>
+              <property name="minimum">
+               <double>-99.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="8" column="2">
+             <widget class="QCheckBox" name="confClampImuYawBox">
+              <property name="toolTip">
+               <string>Clamp IMU yaw when car is stationary</string>
+              </property>
+              <property name="text">
+               <string>Clamp IMU yaw stat</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="2">
+             <widget class="QDoubleSpinBox" name="confCentreVoltageBox">
+              <property name="prefix">
+               <string>Centre voltage: </string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QDoubleSpinBox" name="confServoRangeBox">
+              <property name="prefix">
+               <string>Servo Range: </string>
+              </property>
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="minimum">
+               <double>-1.000000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>1.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.010000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="8" column="1">
+             <widget class="QCheckBox" name="confMiscSimulateMotorBox">
+              <property name="text">
+               <string>Simulate Motor</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="2">
+             <widget class="QDoubleSpinBox" name="confAxisDistanceBox">
+              <property name="prefix">
+               <string>Axis Distance: </string>
+              </property>
+              <property name="suffix">
+               <string> m</string>
+              </property>
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="maximum">
+               <double>1000.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="2">
+             <widget class="QDoubleSpinBox" name="confWidthBox">
+              <property name="prefix">
+               <string>Width: </string>
+              </property>
+              <property name="suffix">
+               <string>m</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QDoubleSpinBox" name="confLengthBox">
+              <property name="prefix">
+               <string>Length: </string>
+              </property>
+              <property name="suffix">
+               <string>m</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QDoubleSpinBox" name="confServoCenterBox">
+              <property name="prefix">
+               <string>Servo Center: </string>
+              </property>
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="maximum">
+               <double>1.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.010000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QComboBox" name="vehicletypeBox"/>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="ConfCommonWidget" name="confCommonWidget" native="true">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_7" stretch="0,0,0,0">
+           <item>
+            <spacer name="horizontalSpacer_3">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QPushButton" name="confReadButton">
+             <property name="toolTip">
+              <string>Read configuration from car</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset resource="resources.qrc">
+               <normaloff>:/models/Icons/Upload-96.png</normaloff>:/models/Icons/Upload-96.png</iconset>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="confReadDefaultButton">
+             <property name="toolTip">
+              <string>Read default configuration from car</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset resource="resources.qrc">
+               <normaloff>:/models/Icons/HDD-96.png</normaloff>:/models/Icons/HDD-96.png</iconset>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="confWriteButton">
+             <property name="toolTip">
+              <string>Write configuration to car</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset resource="resources.qrc">
+               <normaloff>:/models/Icons/Download-96.png</normaloff>:/models/Icons/Download-96.png</iconset>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="tabCamera">
+        <attribute name="icon">
+         <iconset resource="resources.qrc">
+          <normaloff>:/models/Icons/Google Images-96.png</normaloff>:/models/Icons/Google Images-96.png</iconset>
+        </attribute>
+        <attribute name="title">
+         <string/>
+        </attribute>
+        <attribute name="toolTip">
+         <string>Video Stream</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_11">
+         <item>
+          <layout class="QGridLayout" name="gridLayout_2">
+           <item row="0" column="0">
+            <widget class="QSpinBox" name="camCamBox">
+             <property name="toolTip">
+              <string>Camera to use, in case multiple cameras are present.</string>
+             </property>
+             <property name="prefix">
+              <string>Camera: </string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QSpinBox" name="camWidthBox">
+             <property name="toolTip">
+              <string>Width, -1 for default value</string>
+             </property>
+             <property name="prefix">
+              <string>W: </string>
+             </property>
+             <property name="minimum">
+              <number>-1</number>
+             </property>
+             <property name="maximum">
+              <number>3000</number>
+             </property>
+             <property name="singleStep">
+              <number>8</number>
+             </property>
+             <property name="value">
+              <number>800</number>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="QSpinBox" name="camHeightBox">
+             <property name="toolTip">
+              <string>Height, -1 for default value</string>
+             </property>
+             <property name="prefix">
+              <string>H: </string>
+             </property>
+             <property name="minimum">
+              <number>-1</number>
+             </property>
+             <property name="maximum">
+              <number>3000</number>
+             </property>
+             <property name="singleStep">
+              <number>8</number>
+             </property>
+             <property name="value">
+              <number>448</number>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QSpinBox" name="camFpsBox">
+             <property name="toolTip">
+              <string>Framerate, -1 for default value</string>
+             </property>
+             <property name="prefix">
+              <string>FPS: </string>
+             </property>
+             <property name="minimum">
+              <number>-1</number>
+             </property>
+             <property name="maximum">
+              <number>999</number>
+             </property>
+             <property name="value">
+              <number>-1</number>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="4">
+            <widget class="QSpinBox" name="camSkipBox">
+             <property name="toolTip">
+              <string>Skip frames this often (divide FPS by this number). Useful for cameras that don't support low framerates.</string>
+             </property>
+             <property name="prefix">
+              <string>Skip: </string>
+             </property>
+             <property name="value">
+              <number>0</number>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="5">
+            <widget class="QSpinBox" name="camQualityBox">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;JPEG compression quality, range 0 to 100, -1 for default value. Lower values decrease the bandwidth at the expense of image quality.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="prefix">
+              <string>Quality: </string>
+             </property>
+             <property name="minimum">
+              <number>-1</number>
+             </property>
+             <property name="maximum">
+              <number>100</number>
+             </property>
+             <property name="value">
+              <number>20</number>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0" colspan="2">
+            <widget class="QPushButton" name="camStartButton">
+             <property name="text">
+              <string>Start Camera</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2" colspan="2">
+            <widget class="QPushButton" name="camStopButton">
+             <property name="text">
+              <string>Stop Camera</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="4" colspan="2">
+            <widget class="QCheckBox" name="camShowMapBox">
+             <property name="text">
+              <string>Show on map</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="ImageWidget" name="camWidget" native="true">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="camInfoLabel">
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="tabGPS">
+        <attribute name="icon">
+         <iconset resource="resources.qrc">
+          <normaloff>:/models/Icons/Satellite-96.png</normaloff>:/models/Icons/Satellite-96.png</iconset>
+        </attribute>
+        <attribute name="title">
+         <string/>
+        </attribute>
+        <attribute name="toolTip">
+         <string>GPS</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_8">
+         <item>
+          <widget class="NmeaWidget" name="nmeaWidget" native="true"/>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="tabIMU">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <attribute name="icon">
+         <iconset resource="resources.qrc">
+          <normaloff>:/models/Icons/Gyroscope-96.png</normaloff>:/models/Icons/Gyroscope-96.png</iconset>
+        </attribute>
+        <attribute name="title">
+         <string/>
+        </attribute>
+        <attribute name="toolTip">
+         <string>IMU realtime</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_4">
+         <item>
+          <widget class="ImuPlot" name="imuPlot" native="true"/>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="tabTerminal">
+        <attribute name="icon">
+         <iconset resource="resources.qrc">
+          <normaloff>:/models/Icons/Console-96.png</normaloff>:/models/Icons/Console-96.png</iconset>
+        </attribute>
+        <attribute name="title">
+         <string/>
+        </attribute>
+        <attribute name="toolTip">
+         <string>Terminal</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_10">
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_3">
+           <item>
+            <widget class="QTextBrowser" name="terminalBrowser">
+             <property name="font">
+              <font>
+               <family>Monospace</family>
+              </font>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_12">
+           <item>
+            <widget class="HistoryLineEdit" name="terminalEdit"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="terminalSendButton">
+             <property name="toolTip">
+              <string>Send command to car</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset resource="resources.qrc">
+               <normaloff>:/models/Icons/Send File-96.png</normaloff>:/models/Icons/Send File-96.png</iconset>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="terminalClearButton">
+             <property name="toolTip">
+              <string>Clear terminal</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset resource="resources.qrc">
+               <normaloff>:/models/Icons/Delete2-96.png</normaloff>:/models/Icons/Delete2-96.png</iconset>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_2">
+           <item>
+            <widget class="QLabel" name="label_4">
+             <property name="text">
+              <string>VESC</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="HistoryLineEdit" name="terminalEditVesc"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="terminalSendVescButton">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset resource="resources.qrc">
+               <normaloff>:/models/Icons/Send File-96.png</normaloff>:/models/Icons/Send File-96.png</iconset>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="tab_4">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <attribute name="icon">
+         <iconset resource="resources.qrc">
+          <normaloff>:/models/Icons/Magnet-96.png</normaloff>:/models/Icons/Magnet-96.png</iconset>
+        </attribute>
+        <attribute name="title">
+         <string/>
+        </attribute>
+        <attribute name="toolTip">
+         <string>Calibration</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_9">
+         <item>
+          <widget class="QGroupBox" name="groupBox_3">
+           <property name="title">
+            <string>Servo</string>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_7">
+            <item>
+             <layout class="QGridLayout" name="gridLayout">
+              <item row="0" column="2">
+               <widget class="QLCDNumber" name="servoDirectNumber">
+                <property name="segmentStyle">
+                 <enum>QLCDNumber::Flat</enum>
+                </property>
+                <property name="value" stdset="0">
+                 <double>0.500000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_3">
+                <property name="text">
+                 <string>Mapped steering</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QSlider" name="servoMappedSlider">
+                <property name="minimum">
+                 <number>-1000</number>
+                </property>
+                <property name="maximum">
+                 <number>1000</number>
+                </property>
+                <property name="singleStep">
+                 <number>10</number>
+                </property>
+                <property name="value">
+                 <number>0</number>
+                </property>
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_2">
+                <property name="text">
+                 <string>Direct Steering</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QSlider" name="servoDirectSlider">
+                <property name="minimum">
+                 <number>0</number>
+                </property>
+                <property name="maximum">
+                 <number>1000</number>
+                </property>
+                <property name="singleStep">
+                 <number>10</number>
+                </property>
+                <property name="value">
+                 <number>500</number>
+                </property>
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="2">
+               <widget class="QLCDNumber" name="servoMappedNumber">
+                <property name="segmentStyle">
+                 <enum>QLCDNumber::Flat</enum>
+                </property>
+                <property name="value" stdset="0">
+                 <double>0.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="label_9">
+                <property name="text">
+                 <string>IO Board PWM</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QSlider" name="ioBoardPwmSlider">
+                <property name="maximum">
+                 <number>1000</number>
+                </property>
+                <property name="singleStep">
+                 <number>10</number>
+                </property>
+                <property name="value">
+                 <number>500</number>
+                </property>
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="2">
+               <widget class="QLCDNumber" name="ioBoardPwmNumber">
+                <property name="segmentStyle">
+                 <enum>QLCDNumber::Flat</enum>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="groupBox_2">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="title">
+            <string>Magnetometer</string>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_4">
+            <item row="0" column="0">
+             <widget class="MagCal" name="magCal" native="true"/>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="tabCalibration">
+        <attribute name="title">
+         <string>Calibration</string>
+        </attribute>
+        <widget class="QPushButton" name="startCalibration1Button">
+         <property name="geometry">
+          <rect>
+           <x>20</x>
+           <y>10</y>
+           <width>201</width>
+           <height>25</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Start Calibration 1 (angle)</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="endCalibration1Button">
+         <property name="geometry">
+          <rect>
+           <x>230</x>
+           <y>10</y>
+           <width>201</width>
+           <height>25</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>End Calibration 1 (angle)</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="calculateButton">
+         <property name="geometry">
+          <rect>
+           <x>440</x>
+           <y>10</y>
+           <width>89</width>
+           <height>25</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Calculate!</string>
+         </property>
+        </widget>
+        <widget class="Line" name="line">
+         <property name="geometry">
+          <rect>
+           <x>20</x>
+           <y>120</y>
+           <width>331</width>
+           <height>16</height>
+          </rect>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_6">
+         <property name="geometry">
+          <rect>
+           <x>30</x>
+           <y>140</y>
+           <width>81</width>
+           <height>17</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Angle 1</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_7">
+         <property name="geometry">
+          <rect>
+           <x>30</x>
+           <y>170</y>
+           <width>61</width>
+           <height>17</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Angle 2</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="clearButton">
+         <property name="geometry">
+          <rect>
+           <x>540</x>
+           <y>10</y>
+           <width>51</width>
+           <height>25</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Clear</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_10">
+         <property name="geometry">
+          <rect>
+           <x>30</x>
+           <y>220</y>
+           <width>241</width>
+           <height>17</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Staightness:</string>
+         </property>
+        </widget>
+        <widget class="QLineEdit" name="voltage1Edit">
+         <property name="geometry">
+          <rect>
+           <x>230</x>
+           <y>70</y>
+           <width>113</width>
+           <height>25</height>
+          </rect>
+         </property>
+        </widget>
+        <widget class="QLineEdit" name="voltage2Edit">
+         <property name="geometry">
+          <rect>
+           <x>230</x>
+           <y>100</y>
+           <width>113</width>
+           <height>25</height>
+          </rect>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="startCalibration2Button">
+         <property name="geometry">
+          <rect>
+           <x>20</x>
+           <y>40</y>
+           <width>201</width>
+           <height>25</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Start Calibration 2 (angle)</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="endCalibration2Button">
+         <property name="geometry">
+          <rect>
+           <x>230</x>
+           <y>40</y>
+           <width>201</width>
+           <height>25</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>End Calibration 2 (angle)</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_12">
+         <property name="geometry">
+          <rect>
+           <x>30</x>
+           <y>70</y>
+           <width>131</width>
+           <height>17</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Voltage 1</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_13">
+         <property name="geometry">
+          <rect>
+           <x>30</x>
+           <y>100</y>
+           <width>131</width>
+           <height>17</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Voltage 2</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="nmeaLabel">
+         <property name="geometry">
+          <rect>
+           <x>30</x>
+           <y>270</y>
+           <width>101</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Nmea Output:</string>
+         </property>
+        </widget>
+        <widget class="QTextBrowser" name="nmeaTextBrowser">
+         <property name="geometry">
+          <rect>
+           <x>140</x>
+           <y>270</y>
+           <width>431</width>
+           <height>171</height>
+          </rect>
+         </property>
+        </widget>
+        <widget class="QCheckBox" name="calibratingCheckBox">
+         <property name="geometry">
+          <rect>
+           <x>460</x>
+           <y>70</y>
+           <width>121</width>
+           <height>23</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Calibrating</string>
+         </property>
+        </widget>
+        <widget class="QLineEdit" name="currentCalibrationEdit">
+         <property name="geometry">
+          <rect>
+           <x>460</x>
+           <y>100</y>
+           <width>21</width>
+           <height>25</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>0</string>
+         </property>
+        </widget>
+        <widget class="QLineEdit" name="angle1Edit">
+         <property name="geometry">
+          <rect>
+           <x>230</x>
+           <y>140</y>
+           <width>113</width>
+           <height>25</height>
+          </rect>
+         </property>
+        </widget>
+        <widget class="QLineEdit" name="angle2Edit">
+         <property name="geometry">
+          <rect>
+           <x>230</x>
+           <y>170</y>
+           <width>113</width>
+           <height>25</height>
+          </rect>
+         </property>
+        </widget>
+       </widget>
+       <widget class="QWidget" name="tabLog">
+        <attribute name="title">
+         <string>Logging</string>
+        </attribute>
+        <widget class="QTextBrowser" name="LogBrowser">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>649</width>
+           <height>283</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Monospace</family>
+          </font>
+         </property>
+        </widget>
+       </widget>
+       <widget class="QWidget" name="tabSensors">
+        <attribute name="title">
+         <string>Sensors</string>
+        </attribute>
+        <widget class="SensorPlot" name="SensorPlot" native="true">
+         <property name="geometry">
+          <rect>
+           <x>510</x>
+           <y>310</y>
+           <width>651</width>
+           <height>351</height>
+          </rect>
+         </property>
+        </widget>
+       </widget>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="mcFaultLabel">
+       <property name="text">
+        <string>Fault code...</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QLabel" name="fwLabel">
+         <property name="text">
+          <string>FW x.y</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QProgressBar" name="batteryBar">
+         <property name="value">
+          <number>0</number>
+         </property>
+         <property name="format">
+          <string>Battery</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QProgressBar" name="tempFetBar">
+         <property name="maximum">
+          <number>110</number>
+         </property>
+         <property name="value">
+          <number>24</number>
+         </property>
+         <property name="format">
+          <string>MOSFET Temp: %v°C</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="clockLabel">
+         <property name="text">
+          <string>00:00:00</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout_2">
+     <item>
+      <widget class="QSpinBox" name="idBox">
+       <property name="prefix">
+        <string>Car ID: </string>
+       </property>
+       <property name="maximum">
+        <number>255</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="pollBox">
+       <property name="text">
+        <string>Poll Data</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="keyboardControlBox">
+       <property name="text">
+        <string>Keyboard Control</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="autopilotBox">
+       <property name="text">
+        <string>AutoPilot</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="updateRouteFromMapBox">
+       <property name="toolTip">
+        <string>Upload route points as soon as they are created on the map</string>
+       </property>
+       <property name="text">
+        <string>Route from map</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="vescToolTcpBox">
+       <property name="text">
+        <string>VESC Tool TCP</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="clearRouteButton">
+       <property name="toolTip">
+        <string>Clear stored route</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset resource="resources.qrc">
+         <normaloff>:/models/Icons/Delete2-96.png</normaloff>:/models/Icons/Delete2-96.png</iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="rebootPiButton">
+       <property name="text">
+        <string>Reboot PI</string>
+       </property>
+       <property name="icon">
+        <iconset resource="resources.qrc">
+         <normaloff>:/models/Icons/Restart-96.png</normaloff>:/models/Icons/Restart-96.png</iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="shutdownPiButton">
+       <property name="text">
+        <string>Shutdown PI</string>
+       </property>
+       <property name="icon">
+        <iconset resource="resources.qrc">
+         <normaloff>:/models/Icons/Shutdown-96.png</normaloff>:/models/Icons/Shutdown-96.png</iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="verticalSpacer">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ImuPlot</class>
+   <extends>QWidget</extends>
+   <header>imuplot.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>NmeaWidget</class>
+   <extends>QWidget</extends>
+   <header>nmeawidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>MagCal</class>
+   <extends>QWidget</extends>
+   <header>magcal.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ConfCommonWidget</class>
+   <extends>QWidget</extends>
+   <header>confcommonwidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>HistoryLineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>historylineedit.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ImageWidget</class>
+   <extends>QWidget</extends>
+   <header>imagewidget.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
+ <connections>
+  <connection>
+   <sender>terminalEditVesc</sender>
+   <signal>returnPressed()</signal>
+   <receiver>terminalSendVescButton</receiver>
+   <slot>click()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>293</x>
+     <y>485</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>327</x>
+     <y>486</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>terminalEdit</sender>
+   <signal>returnPressed()</signal>
+   <receiver>terminalSendButton</receiver>
+   <slot>click()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>172</x>
+     <y>453</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>608</x>
+     <y>454</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

@@ -90,6 +90,7 @@ SOURCES += main.cpp\
     qcustomplot.cpp \
     packetinterface.cpp \
     sensorplot.cpp \
+    ublox_basestastion.cpp \
     utility.cpp \
     mapwidget.cpp \
     carinfo.cpp \
@@ -128,10 +129,12 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h \
     CompassWidget.h \
     checkboxdelegate.h \
+    coordinatetransform.h \
     qcustomplot.h \
     datatypes.h \
     packetinterface.h \
     sensorplot.h \
+    ublox_basestation.h \
     utility.h \
     mapwidget.h \
     carinfo.h \

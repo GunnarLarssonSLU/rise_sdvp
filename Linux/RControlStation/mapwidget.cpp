@@ -883,6 +883,12 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
     }
 }
 
+void MapWidget::mouseDoubleClickEvent(QMouseEvent *event) {
+    QMessageBox::information(this, "Double Click", "MainWindow was double-clicked!");
+    // Call the base class implementation (optional)
+    //QMainWindow::mouseDoubleClickEvent(event);
+}
+
 void MapWidget::mouseReleaseEvent(QMouseEvent *e)
 {
     bool ctrl = e->modifiers() == Qt::ControlModifier;

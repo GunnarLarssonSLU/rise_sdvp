@@ -3325,8 +3325,10 @@ void MainWindow::timerSlotRtcm()
 {
     // Update ntrip connected label
     static bool wasNtripConnected = false;
-    if (wasNtripConnected != mRtcm->isTcpConnected()) {
-        wasNtripConnected = mRtcm->isTcpConnected();
+//    if (wasNtripConnected != mRtcm->isTcpConnected()) {
+//        wasNtripConnected = mRtcm->isTcpConnected();
+    if (wasNtripConnected != mRtcm->isConnected()) {
+        wasNtripConnected = mRtcm->isConnected();
 
         if (wasNtripConnected) {
             ui->ntripConnectedLabel->setText("Connected");
@@ -3387,7 +3389,12 @@ void MainWindow::ntripConnect(int rowIndex)
     msgBox.setText("In Ntrip Connect, selected ID:" + QString::number(rowIndex) + ':' + ip + ':' + port);
     msgBox.exec();*/
     if (NTRIP) {
-        mRtcm->connectNtrip(ip, stream, user, pwd, port);
+//        mRtcm->connectNtrip(ip, stream, user, pwd, port);
+        NtripConnectionInfo ntripInfo;
+        ntripInfo.user=user;
+        ntripInfo.password=pwd;
+        ntripInfo.stream=stream;
+        mRtcm->connectNtrip(ip, port, ntripInfo);
     } else {
         mRtcm->connectTcp(ip, port);
     }
@@ -3411,7 +3418,8 @@ void MainWindow::on_ntripConnectButton_clicked()
 
 void MainWindow::on_ntripDisconnectButton_clicked()
 {
-    mRtcm->disconnectTcpNtrip();
+//    mRtcm->disconnectTcpNtrip();
+    mRtcm->disconnect();
 }
 
 
