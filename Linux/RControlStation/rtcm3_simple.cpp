@@ -22,6 +22,7 @@
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
+#include <QDebug>
 
 // Defines
 #define ROUND(x)        ((int)floor((x)+D(0.5)))
@@ -53,13 +54,13 @@
 
 // Private variables
 const double lam_carr[] = { // carrier wave length (m)
-                            CLIGHT/FREQ1,
-                            CLIGHT/FREQ2,
-                            CLIGHT/FREQ5,
-                            CLIGHT/FREQ6,
-                            CLIGHT/FREQ7,
-                            CLIGHT/FREQ8
-                          };
+    CLIGHT/FREQ1,
+    CLIGHT/FREQ2,
+    CLIGHT/FREQ5,
+    CLIGHT/FREQ6,
+    CLIGHT/FREQ7,
+    CLIGHT/FREQ8
+};
 
 // TODO: Fix this properly!!
 static int last_wn = 1874;
@@ -145,6 +146,7 @@ void rtcm3_init_state(rtcm3_state *state) {
  * -2: Wrong crc
  */
 int rtcm3_input_data(uint8_t data, rtcm3_state *state) {
+    qDebug() << "in rtcm3 input data";
     // synchronize frame
     if (state->buffer_ptr == 0) {
         if (data != RTCM3PREAMB) {
@@ -809,6 +811,8 @@ static int decode_1006(rtcm3_state *state) {
         state->pos.lon = (r2 > D(1E-12) ? atan2(p1, p0) : D(0.0)) * D(180.0) / D_PI;
         state->pos.height = sqrt(r2 + z * z) - v;
 
+        qDebug() << "in decode_1006";
+        qDebug() << "lat: " << state->pos.lat << ", lon:" << state->pos.lon << ", height:" << state->pos.height;
         if (state->rx_rtcm_1005_1006) {
             state->rx_rtcm_1005_1006(&state->pos);
         }

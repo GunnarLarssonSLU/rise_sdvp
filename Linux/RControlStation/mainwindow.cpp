@@ -167,8 +167,8 @@ MainWindow::MainWindow(QWidget *parent) :
             this, SLOT(packetDataToSend(QByteArray&)));
     connect(mPacketInterface, SIGNAL(stateReceived(quint8,CAR_STATE)),
             this, SLOT(stateReceived(quint8,CAR_STATE)));
-    connect(mPacketInterface, SIGNAL(mrStateReceived(quint8,MULTIROTOR_STATE)),
-            this, SLOT(mrStateReceived(quint8,MULTIROTOR_STATE)));
+/*    connect(mPacketInterface, SIGNAL(mrStateReceived(quint8,MULTIROTOR_STATE)),
+            this, SLOT(mrStateReceived(quint8,MULTIROTOR_STATE)));*/
     connect(ui->mapLiveWidget, SIGNAL(posSet(quint8,LocPoint)),
             this, SLOT(mapPosSet(quint8,LocPoint)));
     connect(mPacketInterface, SIGNAL(ackReceived(quint8,CMD_PACKET,QString)),
@@ -460,8 +460,17 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(mRtcm, SIGNAL(rtcmReceivedStep1(QByteArray,int,bool)),
             this, SLOT(rtcmRx(QByteArray,int,bool)));
-    connect(mRtcm, SIGNAL(refPosReceived(double,double,double,double)),
-            this, SLOT(refPosRx(double,double,double,double)));
+//    connect(mRtcm, SIGNAL(refPosReceived(double,double,double,double)),
+//            this, SLOT(refPosRx(double,double,double,double)));
+
+
+    // void baseStationPosition(const llh_t &baseStationPosition);
+    //    void refPosReceived(double lat, double lon, double height, double antenna_height);
+
+
+
+    connect(mRtcm, SIGNAL(baseStationPosition(llh_t)),
+            this, SLOT(refPosRx(llh_t)));
     connect(mTimerRtcm, SIGNAL(timeout()),
             this, SLOT(timerSlotRtcm()));
 
@@ -2964,7 +2973,6 @@ void MainWindow::on_clearAnchorButton_clicked()
     mPacketInterface->clearUwbAnchors(ui->mapCarBox->value());
 }
 
-
 void MainWindow::on_boundsFillPushButton_clicked()
 {
 
@@ -2987,7 +2995,6 @@ void MainWindow::on_boundsFillPushButton_clicked()
                                                         ui->lowerToolsCheckBox->isChecked() ? ATTR_HYDRAULIC_FRONT_DOWN : 0, ui->raiseToolsCheckBox->isChecked() ? ATTR_HYDRAULIC_FRONT_UP : 0,
                                                         ui->lowerToolsDistanceSpinBox->value()*2, ui->raiseToolsDistanceSpinBox->value()*2);
     };
-
 
     MapRoute route;
     route.mRoute=routeLP;
@@ -3325,8 +3332,8 @@ void MainWindow::timerSlotRtcm()
 {
     // Update ntrip connected label
     static bool wasNtripConnected = false;
-    if (wasNtripConnected != mRtcm->isTcpConnected()) {
-        wasNtripConnected = mRtcm->isTcpConnected();
+    if (wasNtripConnected != mRtcm->isConnected()) {
+        wasNtripConnected = mRtcm->isConnected();
 
         if (wasNtripConnected) {
             ui->ntripConnectedLabel->setText("Connected");
@@ -3343,14 +3350,25 @@ void MainWindow::timerSlotRtcm()
         cnt++;
         if (cnt >= (5000 / mTimerRtcm->interval())) {
             cnt = 0;
-            QByteArray data = RtcmClient::encodeBasePos(
-                        ui->refSendLatBox->value(),
-                        ui->refSendLonBox->value(),
-                        ui->refSendHBox->value(),
-                        ui->refSendAntHBox->value());
 
-            emit rtcmReceivedStep1(data);
-            mTcpServerRtcm->broadcastData(data);
+
+            rtcm_ref_sta_pos_t pos;
+            int len;
+
+            pos.staid = 0;
+            pos.lat = ui->refSendLatBox->value();
+            pos.lon = ui->refSendLonBox->value();
+            pos.height = ui->refSendHBox->value();
+            pos.ant_height = ui->refSendAntHBox->value();
+
+            quint8 buffer[40];
+            rtcm3_encode_1006(pos, buffer, &len);
+
+            QByteArray rtcm_data((const char*)buffer, len);
+
+
+            emit rtcmReceivedStep1(rtcm_data);
+            mTcpServerRtcm->broadcastData(rtcm_data);
         }
     }
 }
@@ -3363,15 +3381,18 @@ void MainWindow::rtcmRx(QByteArray data, int type, bool sync)
     emit rtcmReceivedStep1(data);
 }
 
-void MainWindow::refPosRx(double lat, double lon, double height, double antenna_height)
+//void MainWindow::refPosRx(double lat, double lon, double height, double antenna_height)
+
+void MainWindow::refPosRx(llh_t refpos)
 {
+    qDebug() << "in refPosRx";
     QString str;
     str.sprintf("Lat:            %.8f\n"
                 "Lon:            %.8f\n"
-                "Height:         %.3f\n"
-                "Antenna Height: %.3f",
-                lat, lon, height, antenna_height);
+                "Height:         %.3f\n",
+                refpos.latitude, refpos.longitude, refpos.height);
     ui->lastRefPosLablel->setText(str);
+
 }
 
 
@@ -3387,7 +3408,12 @@ void MainWindow::ntripConnect(int rowIndex)
     msgBox.setText("In Ntrip Connect, selected ID:" + QString::number(rowIndex) + ':' + ip + ':' + port);
     msgBox.exec();*/
     if (NTRIP) {
-        mRtcm->connectNtrip(ip, stream, user, pwd, port);
+//        mRtcm->connectNtrip(ip, stream, user, pwd, port);
+        NtripConnectionInfo ntripInfo;
+        ntripInfo.user=user;
+        ntripInfo.password=pwd;
+        ntripInfo.stream=stream;
+        mRtcm->connectNtrip(ip, port, ntripInfo);
     } else {
         mRtcm->connectTcp(ip, port);
     }
@@ -3411,7 +3437,8 @@ void MainWindow::on_ntripConnectButton_clicked()
 
 void MainWindow::on_ntripDisconnectButton_clicked()
 {
-    mRtcm->disconnectTcpNtrip();
+//    mRtcm->disconnectTcpNtrip();
+    mRtcm->disconnect();
 }
 
 
@@ -3436,7 +3463,7 @@ void MainWindow::on_tcpServerBox_toggled(bool checked)
 
 void MainWindow::on_gpsOnlyBox_toggled(bool checked)
 {
-    mRtcm->setGpsOnly(checked);
+//    mRtcm->setGpsOnly(checked);
 }
 
 CustomDelegate::CustomDelegate(QObject *parent) : QStyledItemDelegate(parent)

@@ -975,10 +975,10 @@ bool PacketInterface::setEnuRef(quint8 id, double *llh, int retries)
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_SET_ENU_REF;
-    qDebug() << "::Set Enu Ref:::";
-    qDebug() << "Lat.: " << llh[0];
-    qDebug() << "Lon.: " << llh[1];
-    qDebug() << "Hei.: " << llh[2];
+//    qDebug() << "::Set Enu Ref:::";
+//    qDebug() << "Lat.: " << llh[0];
+//    qDebug() << "Lon.: " << llh[1];
+//    qDebug() << "Hei.: " << llh[2];
     utility::buffer_append_double64(mSendBuffer, llh[0], 1e16, &send_index);
     utility::buffer_append_double64(mSendBuffer, llh[1], 1e16, &send_index);
     utility::buffer_append_double32(mSendBuffer, llh[2], 1e3, &send_index);

@@ -89,6 +89,7 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     qcustomplot.cpp \
     packetinterface.cpp \
+    rtcm3_simple.cpp \
     sensorplot.cpp \
     utility.cpp \
     mapwidget.cpp \
@@ -97,7 +98,6 @@ SOURCES += main.cpp\
     perspectivepixmap.cpp \
     carinterface.cpp \
     nmeaserver.cpp \
-    rtcm3_simple.c \
     rtcmclient.cpp \
     tcpbroadcast.cpp \
     basestation.cpp \
@@ -128,6 +128,7 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h \
     CompassWidget.h \
     checkboxdelegate.h \
+    core/coordinatetransforms.h \
     qcustomplot.h \
     datatypes.h \
     packetinterface.h \
