@@ -430,7 +430,7 @@ typedef enum {
 } JS_TYPE;
 
 // ============== RTCM Datatypes ================== //
-
+/*
 typedef struct {
     double t_tow;       // Time of week (GPS)
     double t_tod;       // Time of day (GLONASS)
@@ -505,7 +505,7 @@ typedef struct {
     void(*rx_rtcm_1019)(rtcm_ephemeris_t *eph);
     void(*rx_rtcm)(uint8_t *data, int len, int type);
 } rtcm3_state;
-
+*/
 typedef struct {
     int id;
     float px;

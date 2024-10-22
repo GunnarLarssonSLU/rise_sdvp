@@ -259,8 +259,8 @@ private slots:
     // RTCM
     void timerSlotRtcm();
     void rtcmRx(QByteArray data, int type, bool sync);
-    void refPosRx(double lat, double lon, double height, double antenna_height);
-
+    //void refPosRx(double lat, double lon, double height, double antenna_height);
+    void refPosRx(llh_t refpos);
     void on_ntripDisconnectButton_clicked();
     void ntripConnect(int rowIndex);
 
