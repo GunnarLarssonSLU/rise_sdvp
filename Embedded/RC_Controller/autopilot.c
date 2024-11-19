@@ -399,17 +399,16 @@ void autopilot_set_speed_override(bool is_override, float speed) {
  */
 void autopilot_set_motor_speed(float speed) {
 	if (!main_config.car.disable_motor) {
-/*
-#if IS_DRANGEN
+/*#if IS_DRANGEN
 		// TODO
 		comm_can_lock_vesc();
-//		showData=speed;
 		comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
 		bldc_interface_set_rpm((int)speed);
-//		comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
-//		bldc_interface_set_rpm((int)rpm_r);
+		comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
+		bldc_interface_set_rpm((int)rpm_r);
 		comm_can_unlock_vesc();
-#endif
+#endif */
+		/*
 */
 #if HAS_DIFF_STEERING
 		float diff_speed_half = 0.0;
@@ -425,11 +424,12 @@ void autopilot_set_motor_speed(float speed) {
 		float rpm_l = (speed - diff_speed_half) / (main_config.car.gear_ratio
 				* (2.0 / main_config.car.motor_poles) * (1.0 / 60.0)
 				* main_config.car.wheel_diam * M_PI);
-
+		commands_printf("In Set Motor Speed. Has Diff Steering\n");
 		comm_can_lock_vesc();
-		comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
-		bldc_interface_set_rpm((int)rpm_l);
-		comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
+		comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
+//			bldc_interface_set_rpm((int)rpm_l);
+		comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
+		commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_RIGHT,(float)rpm_r);
 		bldc_interface_set_rpm((int)rpm_r);
 		comm_can_unlock_vesc();
 #else
@@ -442,8 +442,13 @@ void autopilot_set_motor_speed(float speed) {
 
 		comm_can_lock_vesc();
 		#ifdef IS_DRANGEN
-				comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
-				bldc_interface_set_rpm((int)(100.0*rpm));
+				commands_printf("In Set Motor Speed. Is Drangen. No Hydraulic Drive\n");
+				comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
+				bldc_interface_set_rpm((int)(rpm));
+				commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_RIGHT,(float)rpm);
+				comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
+				bldc_interface_set_rpm((int)(rpm));
+				commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_RIGHT,(float)rpm);
 			#else
 				comm_can_set_vesc_id(VESC_ID); //ÄNDRA HÄR
 				bldc_interface_set_rpm((int)(rpm));
@@ -925,11 +930,27 @@ static THD_FUNCTION(ap_thread, arg) {
 				utils_truncate_number_abs(&speed, main_config.ap_max_speed);
 
 				#if HAS_DIFF_STEERING
+					commands_printf("Diff steering!\n");
 					autopilot_set_turn_rad(circle_radius);
 				#else
+					#ifdef IS_DRANGEN
+					commands_printf("Not diff steering. Showing motor information.\n");
+						comm_can_set_vesc_id(DIFF_STEERING);
+						bldc_interface_set_duty_cycle(servo_pos);
+						commands_printf("Motor %d: Duty cycle: %f.\n", DIFF_STEERING,servo_pos);
+						comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
+						bldc_interface_set_rpm((int)4000);
+						commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_LEFT,(float)4000);
+						comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
+						bldc_interface_set_rpm((int)4000);
+						commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_RIGHT,(float)4000);
+//						comm_can_unlock_vesc();
+					#endif
 					#ifdef IS_MACTRAC
+						commands_printf("Is a MacTrac!\n");
 						servo_simple_set_pos_ramp(servo_pos); //GL - Fixa här!!
 					#else
+						commands_printf("Not a MacTrac!\n");
 						//	comm_can_lock_vesc();
 						//	comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
 						//	bldc_interface_set_duty_cycle(throttle);
