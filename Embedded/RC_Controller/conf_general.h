@@ -48,9 +48,9 @@
 //#define EBIKE_BENJAMIN // Benjamins ebike
 
 
-//#define IS_DRANGEN
+#define IS_DRANGEN
 
-#define IS_MACTRAC
+//#define IS_MACTRAC
 
 // MacTrac
 // Steering Center: 210
@@ -98,12 +98,16 @@
 // Bägge följande var "aktiva" när fungerade
 //#define HAS_HYDRAULIC_DRIVE			1
 //#define HAS_DIFF_STEERING            1
-
 //#define IS_ALL_ELECTRIC 1
+//#define DIFF_THROTTLE_VESC_LEFT 61
+//#define DIFF_THROTTLE_VESC_RIGHT 69
+//#define DIFF_STEERING 113
+//#define SERVO_VESC_ID				0
 
-#define DIFF_THROTTLE_VESC_LEFT 61
-#define DIFF_THROTTLE_VESC_RIGHT 69
-#define DIFF_STEERING 113
+#define DIFF_THROTTLE_VESC_LEFT 28
+#define DIFF_THROTTLE_VESC_RIGHT 36
+#define DIFF_STEERING 16
+#define SERVO_VESC_ID				36
 #define VOLTAGEFRACTION 0.5
 
 // Nästa var "aktiv" när fungerade
@@ -116,15 +120,11 @@
 #define USE_ADCONV_FOR_VIN
 #define SERVO_VESC_HYDRAULIC
 #define HYDRAULIC_HAS_SPEED_SENSOR
-#define SERVO_VESC_ID				0
 #define SERVO_VESC_INVERTED			0
 #define SERVO_VESC_DEADBAND_COMP    0.2
 #define IS_F9_BOARD					1
 #define INGENVINKELGIVARE
 #endif
-
-
-
 
 
 
