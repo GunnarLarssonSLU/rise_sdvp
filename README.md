@@ -1,18 +1,10 @@
-# The RISE Self-Driving Model Vehicle Platform (SDVP)
+# Fork of the RISE Self-Driving Model Vehicle Platform (SDVP) 
+
+To be update..
 
 This is the source code and hardware design for a model vehicle platform developed and maintained at RISE Research Institutes of Sweden. The platform currently has full support for cars with Ackermann steering, robots with differential steering and partial support for quadcopters.
 
 Self-Driving in this context means that the vehicles can follow a pre-programmed path outdoors accurately using RTK-GNSS. The paths can be edited using [RControlStation](Linux/RControlStation) as a set of points with different time stamps or velocities, depending on the mode. It is also possible to send paths to the vehicles with time stamps in real-time from external applications (either using UDP or TCP to RControlStation, or directly over a radio link) for e.g. following other vehicles.
-
-Some details about the position estimation and the autopilot can be found in our [published article](https://www.hindawi.com/journals/jr/2018/4907536/).
-
-Figure 1 shows a screenshot of RControlStation, which is a GUI where model vehicles can be viewed, configured and controlled in real time.
-
-![RControlStation](Documentation/Pictures/GUI/map.png)
-
-Here is a (quire outdated) video with a test of RISE SDVP on a model car:
-
-[![RC Car Test](http://img.youtube.com/vi/4wPVpvPP-8w/0.jpg)](http://www.youtube.com/watch?v=4wPVpvPP-8w "Tero RC car with autopilot and RTK-GPS")
 
 ## Repository Structure
 
@@ -32,14 +24,6 @@ The repository is organized as follows:
     The software for the control PCB. This is where the sensor fusion, position estimation and autopilot for the car runs.
     - **uwb_board**  
     The software for the Ultra-wideband ranging boards.
-- **Hardware**  
-    KiCad PCB projects with the PCBs for the platform.
-    - **Controller**  
-    The PCB that is referred to as the controller in this documentation. The RC_Controller software runs on this one, and this is the main PCB that this platform is built on.
-    - **RFMote_PA**  
-    The USB-to-802.15.4 bridge mentioned above. Note that if an IP-connection with e.g. a raspberry pi is used, this one is not needed.
-    - **uwb_pcb**  
-    A PCB with a DWM1000 module, a STM32F4 microcontroller, a MPU9250 IMU, a CAN-transceiver and some DC/DC converters. The uwb_board software mentioned above runs on this one. This PCB is not needed, but it is useful for experimenting with UWB positioning.
 - **Linux**  
     Contains Linux software, mostly written using the [Qt framework](https://www.qt.io/), for the platform.
     - **Car_Client**  
