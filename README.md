@@ -9,7 +9,7 @@ On this page you find information specific for its application on the Macbot and
 
 The figure below shows a current hardware diagram of the implementation of the RISE-SDVP platform. The light blue-colored boxes to the left are the components on Macbot/Drängen and the green boxes to the right are a laptop computer connected over internet to the vehicle. The laptop computer also runs a RTK-GNSS base station, so that the model car can position itself with around 3 cm accuracy relative to the GNSS antenna connected to the receiver on the laptop.
 
-![Hardware Diagram](Documentation/ovewview.png)
+![Hardware Diagram](Documentation/overview.png)
 
 Hardware components used:
 
@@ -64,9 +64,9 @@ This will simulate a model car locally, including the autopilot. Then RControlSt
 ./Car_Client -h
 ```
 
-## Setting up a Raspberry Pi 3 Image to run Car_Client
+## Setting up a Raspberry Pi Image to run Car_Client
 
-A somewhat pre-configured image for the Raspberry PI 3 can be downloaded [here](http://home.vedder.se/rise_sdvp/pi_img.zip). The login credentials on the image are:
+The login credentials on the image are:
 
 ```
 User:     pi
