@@ -15,10 +15,10 @@ Functions that process commands sent to the machine.
 
 ## Functions
 
--**commands_init**                 initiate gps
--**commands_process_packet**       process received command
--**commands_printf**               print information in (program internal) terminal
--**commands_forward_vesc_packet**  forward command to VESC
+- **commands_init**                 initiate gps
+- **commands_process_packet**       process received command
+- **commands_printf**               print information in (program internal) terminal
+- **commands_forward_vesc_packet**  forward command to VESC
 
 ## Messages
 
@@ -30,16 +30,16 @@ Functions that process commands sent to the machine.
 | CMD_GET_ENU_REF | Get local reference |   | (lat,long,height) (double64, double64,float32) |
 
 
-#Timeout
+# Timeout
 
-##Functions
-*timeout_reset      Resets the timeout counter. Can be called from anywhere in the project. Is called in commands.c by various functions, most importantly 
-*THD_FUNCTION       Stops autopilot unless timeout_reset has been called within a certain set time interval 
+## Functions
+- timeout_reset      Resets the timeout counter. Can be called from anywhere in the project. Is called in commands.c by various functions, most importantly 
+- THD_FUNCTION       Stops autopilot unless timeout_reset has been called within a certain set time interval 
 
-##Settings
+## Settings
 
-*m_timeout_msec = 2000;
-*m_last_update_time = 0;
-*m_timeout_brake_current = 0.0;
-*m_has_timeout = false;
+- m_timeout_msec = 2000
+- m_last_update_time = 0
+- m_timeout_brake_current = 0.0
+- m_has_timeout = false
 
