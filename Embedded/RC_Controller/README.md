@@ -15,10 +15,12 @@ Functions that process commands sent to the machine.
 
 ## Functions
 
-- **commands_init**                 initiate gps
-- **commands_process_packet**       process received command
-- **commands_printf**               print information in (program internal) terminal
-- **commands_forward_vesc_packet**  forward command to VESC
+| Function | Description |
+| --- | --- |
+| commands_init |                 initiate gps |
+| commands_process_packet |       process received command |
+| commands_printf |               print information in (program internal) terminal |
+| commands_forward_vesc_packet |  forward command to VESC |
 
 ## Messages
 
@@ -28,7 +30,26 @@ Functions that process commands sent to the machine.
 | CMD_SET_POS | Set vehicle position | (x,y,angle) (float32,float32,float32) |  |
 | CMD_SET_ENU_REF | Set local reference | (lat,long,height) (double64, double64,float32) |
 | CMD_GET_ENU_REF | Get local reference |   | (lat,long,height) (double64, double64,float32) |
+| CMD_AP_ADD_POINTS | Add autopilot point |   (point) (ROUTE_POINT) |  |
+| CMD_AP_REMOVE_LAST_POINT | Remove last point |  |  |
+| CMD_AP_CLEAR_POINTS | Remove all points |  |  |
+| CMD_AP_GET_ROUTE_PART | Get selected points | (first, last) (int, int) | array ROUTE_POINT |
+| CMD_AP_SET_ACTIVE   | Set route as active | (routeid) (int) | |
+| CMD_SET_MAIN_CONFIG | Set configuration of vehicle | *See separate item* | |
+| CMD_GET_MAIN_CONFIG | Get configuration of vehicle |  | *See separate item* |
 
+## Types
+
+### ROUTE_POINT
+
+| Variable   | Type    |
+| ---        | ---     |
+| px         | float32 |
+| py         | float32 |
+| pz         | float32 |
+| speed      | float32 |
+| time       | int32   |
+| attributes | uint32  |
 
 # Timeout
 
