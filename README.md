@@ -1,67 +1,23 @@
-# Fork of the RISE Self-Driving Model Vehicle Platform (SDVP) 
+# RISE-SDVP at Macbot and Drängen 
 
-To be update..
+This is a fork of https://github.com/vedderb/rise_sdvp (further developed as https://github.com/RISE-Dependable-Transport-Systems/ControlTower). Look there for documentation etc.
 
-This is the source code and hardware design for a model vehicle platform developed and maintained at RISE Research Institutes of Sweden. The platform currently has full support for cars with Ackermann steering, robots with differential steering and partial support for quadcopters.
+On this page you find information specific for its application on the Macbot and Drängen
 
-Self-Driving in this context means that the vehicles can follow a pre-programmed path outdoors accurately using RTK-GNSS. The paths can be edited using [RControlStation](Linux/RControlStation) as a set of points with different time stamps or velocities, depending on the mode. It is also possible to send paths to the vehicles with time stamps in real-time from external applications (either using UDP or TCP to RControlStation, or directly over a radio link) for e.g. following other vehicles.
-
-## Repository Structure
-
-The repository is organized as follows:
-
-- **Documentation**  
-    Contains Markdown files with documentation and tutorials, and the directories:
-    - **PDF**  
-    Contains generated PDFs from the markdown files. Will be cleared when the documentation is built.
-    - **Pictures**  
-    Contains photos and drawings, which are referenced in the documentation files.
-- **Embedded**  
-    Contains embedded software for various PCBs of the platform.
-    - **Mote**  
-    The software for the mote PCB, which can be used as a USB-to-802.15.4 bridge to communicate with the model cars.
-    - **RC_Controller**  
-    The software for the control PCB. This is where the sensor fusion, position estimation and autopilot for the car runs.
-    - **uwb_board**  
-    The software for the Ultra-wideband ranging boards.
-- **Linux**  
-    Contains Linux software, mostly written using the [Qt framework](https://www.qt.io/), for the platform.
-    - **Car_Client**  
-    This is a Qt command line program that can run on e.g. a raspberry pi, which is connected to the Controller PCB over USB. Car_Client provides a TCP bridge, which can be used to access the Controller over a network connection instead of a radio. Car_Client also runs the Chronos software (which might be documented later) and can simulate cars for development without having access to a model car. Car_Client can also connect to cameras supported by Video For Linux (V4L) and stream them as JPEG images to RControlStation.
-    - **RControlStation**  
-    This is a desktop program that can stream realtime data from the cars (including video), and edit trajectories for the model cars on top of OpenStreetMap. It can also act as a RTK base station, or connect to one. There are also many other functions, such as providing a TCP bridge to control cars and even emulating GPS signal using software-defined radio. It is a Qt Creator project, install the following packages under Ubuntu 18.04 or later to build it: `build-essential qtcreator qt5-default qtquickcontrols2-5-dev qtdeclarative5-dev libqt5serialport5-dev`
-    - **RControlStationComm**  
-    A C library that can be used to interface cars and trajectories from RControlStation, when using the TCP server in RControlStation.
-    - **CarNetworkTester**  
-    A test program where XML messages that can be decoded by RControlStation can be generated and sent, and the response can be studied. Useful for developing independent programs that interface with RControlStation and the model cars over TCP.
-    - **scala_test**  
-    Scala and java-based software to perform automatic testing of the model cars in real-time using ScalaCheck. RControlStationComm is used to interface with the cars and RControlStation. An interactive scala shell where the cars can be controlled, including the ability to generate trajectories to arbitrary points and orientations avoiding static obstacles, is also included. A paper where this is presented in detail is currently being written.
-    - **Pi**  
-    Scripts and UDEV rules for a raspberry pi (or similar) embedded Linux computer that is installed on a model car and runs Car_Client.
 
 ## Hardware
 
-Figure 2 shows a hardware diagram of a working configuration of the RISE-SDVP platform. The cyan-colored boxes to the left are the components on a model car, and the green boxes to the right are a laptop computer connected over 4G to the model car. The laptop computer also runs a RTK-GNSS base station, so that the model car can position itself with around 3 cm accuracy relative to the GNSS antenna connected to the receiver on the laptop.
+The figure below shows a current hardware diagram of the implementation of the RISE-SDVP platform. The light blue-colored boxes to the left are the components on Macbot/Drängen and the green boxes to the right are a laptop computer connected over internet to the vehicle. The laptop computer also runs a RTK-GNSS base station, so that the model car can position itself with around 3 cm accuracy relative to the GNSS antenna connected to the receiver on the laptop.
 
-![Hardware Diagram](Documentation/Pictures/block_diagram.png)
+![Hardware Diagram](Documentation/ovewview.png)
 
-Here is a video that shows how a model car like the one in the block diagram above was built:
+Hardware components used:
 
-[![RC Car Build](http://img.youtube.com/vi/nIqKJCZP5LM/0.jpg)](http://www.youtube.com/watch?v=nIqKJCZP5LM "Building a self-driving model car")
-
-There are many different configuration of hardware components that can result in a working RISE SDVP model car. What they need to function in general is:
-
-- The [Controller](Hardware/Controller), which runs the embedded software that controls the motion and estimates the position of the model car.
+- A [Controller](Hardware/Controller) that runs the embedded software that controls the motion and estimates the position of the model car.
 - A [VESC](https://vesc-project.com) motor controller that controls the motor on the car over CAN-bus, and provides speed and position estimation from the motor that is used in the sensor fusion in the controller.
 - A computer that runs the [RControlStation](Linux/RControlStation) software.
-- A way to communicate between the [Controller PCB](Hardware/Controller) and [RControlStation](Linux/RControlStation). The options are:
-    - Using the embedded radios on the controller, and our [Radio Mote](Hardware/RFMote_PA) plugged in over USB to the computer running RControlStation.
-    - Connecting the controller to an embedded Linux computer using USB, such as the [Raspberry PI](https://www.raspberrypi.org/), and running [Car_Client](Linux/Car_Client) on that computer. Then RControlStation can communicate with the controller over TCP using Car_Client. The TCP connection can then run over a network as usual, such as WiFi or 4G cellular. This is the method that we are using on the setup above.
-- Correction data from a RTK-SN base station within 10 km from where the car operates. There is support for different sources of correction data, such as:
-    - Connecting a supported GNSS receiver, such as the Ublox M8T or Ublox M8P, to the computer running RControlStation, and streaming correction data over that connection. This is what we do in the setup above.
-    - Connecting to a NTRIP server. This can be done from RControlStation, or by passing an argument to Car_Client if it is used instead of a radio.
-    - Our [Controller](Hardware/Controller) in base station mode, where it will transmit correction data over the 433 MHz radio.
-- Other things that are (obviously) needed are motor, steering servo, power supplies and antennas.
+- An embedded Linux computer, in our case a [Raspberry PI](https://www.raspberrypi.org/) running [Car_Client](Linux/Car_Client) on that computer. It communicats with the [Controller PCB](Hardware/Controller) using an USB cabel and with [RControlStation](Linux/RControlStation) using any internet connection.
+
 
 ## Steering Geometries
 
