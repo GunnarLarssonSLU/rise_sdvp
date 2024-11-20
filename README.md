@@ -110,23 +110,6 @@ The next time the raspberry pi boots it will start a screen session with Car_Cli
 screen -d -m -S car bash -c 'cd /home/pi/rise_sdvp/Linux/Car_Client && ./Car_Client -p /dev/car --useudp --logusb --usetcp ; bash'
 ```
 
-## GPS Emulation using Software-Defined Radio (SDR)
-
-RControlStation also supports generation GPS signals using the [Lime SDR](https://www.crowdsupply.com/lime-micro/limesdr-mini). This is work in progress and planned to be useful for automatic HIL testing in the future, but it might be nice to play around with if you have access to a Lime SDR. In order to use it, the [Lime Suite](https://wiki.myriadrf.org/Lime_Suite) has to be installed on your system. Once that is done, RControlStation can be build with Lime SDR support by uncommenting the following line in RControlStation.pro:
-
-```
-# Lime SDR support
-#DEFINES += HAS_LIME_SDR
-```
-
-Once RControlStation is compiled with Lime SDR support, a real-time GPS simulation can be started from _Tests -> GPS Simulator_, which will show the dialog in Figure 4:
-
-![GPS Sim](Documentation/Pictures/GUI/gps_sim.png)
-
-The desired latitude, longitude and height can then simply be set in the dialog. It is also possible to follow a model car and generate its perceived position. The [simulation mode](#SimulationMode) can also be used in combination with the GPS Emulator, making it possible to generate GPS signal for a virtual vehicle in real-time.
-
 ## User Guides, Tutorials and other Resources
 - A work-in-progress user guide with several details on how to use RControlStation can be found [here](https://github.com/svenssonjoel/rise_sdvp_documentation/raw/master/RControlStationManual/RControlStation_doc_version_0_1.pdf).
 - A tutorial on how to implement new functionality both in the embedded control software and in RControlStation can be found [here](https://github.com/svenssonjoel/rise_sdvp_documentation/raw/master/EmbeddedProgrammingExample/main.pdf)
-- Our [published article](https://www.hindawi.com/journals/jr/2018/4907536/)
-
