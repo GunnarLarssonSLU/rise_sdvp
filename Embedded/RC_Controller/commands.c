@@ -870,19 +870,12 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			} else {
 				buffer_append_float32(m_send_buffer, pos.px, 1e4, &send_index); // 56
 				buffer_append_float32(m_send_buffer, pos.py, 1e4, &send_index); // 60
-/*				commands_printf("pos.px			     : %f\n"
-				"pos.py			     : %f\n",
-				pos.px,
-				pos.py);*/
 			}
 			buffer_append_float32(m_send_buffer, pos.speed, 1e6, &send_index); // 64
 			#ifdef USE_ADCONV_FOR_VIN
-						buffer_append_float32(m_send_buffer, adconv_get_vin(), 1e6, &send_index); // 68
+				buffer_append_float32(m_send_buffer, adconv_get_vin(), 1e6, &send_index); // 68
 //				buffer_append_float32(m_send_buffer, showData, 1e6, &send_index); // 68
-
-				//						float tot = comm_can_io_board_as5047_angle();
-		//				buffer_append_float32(m_send_buffer, showData, 1e6, &send_index); // 68
-
+//						float tot = comm_can_io_board_as5047_angle();
 			#else
 
 				#ifdef IS_DRANGEN
@@ -940,7 +933,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 
 			autopilot_set_active(false);
 
-//			mode=RC_MODE_DUTY;
 			switch (mode) {
 			case RC_MODE_CURRENT:
 				if (!main_config.car.disable_motor) {
@@ -974,22 +966,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 							comm_can_set_vesc_id(DIFF_STEERING);
 							bldc_interface_set_duty_cycle(steering*VOLTAGEFRACTION);
 							comm_can_unlock_vesc();
-/*
-
-							showData=222;
-							comm_can_lock_vesc();
-							comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
-							bldc_interface_set_current(throttle);
-							comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
-							//bldc_interface_set_current(steering);
-//							steering+=0.2;
-							bldc_interface_set_duty_cycle(steering);
-							//showData=steering;
-							comm_can_unlock_vesc();
-//							comm_can_set_vesc_id(VESC_ID);
-//							bldc_interface_set_current(throttle);
- *
- */
 						#endif
 					#endif
 				}
@@ -998,17 +974,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			case RC_MODE_DUTY:
 				utils_truncate_number(&throttle, -1.0, 1.0);
 				if (!main_config.car.disable_motor) {
-/*					#if IS_DRANGEN
-						comm_can_lock_vesc();
-						comm_can_set_vesc_id(VESC_ID);
-						throttle*=1.0;
-
-						bldc_interface_set_duty_cycle(throttle);
-//						comm_can_set_vesc_id(VESC_STEERING_ID);
-//						bldc_interface_set_duty_cycle(steering);
-						comm_can_unlock_vesc();
-					#endif
-*/
 					#if HAS_DIFF_STEERING
 					showData=13+throttle + throttle * steering;
 						comm_can_lock_vesc();
@@ -1021,23 +986,11 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 						#if HAS_HYDRAULIC_DRIVE
 						//					hydraulic_set_speed(throttle * 10);
 							#ifdef IS_MACTRAC
-
-								/*
-								/// TEMPORARY REMOVE SOON!!! START
-								comm_can_lock_vesc();
-								comm_can_set_vesc_id(113);
-								bldc_interface_set_duty_cycle(throttle);
-								comm_can_unlock_vesc();
-								/// TEMPORARY REMOVE SOON!!! END
-								// REMOVE COMMENT FOR NEXT ONE!!!
-								 *
-								 */
 								hydraulic_set_throttle_raw(throttle);
 							#else
 								hydraulic_set_throttle_raw(throttle / 0.15);
 							#endif
 						#else
-//							showData=200+DIFF_THROTTLE_VESC_RIGHT+throttle;
 							comm_can_lock_vesc();
 							comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
 							bldc_interface_set_duty_cycle(throttle);
@@ -1047,16 +1000,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 							bldc_interface_set_duty_cycle(steering*VOLTAGEFRACTION);
 							comm_can_unlock_vesc();
 
-/*							comm_can_lock_vesc();
-							comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
-							bldc_interface_set_duty_cycle(throttle);
-							comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
-							bldc_interface_set_duty_cycle(steering);
-							comm_can_unlock_vesc();
-							*/
-//							comm_can_set_vesc_id(VESC_ID);
-//							bldc_interface_set_duty_cycle(throttle);
-//							bldc_interface_set_rpm((int)throttle);
 						#endif
 					#endif
 				}
@@ -1097,9 +1040,8 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 
 			#if !HAS_DIFF_STEERING
 				steering = utils_map(steering, -1.0, 1.0,
-						main_config.car.steering_center + (main_config.car.steering_range / 2.0),
-						main_config.car.steering_center - (main_config.car.steering_range / 2.0));
-				// showData=steering;
+					main_config.car.steering_center + (main_config.car.steering_range / 2.0),
+					main_config.car.steering_center - (main_config.car.steering_range / 2.0));
 				servo_simple_set_pos_ramp(steering);
 			#endif
 		} break;
@@ -1111,72 +1053,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			float steering = buffer_get_float32(data, 1e6, &ind);
 			utils_truncate_number(&steering, 0.0, 1.0);
 			servo_simple_set_pos_ramp(steering);
-		} break;
-#endif
-#if MAIN_MODE == MAIN_MODE_MULTIROTOR
-		case CMD_MR_GET_STATE: {
-			timeout_reset();
-
-			POS_STATE pos;
-			float accel[3];
-			float gyro[3];
-			float mag[3];
-			ROUTE_POINT rp_goal;
-
-			commands_set_send_func(func);
-
-			pos_get_imu(accel, gyro, mag);
-			pos_get_pos(&pos);
-			autopilot_get_goal_now(&rp_goal);
-
-			int32_t send_index = 0;
-			m_send_buffer[send_index++] = id_ret; // 1
-			m_send_buffer[send_index++] = CMD_MR_GET_STATE; // 2
-			m_send_buffer[send_index++] = FW_VERSION_MAJOR; // 3
-			m_send_buffer[send_index++] = FW_VERSION_MINOR; // 4
-			buffer_append_float32_auto(m_send_buffer, pos.roll, &send_index); // 8
-			buffer_append_float32_auto(m_send_buffer, pos.pitch, &send_index); // 12
-			buffer_append_float32_auto(m_send_buffer, pos.yaw, &send_index); // 16
-			buffer_append_float32_auto(m_send_buffer, accel[0], &send_index); // 20
-			buffer_append_float32_auto(m_send_buffer, accel[1], &send_index); // 24
-			buffer_append_float32_auto(m_send_buffer, accel[2], &send_index); // 28
-			buffer_append_float32_auto(m_send_buffer, gyro[0], &send_index); // 32
-			buffer_append_float32_auto(m_send_buffer, gyro[1], &send_index); // 36
-			buffer_append_float32_auto(m_send_buffer, gyro[2], &send_index); // 40
-			buffer_append_float32_auto(m_send_buffer, mag[0], &send_index); // 44
-			buffer_append_float32_auto(m_send_buffer, mag[1], &send_index); // 48
-			buffer_append_float32_auto(m_send_buffer, mag[2], &send_index); // 52
-
-
-
-			buffer_append_float32_auto(m_send_buffer, pos.px, &send_index); // 56
-			buffer_append_float32_auto(m_send_buffer, pos.py, &send_index); // 60
-			buffer_append_float32_auto(m_send_buffer, pos.pz, &send_index); // 64
-			buffer_append_float32_auto(m_send_buffer, pos.speed, &send_index); // 68
-			buffer_append_float32_auto(m_send_buffer, adconv_get_vin(), &send_index); // 72
-			buffer_append_float32_auto(m_send_buffer, pos.px_gps, &send_index); // 76
-			buffer_append_float32_auto(m_send_buffer, pos.py_gps, &send_index); // 80
-			buffer_append_float32_auto(m_send_buffer, rp_goal.px, &send_index); // 84
-			buffer_append_float32_auto(m_send_buffer, rp_goal.py, &send_index); // 88
-			buffer_append_int32(m_send_buffer, pos_get_ms_today(), &send_index); // 92
-			commands_send_packet(m_send_buffer, send_index);
-		} break;
-
-		case CMD_MR_RC_CONTROL: {
-			int32_t ind = 0;
-			float throttle = buffer_get_float32_auto(data, &ind);
-			float roll = buffer_get_float32_auto(data, &ind);
-			float pitch = buffer_get_float32_auto(data, &ind);
-			float yaw = buffer_get_float32_auto(data, &ind);
-			mr_control_set_input(throttle, roll, pitch, yaw);
-		} break;
-
-		case CMD_MR_OVERRIDE_POWER: {
-			int32_t ind = 0;
-			mr_control_set_motor_override(0, buffer_get_float32_auto(data, &ind));
-			mr_control_set_motor_override(1, buffer_get_float32_auto(data, &ind));
-			mr_control_set_motor_override(2, buffer_get_float32_auto(data, &ind));
-			mr_control_set_motor_override(3, buffer_get_float32_auto(data, &ind));
 		} break;
 #endif
 #endif
