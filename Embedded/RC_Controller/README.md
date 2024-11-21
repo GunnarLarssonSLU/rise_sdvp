@@ -13,7 +13,7 @@ Functions related to the autopilot.
 
 Functions that process commands sent to the machine.
 
-## Functions
+## Important functions
 
 | Function | Description |
 | --- | --- |
@@ -40,7 +40,7 @@ Functions that process commands sent to the machine.
 | CMD_GET_MAIN_CONFIG | Get configuration of vehicle |  | *See separate item* |
 | CMD_REBOOT_SYSTEM | Reboot the Raspberry Pi |  |  |
 | CMD_RC_CONTROL | Set vehicle throttle and steering directly | (throttle, steering) (float32, float32) | | |
-| CMD_HYDRAULIC_MOVE | ... | (item, state) (int, int) | |
+| CMD_HYDRAULIC_MOVE | Change state hydraulic implements | (item, state) (int, int) | |
 | CMD_GET_STATE  | Get current vehicle state | | *See separate item* |
 
 ## Types
@@ -56,9 +56,24 @@ Functions that process commands sent to the machine.
 | time       | int32   |
 | attributes | uint32  |
 
+# Hydraulic
+
+Starts thread "Hydraulic".
+
+Currently controls the vehicle powertrain via the controller card whilst the hydraulic implements (front/back) is controlled via a bespoke IO-card.
+
+## Important functions
+
+| Function | Description | Input (description) (type) | Output (description) (type) |
+| --- | --- |
+| THD_FUNCTION |  .. | .. | .. |
+| hydraulic_set_speed | Sets vehicles speed (m/s) | (float) (speed) | |
+| hydraulic_move | Change state hydraulic implements | (item, state) (int, int) | |
+
+
 # Timeout
 
-## Functions
+## Important functions
 - timeout_reset      Resets the timeout counter. Can be called from anywhere in the project. Is called in commands.c by various functions, most importantly 
 - THD_FUNCTION       Stops autopilot unless timeout_reset has been called within a certain set time interval 
 
