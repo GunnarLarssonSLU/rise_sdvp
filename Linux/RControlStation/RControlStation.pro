@@ -111,7 +111,6 @@ SOURCES += main.cpp\
     moteconfig.cpp \
     magcal.cpp \
     imuplot.cpp \
-    copterinfo.cpp \
     nmeawidget.cpp \
     confcommonwidget.cpp \
     ublox.cpp \
@@ -154,7 +153,6 @@ HEADERS  += mainwindow.h \
     moteconfig.h \
     magcal.h \
     imuplot.h \
-    copterinfo.h \
     nmeawidget.h \
     confcommonwidget.h \
     ublox.h \

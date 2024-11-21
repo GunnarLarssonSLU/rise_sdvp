@@ -109,10 +109,6 @@
 #define DIFF_STEERING 16
 #define SERVO_VESC_ID				36
 #define VOLTAGEFRACTION 0.5
-
-// Nästa var "aktiv" när fungerade
-//#define DIFF_STEERING_VESC_LEFT 113
-
 #define SERVO_VESC_S1				178.0 // Left
 #define SERVO_VESC_S2				240.0 // Right
 //#define SERVO_VESC_S1				-20.0 // Left

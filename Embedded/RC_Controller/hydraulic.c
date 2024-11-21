@@ -223,8 +223,6 @@ static THD_FUNCTION(hydro_thread, arg) {
 				fmaxf(cnt.low_time_current, cnt.low_time_last);
 		m_speed_now = SIGN(m_throttle_set) * (wheel_diam * M_PI) / (time_last * cnts_per_rev);
 
-		//showData=comm_can_io_board_lim_sw(0)*8+comm_can_io_board_lim_sw(1)*4+comm_can_io_board_lim_sw(2)*2+comm_can_io_board_lim_sw(3)+50*m_move_rear;
-
 		// comm_can_io_board_lim_sw(2) - Upp bak
 		// comm_can_io_board_lim_sw(3) - Ner bak
 
