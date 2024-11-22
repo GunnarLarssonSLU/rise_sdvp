@@ -112,11 +112,16 @@ screen -d -m -S car bash -c 'cd /home/pi/rise_sdvp/Linux/Car_Client && ./Car_Cli
 
 # Command flow
 
-- **main.cpp (function main) - Starts application (of class 'MainWindow') on laptop
-- **MainWindow.cpp - Main Window class on the laptop. Some important aspects:
+- **main.cpp** (function main) - Starts application (of class 'MainWindow') on laptop
+- **MainWindow (hpp/cpp)** - Main Window class on the laptop. Some important aspects:
   - Inherits QT class 'QMainWindow'
   - Constructor initiates a large number of components, including some timers and [signals and slots](https://en.wikipedia.org/wiki/Signals_and_slots)
   - Contains connections to the vehicles via its member 'QList<CarInterface*> mCars'
   - Function 'timerSlot' loops continuously. It checks joystick values, if relevant send them to the vehicle, check vehicle status etc.
-- **CarInterface** - Communicates with the vehicle
-  - setControlValues - sends steering information to the vehicle
+- **CarInterface (hpp/cpp)** - Some (high level) communication with the vehicle
+  - setControlValues - sends steering information to the vehicle (via signal/slots setRcCurrent and setRcDuty)
+  - setStateData - shows data received from the vehicle in the GUI
+- **PacketInterface (hpp/cpp)** - (Low level) communication with the vehicle. For the format used see [information at the controller](Embedded/RC_Controller/README.md)  
+  - sendPacket - send packet to vehicle
+  - processPacket - processes packets received from the vehicle
+  
