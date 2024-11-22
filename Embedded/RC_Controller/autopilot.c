@@ -434,6 +434,7 @@ void autopilot_set_motor_speed(float speed) {
 		comm_can_unlock_vesc();
 #else
 #if HAS_HYDRAULIC_DRIVE
+		commands_printf("In Set Motor Speed. Has Hydraulic Drive\n");
 		hydraulic_set_speed(speed);
 #else
 		float rpm = speed / (main_config.car.gear_ratio
@@ -445,7 +446,7 @@ void autopilot_set_motor_speed(float speed) {
 				commands_printf("In Set Motor Speed. Is Drangen. No Hydraulic Drive\n");
 				comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
 				bldc_interface_set_rpm((int)(rpm));
-				commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_RIGHT,(float)rpm);
+				commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_LEFT,(float)rpm);
 				comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
 				bldc_interface_set_rpm((int)(rpm));
 				commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_RIGHT,(float)rpm);
@@ -935,27 +936,27 @@ static THD_FUNCTION(ap_thread, arg) {
 				#else
 					#ifdef IS_DRANGEN
 					commands_printf("Not diff steering. Showing motor information.\n");
-						comm_can_set_vesc_id(DIFF_STEERING);
-						bldc_interface_set_duty_cycle(servo_pos);
-						commands_printf("Motor %d: Duty cycle: %f.\n", DIFF_STEERING,servo_pos);
-						comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
-						bldc_interface_set_rpm((int)4000);
-						commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_LEFT,(float)4000);
-						comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
-						bldc_interface_set_rpm((int)4000);
-						commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_RIGHT,(float)4000);
+					comm_can_set_vesc_id(DIFF_STEERING);
+					bldc_interface_set_duty_cycle(servo_pos);
+					commands_printf("Motor %d: (steering) Duty cycle: %f.\n", DIFF_STEERING,servo_pos);
+					//					comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
+		//			bldc_interface_set_rpm((int)4000);
+					//					commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_LEFT,(float)4000);
+					//					comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
+		//			bldc_interface_set_rpm((int)4000);
+//					commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_RIGHT,(float)4000);
 //						comm_can_unlock_vesc();
 					#endif
 					#ifdef IS_MACTRAC
 						commands_printf("Is a MacTrac!\n");
 						servo_simple_set_pos_ramp(servo_pos); //GL - Fixa här!!
 					#else
-						commands_printf("Not a MacTrac!\n");
+//						commands_printf("Not a MacTrac!\n");
 						//	comm_can_lock_vesc();
 						//	comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
 						//	bldc_interface_set_duty_cycle(throttle);
-							comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
-							bldc_interface_set_duty_cycle(servo_pos);
+		//					comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
+		//					bldc_interface_set_duty_cycle(servo_pos);
 						//	bldc_interface_set_duty_cycle(-2.0);
 						//	comm_can_unlock_vesc();
 					#endif

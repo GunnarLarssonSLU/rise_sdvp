@@ -119,7 +119,7 @@
 #define SERVO_VESC_INVERTED			0
 #define SERVO_VESC_DEADBAND_COMP    0.2
 #define IS_F9_BOARD					1
-#define INGENVINKELGIVARE
+//#define INGENVINKELGIVARE
 #endif
 
 
