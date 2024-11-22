@@ -110,6 +110,13 @@ The next time the raspberry pi boots it will start a screen session with Car_Cli
 screen -d -m -S car bash -c 'cd /home/pi/rise_sdvp/Linux/Car_Client && ./Car_Client -p /dev/car --useudp --logusb --usetcp ; bash'
 ```
 
-## User Guides, Tutorials and other Resources
-- A work-in-progress user guide with several details on how to use RControlStation can be found [here](https://github.com/svenssonjoel/rise_sdvp_documentation/raw/master/RControlStationManual/RControlStation_doc_version_0_1.pdf).
-- A tutorial on how to implement new functionality both in the embedded control software and in RControlStation can be found [here](https://github.com/svenssonjoel/rise_sdvp_documentation/raw/master/EmbeddedProgrammingExample/main.pdf)
+# Command flow
+
+- **main.cpp (function main) - Starts application (of class 'MainWindow') on laptop
+- **MainWindow.cpp - Main Window class on the laptop. Some important aspects:
+  - Inherits QT class 'QMainWindow'
+  - Constructor initiates a large number of components, including some timers and [signals and slots](https://en.wikipedia.org/wiki/Signals_and_slots)
+  - Contains connections to the vehicles via its member 'QList<CarInterface*> mCars'
+  - Function 'timerSlot' loops continuously. It checks joystick values, if relevant send them to the vehicle, check vehicle status etc.
+- **CarInterface** - Communicates with the vehicle
+  - setControlValues - sends steering information to the vehicle
