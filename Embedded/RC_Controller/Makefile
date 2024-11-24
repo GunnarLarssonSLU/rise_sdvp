@@ -160,7 +160,6 @@ CSRC = $(STARTUPSRC) \
        rtcm3_simple.c \
        srf10.c \
        pwm_esc.c \
-       mr_control.c \
        actuator.c \
        motor_sim.c \
        m8t_base.c \

@@ -819,16 +819,6 @@ static THD_FUNCTION(ap_thread, arg) {
 					float diff = utils_rp_distance(&closest, &car_pos) * 100.0;
 					float speed = pos_now.speed * 3.6;
 
-					commands_plot_set_graph(0);
-					commands_send_plot_points((float)sample, diff);
-					commands_plot_set_graph(1);
-					commands_send_plot_points((float)sample, speed);
-					commands_plot_set_graph(2);
-					commands_send_plot_points((float)sample, pos_now.yaw * 0.1);
-					commands_plot_set_graph(3);
-					commands_plot_set_graph(3);
-					commands_send_plot_points((float)sample, m_rad_now * 10.0);
-
 					commands_printf("D: %.1f cm, S: %.2f km/h, Yaw: %.1f deg, Rad: %.2f m, closest1_ind: %d",
 							(double)diff, (double)speed, (double)pos_now.yaw, (double)m_rad_now, closest1_ind);
 				}
@@ -939,26 +929,11 @@ static THD_FUNCTION(ap_thread, arg) {
 					comm_can_set_vesc_id(DIFF_STEERING);
 					bldc_interface_set_duty_cycle(servo_pos);
 					commands_printf("Motor %d: (steering) Duty cycle: %f.\n", DIFF_STEERING,servo_pos);
-					//					comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
-		//			bldc_interface_set_rpm((int)4000);
-					//					commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_LEFT,(float)4000);
-					//					comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
-		//			bldc_interface_set_rpm((int)4000);
-//					commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_RIGHT,(float)4000);
-//						comm_can_unlock_vesc();
+
 					#endif
 					#ifdef IS_MACTRAC
 						commands_printf("Is a MacTrac!\n");
 						servo_simple_set_pos_ramp(servo_pos); //GL - Fixa här!!
-					#else
-//						commands_printf("Not a MacTrac!\n");
-						//	comm_can_lock_vesc();
-						//	comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
-						//	bldc_interface_set_duty_cycle(throttle);
-		//					comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
-		//					bldc_interface_set_duty_cycle(servo_pos);
-						//	bldc_interface_set_duty_cycle(-2.0);
-						//	comm_can_unlock_vesc();
 					#endif
 				#endif
 				autopilot_set_motor_speed(speed);
@@ -1101,11 +1076,6 @@ static void terminal_print_closest(int argc, const char **argv) {
 		} else {
 			if (n > 0) {
 				commands_printf("OK. Printing closest point every %d iterations.\n", n);
-				commands_init_plot("Sample", "Value");
-				commands_plot_add_graph("Diff (cm)");
-				commands_plot_add_graph("Speed (km/h)");
-				commands_plot_add_graph("Yaw (0.1 degrees)");
-				commands_plot_add_graph("Radius (0.1 m)");
 			} else {
 				commands_printf("OK. Not printing closest point.\n", n);
 			}

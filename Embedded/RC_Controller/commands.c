@@ -32,7 +32,6 @@
 #include "log.h"
 #include "ublox.h"
 #include "comm_cc1120.h"
-#include "mr_control.h"
 #include "adconv.h"
 #include "motor_sim.h"
 #include "m8t_base.h"
@@ -552,61 +551,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			motor_sim_set_running(main_config.car.simulate_motor);
 #endif
 
-			// Multirotor settings
-			main_config.mr.vel_decay_e = buffer_get_float32_auto(data, &ind);
-			main_config.mr.vel_decay_l = buffer_get_float32_auto(data, &ind);
-			main_config.mr.vel_max = buffer_get_float32_auto(data, &ind);
-			main_config.mr.map_min_x = buffer_get_float32_auto(data, &ind);
-			main_config.mr.map_max_x = buffer_get_float32_auto(data, &ind);
-			main_config.mr.map_min_y = buffer_get_float32_auto(data, &ind);
-			main_config.mr.map_max_y = buffer_get_float32_auto(data, &ind);
-
-			main_config.mr.vel_gain_p = buffer_get_float32_auto(data, &ind);
-			main_config.mr.vel_gain_i = buffer_get_float32_auto(data, &ind);
-			main_config.mr.vel_gain_d = buffer_get_float32_auto(data, &ind);
-
-			main_config.mr.tilt_gain_p = buffer_get_float32_auto(data, &ind);
-			main_config.mr.tilt_gain_i = buffer_get_float32_auto(data, &ind);
-			main_config.mr.tilt_gain_d = buffer_get_float32_auto(data, &ind);
-
-			main_config.mr.max_corr_error = buffer_get_float32_auto(data, &ind);
-			main_config.mr.max_tilt_error = buffer_get_float32_auto(data, &ind);
-
-			main_config.mr.ctrl_gain_roll_p = buffer_get_float32_auto(data, &ind);
-			main_config.mr.ctrl_gain_roll_i = buffer_get_float32_auto(data, &ind);
-			main_config.mr.ctrl_gain_roll_dp = buffer_get_float32_auto(data, &ind);
-			main_config.mr.ctrl_gain_roll_de = buffer_get_float32_auto(data, &ind);
-
-			main_config.mr.ctrl_gain_pitch_p = buffer_get_float32_auto(data, &ind);
-			main_config.mr.ctrl_gain_pitch_i = buffer_get_float32_auto(data, &ind);
-			main_config.mr.ctrl_gain_pitch_dp = buffer_get_float32_auto(data, &ind);
-			main_config.mr.ctrl_gain_pitch_de = buffer_get_float32_auto(data, &ind);
-
-			main_config.mr.ctrl_gain_yaw_p = buffer_get_float32_auto(data, &ind);
-			main_config.mr.ctrl_gain_yaw_i = buffer_get_float32_auto(data, &ind);
-			main_config.mr.ctrl_gain_yaw_dp = buffer_get_float32_auto(data, &ind);
-			main_config.mr.ctrl_gain_yaw_de = buffer_get_float32_auto(data, &ind);
-
-			main_config.mr.ctrl_gain_pos_p = buffer_get_float32_auto(data, &ind);
-			main_config.mr.ctrl_gain_pos_i = buffer_get_float32_auto(data, &ind);
-			main_config.mr.ctrl_gain_pos_d = buffer_get_float32_auto(data, &ind);
-
-			main_config.mr.ctrl_gain_alt_p = buffer_get_float32_auto(data, &ind);
-			main_config.mr.ctrl_gain_alt_i = buffer_get_float32_auto(data, &ind);
-			main_config.mr.ctrl_gain_alt_d = buffer_get_float32_auto(data, &ind);
-
-			main_config.mr.js_gain_tilt = buffer_get_float32_auto(data, &ind);
-			main_config.mr.js_gain_yaw = buffer_get_float32_auto(data, &ind);
-			main_config.mr.js_mode_rate = data[ind++];
-
-			main_config.mr.motor_fl_f = data[ind++];
-			main_config.mr.motor_bl_l = data[ind++];
-			main_config.mr.motor_fr_r = data[ind++];
-			main_config.mr.motor_br_b = data[ind++];
-			main_config.mr.motors_x = data[ind++];
-			main_config.mr.motors_cw = data[ind++];
-			main_config.mr.motor_pwm_min_us = buffer_get_uint16(data, &ind);
-			main_config.mr.motor_pwm_max_us = buffer_get_uint16(data, &ind);
 
 			conf_general_store_main_config(&main_config);
 
@@ -707,61 +651,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.voltage_centre, &send_index);
 //		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.angledegrees, &send_index);
 
-			// Multirotor settings
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.vel_decay_e, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.vel_decay_l, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.vel_max, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.map_min_x, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.map_max_x, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.map_min_y, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.map_max_y, &send_index);
-
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.vel_gain_p, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.vel_gain_i, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.vel_gain_d, &send_index);
-
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.tilt_gain_p, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.tilt_gain_i, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.tilt_gain_d, &send_index);
-
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.max_corr_error, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.max_tilt_error, &send_index);
-
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.ctrl_gain_roll_p, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.ctrl_gain_roll_i, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.ctrl_gain_roll_dp, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.ctrl_gain_roll_de, &send_index);
-
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.ctrl_gain_pitch_p, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.ctrl_gain_pitch_i, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.ctrl_gain_pitch_dp, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.ctrl_gain_pitch_de, &send_index);
-
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.ctrl_gain_yaw_p, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.ctrl_gain_yaw_i, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.ctrl_gain_yaw_dp, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.ctrl_gain_yaw_de, &send_index);
-
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.ctrl_gain_pos_p, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.ctrl_gain_pos_i, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.ctrl_gain_pos_d, &send_index);
-
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.ctrl_gain_alt_p, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.ctrl_gain_alt_i, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.ctrl_gain_alt_d, &send_index);
-
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.js_gain_tilt, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.mr.js_gain_yaw, &send_index);
-			m_send_buffer[send_index++] = main_cfg_tmp.mr.js_mode_rate;
-
-			m_send_buffer[send_index++] = main_cfg_tmp.mr.motor_fl_f;
-			m_send_buffer[send_index++] = main_cfg_tmp.mr.motor_bl_l;
-			m_send_buffer[send_index++] = main_cfg_tmp.mr.motor_fr_r;
-			m_send_buffer[send_index++] = main_cfg_tmp.mr.motor_br_b;
-			m_send_buffer[send_index++] = main_cfg_tmp.mr.motors_x;
-			m_send_buffer[send_index++] = main_cfg_tmp.mr.motors_cw;
-			buffer_append_uint16(m_send_buffer, main_cfg_tmp.mr.motor_pwm_min_us, &send_index);
-			buffer_append_uint16(m_send_buffer, main_cfg_tmp.mr.motor_pwm_max_us, &send_index);
 
 			commands_send_packet(m_send_buffer, send_index);
 		} break;
@@ -1182,46 +1071,6 @@ void commands_send_nmea(unsigned char *data, unsigned int len) {
 		send_index += len;
 		commands_send_packet(m_send_buffer, send_index);
 	}
-}
-
-void commands_init_plot(char *namex, char *namey) {
-	int ind = 0;
-	m_send_buffer[ind++] = main_id;
-	m_send_buffer[ind++] = CMD_PLOT_INIT;
-	memcpy(m_send_buffer + ind, namex, strlen(namex));
-	ind += strlen(namex);
-	m_send_buffer[ind++] = '\0';
-	memcpy(m_send_buffer + ind, namey, strlen(namey));
-	ind += strlen(namey);
-	m_send_buffer[ind++] = '\0';
-	commands_send_packet((unsigned char*)m_send_buffer, ind);
-}
-
-void commands_plot_add_graph(char *name) {
-	int ind = 0;
-	m_send_buffer[ind++] = main_id;
-	m_send_buffer[ind++] = CMD_PLOT_ADD_GRAPH;
-	memcpy(m_send_buffer + ind, name, strlen(name));
-	ind += strlen(name);
-	m_send_buffer[ind++] = '\0';
-	commands_send_packet((unsigned char*)m_send_buffer, ind);
-}
-
-void commands_plot_set_graph(int graph) {
-	int ind = 0;
-	m_send_buffer[ind++] = main_id;
-	m_send_buffer[ind++] = CMD_PLOT_SET_GRAPH;
-	m_send_buffer[ind++] = graph;
-	commands_send_packet((unsigned char*)m_send_buffer, ind);
-}
-
-void commands_send_plot_points(float x, float y) {
-	int32_t ind = 0;
-	m_send_buffer[ind++] = main_id;
-	m_send_buffer[ind++] = CMD_PLOT_DATA;
-	buffer_append_float32_auto(m_send_buffer, x, &ind);
-	buffer_append_float32_auto(m_send_buffer, y, &ind);
-	commands_send_packet((unsigned char*)m_send_buffer, ind);
 }
 
 void commands_send_log_ethernet(unsigned char *data, int len) {
