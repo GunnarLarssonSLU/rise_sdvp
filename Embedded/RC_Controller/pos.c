@@ -30,7 +30,7 @@
 #include "servo_simple.h"
 #include "commands.h"
 #include "ublox.h"
-#include "mr_control.h"
+//#include "mr_control.h"
 #include "srf10.h"
 #include "terminal.h"
 #include "pos_uwb.h"
@@ -690,17 +690,6 @@ void pos_base_rtcm_obs(rtcm_obs_header_t *header, rtcm_obs_t *obs, int obs_num) 
 
 	if (found) {
 		if (m_print_sat_prn) {
-			commands_plot_set_graph(0);
-			commands_send_plot_points((float)sample, snr);
-			commands_plot_set_graph(1);
-			commands_send_plot_points((float)sample, snr_base);
-			commands_plot_set_graph(2);
-			commands_send_plot_points((float)sample, (float)lock * 20.0);
-			commands_plot_set_graph(3);
-			commands_send_plot_points((float)sample, (float)lock_base * 20.0);
-			commands_plot_set_graph(4);
-			commands_send_plot_points((float)sample, elevation);
-
 			commands_printf("SNR: %.0f, SNR Base: %.0f, Lock: %d. Lock Base: %d, Elevation: %.0f",
 					(double)snr, (double)snr_base, lock, lock_base, (double)elevation);
 
@@ -832,12 +821,6 @@ static void cmd_terminal_sat_info(int argc, const char **argv) {
 		} else {
 			if (n > 0) {
 				commands_printf("OK. Printing and plotting information satellite %d\n", n);
-				commands_init_plot("Sample", "Value");
-				commands_plot_add_graph("SNR");
-				commands_plot_add_graph("Base SNR");
-				commands_plot_add_graph("Lock");
-				commands_plot_add_graph("Base Lock");
-				commands_plot_add_graph("Elevation");
 			} else {
 				commands_printf("OK. Not printing satellite information.\n", n);
 			}
@@ -1361,12 +1344,6 @@ static void correct_pos_gps(POS_STATE *pos) {
 		if (m_pos_history_print) {
 			int32_t diff = m_ms_today - pos->gps_ms;
 			commands_printf("Age: %d ms, PPS_CNT: %d", diff, m_pps_cnt);
-			if (sample == 0) {
-				commands_init_plot("Sample", "Age (ms)");
-				commands_plot_add_graph("Delay");
-				commands_plot_set_graph(0);
-			}
-			commands_send_plot_points(sample++, diff);
 		} else {
 			sample = 0;
 		}
@@ -1409,21 +1386,8 @@ static void correct_pos_gps(POS_STATE *pos) {
 			commands_printf("Diff: %.1f cm, Speed: %.1f km/h, Yaw: %.1f",
 					(double)diff, (double)(m_pos.speed * 3.6), (double)m_pos.yaw);
 
-			if (sample == 0) {
-				commands_init_plot("Time (s)", "Value");
-				commands_plot_add_graph("Diff (cm)");
-				commands_plot_add_graph("Speed (0.1 * km/h)");
-				commands_plot_add_graph("Yaw (degrees)");
-			}
-
 			sample += pos->gps_ms - ms_before;
 
-			commands_plot_set_graph(0);
-			commands_send_plot_points((float)sample / 1000.0, diff);
-			commands_plot_set_graph(1);
-			commands_send_plot_points((float)sample / 1000.0, m_pos.speed * 3.6 * 10);
-			commands_plot_set_graph(2);
-			commands_send_plot_points((float)sample / 1000.0, m_pos.yaw);
 		} else {
 			sample = 0;
 		}

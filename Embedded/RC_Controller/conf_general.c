@@ -166,63 +166,7 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 	conf->car.voltage_centre = 3.24;
 
 
-	// Default multirotor settings
-	conf->mr.vel_decay_e = 0.8;
-	conf->mr.vel_decay_l = 0.02;
-	conf->mr.vel_max = 80.0 / 3.6;
-
-	conf->mr.map_min_x = -500.0;
-	conf->mr.map_max_x = 500.0;
-	conf->mr.map_min_y = -500.0;
-	conf->mr.map_max_y = 500.0;
-
-	conf->mr.vel_gain_p = 0.1;
-	conf->mr.vel_gain_i = 0.0;
-	conf->mr.vel_gain_d = 0.2;
-
-	conf->mr.tilt_gain_p = 0.2;
-	conf->mr.tilt_gain_i = 0.0;
-	conf->mr.tilt_gain_d = 0.05;
-
-	conf->mr.max_corr_error = 0.5;
-	conf->mr.max_tilt_error = 6.0;
-
-	conf->mr.ctrl_gain_roll_p = 0.8;
-	conf->mr.ctrl_gain_roll_i = 1.0;
-	conf->mr.ctrl_gain_roll_dp = 0.3;
-	conf->mr.ctrl_gain_roll_de = 0.2;
-
-	conf->mr.ctrl_gain_pitch_p = 0.8;
-	conf->mr.ctrl_gain_pitch_i = 1.0;
-	conf->mr.ctrl_gain_pitch_dp = 0.3;
-	conf->mr.ctrl_gain_pitch_de = 0.2;
-
-	conf->mr.ctrl_gain_yaw_p = 3.0;
-	conf->mr.ctrl_gain_yaw_i = 0.2;
-	conf->mr.ctrl_gain_yaw_dp = 0.4;
-	conf->mr.ctrl_gain_yaw_de = 0.2;
-
-	conf->mr.ctrl_gain_pos_p = 0.8;
-	conf->mr.ctrl_gain_pos_i = 0.09;
-	conf->mr.ctrl_gain_pos_d = 0.6;
-
-	conf->mr.ctrl_gain_alt_p = 0.1;
-	conf->mr.ctrl_gain_alt_i = 0.1;
-	conf->mr.ctrl_gain_alt_d = 0.14;
-
-	conf->mr.js_gain_tilt = 1.0;
-	conf->mr.js_gain_yaw = 0.6;
-	conf->mr.js_mode_rate = false;
-
-	conf->mr.motor_fl_f = 0;
-	conf->mr.motor_bl_l = 1;
-	conf->mr.motor_fr_r = 2;
-	conf->mr.motor_br_b = 3;
-	conf->mr.motors_x = true;
-	conf->mr.motors_cw = true;
-	conf->mr.motor_pwm_min_us = 1200;
-	conf->mr.motor_pwm_max_us = 2000;
-
+	/*
 	// Custom parameters based on ID
 	switch (main_id) {
 	case 1:
@@ -233,46 +177,7 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 	default:
 		break;
 	}
-
-#ifdef CAR_TERO
-	conf->car.gear_ratio = 0.1;
-	conf->car.wheel_diam = 0.155;
-	conf->car.motor_poles = 4.0;
-	conf->car.steering_max_angle_rad = 0.39952;
-	conf->car.steering_center = 0.45;
-	conf->car.steering_range = -0.8;
-	conf->car.steering_ramp_time = 0.6;
-	conf->car.axis_distance = 0.57;
-
-	conf->gps_ant_x = -0.08; // TODO: IMU_ROT_180 sign?
-	conf->gps_ant_y = 0.0;
-#endif
-
-#ifdef EBIKE_BENJAMIN
-	conf->car.disable_motor = true;
-	conf->car.gear_ratio = 1.0;
-	conf->car.wheel_diam = 0.655;
-	conf->car.motor_poles = 46.0;
-
-	conf->gps_ant_x = -0.1;
-	conf->gps_ant_y = 0.0;
-
-	conf->mag_cal_cx = 7.1270;
-	conf->mag_cal_cy = -209.5598;
-	conf->mag_cal_cz = 106.1795;
-
-	conf->mag_cal_xx = 0.8868;
-	conf->mag_cal_xy = 0.0028;
-	conf->mag_cal_xz = -0.0046;
-
-	conf->mag_cal_yx = 0.0028;
-	conf->mag_cal_yy = 0.7761;
-	conf->mag_cal_yz = 0.0539;
-
-	conf->mag_cal_zx = -0.0046;
-	conf->mag_cal_zy = 0.0539;
-	conf->mag_cal_zz = 0.9869;
-#endif
+	*/
 
 	// Only the SLU testbot for now
 #if HAS_DIFF_STEERING
