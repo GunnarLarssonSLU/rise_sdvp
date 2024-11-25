@@ -103,16 +103,6 @@ int main(void) {
 #endif
 #endif
 
-#if MAIN_MODE == MAIN_MODE_MULTIROTOR
-	conf_general_init();
-	adconv_init();
-	srf10_init();
-	pwm_esc_init();
-	pos_init();
-	pos_uwb_init();
-	mr_control_init();
-#endif
-
 	comm_usb_init();
 
 #if HAS_CC2520

@@ -25,7 +25,6 @@
 #define MAIN_MODE_MOTE_2400			1
 #define MAIN_MODE_MOTE_400			2
 #define MAIN_MODE_MOTE_HYBRID		3 // Use 400 for slow and critical communication and 2400 for the rest.
-#define MAIN_MODE_MULTIROTOR		4
 #define MAIN_MODE_M8T_BASE_2400		5
 #define MAIN_MODE_M8T_BASE_400		6
 
@@ -36,17 +35,12 @@
 
 // Mode macros
 #define MAIN_MODE_IS_MOTE			(MAIN_MODE == MAIN_MODE_MOTE_2400 || MAIN_MODE == MAIN_MODE_MOTE_400 || MAIN_MODE == MAIN_MODE_MOTE_HYBRID)
-#define MAIN_MODE_IS_VEHICLE		(MAIN_MODE == MAIN_MODE_CAR || MAIN_MODE == MAIN_MODE_MULTIROTOR)
+#define MAIN_MODE_IS_VEHICLE		(MAIN_MODE == MAIN_MODE_CAR)
 #define MAIN_MODE_IS_BASE			(MAIN_MODE == MAIN_MODE_M8T_BASE_2400 || MAIN_MODE == MAIN_MODE_M8T_BASE_400)
 
 // Firmware version
 #define FW_VERSION_MAJOR			12
 #define FW_VERSION_MINOR			3
-
-// Default car settings
-//#define CAR_TERO // Benjamins tero car
-//#define EBIKE_BENJAMIN // Benjamins ebike
-
 
 #define IS_DRANGEN
 
@@ -60,8 +54,6 @@
 
 #define SERVO_VESC_S1				178.0 // Left
 #define SERVO_VESC_S2				240.0 // Right
-//#define SERVO_VESC_S1				-20.0 // Left
-//#define SERVO_VESC_S2				40.0 // Right
 #define USE_ADCONV_FOR_VIN
 #define SERVO_VESC_HYDRAULIC
 #define HYDRAULIC_HAS_SPEED_SENSOR
@@ -71,26 +63,6 @@
 #define IS_F9_BOARD					1
 
 #endif
-/*
-#ifdef IS_DRANGEN
-#define HAS_HYDRAULIC_DRIVE			0
-//#define HAS_DIFF_STEERING            0
-#define HAS_DIFF_STEERING            0
-#define VESC_THROTTLE_ID		76
-#define VESC_STEERING_ID		113
-//#define SERVO_VESC_ID				0
-//#define VESC_ID				0                        // NY
-//#define DIFF_STEERING_VESC_LEFT      76
-//#define DIFF_STEERING_VESC_RIGHT      113
-
-
-#define DIFF_STEERING_VESC_LEFT      0
-#define DIFF_STEERING_VESC_RIGHT      0
-
-#define IS_F9_BOARD					1
-//#define UBLOX_IS_F9P				1
-#endif
-*/
 
 
 #ifdef IS_DRANGEN
@@ -119,7 +91,6 @@
 #define SERVO_VESC_INVERTED			0
 #define SERVO_VESC_DEADBAND_COMP    0.2
 #define IS_F9_BOARD					1
-//#define INGENVINKELGIVARE
 #endif
 
 

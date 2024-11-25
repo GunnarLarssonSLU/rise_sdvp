@@ -35,6 +35,22 @@ SerialUSBDriver SDU1;
 /*
  * USB Device Descriptor.
  */
+
+static const uint8_t vcom_device_descriptor_data[18] = {
+		USB_DESC_DEVICE       (0x0110,        /* bcdUSB (1.1).     */
+				0x02,          /* bDeviceClass (CDC).              */
+				0x00,          /* bDeviceSubClass.                 */
+				0x00,          /* bDeviceProtocol.                 */
+				0x40,          /* bMaxPacketSize.                  */
+				0x0483,        /* idVendor (ST).                   */
+				0x5740,        /* idProduct.                       */
+				0x0200,        /* bcdDevice.                       */
+				1,             /* iManufacturer.                   */
+				2,             /* iProduct.                        */
+				3,             /* iSerialNumber.                   */
+				1)             /* bNumConfigurations.              */
+};
+
 /*
  * Device Descriptor wrapper.
  */
