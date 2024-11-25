@@ -96,12 +96,6 @@ static void ubx_rx_rawx(ubx_rxm_rawx *rawx);
 #if MAIN_MODE == MAIN_MODE_CAR
 static void mc_values_received(mc_values *val);
 static void car_update_pos(float distance, float turn_rad_rear, float angle_diff, float speed);
-#elif MAIN_MODE == MAIN_MODE_MULTIROTOR
-static void srf_distance_received(float distance);
-#endif
-
-#if MAIN_MODE == MAIN_MODE_MULTIROTOR
-static void mr_update_pos(POS_STATE *pos, float dt);
 #endif
 
 void pos_init(void) {
@@ -169,8 +163,6 @@ void pos_init(void) {
 
 #if MAIN_MODE == MAIN_MODE_CAR
 	bldc_interface_set_rx_value_func(mc_values_received);
-#elif MAIN_MODE == MAIN_MODE_MULTIROTOR
-	srf10_set_sample_callback(srf_distance_received);
 #endif
 
 	// PPS interrupt
@@ -577,11 +569,6 @@ bool pos_input_nmea(const char *data) {
 
 #if MAIN_MODE == MAIN_MODE_CAR
 				m_pos.pz = m_pos.pz_gps - m_pos.gps_ground_level;
-#elif MAIN_MODE == MAIN_MODE_MULTIROTOR
-				// Update height from GPS if ultrasound measurements haven't been received for a while
-				if (ST2MS(chVTTimeElapsedSinceX(m_pos.ultra_update_time)) > 250) {
-					m_pos.pz = m_pos.pz_gps - m_pos.gps_ground_level;
-				}
 #endif
 /*			} else
 			{
@@ -1028,14 +1015,6 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 #endif
 #endif
 
-#if MAIN_MODE == MAIN_MODE_MULTIROTOR
-	if (mr_control_is_throttle_over_tres()) {
-		chMtxLock(&m_mutex_pos);
-		mr_update_pos(&m_pos, dt);
-		chMtxUnlock(&m_mutex_pos);
-	}
-#endif
-
 	// Update time today
 	if (m_ms_today >= 0) {
 		int time_elapsed_ms = time_elapsed / (ITERATION_TIMER_FREQ / 1000);
@@ -1052,10 +1031,6 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 			m_ms_today -= MS_PER_DAY;
 		}
 	}
-
-#if MAIN_MODE == MAIN_MODE_MULTIROTOR
-	mr_control_run_iteration(dt);
-#endif
 }
 
 static void update_orientation_angles(float *accel, float *gyro, float *mag, float dt) {
@@ -1333,12 +1308,6 @@ static POS_POINT get_closest_point_to_time(int32_t time) {
 }
 
 static void correct_pos_gps(POS_STATE *pos) {
-	//	commands_printf("In correct pos gps:\n");
-#if MAIN_MODE == MAIN_MODE_MULTIROTOR
-	pos->gps_corr_cnt = sqrtf(SQ(pos->px_gps - pos->px_gps_last) +
-			SQ(pos->py_gps - pos->py_gps_last));
-#endif
-
 	{
 		static int sample = 0;
 		if (m_pos_history_print) {
@@ -1408,75 +1377,6 @@ static void correct_pos_gps(POS_STATE *pos) {
 	pos->gps_ang_corr_x_last_gps = pos->px_gps;
 	pos->gps_ang_corr_y_last_gps = pos->py_gps;
 	pos->gps_ang_corr_last_gps_ms = pos->gps_ms;
-
-
-	// Update multirotor state
-#if MAIN_MODE == MAIN_MODE_MULTIROTOR
-	const systime_t time_now = chVTGetSystemTime();
-	static systime_t time_last = 0;
-	float dt = (float)(time_now - time_last) / (float)CH_CFG_ST_FREQUENCY;
-	time_last = time_now;
-
-	if (dt > 2.0 || dt < 0.01) {
-		return;
-	}
-
-	// Velocity
-	const float dt_gps = (pos->gps_ms - pos->gps_ms_last) / 1000.0;
-	const float vx_gps = (pos->px_gps - pos->px_gps_last) / dt_gps;
-	const float vy_gps = (pos->py_gps - pos->py_gps_last) / dt_gps;
-	float error_vx = pos->vx - vx_gps;
-	float error_vy = pos->vy - vy_gps;
-
-	utils_truncate_number_abs(&error_vx, main_config.mr.max_corr_error);
-	utils_truncate_number_abs(&error_vy, main_config.mr.max_corr_error);
-
-	const float error_vx_diff = (error_vx - pos->error_vx_last);
-	const float error_vy_diff = (error_vy - pos->error_vy_last);
-	pos->error_vx_last = error_vx;
-	pos->error_vy_last = error_vy;
-
-	const float vcx_p = error_vx * main_config.mr.vel_gain_p;
-	const float vcy_p = error_vy * main_config.mr.vel_gain_p;
-
-	pos->vel_corr_x_int += error_vx * main_config.mr.vel_gain_i * dt;
-	pos->vel_corr_y_int += error_vy * main_config.mr.vel_gain_i * dt;
-	utils_truncate_number(&pos->vel_corr_x_int, -1.0, 1.0);
-	utils_truncate_number(&pos->vel_corr_y_int, -1.0, 1.0);
-
-	const float vcx_d = error_vx_diff * main_config.mr.vel_gain_d / dt;
-	const float vcy_d = error_vy_diff * main_config.mr.vel_gain_d / dt;
-
-	const float vcx_out = vcx_p + pos->vel_corr_x_int + vcx_d;
-	const float vcy_out = vcy_p + pos->vel_corr_y_int + vcy_d;
-
-	pos->vx -= vcx_out;
-	pos->vy -= vcy_out;
-
-	// Tilt
-	const float acx_p = error_vx * main_config.mr.tilt_gain_p;
-	const float acy_p = error_vy * main_config.mr.tilt_gain_p;
-
-	pos->tilt_corr_x_int += error_vx * main_config.mr.tilt_gain_i * dt;
-	pos->tilt_corr_y_int += error_vy * main_config.mr.tilt_gain_i * dt;
-	utils_truncate_number(&pos->tilt_corr_x_int, -1.0, 1.0);
-	utils_truncate_number(&pos->tilt_corr_y_int, -1.0, 1.0);
-
-	const float acx_d = error_vx_diff * main_config.mr.tilt_gain_d / dt;
-	const float acy_d = error_vy_diff * main_config.mr.tilt_gain_d / dt;
-
-	const float acx_out = acx_p + pos->tilt_corr_x_int + acx_d;
-	const float acy_out = acy_p + pos->tilt_corr_y_int + acy_d;
-
-	const float cosy = cosf(-pos->yaw * M_PI / 180.0);
-	const float siny = sinf(-pos->yaw * M_PI / 180.0);
-
-	pos->tilt_pitch_err += acx_out * cosy + acy_out * siny;
-	pos->tilt_roll_err += acy_out * cosy - acx_out * siny;
-
-	utils_truncate_number_abs(&pos->tilt_roll_err, main_config.mr.max_tilt_error);
-	utils_truncate_number_abs(&pos->tilt_pitch_err, main_config.mr.max_tilt_error);
-#endif
 }
 
 static void ubx_rx_rawx(ubx_rxm_rawx *rawx) {
@@ -1623,72 +1523,3 @@ static void car_update_pos(float distance, float turn_rad_rear, float angle_diff
 }
 
 #endif
-/*
-
-#if MAIN_MODE == MAIN_MODE_MULTIROTOR
-static void srf_distance_received(float distance) {
-	chMtxLock(&m_mutex_pos);
-	m_pos.pz = distance;
-	m_pos.ultra_update_time = chVTGetSystemTimeX();
-
-	if (!mr_control_is_throttle_over_tres()) {
-		m_pos.gps_ground_level = m_pos.pz_gps - m_pos.pz;
-	}
-
-	chMtxUnlock(&m_mutex_pos);
-}
-static void mr_update_pos(POS_STATE *pos, float dt) {
-	float roll = pos->roll + pos->tilt_roll_err;
-	float pitch = pos->pitch + pos->tilt_pitch_err;
-	float yaw = pos->yaw;
-
-	// Too much tilt means that this won't work anyway. Return in that case.
-	if (fabsf(roll) > 45.0 || fabsf(pitch) > 45.0) {
-		pos->vx = 0;
-		pos->vy = 0;
-		return;
-	}
-
-	roll = roll * M_PI / 180.0;
-	pitch = pitch * M_PI / 180.0;
-	yaw = yaw * M_PI / 180.0;
-
-	const float acc_v = 9.82;
-	const float cos_y = cosf(-yaw);
-	const float sin_y = sinf(-yaw);
-
-	const float dvx = -acc_v * tanf(pitch) * dt;
-	const float dvy = -acc_v * tanf(roll) * dt;
-
-	pos->vx += cos_y * dvx - sin_y * dvy;
-	pos->vy += cos_y * dvy + sin_y * dvx;
-	pos->px += pos->vx * dt;
-	pos->py += pos->vy * dt;
-
-	// Apply position and velocity limits
-	if (utils_truncate_number(&pos->px, main_config.mr.map_min_x, main_config.mr.map_max_x)) {
-		pos->vx = 0.0;
-	} else {
-		utils_truncate_number_abs(&pos->vx, main_config.mr.vel_max);
-	}
-
-	if (utils_truncate_number(&pos->py, main_config.mr.map_min_y, main_config.mr.map_max_y)) {
-		pos->vy = 0;
-	} else {
-		utils_truncate_number_abs(&pos->vy, main_config.mr.vel_max);
-	}
-
-	// Exponential decay
-	const float decay_factor = powf(main_config.mr.vel_decay_e, dt);
-	pos->vx *= decay_factor;
-	pos->vy *= decay_factor;
-
-	// Linear decay
-	utils_step_towards(&pos->vx, 0.0, main_config.mr.vel_decay_l * dt);
-	utils_step_towards(&pos->vy, 0.0, main_config.mr.vel_decay_l * dt);
-
-	// Update speed sum
-	pos->speed = sqrtf(SQ(pos->vx) + SQ(pos->vy));
-}
-#endif
-*/

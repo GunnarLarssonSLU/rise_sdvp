@@ -1,5 +1,12 @@
 Below you find information on important files in the folder and what to find where. (in progress..)
 
+The card runs [ChibioOS](https://en.wikipedia.org/wiki/ChibiOS/RT). You can find more information on the operating system at https://www.chibios.org/dokuwiki/doku.php.
+
+A very short summary of the information flow on the card is:
+- Upon start 'main' in 'main.c' is execute in order to initiate various processes
+- Among these processes it starts to read data from the usb port on the card. The data is processed by 'commands_process_packet' in 'commands.c'. All communication to the card is processed by this function (not all communication to the vehicle reaches the card, for example if a camera is used that is handled directly by the raspberry pi)
+- In many cases the processing of the informtion will lead to 'commands_send_packet' (also in 'commands.c') being called to return data via the usb port.
+
 # Main
 
 The main function initiates all threads running on the card. Logging and timeout settings are set directly in the file
@@ -91,43 +98,9 @@ Currently controls the vehicle powertrain via the controller card whilst the hyd
 | hydraulic_set_speed | Sets vehicles speed (m/s) | (float) (speed) | |
 | hydraulic_move | Change state hydraulic implements | (item, state) (int, int) | |
 
-# Pos
+# Pos ([more information](pos.md))
 
 Functions related to calculating the vehicles position
-
-## Important functions
-
-| Function | Description | Input (description) (type) | Output (description) (type) |
-| --- | --- | --- | --- |
-| pos_init |  | | |
-| pos_pps_cb | | (EXTDriver*, expchannel_t) (extp, channel) | |
-| pos_get_imu | | (float *, float *, float *) (accel, gyro, mag) | |
-| pos_get_quaternions | (float *) (q) | |
-| pos_get_pos | (POS_STATE *) (p) | |
-| pos_get_gps | (GPS_STATE *) (p) | |
-| pos_get_speed | | | (float) |
-| pos_set_xya | | (float, float, float) (x, y, angle) | |
-| pos_set_yaw_offset | | (float) (angle) | |
-void pos_set_enu_ref(double lat, double lon, double height);
-void pos_get_enu_ref(double *llh);
-void pos_reset_enu_ref(void);
-void pos_get_mc_val(mc_values *v);
-int32_t pos_get_ms_today(void);
-void pos_set_ms_today(int32_t ms);
-bool pos_input_nmea(const char *data);
-void pos_reset_attitude(void);
-int pos_time_since_gps_corr(void);
-void pos_base_rtcm_obs(rtcm_obs_header_t *header, rtcm_obs_t *obs, int obs_num);
-
-## Registered terminal commands
-| Command | Description | Calls function |
-| --- | --- | --- |
-| pos_delay_info | Print and plot delay information when doing GNSS position correction | cmd_terminal_delay_info |
-| pos_gnss_corr_info | Print and plot correction information when doing GNSS position correction | cmd_terminal_gps_corr_info |
-| pos_delay_comp | Enable or disable delay compensation | cmd_terminal_delay_comp |
-| pos_print_sat_info | Print all satellite information | cmd_terminal_print_sat_info |
-| pos_sat_info | Print and plot information about a satellite | cmd_terminal_sat_info |
-
 
 # Timeout
 
