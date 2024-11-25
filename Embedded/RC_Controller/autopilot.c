@@ -118,7 +118,7 @@ void autopilot_init(void) {
 
 	terminal_register_command_callback(
 			"ap_print_closest",
-			"Print and plot distance to closest route point.\n"
+			"Print distance to closest route point.\n"
 			"  0 - Disabled\n"
 			"  n - Print closest point every n:th iteration.",
 			"[print_rate]",

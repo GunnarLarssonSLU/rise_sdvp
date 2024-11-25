@@ -26,32 +26,6 @@
 void actuator_set_output(float throttle, float roll, float pitch, float yaw) {
 	float motors[4];
 
-	if (main_config.mr.motors_cw) {
-		if (main_config.mr.motors_x) {
-			motors[main_config.mr.motor_fl_f] = throttle + roll + pitch - yaw;
-			motors[main_config.mr.motor_bl_l] = throttle + roll - pitch + yaw;
-			motors[main_config.mr.motor_fr_r] = throttle - roll + pitch + yaw;
-			motors[main_config.mr.motor_br_b] = throttle - roll - pitch - yaw;
-		} else {
-			motors[main_config.mr.motor_fl_f] = throttle + pitch - yaw;
-			motors[main_config.mr.motor_bl_l] = throttle + roll + yaw;
-			motors[main_config.mr.motor_fr_r] = throttle - roll + yaw;
-			motors[main_config.mr.motor_br_b] = throttle - pitch - yaw;
-		}
-	} else {
-		if (main_config.mr.motors_x) {
-			motors[main_config.mr.motor_fl_f] = throttle + roll + pitch + yaw;
-			motors[main_config.mr.motor_bl_l] = throttle + roll - pitch - yaw;
-			motors[main_config.mr.motor_fr_r] = throttle - roll + pitch - yaw;
-			motors[main_config.mr.motor_br_b] = throttle - roll - pitch + yaw;
-		} else {
-			motors[main_config.mr.motor_fl_f] = throttle + pitch + yaw;
-			motors[main_config.mr.motor_bl_l] = throttle + roll - yaw;
-			motors[main_config.mr.motor_fr_r] = throttle - roll - yaw;
-			motors[main_config.mr.motor_br_b] = throttle - pitch + yaw;
-		}
-	}
-
 	for (int i = 0;i < 4;i++) {
 		// Charge-based throttle scaling
 		const float v_in = adconv_get_vin();

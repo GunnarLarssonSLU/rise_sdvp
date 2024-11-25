@@ -183,7 +183,7 @@ void pos_init(void) {
 
 	terminal_register_command_callback(
 			"pos_delay_info",
-			"Print and plot delay information when doing GNSS position correction.\n"
+			"Print delay information when doing GNSS position correction.\n"
 			"  0 - Disabled\n"
 			"  1 - Enabled",
 			"[print_en]",
@@ -191,7 +191,7 @@ void pos_init(void) {
 
 	terminal_register_command_callback(
 			"pos_gnss_corr_info",
-			"Print and plot correction information when doing GNSS position correction.\n"
+			"Print correction information when doing GNSS position correction.\n"
 			"  0 - Disabled\n"
 			"  1 - Enabled",
 			"[print_en]",
@@ -231,7 +231,7 @@ void pos_init(void) {
 
 	terminal_register_command_callback(
 			"pos_sat_info",
-			"Print and plot information about a satellite.\n"
+			"Print information about a satellite.\n"
 			"  0 - Disabled\n"
 			"  prn - satellite with prn.",
 			"[prn]",
@@ -820,7 +820,7 @@ static void cmd_terminal_sat_info(int argc, const char **argv) {
 			commands_printf("Invalid argument\n");
 		} else {
 			if (n > 0) {
-				commands_printf("OK. Printing and plotting information satellite %d\n", n);
+				commands_printf("OK. Printing information satellite %d\n", n);
 			} else {
 				commands_printf("OK. Not printing satellite information.\n", n);
 			}

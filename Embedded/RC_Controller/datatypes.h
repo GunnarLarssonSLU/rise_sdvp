@@ -174,10 +174,10 @@ typedef enum {
 	CMD_SET_YAW_OFFSET,				// 64
 	CMD_SET_YAW_OFFSET_ACK,			// 65
 	CMD_LOG_LINE_USB,				// 66
-	CMD_PLOT_INIT,					// 67
-	CMD_PLOT_DATA,					// 68
-	CMD_PLOT_ADD_GRAPH,				// 69
-	CMD_PLOT_SET_GRAPH,				// 70
+	CMD_PLOT_INIT,					// 67 - not intended to be used
+	CMD_PLOT_DATA,					// 68 - not intended to be used
+	CMD_PLOT_ADD_GRAPH,				// 69 - not intended to be used
+	CMD_PLOT_SET_GRAPH,				// 70 - not intended to be used
 	CMD_SET_MS_TODAY,				// 71
 	CMD_SET_SYSTEM_TIME,			// 72
 	CMD_SET_SYSTEM_TIME_ACK,		// 73
@@ -203,9 +203,9 @@ typedef enum {
 	CMD_SET_SERVO_DIRECT,
 
 	// Multirotor commands
-	CMD_MR_GET_STATE = 160,
-	CMD_MR_RC_CONTROL,
-	CMD_MR_OVERRIDE_POWER,
+	CMD_MR_GET_STATE = 160,			// - not intended to be used
+	CMD_MR_RC_CONTROL, 				// - not intended to be used
+	CMD_MR_OVERRIDE_POWER,			// - not intended to be used
 
 	// Mote commands
 	CMD_MOTE_UBX_START_BASE = 200,
