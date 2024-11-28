@@ -139,38 +139,38 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 	conf->log_mode_ext = 0;
 	conf->log_uart_baud = 115200;
 
-	// Default car settings
-	conf->car.yaw_use_odometry = false;
-	conf->car.yaw_imu_gain = 0.5;
-	conf->car.disable_motor = false;
-	conf->car.simulate_motor = false;
-	conf->car.clamp_imu_yaw_stationary = true;
-	conf->car.use_uwb_pos = false;
+	// Default vehicle settings
+	conf->vehicle.yaw_use_odometry = false;
+	conf->vehicle.yaw_imu_gain = 0.5;
+	conf->vehicle.disable_motor = false;
+	conf->vehicle.simulate_motor = false;
+	conf->vehicle.clamp_imu_yaw_stationary = true;
+	conf->vehicle.use_uwb_pos = false;
 
-	conf->car.gear_ratio = (1.0 / 3.0) * (21.0 / 37.0);
-	conf->car.wheel_diam = 0.11;
-	conf->car.motor_poles = 4.0;
+	conf->vehicle.gear_ratio = (1.0 / 3.0) * (21.0 / 37.0);
+	conf->vehicle.wheel_diam = 0.11;
+	conf->vehicle.motor_poles = 4.0;
 
-	conf->car.steering_max_angle_rad = 0.42041;
-	conf->car.steering_center = 0.5;
-	conf->car.steering_range = 0.58;
-	conf->car.steering_ramp_time = 0.0;
-	conf->car.axis_distance = 0.475;
+	conf->vehicle.steering_max_angle_rad = 0.42041;
+	conf->vehicle.steering_center = 0.5;
+	conf->vehicle.steering_range = 0.58;
+	conf->vehicle.steering_ramp_time = 0.0;
+	conf->vehicle.axis_distance = 0.475;
 
-	conf->car.vesc_p_gain = 6.0;
-	conf->car.vesc_i_gain = 1.0;
-	conf->car.vesc_d_gain = 0.5;
+	conf->vehicle.vesc_p_gain = 6.0;
+	conf->vehicle.vesc_i_gain = 1.0;
+	conf->vehicle.vesc_d_gain = 0.5;
 
-	conf->car.anglemin = -20;
-	conf->car.anglemax = 40;
-	conf->car.voltage_centre = 3.24;
+	conf->vehicle.anglemin = -20;
+	conf->vehicle.anglemax = 40;
+	conf->vehicle.voltage_centre = 3.24;
 
 
 	/*
 	// Custom parameters based on ID
 	switch (main_id) {
 	case 1:
-		conf->car.steering_center = 0.5;
+		conf->vehicle.steering_center = 0.5;
 		conf->gps_ant_x = 0.42;
 		break;
 
@@ -181,26 +181,26 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 
 	// Only the SLU testbot for now
 #if HAS_DIFF_STEERING
-	conf->car.gear_ratio = 1.0;
-	conf->car.axis_distance = 0.5;
-//	conf->car.wheel_diam = 0.3;
-	conf->car.motor_poles = 22.0;
+	conf->vehicle.gear_ratio = 1.0;
+	conf->vehicle.axis_distance = 0.5;
+//	conf->vehicle.wheel_diam = 0.3;
+	conf->vehicle.motor_poles = 22.0;
 //	conf->gps_ant_x = 0.5;
 #endif
 
 
 
 #ifdef IS_DRANGEN
-	conf->car.steering_center = 0.0;
-	conf->car.steering_range = -2.0;
-//	conf->car.axis_distance = 1.0;
-		//conf->car.steering_center = 0;
-//		conf->car.steering_range = 0;
-		conf->car.axis_distance = 1.45;
-	conf->car.steering_max_angle_rad = atanf(conf->car.axis_distance / 1.5);
-	conf->car.steering_max_angle_rad =
-	conf->car.wheel_diam = 0.47;
-//	conf->car.wheel_diam = 0.8;
+	conf->vehicle.steering_center = 0.0;
+	conf->vehicle.steering_range = -2.0;
+//	conf->vehicle.axis_distance = 1.0;
+		//conf->vehicle.steering_center = 0;
+//		conf->vehicle.steering_range = 0;
+		conf->vehicle.axis_distance = 1.45;
+	conf->vehicle.steering_max_angle_rad = atanf(conf->vehicle.axis_distance / 1.5);
+	conf->vehicle.steering_max_angle_rad =
+	conf->vehicle.wheel_diam = 0.47;
+//	conf->vehicle.wheel_diam = 0.8;
 	conf->gps_ant_x = 0; // TODO: IMU_ROT_180 sign?
 	conf->gps_ant_y = 0.25;
 
@@ -210,11 +210,11 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 #endif
 
 #ifdef IS_MACTRAC
-	conf->car.steering_center = 0.5;
-	conf->car.steering_range = -1.0;
-	conf->car.axis_distance = 1.7;
-	conf->car.wheel_diam = 0.66;
-	conf->car.steering_max_angle_rad = atanf(conf->car.axis_distance / 1.5);
+	conf->vehicle.steering_center = 0.5;
+	conf->vehicle.steering_range = -1.0;
+	conf->vehicle.axis_distance = 1.7;
+	conf->vehicle.wheel_diam = 0.66;
+	conf->vehicle.steering_max_angle_rad = atanf(conf->vehicle.axis_distance / 1.5);
 	conf->gps_corr_gain_yaw = 2.0;
 	conf->ap_base_rad = 4.0;
 	conf->ap_repeat_routes = false;

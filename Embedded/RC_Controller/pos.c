@@ -93,9 +93,9 @@ static POS_POINT get_closest_point_to_time(int32_t time);
 static void correct_pos_gps(POS_STATE *pos);
 static void ubx_rx_rawx(ubx_rxm_rawx *rawx);
 
-#if MAIN_MODE == MAIN_MODE_CAR
+#if MAIN_MODE == MAIN_MODE_vehicle
 static void mc_values_received(mc_values *val);
-static void car_update_pos(float distance, float turn_rad_rear, float angle_diff, float speed);
+static void vehicle_update_pos(float distance, float turn_rad_rear, float angle_diff, float speed);
 #endif
 
 void pos_init(void) {
@@ -161,7 +161,7 @@ void pos_init(void) {
 
 	commands_printf("Communicate VESC\n");
 
-#if MAIN_MODE == MAIN_MODE_CAR
+#if MAIN_MODE == MAIN_MODE_vehicle
 	bldc_interface_set_rx_value_func(mc_values_received);
 #endif
 
@@ -525,7 +525,7 @@ bool pos_input_nmea(const char *data) {
 //			commands_printf("pz gps: %f\n", m_pos.pz_gps_last);
 			};
 
-			// Set position of car
+			// Set position of vehicle
 			m_pos.px_gps = px;
 			m_pos.py_gps = py;
 			m_pos.pz_gps = m_gps.lz;
@@ -567,7 +567,7 @@ bool pos_input_nmea(const char *data) {
 				correct_pos_gps(&m_pos);
 				m_pos.gps_corr_time = chVTGetSystemTimeX();
 
-#if MAIN_MODE == MAIN_MODE_CAR
+#if MAIN_MODE == MAIN_MODE_vehicle
 				m_pos.pz = m_pos.pz_gps - m_pos.gps_ground_level;
 #endif
 /*			} else
@@ -957,7 +957,7 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 
 	update_orientation_angles(accel, gyro, mag, dt);
 
-#if MAIN_MODE == MAIN_MODE_CAR
+#if MAIN_MODE == MAIN_MODE_vehicle
 	// Read MC values every 10 iterations (should be 100 Hz)
 	static int mc_read_cnt = 0;
 	mc_read_cnt++;
@@ -994,14 +994,14 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 		float speed = hydraulic_get_speed();
 
 		float steering_angle = (servo_simple_get_pos_now()
-				- main_config.car.steering_center)
-							* ((2.0 * main_config.car.steering_max_angle_rad)
-									/ main_config.car.steering_range);
+				- main_config.vehicle.steering_center)
+							* ((2.0 * main_config.vehicle.steering_max_angle_rad)
+									/ main_config.vehicle.steering_range);
 
 		if (fabsf(steering_angle) >= 1e-6) {
-			turn_rad_rear = main_config.car.axis_distance / tanf(steering_angle);
+			turn_rad_rear = main_config.vehicle.axis_distance / tanf(steering_angle);
 			float turn_rad_front = sqrtf(
-					main_config.car.axis_distance * main_config.car.axis_distance
+					main_config.vehicle.axis_distance * main_config.vehicle.axis_distance
 					+ turn_rad_rear * turn_rad_rear);
 
 			if (turn_rad_rear < 0) {
@@ -1011,7 +1011,7 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 			angle_diff = (distance * 2.0) / (turn_rad_rear + turn_rad_front);
 		}
 
-		car_update_pos(distance, turn_rad_rear, angle_diff, speed);
+		vehicle_update_pos(distance, turn_rad_rear, angle_diff, speed);
 #endif
 	}
 #endif
@@ -1172,29 +1172,29 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 	m_pos.yaw_rate = -m_gyro[2] * 180.0 / M_PI;
 
 	// Correct yaw
-#if MAIN_MODE == MAIN_MODE_CAR
+#if MAIN_MODE == MAIN_MODE_vehicle
 	{
 		if (!m_yaw_imu_clamp_set) {
 			m_yaw_imu_clamp = m_pos.yaw_imu - m_imu_yaw_offset;
 			m_yaw_imu_clamp_set = true;
 		}
 
-		if (main_config.car.clamp_imu_yaw_stationary && fabsf(m_pos.speed) < 0.05) {
+		if (main_config.vehicle.clamp_imu_yaw_stationary && fabsf(m_pos.speed) < 0.05) {
 			m_imu_yaw_offset = m_pos.yaw_imu - m_yaw_imu_clamp;
 		} else {
 			m_yaw_imu_clamp = m_pos.yaw_imu - m_imu_yaw_offset;
 		}
 	}
 
-	if (main_config.car.yaw_use_odometry) {
-		if (main_config.car.yaw_imu_gain > 1e-10) {
+	if (main_config.vehicle.yaw_use_odometry) {
+		if (main_config.vehicle.yaw_imu_gain > 1e-10) {
 			float ang_diff = utils_angle_difference(m_pos.yaw, m_pos.yaw_imu - m_imu_yaw_offset);
 
-			if (ang_diff > 1.2 * main_config.car.yaw_imu_gain) {
-				m_pos.yaw -= main_config.car.yaw_imu_gain;
+			if (ang_diff > 1.2 * main_config.vehicle.yaw_imu_gain) {
+				m_pos.yaw -= main_config.vehicle.yaw_imu_gain;
 				utils_norm_angle(&m_pos.yaw);
-			} else if (ang_diff < -1.2 * main_config.car.yaw_imu_gain) {
-				m_pos.yaw += main_config.car.yaw_imu_gain;
+			} else if (ang_diff < -1.2 * main_config.vehicle.yaw_imu_gain) {
+				m_pos.yaw += main_config.vehicle.yaw_imu_gain;
 				utils_norm_angle(&m_pos.yaw);
 			} else {
 				m_pos.yaw -= ang_diff;
@@ -1401,7 +1401,7 @@ static void ubx_rx_rawx(ubx_rxm_rawx *rawx) {
 	}
 }
 
-#if MAIN_MODE == MAIN_MODE_CAR
+#if MAIN_MODE == MAIN_MODE_vehicle
 static void mc_values_received(mc_values *val) {
 #if HAS_DIFF_STEERING
 	if (val->vesc_id == DIFF_STEERING_VESC_RIGHT || !m_vesc_left_now) {
@@ -1437,9 +1437,9 @@ static void mc_values_received(mc_values *val) {
 		last_tacho = tacho;
 	}
 
-	float distance = (tacho - last_tacho) * main_config.car.gear_ratio
-			* (2.0 / main_config.car.motor_poles) * (1.0 / 6.0)
-			* main_config.car.wheel_diam * M_PI;
+	float distance = (tacho - last_tacho) * main_config.vehicle.gear_ratio
+			* (2.0 / main_config.vehicle.motor_poles) * (1.0 / 6.0)
+			* main_config.vehicle.wheel_diam * M_PI;
 	last_tacho = tacho;
 
 	float angle_diff = 0.0;
@@ -1447,28 +1447,28 @@ static void mc_values_received(mc_values *val) {
 
 #if HAS_DIFF_STEERING
 	float distance_diff = (tacho_diff - last_tacho_diff)
-			* main_config.car.gear_ratio * (2.0 / main_config.car.motor_poles)
-			* (1.0 / 6.0) * main_config.car.wheel_diam * M_PI;
+			* main_config.vehicle.gear_ratio * (2.0 / main_config.vehicle.motor_poles)
+			* (1.0 / 6.0) * main_config.vehicle.wheel_diam * M_PI;
 	last_tacho_diff = tacho_diff;
 
 	const float d1 = distance - distance_diff / 2.0;
 	const float d2 = distance + distance_diff / 2.0;
 
 	if (fabsf(d2 - d1) > 1e-6) {
-		turn_rad_rear = main_config.car.axis_distance * (d2 + d1) / (2 * (d2 - d1));
-		angle_diff = (d2 - d1) / main_config.car.axis_distance;
+		turn_rad_rear = main_config.vehicle.axis_distance * (d2 + d1) / (2 * (d2 - d1));
+		angle_diff = (d2 - d1) / main_config.vehicle.axis_distance;
 		utils_norm_angle_rad(&angle_diff);
 	}
 #else
 	float steering_angle = (servo_simple_get_pos_now()
-			- main_config.car.steering_center)
-			* ((2.0 * main_config.car.steering_max_angle_rad)
-					/ main_config.car.steering_range);
+			- main_config.vehicle.steering_center)
+			* ((2.0 * main_config.vehicle.steering_max_angle_rad)
+					/ main_config.vehicle.steering_range);
 
 	if (fabsf(steering_angle) >= 1e-6) {
-		turn_rad_rear = main_config.car.axis_distance / tanf(steering_angle);
+		turn_rad_rear = main_config.vehicle.axis_distance / tanf(steering_angle);
 		float turn_rad_front = sqrtf(
-				main_config.car.axis_distance * main_config.car.axis_distance
+				main_config.vehicle.axis_distance * main_config.vehicle.axis_distance
 				+ turn_rad_rear * turn_rad_rear);
 
 		if (turn_rad_rear < 0) {
@@ -1479,17 +1479,17 @@ static void mc_values_received(mc_values *val) {
 	}
 #endif
 
-	float speed = rpm * main_config.car.gear_ratio
-			* (2.0 / main_config.car.motor_poles) * (1.0 / 60.0)
-			* main_config.car.wheel_diam * M_PI;
-	car_update_pos(distance, turn_rad_rear, angle_diff, speed);
+	float speed = rpm * main_config.vehicle.gear_ratio
+			* (2.0 / main_config.vehicle.motor_poles) * (1.0 / 60.0)
+			* main_config.vehicle.wheel_diam * M_PI;
+	vehicle_update_pos(distance, turn_rad_rear, angle_diff, speed);
 #endif
 }
 
-static void car_update_pos(float distance, float turn_rad_rear, float angle_diff, float speed) {
+static void vehicle_update_pos(float distance, float turn_rad_rear, float angle_diff, float speed) {
 	chMtxLock(&m_mutex_pos);
 	if(iDebug==4) {
-	commands_printf("In Car update pos - in:\n");
+	commands_printf("In vehicle update pos - in:\n");
 	commands_printf("px: %f, py: %f\n", m_pos.px, m_pos.py);
 	commands_printf("dist: %f, turn_rad_rear: %f, angle_diff: %f, speed: %f\n", distance, turn_rad_rear,angle_diff,speed);
 	}
@@ -1498,7 +1498,7 @@ static void car_update_pos(float distance, float turn_rad_rear, float angle_diff
 
 		m_pos.gps_corr_cnt += fabsf(distance);
 
-		if (!main_config.car.yaw_use_odometry || fabsf(angle_diff) < 1e-6) {
+		if (!main_config.vehicle.yaw_use_odometry || fabsf(angle_diff) < 1e-6) {
 			m_pos.px += cosf(angle_rad) * distance;
 			m_pos.py += sinf(angle_rad) * distance;
 		} else {
@@ -1512,7 +1512,7 @@ static void car_update_pos(float distance, float turn_rad_rear, float angle_diff
 		}
 	}
 	if(iDebug==4) {
-	commands_printf("In Car update pos - out:\n");
+	commands_printf("In vehicle update pos - out:\n");
 	commands_printf("px: %f, py: %f\n", m_pos.px, m_pos.py);
 	}
 

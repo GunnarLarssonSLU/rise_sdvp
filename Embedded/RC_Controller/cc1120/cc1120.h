@@ -87,7 +87,7 @@ int cc1120_transmit(uint8_t *data, int len);
 int cc1120_on(void);
 int cc1120_off(void);
 int cc1120_set_idle(void);
-bool cc1120_carrier_sense(void);
+bool cc1120_vehiclerier_sense(void);
 float cc1120_read_freqoff_est(void);
 float cc1120_read_freqoff(void);
 float cc1120_get_last_freqoff_est(void);

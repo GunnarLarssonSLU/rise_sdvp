@@ -9,7 +9,6 @@ On this page you find information specific for its application on the Macbot and
 
 The figure below shows a current hardware diagram of the implementation of the RISE-SDVP platform. The light blue-colored boxes to the left are the components on Macbot/Drängen and the green boxes to the right are a laptop computer connected over internet to the vehicle. The laptop computer also runs a RTK-GNSS base station, so that the model car can position itself with around 3 cm accuracy relative to the GNSS antenna connected to the receiver on the laptop.
 
-![Hardware Diagram](Documentation/overview.png)
 
 Hardware components used:
 
@@ -18,6 +17,13 @@ Hardware components used:
 - A computer that runs the [RControlStation](Linux/RControlStation) software.
 - An embedded Linux computer, in our case a [Raspberry PI](https://www.raspberrypi.org/) running [Car_Client](Linux/Car_Client) on that computer. It communicats with the [Controller PCB](Hardware/Controller) using an USB cabel and with [RControlStation](Linux/RControlStation) using any internet connection.
 
+### Hardware components @ Macbot
+
+![Hardware Diagram](Documentation/overview.png)
+
+### Hardware components @ Macbot
+
+(to add - same as above, but without the IO unit)
 
 ## Steering Geometries
 

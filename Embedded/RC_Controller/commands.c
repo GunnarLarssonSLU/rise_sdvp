@@ -75,7 +75,7 @@ void commands_init(void) {
 	rtcm3_set_rx_callback(rtcm_rx, &m_rtcm_state);
 	rtcm3_set_rx_callback_1005_1006(rtcm_base_rx, &m_rtcm_state);
 
-#if MAIN_MODE != MAIN_MODE_CAR
+#if MAIN_MODE != MAIN_MODE_vehicle
 	(void)stop_forward;
 #endif
 
@@ -143,11 +143,11 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 	len--;
 
 
-	if (id == main_id || id == ID_ALL || id == ID_CAR_CLIENT) {
+	if (id == main_id || id == ID_ALL || id == ID_VEHICLE_CLIENT) {
 		int id_ret = main_id;
 
-		if (id == ID_CAR_CLIENT) {
-			id_ret = ID_CAR_CLIENT;
+		if (id == ID_VEHICLE_CLIENT) {
+			id_ret = ID_VEHICLE_CLIENT;
 		}
 		switch (packet_id) {
 		// ==================== General commands ==================== //
@@ -521,34 +521,34 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			log_set_name(main_config.log_name);
 			log_set_ext(main_config.log_mode_ext, main_config.log_uart_baud);
 
-			// Car settings
-			main_config.car.yaw_use_odometry = data[ind++];
-			main_config.car.yaw_imu_gain = buffer_get_float32_auto(data, &ind);
-			main_config.car.disable_motor = data[ind++];
-			main_config.car.simulate_motor = data[ind++];
-			main_config.car.clamp_imu_yaw_stationary = data[ind++];
-			main_config.car.use_uwb_pos = data[ind++];
+			// vehicle settings
+			main_config.vehicle.yaw_use_odometry = data[ind++];
+			main_config.vehicle.yaw_imu_gain = buffer_get_float32_auto(data, &ind);
+			main_config.vehicle.disable_motor = data[ind++];
+			main_config.vehicle.simulate_motor = data[ind++];
+			main_config.vehicle.clamp_imu_yaw_stationary = data[ind++];
+			main_config.vehicle.use_uwb_pos = data[ind++];
 
-			main_config.car.gear_ratio = buffer_get_float32_auto(data, &ind);
-			main_config.car.wheel_diam = buffer_get_float32_auto(data, &ind);
-			main_config.car.motor_poles = buffer_get_float32_auto(data, &ind);
-			main_config.car.steering_max_angle_rad = buffer_get_float32_auto(data, &ind);
-			main_config.car.steering_center = buffer_get_float32_auto(data, &ind);
-			main_config.car.steering_range = buffer_get_float32_auto(data, &ind);
-			main_config.car.steering_ramp_time = buffer_get_float32_auto(data, &ind);
-			main_config.car.axis_distance = buffer_get_float32_auto(data, &ind);
-			main_config.car.vesc_p_gain = buffer_get_float32_auto(data, &ind);
-			main_config.car.vesc_i_gain = buffer_get_float32_auto(data, &ind);
-			main_config.car.vesc_d_gain = buffer_get_float32_auto(data, &ind);
+			main_config.vehicle.gear_ratio = buffer_get_float32_auto(data, &ind);
+			main_config.vehicle.wheel_diam = buffer_get_float32_auto(data, &ind);
+			main_config.vehicle.motor_poles = buffer_get_float32_auto(data, &ind);
+			main_config.vehicle.steering_max_angle_rad = buffer_get_float32_auto(data, &ind);
+			main_config.vehicle.steering_center = buffer_get_float32_auto(data, &ind);
+			main_config.vehicle.steering_range = buffer_get_float32_auto(data, &ind);
+			main_config.vehicle.steering_ramp_time = buffer_get_float32_auto(data, &ind);
+			main_config.vehicle.axis_distance = buffer_get_float32_auto(data, &ind);
+			main_config.vehicle.vesc_p_gain = buffer_get_float32_auto(data, &ind);
+			main_config.vehicle.vesc_i_gain = buffer_get_float32_auto(data, &ind);
+			main_config.vehicle.vesc_d_gain = buffer_get_float32_auto(data, &ind);
 
-			main_config.car.anglemin = buffer_get_float32_auto(data, &ind);
-			main_config.car.anglemax = buffer_get_float32_auto(data, &ind);
-			main_config.car.voltage_centre = buffer_get_float32_auto(data, &ind);
-//			main_config.car.angledegrees = buffer_get_float32_auto(data, &ind);
+			main_config.vehicle.anglemin = buffer_get_float32_auto(data, &ind);
+			main_config.vehicle.anglemax = buffer_get_float32_auto(data, &ind);
+			main_config.vehicle.voltage_centre = buffer_get_float32_auto(data, &ind);
+//			main_config.vehicle.angledegrees = buffer_get_float32_auto(data, &ind);
 
 
-#if MAIN_MODE == MAIN_MODE_CAR
-			motor_sim_set_running(main_config.car.simulate_motor);
+#if MAIN_MODE == MAIN_MODE_vehicle
+			motor_sim_set_running(main_config.vehicle.simulate_motor);
 #endif
 
 
@@ -626,30 +626,30 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			m_send_buffer[send_index++] = main_cfg_tmp.log_mode_ext;
 			buffer_append_uint32(m_send_buffer, main_cfg_tmp.log_uart_baud, &send_index);
 
-			// Car settings
-			m_send_buffer[send_index++] = main_cfg_tmp.car.yaw_use_odometry;
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.yaw_imu_gain, &send_index);
-			m_send_buffer[send_index++] = main_cfg_tmp.car.disable_motor;
-			m_send_buffer[send_index++] = main_cfg_tmp.car.simulate_motor;
-			m_send_buffer[send_index++] = main_cfg_tmp.car.clamp_imu_yaw_stationary;
-			m_send_buffer[send_index++] = main_cfg_tmp.car.use_uwb_pos;
+			// vehicle settings
+			m_send_buffer[send_index++] = main_cfg_tmp.vehicle.yaw_use_odometry;
+			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.yaw_imu_gain, &send_index);
+			m_send_buffer[send_index++] = main_cfg_tmp.vehicle.disable_motor;
+			m_send_buffer[send_index++] = main_cfg_tmp.vehicle.simulate_motor;
+			m_send_buffer[send_index++] = main_cfg_tmp.vehicle.clamp_imu_yaw_stationary;
+			m_send_buffer[send_index++] = main_cfg_tmp.vehicle.use_uwb_pos;
 
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.gear_ratio, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.wheel_diam, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.motor_poles, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.steering_max_angle_rad, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.steering_center, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.steering_range, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.steering_ramp_time, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.axis_distance, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.vesc_p_gain, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.vesc_i_gain, &send_index);
-			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.vesc_d_gain, &send_index);
+			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.gear_ratio, &send_index);
+			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.wheel_diam, &send_index);
+			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.motor_poles, &send_index);
+			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.steering_max_angle_rad, &send_index);
+			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.steering_center, &send_index);
+			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.steering_range, &send_index);
+			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.steering_ramp_time, &send_index);
+			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.axis_distance, &send_index);
+			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.vesc_p_gain, &send_index);
+			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.vesc_i_gain, &send_index);
+			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.vesc_d_gain, &send_index);
 
-		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.anglemin, &send_index);
-		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.anglemax, &send_index);
-		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.voltage_centre, &send_index);
-//		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.car.angledegrees, &send_index);
+		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.anglemin, &send_index);
+		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.anglemax, &send_index);
+		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.voltage_centre, &send_index);
+//		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.angledegrees, &send_index);
 
 
 			commands_send_packet(m_send_buffer, send_index);
@@ -710,8 +710,8 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			hydraulic_move(data[0], data[1]);
 			break;
 
-		// ==================== Car commands ==================== //
-#if MAIN_MODE == MAIN_MODE_CAR
+		// ==================== vehicle commands ==================== //
+#if MAIN_MODE == MAIN_MODE_vehicle
 		case CMD_GET_STATE: {
 			timeout_reset();
 
@@ -739,7 +739,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			m_send_buffer[send_index++] = FW_VERSION_MINOR; // 4
 			buffer_append_float32(m_send_buffer, pos.roll, 1e6, &send_index); // 8
 			buffer_append_float32(m_send_buffer, pos.pitch, 1e6, &send_index); // 12
-			if (main_config.car.use_uwb_pos) {
+			if (main_config.vehicle.use_uwb_pos) {
 				buffer_append_float32(m_send_buffer, pos_uwb.yaw, 1e6, &send_index); // 16
 			} else {
 				buffer_append_float32(m_send_buffer, pos.yaw, 1e6, &send_index); // 16
@@ -753,7 +753,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			buffer_append_float32(m_send_buffer, mag[0], 1e6, &send_index); // 44
 			buffer_append_float32(m_send_buffer, mag[1], 1e6, &send_index); // 48
 			buffer_append_float32(m_send_buffer, mag[2], 1e6, &send_index); // 52
-			if (main_config.car.use_uwb_pos) {
+			if (main_config.vehicle.use_uwb_pos) {
 				buffer_append_float32(m_send_buffer, pos_uwb.px, 1e4, &send_index); // 56
 				buffer_append_float32(m_send_buffer, pos_uwb.py, 1e4, &send_index); // 60
 			} else {
@@ -783,7 +783,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			buffer_append_float32(m_send_buffer, autopilot_get_rad_now(), 1e6, &send_index); // 93
 			buffer_append_int32(m_send_buffer, pos_get_ms_today(), &send_index); // 97
 			buffer_append_int16(m_send_buffer, autopilot_get_route_left(), &send_index); // 99
-			if (main_config.car.use_uwb_pos) {
+			if (main_config.vehicle.use_uwb_pos) {
 				buffer_append_float32(m_send_buffer, pos.px, 1e4, &send_index); // 103
 				buffer_append_float32(m_send_buffer, pos.py, 1e4, &send_index); // 107
 			} else {
@@ -824,7 +824,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 
 			switch (mode) {
 			case RC_MODE_CURRENT:
-				if (!main_config.car.disable_motor) {
+				if (!main_config.vehicle.disable_motor) {
 					#if IS_ALL_ELECTRIC
 					comm_can_lock_vesc();
 					comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
@@ -862,7 +862,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 
 			case RC_MODE_DUTY:
 				utils_truncate_number(&throttle, -1.0, 1.0);
-				if (!main_config.car.disable_motor) {
+				if (!main_config.vehicle.disable_motor) {
 					#if HAS_DIFF_STEERING
 //					showData=13+throttle + throttle * steering;
 						comm_can_lock_vesc();
@@ -906,7 +906,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				break;
 
 			case RC_MODE_CURRENT_BRAKE:
-				if (!main_config.car.disable_motor) {
+				if (!main_config.vehicle.disable_motor) {
 					#if HAS_DIFF_STEERING
 						comm_can_lock_vesc();
 						comm_can_set_vesc_id(ID_ALL);
@@ -929,8 +929,8 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 
 			#if !HAS_DIFF_STEERING
 				steering = utils_map(steering, -1.0, 1.0,
-					main_config.car.steering_center + (main_config.car.steering_range / 2.0),
-					main_config.car.steering_center - (main_config.car.steering_range / 2.0));
+					main_config.vehicle.steering_center + (main_config.vehicle.steering_range / 2.0),
+					main_config.vehicle.steering_center - (main_config.vehicle.steering_range / 2.0));
 				servo_simple_set_pos_ramp(steering);
 			#endif
 		} break;
@@ -1045,7 +1045,7 @@ void commands_printf_log_usb(char* format, ...) {
 	int len;
 	static char print_buffer[255];
 
-	print_buffer[0] = ID_CAR_CLIENT;
+	print_buffer[0] = ID_VEHICLE_CLIENT;
 	print_buffer[1] = CMD_LOG_LINE_USB;
 	len = vsnprintf(print_buffer + 2, 253, format, arg);
 	va_end (arg);
@@ -1075,7 +1075,7 @@ void commands_send_nmea(unsigned char *data, unsigned int len) {
 
 void commands_send_log_ethernet(unsigned char *data, int len) {
 	int32_t ind = 0;
-	m_send_buffer[ind++] = ID_CAR_CLIENT;
+	m_send_buffer[ind++] = ID_VEHICLE_CLIENT;
 	m_send_buffer[ind++] = CMD_LOG_ETHERNET;
 	memcpy(m_send_buffer + ind, data, len);
 	ind += len;

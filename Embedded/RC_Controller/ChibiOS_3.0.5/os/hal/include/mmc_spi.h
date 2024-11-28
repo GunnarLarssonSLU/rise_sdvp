@@ -134,7 +134,7 @@ typedef struct {
 /**
  * @brief   Returns the card insertion status.
  * @note    This macro wraps a low level function named
- *          @p sdc_lld_is_card_inserted(), this function must be
+ *          @p sdc_lld_is_vehicled_inserted(), this function must be
  *          provided by the application because it is not part of the
  *          SDC driver.
  *
@@ -145,7 +145,7 @@ typedef struct {
  *
  * @api
  */
-#define mmcIsCardInserted(mmcp) mmc_lld_is_card_inserted(mmcp)
+#define mmcIsCardInserted(mmcp) mmc_lld_is_vehicled_inserted(mmcp)
 
 /**
  * @brief   Returns the write protect status.
@@ -182,7 +182,7 @@ extern "C" {
   bool mmcSync(MMCDriver *mmcp);
   bool mmcGetInfo(MMCDriver *mmcp, BlockDeviceInfo *bdip);
   bool mmcErase(MMCDriver *mmcp, uint32_t startblk, uint32_t endblk);
-  bool mmc_lld_is_card_inserted(MMCDriver *mmcp);
+  bool mmc_lld_is_vehicled_inserted(MMCDriver *mmcp);
   bool mmc_lld_is_write_protected(MMCDriver *mmcp);
 #ifdef __cplusplus
 }

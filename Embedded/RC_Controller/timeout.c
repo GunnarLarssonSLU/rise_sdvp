@@ -69,9 +69,9 @@ static THD_FUNCTION(timeout_thread, arg) {
 
 	for(;;) {
 		if (m_timeout_msec != 0 && chVTTimeElapsedSinceX(m_last_update_time) > MS2ST(m_timeout_msec)) {
-#if MAIN_MODE == MAIN_MODE_CAR
+#if MAIN_MODE == MAIN_MODE_vehicle
 			autopilot_set_active(false);
-			if (!main_config.car.disable_motor && fabsf(pos_get_speed() * 3.6) > 2.0) {
+			if (!main_config.vehicle.disable_motor && fabsf(pos_get_speed() * 3.6) > 2.0) {
 				bldc_interface_set_current_brake(m_timeout_brake_current);
 			}
 #endif

@@ -87,7 +87,7 @@ int main(void) {
 	led_init();
 	ext_cb_init();
 
-#if MAIN_MODE == MAIN_MODE_CAR
+#if MAIN_MODE == MAIN_MODE_vehicle
 	conf_general_init();
 	adconv_init();
 	servo_simple_init();
@@ -130,8 +130,8 @@ int main(void) {
 	m8t_base_start();
 #endif
 
-#if MAIN_MODE == MAIN_MODE_CAR
-	motor_sim_set_running(main_config.car.simulate_motor);
+#if MAIN_MODE == MAIN_MODE_vehicle
+	motor_sim_set_running(main_config.vehicle.simulate_motor);
 #endif
 
 #if MAIN_MODE_IS_VEHICLE

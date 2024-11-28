@@ -149,7 +149,7 @@ static THD_FUNCTION(log_thread, arg) {
 				m_write_split = false;
 			}
 
-#ifdef LOG_EN_CARREL
+#ifdef LOG_EN_vehicleREL
 			mc_values val;
 			POS_STATE pos;
 			GPS_STATE gps;
@@ -158,9 +158,9 @@ static THD_FUNCTION(log_thread, arg) {
 			float mag[3];
 
 			float steering_angle = (servo_simple_get_pos_now()
-					- main_config.car.steering_center)
-									* ((2.0 * main_config.car.steering_max_angle_rad)
-											/ main_config.car.steering_range);
+					- main_config.vehicle.steering_center)
+									* ((2.0 * main_config.vehicle.steering_max_angle_rad)
+											/ main_config.vehicle.steering_range);
 
 			pos_get_mc_val(&val);
 			pos_get_pos(&pos);
@@ -174,8 +174,8 @@ static THD_FUNCTION(log_thread, arg) {
 					"%.2f "   // current_in
 					"%.2f "   // current_motor
 					"%.2f "   // v_in
-					"%.3f "   // car x
-					"%.3f "   // car y
+					"%.3f "   // vehicle x
+					"%.3f "   // vehicle y
 					"%.3f "   // gps x
 					"%.3f "   // gps y
 					"%.3f "   // gps z
@@ -234,9 +234,9 @@ static THD_FUNCTION(log_thread, arg) {
 			float mag[3];
 
 			float steering_angle = (servo_simple_get_pos_now()
-					- main_config.car.steering_center)
-												* ((2.0 * main_config.car.steering_max_angle_rad)
-														/ main_config.car.steering_range);
+					- main_config.vehicle.steering_center)
+												* ((2.0 * main_config.vehicle.steering_max_angle_rad)
+														/ main_config.vehicle.steering_range);
 
 			pos_get_mc_val(&val);
 			pos_get_gps(&gps);
@@ -337,8 +337,8 @@ static void print_log_ext(void) {
 	printf_blocking(m_log_ext_mode == LOG_EXT_ETHERNET,
 			"%u,"     // timestamp (ms)
 			"%u,"     // timestamp pos today (ms)
-			"%.3f,"   // car x
-			"%.3f,"   // car y
+			"%.3f,"   // vehicle x
+			"%.3f,"   // vehicle y
 			"%.2f,"   // roll
 			"%.2f,"   // pitch
 			"%.2f,"   // yaw
@@ -382,9 +382,9 @@ static void print_log_ext(void) {
 			gps.lat,
 			gps.lon,
 			gps.height,
-			(double)(val.tachometer * main_config.car.gear_ratio
-			* (2.0 / main_config.car.motor_poles) * (1.0 / 6.0)
-			* main_config.car.wheel_diam * M_PI),
+			(double)(val.tachometer * main_config.vehicle.gear_ratio
+			* (2.0 / main_config.vehicle.motor_poles) * (1.0 / 6.0)
+			* main_config.vehicle.wheel_diam * M_PI),
 			(double)pos.yaw_imu);
 }
 

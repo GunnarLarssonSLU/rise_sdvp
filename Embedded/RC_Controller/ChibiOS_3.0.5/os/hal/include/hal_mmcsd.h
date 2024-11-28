@@ -73,7 +73,7 @@
 #define MMCSD_CMD_SEND_RELATIVE_ADDR    3U
 #define MMCSD_CMD_SET_BUS_WIDTH         6U
 #define MMCSD_CMD_SWITCH                MMCSD_CMD_SET_BUS_WIDTH
-#define MMCSD_CMD_SEL_DESEL_CARD        7U
+#define MMCSD_CMD_SEL_DESEL_vehicleD        7U
 #define MMCSD_CMD_SEND_IF_COND          8U
 #define MMCSD_CMD_SEND_EXT_CSD          MMCSD_CMD_SEND_IF_COND
 #define MMCSD_CMD_SEND_CSD              9U
@@ -446,7 +446,7 @@ typedef struct {
  *
  * @param[in] r1        the r1 response
  */
-#define MMCSD_R1_IS_CARD_LOCKED(r1)     ((((r1) >> 21U) & 1U) != 0U)
+#define MMCSD_R1_IS_vehicleD_LOCKED(r1)     ((((r1) >> 21U) & 1U) != 0U)
 /** @} */
 
 /**

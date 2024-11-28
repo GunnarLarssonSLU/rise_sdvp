@@ -160,7 +160,7 @@ static THD_FUNCTION(tx_thread, arg) {
 					cc1120_single_read(CC1120_NUM_TXBYTES));
 		}
 
-//		if (cc1120_carrier_sense()) {
+//		if (cc1120_vehiclerier_sense()) {
 //			commands_printf("Carrier");
 //		}
 //		chThdSleepMilliseconds(1);

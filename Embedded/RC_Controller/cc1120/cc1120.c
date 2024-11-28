@@ -874,7 +874,7 @@ int cc1120_set_idle(void) {
 	return to > 0 ? 1 : 0;
 }
 
-bool cc1120_carrier_sense(void) {
+bool cc1120_vehiclerier_sense(void) {
 //	uint8_t reg = cc1120_single_read(CC1120_RSSI0);
 //	return ((reg & 0b010) && (reg & 0b100)) ? 1 : 0;
 	return palReadPad(CC1120_PORT_GPIO3, CC1120_PIN_GPIO3);

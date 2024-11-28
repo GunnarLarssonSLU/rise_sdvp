@@ -317,7 +317,7 @@ extern "C" {
   bool sdc_lld_write(SDCDriver *sdcp, uint32_t startblk,
                      const uint8_t *buf, uint32_t blocks);
   bool sdc_lld_sync(SDCDriver *sdcp);
-  bool sdc_lld_is_card_inserted(SDCDriver *sdcp);
+  bool sdc_lld_is_vehicled_inserted(SDCDriver *sdcp);
   bool sdc_lld_is_write_protected(SDCDriver *sdcp);
 #ifdef __cplusplus
 }

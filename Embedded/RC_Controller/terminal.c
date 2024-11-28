@@ -56,7 +56,7 @@ void terminal_process_string(char *str) {
 	int argc = 0;
 	char *argv[kMaxArgs];
 
-#if MAIN_MODE == MAIN_MODE_CAR
+#if MAIN_MODE == MAIN_MODE_vehicle
 	static char buffer[256];
 #endif
 
@@ -95,7 +95,7 @@ void terminal_process_string(char *str) {
 		commands_printf(" ");
 	}
 
-#if MAIN_MODE == MAIN_MODE_CAR
+#if MAIN_MODE == MAIN_MODE_vehicle
 	else if (strcmp(argv[0], "vesc") == 0) {
 		buffer[0] = '\0';
 		int ind = 0;
@@ -215,7 +215,7 @@ void terminal_process_string(char *str) {
 		commands_printf("threads");
 		commands_printf("  List all threads");
 
-#if MAIN_MODE == MAIN_MODE_CAR
+#if MAIN_MODE == MAIN_MODE_vehicle
 		commands_printf("vesc");
 		commands_printf("  Forward command to VESC");
 #endif
