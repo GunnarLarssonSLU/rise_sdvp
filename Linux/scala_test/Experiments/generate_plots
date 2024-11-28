@@ -1,7 +1,0 @@
-#!/bin/bash
-
-octave-cli plots.m $1
-
-cd ../../RControlStation
-./RControlStation --plotroutes ../scala_test/Experiments/$1_route.xml --plotroutesshowgrid
-
