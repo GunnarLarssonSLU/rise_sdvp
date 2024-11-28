@@ -1,7 +1,6 @@
 Functions related to calculating the vehicles position.
 
-The summary is based on that the unit has a [BMI160](https://www.bosch-sensortec.com/products/motion-sensors/imus/bmi160/) (which the F9-card used by Macbot & Drängen has). Though almost all will be true matter if it hasn't.
-
+The summary is based on that the unit has a [BMI160](https://www.bosch-sensortec.com/products/motion-sensors/imus/bmi160/) (which the F9-card used by Macbot & Drängen has). Though almost all will be true no matter if it hasn't.
 
 Functions called during initiation:
 - ahrs_init_attitude_info
@@ -14,6 +13,32 @@ Functions called during initiation:
 
 During initiation it also sets a large number of variable to zero and terminal commands list below are initiated.
 
+
+
+## Typical workflow
+
+When operating the vehicle at different locations, each with its own base station, the system's functions in pos.c handle this scenario through reinitialization and recalibration processes. Here's how the key functions manage this:
+
+- pos_init:     Initialise:
+  -This function initializes the positioning system, setting up necessary parameters and states.
+  -Every time the function is called the system (positioning-wise) is reset. Data from prior executions should hence not interfer with the current one
+
+- pos_set_enu_ref:        Setting ENU Reference
+  - Sets a new East-North-Up (ENU) coordinate reference based on the current location. At each new location, this function is invoked to define the local coordinate system relative to the new base station. This recalibration aligns the system's positional data with the new environment.
+
+- pos_get_pos:    Retrieving Current position:
+  -  Provid provides accurate positional data relative to the new base station.
+
+Operational Workflow:
+
+    At Each New Location:
+        System Start: Power on the vehicle, initiating the positioning system.
+        Initialization: pos_init is called to reset and prepare the system.
+        Set ENU Reference: pos_set_enu_ref establishes the local coordinate system based on the current base station.
+        Position Retrieval: pos_get_pos can now be used to obtain accurate positional data in the context of the new location.
+
+By following this sequence, the system effectively manages operations across different locations and base stations, ensuring accurate and reliable positioning data for each session.
+
 ## Important functions
 
 | Function | Description | Input (description) (type) | Output (description) (type) |
@@ -22,21 +47,21 @@ During initiation it also sets a large number of variable to zero and terminal c
 | pos_pps_cb | | (EXTDriver*, expchannel_t) (extp, channel) | |
 | pos_get_imu | | (float *, float *, float *) (accel, gyro, mag) | |
 | pos_get_quaternions | (float *) (q) | |
-| pos_get_pos | (POS_STATE *) (p) | |
+| pos_get_pos | Get position relative to ENU (POS_STATE *) (p) | |
 | pos_get_gps | (GPS_STATE *) (p) | |
 | pos_get_speed | | | (float) |
 | pos_set_xya | | (float, float, float) (x, y, angle) | |
 | pos_set_yaw_offset | | (float) (angle) | |
-| pos_set_enu_ref | | (double, double, double) (lat, lon, height) | |
-| pos_get_enu_ref | | | (array double) (llh);
+| pos_set_enu_ref | Setting ENU reference to current position| (double, double, double) (lat, lon, height) | |
+| pos_get_enu_ref | Get ENU reference | | (array double) (llh);
 | pos_reset_enu_ref | | | |
-void pos_get_mc_val(mc_values *v);
-int32_t pos_get_ms_today(void);
-void pos_set_ms_today(int32_t ms);
-bool pos_input_nmea(const char *data);
-void pos_reset_attitude(void);
-int pos_time_since_gps_corr(void);
-void pos_base_rtcm_obs(rtcm_obs_header_t *header, rtcm_obs_t *obs, int obs_num);
+| pos_get_mc_val | (mc_values *) (v) | |
+| pos_get_ms_today | | | int32_t |
+| pos_set_ms_today | | (int32_t) (ms) | |
+| pos_input_nmea(const char *data) | | (bool) |
+| pos_reset_attitude | | | |
+| pos_time_since_gps_corr | | | (int) | 
+| pos_base_rtcm_obs| | (rtcm_obs_header_t *, rtcm_obs_t*, int) (header, obs, obs_num) | |
 
 ### mpu9150_read
 

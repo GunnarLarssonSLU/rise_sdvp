@@ -974,12 +974,14 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 			m_vesc_left_now = true;
 			comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
 		}
-
 		bldc_interface_get_values();
 		comm_can_unlock_vesc();
 	}
 #else
-//	commands_printf("has not diff sterring");
+	commands_printf("has not diff sterring");
+	comm_can_set_vesc_id(36);
+	bldc_interface_get_values();
+
 	if (mc_read_cnt >= 10) {
 		mc_read_cnt = 0;
 		bldc_interface_get_values();

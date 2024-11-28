@@ -864,7 +864,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				utils_truncate_number(&throttle, -1.0, 1.0);
 				if (!main_config.car.disable_motor) {
 					#if HAS_DIFF_STEERING
-					showData=13+throttle + throttle * steering;
+//					showData=13+throttle + throttle * steering;
 						comm_can_lock_vesc();
 						comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
 						bldc_interface_set_duty_cycle(throttle + throttle * steering);

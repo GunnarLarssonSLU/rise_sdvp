@@ -103,6 +103,7 @@ static THD_FUNCTION(servo_thread, arg) {
 	for(;;) {
 		// Map s1 to 0.0 and s2 to 1.0
 #ifdef SERVO_VESC_HYDRAULIC
+//		commands_printf("Med SERVO_VESC_HYDRAULIC\n");
 		(void)as5047_read;
 		float pos_io_board = comm_can_io_board_as5047_angle();
 
@@ -113,6 +114,7 @@ static THD_FUNCTION(servo_thread, arg) {
 		m_pos_now_raw = as5047_read(&ok);
 #endif
 
+		commands_printf("Vinkel i servo_vesc: %f\n",  m_pos_now_raw);
 
 		float pos = m_pos_now_raw;
 		pos -= SERVO_VESC_S1;

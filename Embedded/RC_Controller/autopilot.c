@@ -446,14 +446,13 @@ void autopilot_set_motor_speed(float speed) {
 				commands_printf("In Set Motor Speed. Is Drangen. No Hydraulic Drive\n");
 				comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
 				bldc_interface_set_rpm((int)(rpm));
-				commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_LEFT,(float)rpm);
+				commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_LEFT,(float)rpm*10);
 				comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
 				bldc_interface_set_rpm((int)(rpm));
-				commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_RIGHT,(float)rpm);
+				commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_RIGHT,(float)rpm*10);
 			#else
 				comm_can_set_vesc_id(VESC_ID); //ÄNDRA HÄR
 				bldc_interface_set_rpm((int)(rpm));
-
 		#endif
 		comm_can_unlock_vesc();
 
@@ -926,9 +925,10 @@ static THD_FUNCTION(ap_thread, arg) {
 				#else
 					#ifdef IS_DRANGEN
 					commands_printf("Not diff steering. Showing motor information.\n");
-					comm_can_set_vesc_id(DIFF_STEERING);
-					bldc_interface_set_duty_cycle(servo_pos);
+		//			comm_can_set_vesc_id(DIFF_STEERING);
+		//			bldc_interface_set_duty_cycle(servo_pos);
 					commands_printf("Motor %d: (steering) Duty cycle: %f.\n", DIFF_STEERING,servo_pos);
+						commands_printf("Vinkel: %f\n",  pos_now.yaw);
 
 					#endif
 					#ifdef IS_MACTRAC
