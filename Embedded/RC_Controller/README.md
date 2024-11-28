@@ -115,6 +115,10 @@ Functions related to calculating the vehicles position
 - m_timeout_brake_current = 0.0
 - m_has_timeout = false
 
+# Servo simple ([more information](servo_simple.md))
+
+Functions for controling and reading servo information. The servos are controlled by the controller card.
+
 # Utils
 
 Various useful functions
