@@ -197,7 +197,7 @@ typedef enum {
 	CMD_IO_BOARD_SET_VALVE,			// 87
 	CMD_HYDRAULIC_MOVE,				// 88
 
-	// Car commands
+	// vehicle commands
 	CMD_GET_STATE = 120,
 	CMD_RC_CONTROL,
 	CMD_SET_SERVO_DIRECT,
@@ -241,7 +241,7 @@ typedef struct {
 	float yaw_imu_gain; // Gain for yaw angle from IMU (vs odometry)
 	bool disable_motor; // Disable motor drive commands to make sure that the motor does not move.
 	bool simulate_motor; // Simulate motor movement without motor controller feedback
-	bool clamp_imu_yaw_stationary; // Clamp IMU yaw when car is stationary
+	bool clamp_imu_yaw_stationary; // Clamp IMU yaw when vehicle is stationary
 	bool use_uwb_pos; // Use UWB positioning instead of RTK positioning
 
 	float gear_ratio;
@@ -261,7 +261,7 @@ typedef struct {
     float anglemax;
 //    float angledegrees;
     float voltage_centre;
-} MAIN_CONFIG_CAR;
+} MAIN_CONFIG_vehicle;
 
 typedef struct {
 	// Dead reckoning
@@ -327,7 +327,7 @@ typedef struct {
 	uint16_t motor_pwm_max_us; // Maximum servo pulse length for motor in microseconds
 } MAIN_CONFIG_MULTIROTOR;
 
-// Car configuration
+// vehicle configuration
 typedef struct {
 	// Common vehicle settings
 	bool mag_use; // Use the magnetometer
@@ -366,7 +366,7 @@ typedef struct {
 
 	// Autopilot parameters
 	bool ap_repeat_routes; // Repeat the same route when the end is reached
-	float ap_base_rad; // Smallest allowed radius around car
+	float ap_base_rad; // Smallest allowed radius around vehicle
 	float ap_rad_time_ahead; // Radius ahead time
 	int ap_mode_time; // Drive to route points based on time (1 = abs time, 2 = rel since start)
 	float ap_max_speed; // Maximum allowed speed for autopilot
@@ -379,7 +379,7 @@ typedef struct {
 	LOG_EXT_MODE log_mode_ext;
 	int log_uart_baud;
 
-	MAIN_CONFIG_CAR car;
+	MAIN_CONFIG_vehicle vehicle;
 	MAIN_CONFIG_MULTIROTOR mr;
 } MAIN_CONFIG;
 

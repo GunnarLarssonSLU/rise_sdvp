@@ -25,7 +25,7 @@ Servo ramp
 
 ## Important variables
 
-- main_config.car.steering_ramp_time
+- main_config.vehicle.steering_ramp_time
 - TIM_CLOCK
 - RAMP_LOOP_HZ
 

@@ -52,7 +52,7 @@
 #define P2_55       D(2.775557561562891E-17)   // 2^-55
 
 // Private variables
-const double lam_carr[] = { // carrier wave length (m)
+const double lam_vehicler[] = { // carrier wave length (m)
 		CLIGHT/FREQ1,
 		CLIGHT/FREQ2,
 		CLIGHT/FREQ5,
@@ -639,8 +639,8 @@ static int decode_1002(rtcm3_state *state) {
 
 		if (ppr1 != (int)0xFFF80000) {
 			state->obs[j].P[0] = pr1;
-			cp1 = ppr1 * D(0.0005) / lam_carr[0];
-			state->obs[j].L[0]=pr1/lam_carr[0] + cp1;
+			cp1 = ppr1 * D(0.0005) / lam_vehicler[0];
+			state->obs[j].L[0]=pr1/lam_vehicler[0] + cp1;
 		}
 
 		state->obs[j].prn = prn;
@@ -684,8 +684,8 @@ static int decode_1004(rtcm3_state *state) {
 
 		if (ppr1!=(int)0xFFF80000) {
 			state->obs[j].P[0] = pr1;
-			cp1 = ppr1 * D(0.0005) / lam_carr[0];
-			state->obs[j].L[0] = pr1 / lam_carr[0] + cp1;
+			cp1 = ppr1 * D(0.0005) / lam_vehicler[0];
+			state->obs[j].L[0] = pr1 / lam_vehicler[0] + cp1;
 		}
 
 		state->obs[j].prn = prn;
@@ -698,8 +698,8 @@ static int decode_1004(rtcm3_state *state) {
 		}
 
 		if (ppr2!=(int)0xFFF80000) {
-			cp2 = ppr2 * D(0.0005) / lam_carr[1];
-			state->obs[j].L[1] = pr1 / lam_carr[1] + cp2;
+			cp2 = ppr2 * D(0.0005) / lam_vehicler[1];
+			state->obs[j].L[1] = pr1 / lam_vehicler[1] + cp2;
 		}
 
 		state->obs[j].lock[1] = lock2;

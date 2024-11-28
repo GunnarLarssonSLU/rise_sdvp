@@ -35,10 +35,10 @@
  * @name    SD card types
  * @{
  */
-#define SDC_MODE_CARDTYPE_MASK              0xFU
-#define SDC_MODE_CARDTYPE_SDV11             0U
-#define SDC_MODE_CARDTYPE_SDV20             1U
-#define SDC_MODE_CARDTYPE_MMC               2U
+#define SDC_MODE_vehicleDTYPE_MASK              0xFU
+#define SDC_MODE_vehicleDTYPE_SDV11             0U
+#define SDC_MODE_vehicleDTYPE_SDV20             1U
+#define SDC_MODE_vehicleDTYPE_MMC               2U
 #define SDC_MODE_HIGH_CAPACITY              0x10U
 /** @} */
 
@@ -132,7 +132,7 @@ typedef enum {
 /**
  * @brief   Returns the card insertion status.
  * @note    This macro wraps a low level function named
- *          @p sdc_lld_is_card_inserted(), this function must be
+ *          @p sdc_lld_is_vehicled_inserted(), this function must be
  *          provided by the application because it is not part of the
  *          SDC driver.
  *
@@ -143,7 +143,7 @@ typedef enum {
  *
  * @api
  */
-#define sdcIsCardInserted(sdcp) (sdc_lld_is_card_inserted(sdcp))
+#define sdcIsCardInserted(sdcp) (sdc_lld_is_vehicled_inserted(sdcp))
 
 /**
  * @brief   Returns the write protect status.

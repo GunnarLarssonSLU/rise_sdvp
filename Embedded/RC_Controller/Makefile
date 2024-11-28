@@ -317,24 +317,24 @@ touch_conf_general:
 	touch ./conf_general.h
 
 vcc: override PROJECT = fw_vcc
-vcc: USE_OPT += -DMAIN_MODE=MAIN_MODE_CAR -DUBLOX_EN=0
+vcc: USE_OPT += -DMAIN_MODE=MAIN_MODE_vehicle -DUBLOX_EN=0
 vcc: touch_conf_general build/fw_vcc.elf build/fw_vcc.bin	./upload_remote build/$(PROJECT).bin pi 192.168.1.147 22 pi_gpio
 
 
 rise_ubx: override PROJECT = fw_rise_ubx
-rise_ubx: USE_OPT += -DMAIN_MODE=MAIN_MODE_CAR -DUBLOX_EN=1 -DBOARD_YAW_ROT=-90.0
+rise_ubx: USE_OPT += -DMAIN_MODE=MAIN_MODE_vehicle -DUBLOX_EN=1 -DBOARD_YAW_ROT=-90.0
 rise_ubx: touch_conf_general build/fw_rise_ubx.elf build/fw_rise_ubx.bin
 
 rise_f9: override PROJECT = fw_rise_f9
-rise_f9: USE_OPT += -DMAIN_MODE=MAIN_MODE_CAR -DIS_F9_BOARD=1
+rise_f9: USE_OPT += -DMAIN_MODE=MAIN_MODE_vehicle -DIS_F9_BOARD=1
 rise_f9: touch_conf_general build/fw_rise_f9.elf build/fw_rise_f9.bin
 
 drangen: override PROJECT = fw_drangen
-drangen: USE_OPT += -DMAIN_MODE=MAIN_MODE_CAR -DUBLOX_EN=1 -DBOARD_YAW_ROT=180.0 -DHAS_HYDRAULIC_DRIVE=0 -DSERVO_VESC_ID=76
+drangen: USE_OPT += -DMAIN_MODE=MAIN_MODE_vehicle -DUBLOX_EN=1 -DBOARD_YAW_ROT=180.0 -DHAS_HYDRAULIC_DRIVE=0 -DSERVO_VESC_ID=76
 drangen: touch_conf_general build/fw_drangen.elf build/fw_drangen.bin
 
 mactrac: override PROJECT = fw_mactrac
-mactrac: USE_OPT += -DMAIN_MODE=MAIN_MODE_CAR -DIS_MACTRAC
+mactrac: USE_OPT += -DMAIN_MODE=MAIN_MODE_vehicle -DIS_MACTRAC
 mactrac: touch_conf_general build/fw_mactrac.elf build/fw_mactrac.bin
 
 RULESPATH = $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC

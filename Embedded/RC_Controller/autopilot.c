@@ -254,18 +254,18 @@ void autopilot_sync_point(int32_t point, int32_t time, int32_t min_time_diff) {
 
 	POS_STATE p;
 
-	if (main_config.car.use_uwb_pos) {
+	if (main_config.vehicle.use_uwb_pos) {
 		pos_uwb_get_pos(&p);
 	} else {
 		pos_get_pos(&p);
 	}
 
-	// Car center
-	const float car_cx = p.px;
-	const float car_cy = p.py;
-	ROUTE_POINT car_pos;
-	car_pos.px = car_cx;
-	car_pos.py = car_cy;
+	// vehicle center
+	const float vehicle_cx = p.px;
+	const float vehicle_cy = p.py;
+	ROUTE_POINT vehicle_pos;
+	vehicle_pos.px = vehicle_cx;
+	vehicle_pos.py = vehicle_cy;
 
 	int point_i = start;
 	int point_prev = 0;
@@ -274,7 +274,7 @@ void autopilot_sync_point(int32_t point, int32_t time, int32_t min_time_diff) {
 	// Calculate remaining length
 	for (;;) {
 		if (point_i == start) {
-			dist_tot += utils_rp_distance(&car_pos, &m_route[point_i]);
+			dist_tot += utils_rp_distance(&vehicle_pos, &m_route[point_i]);
 		} else {
 			dist_tot += utils_rp_distance(&m_route[point_prev], &m_route[point_i]);
 		}
@@ -398,7 +398,7 @@ void autopilot_set_speed_override(bool is_override, float speed) {
  * Speed in m/s.
  */
 void autopilot_set_motor_speed(float speed) {
-	if (!main_config.car.disable_motor) {
+	if (!main_config.vehicle.disable_motor) {
 /*#if IS_DRANGEN
 		// TODO
 		comm_can_lock_vesc();
@@ -414,16 +414,16 @@ void autopilot_set_motor_speed(float speed) {
 		float diff_speed_half = 0.0;
 
 		if (fabsf(m_turn_rad_now) > 0.1) {
-			diff_speed_half = speed * (main_config.car.axis_distance / (2.0 * m_turn_rad_now));
+			diff_speed_half = speed * (main_config.vehicle.axis_distance / (2.0 * m_turn_rad_now));
 		}
 
-		float rpm_r = (speed + diff_speed_half) / (main_config.car.gear_ratio
-				* (2.0 / main_config.car.motor_poles) * (1.0 / 60.0)
-				* main_config.car.wheel_diam * M_PI);
+		float rpm_r = (speed + diff_speed_half) / (main_config.vehicle.gear_ratio
+				* (2.0 / main_config.vehicle.motor_poles) * (1.0 / 60.0)
+				* main_config.vehicle.wheel_diam * M_PI);
 
-		float rpm_l = (speed - diff_speed_half) / (main_config.car.gear_ratio
-				* (2.0 / main_config.car.motor_poles) * (1.0 / 60.0)
-				* main_config.car.wheel_diam * M_PI);
+		float rpm_l = (speed - diff_speed_half) / (main_config.vehicle.gear_ratio
+				* (2.0 / main_config.vehicle.motor_poles) * (1.0 / 60.0)
+				* main_config.vehicle.wheel_diam * M_PI);
 		commands_printf("In Set Motor Speed. Has Diff Steering\n");
 		comm_can_lock_vesc();
 		comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
@@ -437,9 +437,9 @@ void autopilot_set_motor_speed(float speed) {
 		commands_printf("In Set Motor Speed. Has Hydraulic Drive\n");
 		hydraulic_set_speed(speed);
 #else
-		float rpm = speed / (main_config.car.gear_ratio
-					* (2.0 / main_config.car.motor_poles) * (1.0 / 60.0)
-					* main_config.car.wheel_diam * M_PI);
+		float rpm = speed / (main_config.vehicle.gear_ratio
+					* (2.0 / main_config.vehicle.motor_poles) * (1.0 / 60.0)
+					* main_config.vehicle.wheel_diam * M_PI);
 
 		comm_can_lock_vesc();
 		#ifdef IS_DRANGEN
@@ -548,7 +548,7 @@ static THD_FUNCTION(ap_thread, arg) {
 				break;
 
 			default:
-				if (main_config.car.use_uwb_pos) {
+				if (main_config.vehicle.use_uwb_pos) {
 					pos_uwb_get_pos(&pos_now);
 				} else {
 					pos_get_pos(&pos_now);
@@ -598,12 +598,12 @@ static THD_FUNCTION(ap_thread, arg) {
             }
 #endif
 
-			// Car center
-			const float car_cx = pos_now.px;
-			const float car_cy = pos_now.py;
-			ROUTE_POINT car_pos;
-			car_pos.px = car_cx;
-			car_pos.py = car_cy;
+			// vehicle center
+			const float vehicle_cx = pos_now.px;
+			const float vehicle_cy = pos_now.py;
+			ROUTE_POINT vehicle_pos;
+			vehicle_pos.px = vehicle_cx;
+			vehicle_pos.py = vehicle_cy;
 
 			// Speed-dependent radius
 			if (m_en_dynamic_rad) {
@@ -636,7 +636,7 @@ static THD_FUNCTION(ap_thread, arg) {
 				rp_now = m_route[0];
 				circle_intersections = 1;
 
-				if (utils_rp_distance(&rp_now, &car_pos) < 1.5*m_rad_now) // leave a bit more slack than turn radius, might come from a very bad angle
+				if (utils_rp_distance(&rp_now, &vehicle_pos) < 1.5*m_rad_now) // leave a bit more slack than turn radius, might come from a very bad angle
 					m_is_route_started = true;
 			}
 
@@ -653,7 +653,7 @@ static THD_FUNCTION(ap_thread, arg) {
 			ROUTE_POINT *closest1_speed = &m_route[0];
 			ROUTE_POINT *closest2_speed = &m_route[1];
 
-			ROUTE_POINT *closest_to_car = &m_route[0];
+			ROUTE_POINT *closest_to_vehicle = &m_route[0];
 
 			for (int i = start;i < end;i++) {
 				int ind = i; // First point index for this iteration
@@ -681,10 +681,10 @@ static THD_FUNCTION(ap_thread, arg) {
 					}
 				}
 
-				// Find closest point to car
-				if (utils_rp_distance(&car_pos, &m_route[ind]) <
-						utils_rp_distance(&car_pos, closest_to_car)) {
-					closest_to_car = &m_route[ind];
+				// Find closest point to vehicle
+				if (utils_rp_distance(&vehicle_pos, &m_route[ind]) <
+						utils_rp_distance(&vehicle_pos, closest_to_vehicle)) {
+					closest_to_vehicle = &m_route[ind];
 				}
 
 				// Check for circle intersection. If there are many intersections
@@ -703,7 +703,7 @@ static THD_FUNCTION(ap_thread, arg) {
 					}
 				}
 
-				int res = utils_circle_line_int(car_cx, car_cy, m_rad_now, p1, p2, &int1, &int2);
+				int res = utils_circle_line_int(vehicle_cx, vehicle_cy, m_rad_now, p1, p2, &int1, &int2);
 
 				if (res) {
 					closest1_speed = p1;
@@ -744,10 +744,10 @@ static THD_FUNCTION(ap_thread, arg) {
 				}
 			}
 
-			attributes_now = m_is_route_started ? closest_to_car->attributes : 0;
+			attributes_now = m_is_route_started ? closest_to_vehicle->attributes : 0;
 
 			// Look for closest points
-			ROUTE_POINT closest; // Closest point on route to car
+			ROUTE_POINT closest; // Closest point on route to vehicle
 			ROUTE_POINT *closest1 = &m_route[0]; // Start of closest line segment
 			ROUTE_POINT *closest2 = &m_route[1]; // End of closest line segment
 			int closest1_ind = 0; // Index of the first closest point
@@ -784,9 +784,9 @@ static THD_FUNCTION(ap_thread, arg) {
 				ROUTE_POINT *p1, *p2;
 				p1 = &m_route[ind];
 				p2 = &m_route[indn];
-				utils_closest_point_line(p1, p2, car_cx, car_cy, &tmp);
+				utils_closest_point_line(p1, p2, vehicle_cx, vehicle_cy, &tmp);
 
-				if (!closest_set || utils_rp_distance(&tmp, &car_pos) < utils_rp_distance(&closest, &car_pos)) {
+				if (!closest_set || utils_rp_distance(&tmp, &vehicle_pos) < utils_rp_distance(&closest, &vehicle_pos)) {
 					closest_set = true;
 					closest = tmp;
 					closest1 = p1;
@@ -815,7 +815,7 @@ static THD_FUNCTION(ap_thread, arg) {
 				}
 
 				if (sample % m_print_closest_point == 0) {
-					float diff = utils_rp_distance(&closest, &car_pos) * 100.0;
+					float diff = utils_rp_distance(&closest, &vehicle_pos) * 100.0;
 					float speed = pos_now.speed * 3.6;
 
 					commands_printf("D: %.1f cm, S: %.2f km/h, Yaw: %.1f deg, Rad: %.2f m, closest1_ind: %d",
@@ -840,7 +840,7 @@ static THD_FUNCTION(ap_thread, arg) {
 
 			// Check if the end of route is reached
 			if (!main_config.ap_repeat_routes && m_route_left < 3 &&
-					utils_rp_distance(&m_route[last_point_ind], &car_pos) < m_rad_now) {
+					utils_rp_distance(&m_route[last_point_ind], &vehicle_pos) < m_rad_now) {
 				m_route_end = true;
 			} else {
 				m_route_end = false;
@@ -859,7 +859,7 @@ static THD_FUNCTION(ap_thread, arg) {
 
 #if !HAS_DIFF_STEERING
 				// Scale maximum steering by speed
-				float max_rad = main_config.car.steering_max_angle_rad * autopilot_get_steering_scale();
+				float max_rad = main_config.vehicle.steering_max_angle_rad * autopilot_get_steering_scale();
 
 				if (steering_angle >= max_rad) {
 					steering_angle = max_rad;
@@ -868,9 +868,9 @@ static THD_FUNCTION(ap_thread, arg) {
 				}
 
 				float servo_pos = steering_angle
-						/ ((2.0 * main_config.car.steering_max_angle_rad)
-								/ main_config.car.steering_range)
-								+ main_config.car.steering_center;
+						/ ((2.0 * main_config.vehicle.steering_max_angle_rad)
+								/ main_config.vehicle.steering_range)
+								+ main_config.vehicle.steering_center;
 #endif
 
 				float speed = 0.0;
@@ -878,15 +878,15 @@ static THD_FUNCTION(ap_thread, arg) {
 				if (main_config.ap_mode_time && !m_sync_rx) {
 					if (ms_today >= 0) {
 						// Calculate speed such that the route points are reached at their
-						// specified time. Notice that the direct distance between the car
-						// and the points is used and not the arc that the car drives. This
+						// specified time. Notice that the direct distance between the vehicle
+						// and the points is used and not the arc that the vehicle drives. This
 						// should still work well enough.
 
 						int32_t dist_prev = (int32_t)(utils_rp_distance(&rp_now, rp_ls1) * 1000.0);
 						int32_t dist_tot = (int32_t)(utils_rp_distance(&rp_now, rp_ls1) * 1000.0);
 						dist_tot += (int32_t)(utils_rp_distance(&rp_now, rp_ls2) * 1000.0);
 						int32_t time = utils_map_int(dist_prev, 0, dist_tot, rp_ls1->time, rp_ls2->time);
-						float dist_car = utils_rp_distance(&car_pos, &rp_now);
+						float dist_vehicle = utils_rp_distance(&vehicle_pos, &rp_now);
 
 						int32_t t_diff = time - ms_today;
 
@@ -899,7 +899,7 @@ static THD_FUNCTION(ap_thread, arg) {
 						}
 
 						if (t_diff > 0) {
-							speed = dist_car / ((float)t_diff / 1000.0);
+							speed = dist_vehicle / ((float)t_diff / 1000.0);
 						} else {
 							speed = 0.0;
 						}
@@ -941,8 +941,8 @@ static THD_FUNCTION(ap_thread, arg) {
 		}
 
 		if (m_route_end) {
-			servo_simple_set_pos_ramp(main_config.car.steering_center);
-			if (!main_config.car.disable_motor) {
+			servo_simple_set_pos_ramp(main_config.vehicle.steering_center);
+			if (!main_config.vehicle.disable_motor) {
 				bldc_interface_set_current_brake(10.0);
 			}
 			m_rad_now = -1.0;
@@ -990,7 +990,7 @@ static void steering_angle_to_point(
 	R /= angle_correction;
 
 	*circle_radius = R;
-	*steering_angle = atanf(main_config.car.axis_distance / R);
+	*steering_angle = atanf(main_config.vehicle.axis_distance / R);
 }
 
 static bool add_point(ROUTE_POINT *p, bool first) {

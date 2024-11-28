@@ -21,7 +21,7 @@
 
 #include "datatypes.h"
 
-#define MAIN_MODE_CAR 				0
+#define MAIN_MODE_vehicle 				0
 #define MAIN_MODE_MOTE_2400			1
 #define MAIN_MODE_MOTE_400			2
 #define MAIN_MODE_MOTE_HYBRID		3 // Use 400 for slow and critical communication and 2400 for the rest.
@@ -30,12 +30,12 @@
 
 // Main mode
 #ifndef MAIN_MODE
-#define MAIN_MODE					MAIN_MODE_CAR
+#define MAIN_MODE					MAIN_MODE_vehicle
 #endif
 
 // Mode macros
 #define MAIN_MODE_IS_MOTE			(MAIN_MODE == MAIN_MODE_MOTE_2400 || MAIN_MODE == MAIN_MODE_MOTE_400 || MAIN_MODE == MAIN_MODE_MOTE_HYBRID)
-#define MAIN_MODE_IS_VEHICLE		(MAIN_MODE == MAIN_MODE_CAR)
+#define MAIN_MODE_IS_VEHICLE		(MAIN_MODE == MAIN_MODE_vehicle)
 #define MAIN_MODE_IS_BASE			(MAIN_MODE == MAIN_MODE_M8T_BASE_2400 || MAIN_MODE == MAIN_MODE_M8T_BASE_400)
 
 // Firmware version
@@ -170,7 +170,7 @@
 #define CAN_EN_DW					1
 
 // Log configuration to enable. Choose one only.
-//#define LOG_EN_CARREL
+//#define LOG_EN_vehicleREL
 //#define LOG_EN_ITRANSIT
 
 // CC2520 Settings
@@ -181,13 +181,13 @@
 
 // General settings
 #define ID_ALL						255
-#define ID_CAR_CLIENT				254 // Packet for car client only
+#define ID_VEHICLE_CLIENT				254 // Packet for vehicle client only
 #ifndef VESC_ID
 #define VESC_ID						ID_ALL // id, or ID_ALL for any VESC (not used in diff steering mode)
 #endif
 #define ID_MOTE						254 // If the packet is for the mote and not to be forwarded in mote mode
 
-// Car parameters
+// vehicle parameters
 #ifndef BOARD_YAW_ROT
 #define BOARD_YAW_ROT				-90.0
 #endif

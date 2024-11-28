@@ -72,7 +72,7 @@ typedef enum {
  * @brief   Virtual methods table.
  */
 static const struct SDCDriverVMT sdc_vmt = {
-  (bool (*)(void *))sdc_lld_is_card_inserted,
+  (bool (*)(void *))sdc_lld_is_vehicled_inserted,
   (bool (*)(void *))sdc_lld_is_write_protected,
   (bool (*)(void *))sdcConnect,
   (bool (*)(void *))sdcDisconnect,
@@ -102,7 +102,7 @@ static bool mode_detect(SDCDriver *sdcp) {
   /* V2.0 cards detection.*/
   if (!sdc_lld_send_cmd_short_crc(sdcp, MMCSD_CMD_SEND_IF_COND,
                                   MMCSD_CMD8_PATTERN, resp)) {
-    sdcp->cardmode = SDC_MODE_CARDTYPE_SDV20;
+    sdcp->cardmode = SDC_MODE_vehicleDTYPE_SDV20;
     /* Voltage verification.*/
     if (((resp[0] >> 8U) & 0xFU) != 1U) {
       return HAL_FAILED;
@@ -116,10 +116,10 @@ static bool mode_detect(SDCDriver *sdcp) {
     /* MMC or SD V1.1 detection.*/
     if (sdc_lld_send_cmd_short_crc(sdcp, MMCSD_CMD_APP_CMD, 0, resp) ||
         MMCSD_R1_ERROR(resp[0])) {
-      sdcp->cardmode = SDC_MODE_CARDTYPE_MMC;
+      sdcp->cardmode = SDC_MODE_vehicleDTYPE_MMC;
     }
     else {
-      sdcp->cardmode = SDC_MODE_CARDTYPE_SDV11;
+      sdcp->cardmode = SDC_MODE_vehicleDTYPE_SDV11;
     
       /* Reset error flag illegal command.*/
       sdc_lld_send_cmd_none(sdcp, MMCSD_CMD_GO_IDLE_STATE, 0);
@@ -182,7 +182,7 @@ static bool sdc_init(SDCDriver *sdcp) {
   uint32_t ocr;
   uint32_t resp[1];
 
-  if ((sdcp->cardmode &  SDC_MODE_CARDTYPE_MASK) == SDC_MODE_CARDTYPE_SDV20) {
+  if ((sdcp->cardmode &  SDC_MODE_vehicleDTYPE_MASK) == SDC_MODE_vehicleDTYPE_SDV20) {
     ocr = 0xC0100000U;
   }
   else {
@@ -405,7 +405,7 @@ static bool mmc_detect_bus_clk(SDCDriver *sdcp, sdcbusclk_t *clk) {
  */
 static bool detect_bus_clk(SDCDriver *sdcp, sdcbusclk_t *clk) {
 
-  if (SDC_MODE_CARDTYPE_MMC == (sdcp->cardmode & SDC_MODE_CARDTYPE_MASK)) {
+  if (SDC_MODE_vehicleDTYPE_MMC == (sdcp->cardmode & SDC_MODE_vehicleDTYPE_MASK)) {
     return mmc_detect_bus_clk(sdcp, clk);
   }
   return sdc_detect_bus_clk(sdcp, clk);
@@ -638,7 +638,7 @@ bool sdcConnect(SDCDriver *sdcp) {
   }
 
   /* Perform specific initialization procedure.*/
-  if ((sdcp->cardmode &  SDC_MODE_CARDTYPE_MASK) == SDC_MODE_CARDTYPE_MMC) {
+  if ((sdcp->cardmode &  SDC_MODE_vehicleDTYPE_MASK) == SDC_MODE_vehicleDTYPE_MMC) {
     if (HAL_FAILED == mmc_init(sdcp)) {
       goto failed;
     }
@@ -667,7 +667,7 @@ bool sdcConnect(SDCDriver *sdcp) {
   }
 
   /* Selects the card for operations.*/
-  if (sdc_lld_send_cmd_short_crc(sdcp, MMCSD_CMD_SEL_DESEL_CARD,
+  if (sdc_lld_send_cmd_short_crc(sdcp, MMCSD_CMD_SEL_DESEL_vehicleD,
                                  sdcp->rca, resp)) {
     goto failed;
   }
@@ -679,7 +679,7 @@ bool sdcConnect(SDCDriver *sdcp) {
   sdc_lld_set_data_clk(sdcp, clk);
 
   /* Reads extended CSD if needed and possible.*/
-  if (SDC_MODE_CARDTYPE_MMC == (sdcp->cardmode & SDC_MODE_CARDTYPE_MASK)) {
+  if (SDC_MODE_vehicleDTYPE_MMC == (sdcp->cardmode & SDC_MODE_vehicleDTYPE_MASK)) {
 
     /* The card is a MMC, checking if it is a large device.*/
     if (_mmcsd_get_slice(sdcp->csd, MMCSD_CSD_MMC_CSD_STRUCTURE_SLICE) > 1U) {
@@ -715,14 +715,14 @@ bool sdcConnect(SDCDriver *sdcp) {
   }
 
   /* Switches to wide bus mode.*/
-  switch (sdcp->cardmode & SDC_MODE_CARDTYPE_MASK) {
-  case SDC_MODE_CARDTYPE_SDV11:
-  case SDC_MODE_CARDTYPE_SDV20:
+  switch (sdcp->cardmode & SDC_MODE_vehicleDTYPE_MASK) {
+  case SDC_MODE_vehicleDTYPE_SDV11:
+  case SDC_MODE_vehicleDTYPE_SDV20:
     if (HAL_FAILED == sdc_set_bus_width(sdcp)) {
       goto failed;
     }
     break;
-  case SDC_MODE_CARDTYPE_MMC:
+  case SDC_MODE_vehicleDTYPE_MMC:
     if (HAL_FAILED == mmc_set_bus_width(sdcp)) {
       goto failed;
     }

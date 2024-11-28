@@ -112,7 +112,7 @@ void pos_uwb_update_dr(float imu_yaw, float rtk_yaw, float travel_dist,
 	m_uwb_state.yaw = -imu_yaw;
 	m_uwb_state.is_clamped = fabsf(speed * 3.6) < YAW_CLAMP_THRESHOLD;
 	
-	if (!main_config.car.clamp_imu_yaw_stationary) {
+	if (!main_config.vehicle.clamp_imu_yaw_stationary) {
 		m_uwb_state.is_clamped = false;
 	}
 
@@ -161,7 +161,7 @@ void pos_uwb_clear_anchors(void) {
 
 void pos_uwb_get_pos(POS_STATE *p) {
 	chMtxLock(&m_mutex_pos);
-	//Set car pos to uwb pos?
+	//Set vehicle pos to uwb pos?
 	p->px = m_uwb_state.px;
 	p->py = m_uwb_state.py;
 	p->speed = m_uwb_state.speed;

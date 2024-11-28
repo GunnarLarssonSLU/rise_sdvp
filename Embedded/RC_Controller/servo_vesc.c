@@ -134,8 +134,8 @@ static THD_FUNCTION(servo_thread, arg) {
 		float error = m_pos_set - m_pos_now;
 
 		float dt = 0.01;
-		float p_term = error * main_config.car.vesc_p_gain;
-		i_term += error * (main_config.car.vesc_i_gain * dt);
+		float p_term = error * main_config.vehicle.vesc_p_gain;
+		i_term += error * (main_config.vehicle.vesc_i_gain * dt);
 
 		// Average DT for the D term when the error does not change. This likely
 		// happens at low speed when the position resolution is low and several
@@ -146,7 +146,7 @@ static THD_FUNCTION(servo_thread, arg) {
 		if (error == prev_error) {
 			d_term = 0.0;
 		} else {
-			d_term = (error - prev_error) * (main_config.car.vesc_i_gain / dt_int);
+			d_term = (error - prev_error) * (main_config.vehicle.vesc_i_gain / dt_int);
 			dt_int = 0.0;
 		}
 

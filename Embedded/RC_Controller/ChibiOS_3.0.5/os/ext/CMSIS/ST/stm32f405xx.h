@@ -9,7 +9,7 @@
   *          This file contains:
   *           - Data structures and the address mapping for all peripherals
   *           - Peripheral's registers declarations and bits definition
-  *           - Macros to access peripheral’s registers hardware
+  *           - Macros to access peripheralï¿½s registers hardware
   *
   ******************************************************************************
   * @attention
@@ -5406,19 +5406,19 @@ USB_OTG_HostChannelTypeDef;
 #define  SDIO_RESPCMD_RESPCMD                ((uint32_t)0x3F)               /*!<Response command index */
 
 /******************  Bit definition for SDIO_RESP0 register  ******************/
-#define  SDIO_RESP0_CARDSTATUS0              ((uint32_t)0xFFFFFFFF)        /*!<Card Status */
+#define  SDIO_RESP0_vehicleDSTATUS0              ((uint32_t)0xFFFFFFFF)        /*!<Card Status */
 
 /******************  Bit definition for SDIO_RESP1 register  ******************/
-#define  SDIO_RESP1_CARDSTATUS1              ((uint32_t)0xFFFFFFFF)        /*!<Card Status */
+#define  SDIO_RESP1_vehicleDSTATUS1              ((uint32_t)0xFFFFFFFF)        /*!<Card Status */
 
 /******************  Bit definition for SDIO_RESP2 register  ******************/
-#define  SDIO_RESP2_CARDSTATUS2              ((uint32_t)0xFFFFFFFF)        /*!<Card Status */
+#define  SDIO_RESP2_vehicleDSTATUS2              ((uint32_t)0xFFFFFFFF)        /*!<Card Status */
 
 /******************  Bit definition for SDIO_RESP3 register  ******************/
-#define  SDIO_RESP3_CARDSTATUS3              ((uint32_t)0xFFFFFFFF)        /*!<Card Status */
+#define  SDIO_RESP3_vehicleDSTATUS3              ((uint32_t)0xFFFFFFFF)        /*!<Card Status */
 
 /******************  Bit definition for SDIO_RESP4 register  ******************/
-#define  SDIO_RESP4_CARDSTATUS4              ((uint32_t)0xFFFFFFFF)        /*!<Card Status */
+#define  SDIO_RESP4_vehicleDSTATUS4              ((uint32_t)0xFFFFFFFF)        /*!<Card Status */
 
 /******************  Bit definition for SDIO_DTIMER register  *****************/
 #define  SDIO_DTIMER_DATATIME                ((uint32_t)0xFFFFFFFF)        /*!<Data timeout period. */
