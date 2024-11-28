@@ -8,6 +8,10 @@ Activity during initiation:
 
 Positions are set to 0.5 (in the middle / neutral). This is to avoid unintentional movement during start up. Various other settings related to the signal transmission are also set.
 
+## Thread
+
+Servo ramp
+
 ## Important functions
 
 | Function | Description | Input (description) (type) | Output (description) (type) |
