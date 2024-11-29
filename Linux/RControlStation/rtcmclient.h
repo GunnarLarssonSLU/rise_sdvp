@@ -12,7 +12,8 @@
 #include <QObject>
 #include <QTcpSocket>
 #include <QHostAddress>
-//#include "core/coordinatetransforms.h"
+//#include "copterinfo.h"
+#include "models/core/coordinatetransforms.h"
 
 #ifndef D
 #define D(x) 						((double)x##L)

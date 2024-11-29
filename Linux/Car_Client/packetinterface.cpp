@@ -329,62 +329,6 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         conf.car.steering_ramp_time = utility::buffer_get_double32_auto(data, &ind);
         conf.car.axis_distance = utility::buffer_get_double32_auto(data, &ind);
 
-        // Multirotor settings
-        conf.mr.vel_decay_e = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.vel_decay_l = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.vel_max = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.map_min_x = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.map_max_x = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.map_min_y = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.map_max_y = utility::buffer_get_double32_auto(data, &ind);
-
-        conf.mr.vel_gain_p = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.vel_gain_i = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.vel_gain_d = utility::buffer_get_double32_auto(data, &ind);
-
-        conf.mr.tilt_gain_p = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.tilt_gain_i = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.tilt_gain_d = utility::buffer_get_double32_auto(data, &ind);
-
-        conf.mr.max_corr_error = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.max_tilt_error = utility::buffer_get_double32_auto(data, &ind);
-
-        conf.mr.ctrl_gain_roll_p = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.ctrl_gain_roll_i = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.ctrl_gain_roll_dp = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.ctrl_gain_roll_de = utility::buffer_get_double32_auto(data, &ind);
-
-        conf.mr.ctrl_gain_pitch_p = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.ctrl_gain_pitch_i = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.ctrl_gain_pitch_dp = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.ctrl_gain_pitch_de = utility::buffer_get_double32_auto(data, &ind);
-
-        conf.mr.ctrl_gain_yaw_p = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.ctrl_gain_yaw_i = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.ctrl_gain_yaw_dp = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.ctrl_gain_yaw_de = utility::buffer_get_double32_auto(data, &ind);
-
-        conf.mr.ctrl_gain_pos_p = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.ctrl_gain_pos_i = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.ctrl_gain_pos_d = utility::buffer_get_double32_auto(data, &ind);
-
-        conf.mr.ctrl_gain_alt_p = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.ctrl_gain_alt_i = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.ctrl_gain_alt_d = utility::buffer_get_double32_auto(data, &ind);
-
-        conf.mr.js_gain_tilt = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.js_gain_yaw = utility::buffer_get_double32_auto(data, &ind);
-        conf.mr.js_mode_rate = data[ind++];
-
-        conf.mr.motor_fl_f = data[ind++];
-        conf.mr.motor_bl_l = data[ind++];
-        conf.mr.motor_fr_r = data[ind++];
-        conf.mr.motor_br_b = data[ind++];
-        conf.mr.motors_x = data[ind++];
-        conf.mr.motors_cw = data[ind++];
-        conf.mr.motor_pwm_min_us = utility::buffer_get_uint16(data, &ind);
-        conf.mr.motor_pwm_max_us = utility::buffer_get_uint16(data, &ind);
-
         emit configurationReceived(id, conf);
     } break;
 
@@ -392,27 +336,6 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         QByteArray tmpArray = QByteArray::fromRawData((const char*)data, len);
         tmpArray[len] = '\0';
         emit logLineUsbReceived(id, QString::fromLocal8Bit(tmpArray));
-    } break;
-
-    case CMD_PLOT_INIT: {
-        QString xL = QString::fromLocal8Bit((const char*)data);
-        QString yL = QString::fromLocal8Bit((const char*)data + xL.size() + 1);
-        emit plotInitReceived(id, xL, yL);
-    } break;
-
-    case CMD_PLOT_DATA: {
-        int32_t ind = 0;
-        double x = utility::buffer_get_double32_auto(data, &ind);
-        double y = utility::buffer_get_double32_auto(data, &ind);
-        emit plotDataReceived(id, x, y);
-    } break;
-
-    case CMD_PLOT_ADD_GRAPH: {
-        emit plotAddGraphReceived(id, QString::fromLocal8Bit((const char*)data));
-    } break;
-
-    case CMD_PLOT_SET_GRAPH: {
-        emit plotSetGraphReceived(id, data[0]);
     } break;
 
     case CMD_SET_SYSTEM_TIME: {
@@ -481,43 +404,6 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     case CMD_VESC_FWD:
         emit vescFwdReceived(id, QByteArray::fromRawData((char*)data, len));
         break;
-
-        // Multirotor commands
-    case CMD_MR_GET_STATE: {
-        MULTIROTOR_STATE state;
-        int32_t ind = 0;
-
-        if (len <= 1) {
-            break;
-        }
-
-        state.fw_major = data[ind++];
-        state.fw_minor = data[ind++];
-        state.roll = utility::buffer_get_double32_auto(data, &ind);
-        state.pitch = utility::buffer_get_double32_auto(data, &ind);
-        state.yaw = utility::buffer_get_double32_auto(data, &ind);
-        state.accel[0] = utility::buffer_get_double32_auto(data, &ind);
-        state.accel[1] = utility::buffer_get_double32_auto(data, &ind);
-        state.accel[2] = utility::buffer_get_double32_auto(data, &ind);
-        state.gyro[0] = utility::buffer_get_double32_auto(data, &ind);
-        state.gyro[1] = utility::buffer_get_double32_auto(data, &ind);
-        state.gyro[2] = utility::buffer_get_double32_auto(data, &ind);
-        state.mag[0] = utility::buffer_get_double32_auto(data, &ind);
-        state.mag[1] = utility::buffer_get_double32_auto(data, &ind);
-        state.mag[2] = utility::buffer_get_double32_auto(data, &ind);
-        state.px = utility::buffer_get_double32_auto(data, &ind);
-        state.py = utility::buffer_get_double32_auto(data, &ind);
-        state.pz = utility::buffer_get_double32_auto(data, &ind);
-        state.speed = utility::buffer_get_double32_auto(data, &ind);
-        state.vin = utility::buffer_get_double32_auto(data, &ind);
-        state.px_gps = utility::buffer_get_double32_auto(data, &ind);
-        state.py_gps = utility::buffer_get_double32_auto(data, &ind);
-        state.ap_goal_px = utility::buffer_get_double32_auto(data, &ind);
-        state.ap_goal_py = utility::buffer_get_double32_auto(data, &ind);
-        state.ms_today = utility::buffer_get_int32(data, &ind);
-
-        emit mrStateReceived(id, state);
-    } break;
 
         // Acks
     case CMD_AP_ADD_POINTS:
