@@ -36,7 +36,6 @@
 
 #include "locpoint.h"
 #include "carinfo.h"
-#include "copterinfo.h"
 #include "perspectivepixmap.h"
 #include "osmclient.h"
 

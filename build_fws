@@ -10,12 +10,7 @@ cd $DIR
 cd $FWPATH
 
 # Build all FWs
-make -j4 vcc
-make -j4 tero
-make -j4 rise_ubx
 make -j4 drangen
 make -j4 mactrac
-make -j4 rise_f9
-make -j4 rise_f9_copter
 
 mv build/fw_*.bin precompiled/.
