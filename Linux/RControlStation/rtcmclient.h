@@ -12,7 +12,7 @@
 #include <QObject>
 #include <QTcpSocket>
 #include <QHostAddress>
-#include "core/coordinatetransforms.h"
+//#include "core/coordinatetransforms.h"
 
 #ifndef D
 #define D(x) 						((double)x##L)
