@@ -97,8 +97,8 @@ void TcpServerSimple::newTcpConnection()
             connect(mTcpSocket, SIGNAL(readyRead()), this, SLOT(tcpInputDataAvailable()));
             connect(mTcpSocket, SIGNAL(disconnected()),
                     this, SLOT(tcpInputDisconnected()));
-            connect(mTcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
-                    this, SLOT(tcpInputError(QAbstractSocket::SocketError)));
+ /*           connect(mTcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
+                    this, SLOT(tcpInputError(QAbstractSocket::SocketError)));*/
             emit connectionChanged(true, mTcpSocket->peerAddress().toString());
         }
     }
@@ -115,9 +115,6 @@ void TcpServerSimple::tcpInputDataAvailable()
 {
 	qDebug() << "in TcpServerSimple::tcpInputDataAvailable";
     QByteArray data = mTcpSocket->readAll();
-    qDebug() << "The data(3) is:" << (int)data.at(3);
-    qDebug() << "The data(4) is:" << (int)data.at(4);
-    qDebug() << "The data(5) is:" << (int)data.at(5);
     emit dataRx(data);
 
     if (mUsePacket) {

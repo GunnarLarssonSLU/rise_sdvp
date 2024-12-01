@@ -978,9 +978,9 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 		comm_can_unlock_vesc();
 	}
 #else
-	commands_printf("has not diff sterring");
-	comm_can_set_vesc_id(36);
-	bldc_interface_get_values();
+//	commands_printf("has not diff sterring");
+//	comm_can_set_vesc_id(36);
+//	bldc_interface_get_values();
 
 	if (mc_read_cnt >= 10) {
 		mc_read_cnt = 0;

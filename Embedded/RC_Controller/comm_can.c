@@ -168,13 +168,14 @@ static THD_FUNCTION(cancom_process_thread, arg) {
 
 	for(;;) {
 		chEvtWaitAny((eventmask_t) 1);
-		commands_printf("VESC ID: %f\n",vesc_id);
 
 		while (rx_frame_read != rx_frame_write) {
 			CANRxFrame rxmsg = rx_frames[rx_frame_read++];
 
 			if (rxmsg.IDE == CAN_IDE_EXT) {
 				// Process extended IDs (VESC Communication)
+//				commands_printf("VESC ID: %f\n",vesc_id);
+//				commands_printf("ID: %f\n",rxmsg.EID);
 
 				uint8_t id = rxmsg.EID & 0xFF;
 				CAN_PACKET_ID cmd = rxmsg.EID >> 8;
@@ -310,6 +311,7 @@ static THD_FUNCTION(cancom_process_thread, arg) {
 
 					case CAN_IO_PACKET_AS5047_ANGLE:
 						ind = 0;
+						//	commands_printf("CAN_IO_PACKET_AS5047_ANGLE\n");
 						io_board_as5047_angle = buffer_get_float32(rxmsg.data8, 1e3, &ind);
 						break;
 

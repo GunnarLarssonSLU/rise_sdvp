@@ -79,8 +79,8 @@
 #define DIFF_THROTTLE_VESC_LEFT 28
 #define DIFF_THROTTLE_VESC_RIGHT 36
 #define DIFF_STEERING 16
-#define SERVO_VESC_ID				36
-#define VESC_ID				36
+#define SERVO_VESC_ID				0
+#define VESC_ID				0
 // Testat med 36 ooh 28
 #define VOLTAGEFRACTION 0.5
 #define SERVO_VESC_S1				178.0 // Left

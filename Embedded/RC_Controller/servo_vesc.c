@@ -103,7 +103,9 @@ static THD_FUNCTION(servo_thread, arg) {
 	for(;;) {
 		// Map s1 to 0.0 and s2 to 1.0
 #ifdef SERVO_VESC_HYDRAULIC
-//		commands_printf("Med SERVO_VESC_HYDRAULIC\n");
+//		commands_printf("SERVO_VESC_HYDRAULIC %d\n",SERVO_VESC_ID);
+		comm_can_set_vesc_id(SERVO_VESC_ID);
+
 		(void)as5047_read;
 		float pos_io_board = comm_can_io_board_as5047_angle();
 
@@ -114,7 +116,7 @@ static THD_FUNCTION(servo_thread, arg) {
 		m_pos_now_raw = as5047_read(&ok);
 #endif
 
-		commands_printf("Vinkel i servo_vesc: %f\n",  m_pos_now_raw);
+//		commands_printf("Vinkel i servo_vesc: %f\n",  m_pos_now_raw);
 
 		float pos = m_pos_now_raw;
 		pos -= SERVO_VESC_S1;
@@ -178,6 +180,7 @@ static THD_FUNCTION(servo_thread, arg) {
 		}
 
 #ifdef SERVO_VESC_HYDRAULIC
+
 		if (m_not_ok_cnt < 100) {
 			float output_scaled = SERVO_VESC_INVERTED ? output : -output;
 			output_scaled *= 0.75;
@@ -188,7 +191,6 @@ static THD_FUNCTION(servo_thread, arg) {
 		}
 #else
 		if (m_not_ok_cnt < 100) {
-			comm_can_set_vesc_id(SERVO_VESC_ID);
 			m_out_last = SERVO_VESC_INVERTED ? output : -output;
 			bldc_interface_set_duty_cycle(m_out_last);
 		} else {
@@ -223,6 +225,9 @@ static float as5047_read(bool *ok) {
 	spi_begin();
 	spi_transfer(&pos, 0, 1);
 	spi_end();
+
+	commands_printf("as5047_read: %f\n",  pos);
+
 
 	if(spi_check_parity(pos) && pos != 0xffff) {  // all ones = disconnect
 		pos &= 0x3FFF;

@@ -763,8 +763,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			buffer_append_float32(m_send_buffer, pos.speed, 1e6, &send_index); // 64
 			#ifdef USE_ADCONV_FOR_VIN
 				buffer_append_float32(m_send_buffer, adconv_get_vin(), 1e6, &send_index); // 68
-//				buffer_append_float32(m_send_buffer, showData, 1e6, &send_index); // 68
-//						float tot = comm_can_io_board_as5047_angle();
 			#else
 
 				#ifdef IS_DRANGEN
@@ -772,7 +770,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				#else
 						buffer_append_float32(m_send_buffer, mcval.v_in, 1e6, &send_index); // 68
 				#endif
-//						buffer_append_float32(m_send_buffer, adconv_get_vin(), 1e6, &send_index); // 68
 			#endif
 			buffer_append_float32(m_send_buffer, mcval.temp_mos, 1e6, &send_index); // 72
 			m_send_buffer[send_index++] = mcval.fault_code; // 73
