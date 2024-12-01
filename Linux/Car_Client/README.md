@@ -30,11 +30,52 @@
 
 The program works as an interface between the laptop program (RControlStation) and the controller card (and an Arduino if there is one). It transmits data to/from the laptop via TCP and to/from the controller card (and Arduino) via a serial port.
 
-The main function initiate an object of class **Car_Client**. The constructor of that class:
+The main function initiates an object of class **Car_Client**:
+- If a ttyPort is given it will try to connect to a controller card at that address 
+
+
+The constructor of the **Car_Client** class will:
 - Initiate RTCM
-- Initiate TCP server
+- Initiate TCP server (at port 8300, accepting connections from any ip address)
 - Create a large number of [Signal and slots](https://en.wikipedia.org/wiki/Signals_and_slots) connections. Some of particular importance are:
-  - readyRead from serial ports that triggers corresponding functions in the class. 
-  - readyRead from the TCP socker that triggers the tcpDataAvailable function in the class
+  - readyRead from serial ports that triggers corresponding functions in the CarClient class. 
+  - readyRead from the TCP socket that triggers the tcpDataAvailable function in the CarClient class
+    - tcpDataAvailable reads all input and calls mPacketInterface->sendNmeaRadio with it
+  - connectionChanged from the TCP server and tcpConnectionChanged (however, other than writing a debug message nothing is executed in the function)
+
+
+Other relevant function in **Car_Client** are:
+- tcpRx - it will forward what it gets to PacketInterface::sendPacket
+- ***packetDataToSend*** - is very important in that it send the signals Car_Client has received to the controller card. It will also handle those of the terminal commands that are not handled by the controller card (such as camera and other raspberry pi specific commands)
+
+**TcpServerSimple** is used for communication
+- readyRead from the TCP socket is connected to tcpInputDataAvailable in the TcpServerSimple class
+  - reads all data and calls PacketInterface::processData if the variable **mUsePacket** is set
+
+**PacketInterface** is also used for communication
+- processData reads data and calls processPacket when it has a packet ready (?)
+- processPacket reads a packet and ..
+  - .. emits a packetReceived that is connected to Car_Client::carPacketRx (and hence "indirectly" will call sendPacket below)
+  - .. acts depending on the command it contains (see the [main page](../../README.md) for information about available commands
+- sendPacket will send data over UDP (to mHostAddress, mUdpPort)
+
+Signal processing path:
+- TcpServerSimple::tcpInputDataAvailable
+
+in CarClient
+  
+      connect(mTcpServer->packet(), SIGNAL(packetReceived(QByteArray&)),
+            this, SLOT(tcpRx(QByteArray&)));
+    connect(mTcpServer, SIGNAL(connectionChanged(bool,QString)),
+            this, SLOT(tcpConnectionChanged(bool,QString)));
+
+      connect(mPacketInterface, SIGNAL(packetReceived(quint8,CMD_PACKET,QByteArray)),
+            this, SLOT(carPacketRx(quint8,CMD_PACKET,QByteArray)));
+  
+Packet received! (packet::processData)
+In CarClient::tcpRx
+in packetinterface::sendPacket
+Length:  13
+in CarClient::packetDataToSend. Cmd:  1
 
 

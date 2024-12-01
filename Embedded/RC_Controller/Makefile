@@ -330,7 +330,7 @@ rise_f9: USE_OPT += -DMAIN_MODE=MAIN_MODE_vehicle -DIS_F9_BOARD=1
 rise_f9: touch_conf_general build/fw_rise_f9.elf build/fw_rise_f9.bin
 
 drangen: override PROJECT = fw_drangen
-drangen: USE_OPT += -DMAIN_MODE=MAIN_MODE_vehicle -DUBLOX_EN=1 -DBOARD_YAW_ROT=180.0 -DHAS_HYDRAULIC_DRIVE=0 -DSERVO_VESC_ID=76
+drangen: USE_OPT += -DMAIN_MODE=MAIN_MODE_vehicle -DUBLOX_EN=1 -DBOARD_YAW_ROT=180.0 -DHAS_HYDRAULIC_DRIVE=0 -DSERVO_VESC_ID=36
 drangen: touch_conf_general build/fw_drangen.elf build/fw_drangen.bin
 
 mactrac: override PROJECT = fw_mactrac

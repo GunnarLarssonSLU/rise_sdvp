@@ -95,10 +95,10 @@ CarClient::CarClient(QObject *parent) : QObject(parent)
             this, SLOT(serialRtcmDataAvailable()));
     connect(mSerialPortArduino, SIGNAL(readyRead()),
             this, SLOT(serialArduinoDataAvailable()));
-    connect(mSerialPortRtcm, SIGNAL(error(QSerialPort::SerialPortError)),
+/*    connect(mSerialPortRtcm, SIGNAL(error(QSerialPort::SerialPortError)),
             this, SLOT(serialRtcmPortError(QSerialPort::SerialPortError)));
     connect(mSerialPortArduino, SIGNAL(error(QSerialPort::SerialPortError)),
-            this, SLOT(serialArduinoPortError(QSerialPort::SerialPortError)));
+            this, SLOT(serialArduinoPortError(QSerialPort::SerialPortError)));*/
     connect(mTcpSocket, SIGNAL(readyRead()), this, SLOT(tcpDataAvailable()));
     connect(mTcpSocket, SIGNAL(connected()), this, SLOT(tcpConnected()));
     connect(mTcpSocket, SIGNAL(disconnected()), this, SLOT(tcpDisconnected()));
