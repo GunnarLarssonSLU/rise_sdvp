@@ -26,6 +26,7 @@
 #include <QCoreApplication>
 #include <QNetworkInterface>
 #include <QBuffer>
+#include <QLocalSocket>
 #include "rtcm3_simple.h"
 #include "utility.h"
 
@@ -58,6 +59,20 @@ CarClient::CarClient(QObject *parent) : QObject(parent)
     mUblox = new Ublox(this);
     mTcpSocket = new QTcpSocket(this);
     mTcpServer = new TcpServerSimple(this);
+
+    qDebug() << "Starting (1)";
+
+    // Inside your CarClient class or main function
+    ros2Server = new QLocalServer(this);
+    connect(ros2Server, &QLocalServer::newConnection, this, &CarClient::handleRos2Connection);
+
+    if (!ros2Server->listen("ros2_carclient_channel")) {
+        qDebug() << "Unable to start the ROS 2 local server:" << ros2Server->errorString();
+        // Handle error
+    }
+
+    qDebug() << "Starting (2)";
+
     mRtcmClient = new RtcmClient(this);
     mCarId = 255;
     mReconnectTimer = new QTimer(this);
@@ -148,6 +163,52 @@ CarClient::CarClient(QObject *parent) : QObject(parent)
 CarClient::~CarClient()
 {
     logStop();
+}
+
+void CarClient::handleRos2Connection() {
+    QLocalSocket* clientConnection = ros2Server->nextPendingConnection();
+    connect(clientConnection, &QLocalSocket::readyRead, this, &CarClient::readRos2Command);
+    connect(clientConnection, &QLocalSocket::disconnected, clientConnection, &QLocalSocket::deleteLater);
+}
+
+void CarClient::readRos2Command() {
+    QLocalSocket* clientConnection = qobject_cast<QLocalSocket*>(sender());
+    QByteArray data = clientConnection->readAll();
+    QString command(data);
+
+    qDebug() << "Got command via ROS: " << command;
+
+    // Process the command
+    QString response = processCommand(command);
+
+    qDebug() << "Response to ROS: " << response;
+
+    // Send response back to ROS 2 node
+    clientConnection->write(response.toUtf8());
+    clientConnection->flush();
+}
+
+QString CarClient::processCommand(const QString& command) {
+    // Example command processing for the ROS 2 server
+    qDebug() << "Got command via ROS-----------------: " << command;
+    if (command.startsWith("set_speed:")) {
+        bool ok;
+        int speed = command.mid(10).toInt(&ok);
+        if (ok) {
+            // setSpeed(speed);  // Call the existing setSpeed function
+            return QString("Speed set to %1").arg(speed);
+        }
+    } else if (command.startsWith("set_steering:")) {
+        QString direction = command.mid(13).trimmed();
+        if (direction == "left") {
+//            setSteeringAngle(-30);  // Example: turn left
+            return "Steering set to left";
+        } else if (direction == "right") {
+//            setSteeringAngle(30);  // Example: turn right
+            return "Steering set to right";
+        }
+    }
+    return "Unknown command";
 }
 
 void CarClient::connectSerial(QString port, int baudrate)
