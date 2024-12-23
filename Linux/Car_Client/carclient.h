@@ -26,6 +26,7 @@
 #include <QFile>
 #include <QProcess>
 #include <QImage>
+#include <QLocalServer>
 #include "packetinterface.h"
 #include "tcpbroadcast.h"
 //#include <QSerialPort>
@@ -121,10 +122,16 @@ public slots:
     void rtcmReceived(QByteArray data, int type, bool sync = false);
     void logEthernetReceived(quint8 id, QByteArray data);
 
+    void handleRos2Connection();
+    void readRos2Command();
+
+
 private slots:
     void processCarData(QByteArray data);
     void cameraImageCaptured(QImage img);
     void logBroadcasterDataReceived(QByteArray &data);
+    QString processCommand(const QString& command);
+
 
 private:
     PacketInterface *mPacketInterface;
@@ -136,6 +143,7 @@ private:
     QSerialPort *mSerialPortArduino;
     QTcpSocket *mTcpSocket;
     TcpServerSimple *mTcpServer;
+    QLocalServer* ros2Server;
     RtcmClient *mRtcmClient;
     int mCarId;
     QTimer *mReconnectTimer;
@@ -152,6 +160,8 @@ private:
     QList<CarSim*> mSimulatedCars;
     QVector<UWB_ANCHOR> mUwbAnchorsNow;
     int mCarIdToSet;
+
+
 
 #if HAS_CAMERA
     Camera *mCamera;
