@@ -318,7 +318,7 @@ touch_conf_general:
 
 vcc: override PROJECT = fw_vcc
 vcc: USE_OPT += -DMAIN_MODE=MAIN_MODE_vehicle -DUBLOX_EN=0
-vcc: touch_conf_general build/fw_vcc.elf build/fw_vcc.bin	./upload_remote build/$(PROJECT).bin pi 192.168.1.147 22 pi_gpio
+vcc: touch_conf_general build/fw_vcc.elf build/fw_vcc.bin	./upload_remote build/$(PROJECT).bin pi 192.168.200.105 22 pi_gpio
 
 
 rise_ubx: override PROJECT = fw_rise_ubx

@@ -829,7 +829,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 					comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
 					bldc_interface_set_current(throttle);
 					comm_can_set_vesc_id(DIFF_STEERING);
-					bldc_interface_set_duty_cycle(steering*0.25);
+					bldc_interface_set_duty_cycle(steering*steering_scale);
 					comm_can_unlock_vesc();
 				#endif
 

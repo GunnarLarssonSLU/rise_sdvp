@@ -174,12 +174,11 @@ void CarClient::handleRos2Connection() {
 void CarClient::readRos2Command() {
     QLocalSocket* clientConnection = qobject_cast<QLocalSocket*>(sender());
     QByteArray data = clientConnection->readAll();
-    QString command(data);
 
-    qDebug() << "Got command via ROS: " << command;
+    qDebug() << "Got command via ROS:" << data;
 
     // Process the command
-    QString response = processCommand(command);
+    QString response = processCommand(data);
 
     qDebug() << "Response to ROS: " << response;
 
@@ -188,10 +187,12 @@ void CarClient::readRos2Command() {
     clientConnection->flush();
 }
 
-QString CarClient::processCommand(const QString& command) {
+QString CarClient::processCommand(QByteArray &data) {
     // Example command processing for the ROS 2 server
-    qDebug() << "Got command via ROS-----------------: " << command;
-    if (command.startsWith("set_speed:")) {
+    qDebug() << "Got command via ROS-----------------: " << data;
+    packetDataToSend(data);
+    return "Ok";
+/*    if (command.startsWith("set_speed:")) {
         bool ok;
         int speed = command.mid(10).toInt(&ok);
         if (ok) {
@@ -208,7 +209,7 @@ QString CarClient::processCommand(const QString& command) {
             return "Steering set to right";
         }
     }
-    return "Unknown command";
+    return "Unknown command"; */
 }
 
 void CarClient::connectSerial(QString port, int baudrate)
@@ -692,6 +693,7 @@ void CarClient::packetDataToSend(QByteArray &data)
 {
     // This is a packet from RControlStation going to the car.
     // Inspect data and possibly process it here.
+    qDebug() << "in CarClient::packetDataToSend. Data: " << data  << Qt::flush;;
 
     bool packetConsumed = false;
 
@@ -703,7 +705,7 @@ void CarClient::packetDataToSend(QByteArray &data)
     vb.chop(3);
 
     (void)id;
-    qDebug() << "in CarClient::packetDataToSend. Cmd: " << cmd;
+//    qDebug() << "in CarClient::packetDataToSend.... Id: " << id << ", mCarId: " << mCarId << ", cmd: " << cmd;
 
     if (id == mCarId || id == 255) {
         if (cmd == CMD_CAMERA_STREAM_START) {
@@ -713,11 +715,11 @@ void CarClient::packetDataToSend(QByteArray &data)
             mCameraJpgQuality = vb.vbPopFrontInt16();
             int width = vb.vbPopFrontInt16();
             int height = vb.vbPopFrontInt16();
-            int fps = vb.vbPopFrontInt16();
-            mCameraSkipFrames = vb.vbPopFrontInt16();
             mCameraNoAckCnt = 0;
 
             mCamera->closeCamera();
+            int fps = vb.vbPopFrontInt16();
+            mCameraSkipFrames = vb.vbPopFrontInt16();
 
             if (camera >= 0) {
                 mCamera->openCamera(camera);
@@ -729,6 +731,7 @@ void CarClient::packetDataToSend(QByteArray &data)
 #endif
         } else if (cmd == CMD_TERMINAL_CMD) {
             QString str(vb);
+            qWarning() << "to terminal:" << str;
 
             if (str == "help") {
 #if HAS_CAMERA
