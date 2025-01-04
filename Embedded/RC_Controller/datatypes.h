@@ -263,6 +263,8 @@ typedef struct {
     float voltage_centre;
 } MAIN_CONFIG_vehicle;
 
+
+
 typedef struct {
 	// Dead reckoning
 	float vel_decay_e;

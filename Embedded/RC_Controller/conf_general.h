@@ -82,7 +82,7 @@
 #define SERVO_VESC_ID				0
 #define VESC_ID				0
 // Testat med 36 ooh 28
-#define VOLTAGEFRACTION 0.5
+#define VOLTAGEFRACTION 1
 #define SERVO_VESC_S1				178.0 // Left
 #define SERVO_VESC_S2				240.0 // Right
 //#define SERVO_VESC_S1				-20.0 // Left
