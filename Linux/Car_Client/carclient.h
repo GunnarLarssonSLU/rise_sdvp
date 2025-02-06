@@ -130,7 +130,7 @@ private slots:
     void processCarData(QByteArray data);
     void cameraImageCaptured(QImage img);
     void logBroadcasterDataReceived(QByteArray &data);
-    QString processCommand(QByteArray &data);
+//    QString processCommand(QByteArray &data);
 
 
 private:

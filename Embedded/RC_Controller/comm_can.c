@@ -308,13 +308,13 @@ static THD_FUNCTION(cancom_process_thread, arg) {
 						io_board_adc_voltages[6] = buffer_get_float16(rxmsg.data8, 0.5e3, &ind);
 						io_board_adc_voltages[7] = buffer_get_float16(rxmsg.data8, 0.5e3, &ind);
 						break;
-
+#ifndef ANALOG_ANGLE
 					case CAN_IO_PACKET_AS5047_ANGLE:
 						ind = 0;
 						//	commands_printf("CAN_IO_PACKET_AS5047_ANGLE\n");
 						io_board_as5047_angle = buffer_get_float32(rxmsg.data8, 1e3, &ind);
 						break;
-
+#endif
 					case CAN_IO_PACKET_LIM_SW:
 						for (int i = 0;i < rxmsg.DLC; i++) {
 							io_board_lim_sw[i] = rxmsg.data8[i];

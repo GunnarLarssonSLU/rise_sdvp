@@ -500,6 +500,7 @@ unsigned short PacketInterface::crc16(const unsigned char *buf, unsigned int len
 bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_packet)
 {
     qDebug() << "in packetinterface::sendPacket";
+    qDebug() << "in: " << data;
     unsigned int ind = 0;
 
     // If the IP is valid, send the packet over UDP
