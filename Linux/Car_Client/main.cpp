@@ -105,9 +105,9 @@ int main(int argc, char *argv[])
     QString logUsbDir = QDir::currentPath() + "/logs";
     bool inputRtcm = false;
     QString ttyPortRtcm = "/dev/ttyACM0";
-    bool inputArduino = false;
-//    QString ttyPortArduino = "/dev/ttyACM0";
-    QString ttyPortArduino = "NOTHING";
+    bool inputArduino = true;
+    QString ttyPortArduino = "/dev/ttyACM0";
+//    QString ttyPortArduino = "NOTHING";
     int rtcmBaud = 9600;
     int arduinoBaud = 9600;
     bool useChronos = false;

@@ -710,6 +710,11 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			hydraulic_move(data[0], data[1]);
 			break;
 
+		case CMD_GET_ANGLE:
+//			io_board_as5047_angle = buffer_get_float32(data, 1e3, &ind);
+			io_board_as5047_angle = buffer_get_float32_auto(data, &ind);
+			break;
+
 		// ==================== vehicle commands ==================== //
 #if MAIN_MODE == MAIN_MODE_vehicle
 		case CMD_GET_STATE: {

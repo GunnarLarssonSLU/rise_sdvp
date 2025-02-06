@@ -173,43 +173,21 @@ void CarClient::handleRos2Connection() {
 
 void CarClient::readRos2Command() {
     QLocalSocket* clientConnection = qobject_cast<QLocalSocket*>(sender());
-    QByteArray data = clientConnection->readAll();
+    QByteArray rosdata = clientConnection->readAll();
+
+    const unsigned char *data = reinterpret_cast<const unsigned char *>(rosdata.constData());
+//    const unsigned char *data = reinterpret_cast<const unsigned char *>(rosdata);
+    unsigned int len_packet = std::strlen(reinterpret_cast<const char *>(data));
 
     qDebug() << "Got command via ROS:" << data;
 
-    // Process the command
-    QString response = processCommand(data);
+    mPacketInterface->sendPacket(data, len_packet);
+    QString response = "OK";
 
     qDebug() << "Response to ROS: " << response;
-
     // Send response back to ROS 2 node
     clientConnection->write(response.toUtf8());
     clientConnection->flush();
-}
-
-QString CarClient::processCommand(QByteArray &data) {
-    // Example command processing for the ROS 2 server
-    qDebug() << "Got command via ROS-----------------: " << data;
-    packetDataToSend(data);
-    return "Ok";
-/*    if (command.startsWith("set_speed:")) {
-        bool ok;
-        int speed = command.mid(10).toInt(&ok);
-        if (ok) {
-            // setSpeed(speed);  // Call the existing setSpeed function
-            return QString("Speed set to %1").arg(speed);
-        }
-    } else if (command.startsWith("set_steering:")) {
-        QString direction = command.mid(13).trimmed();
-        if (direction == "left") {
-//            setSteeringAngle(-30);  // Example: turn left
-            return "Steering set to left";
-        } else if (direction == "right") {
-//            setSteeringAngle(30);  // Example: turn right
-            return "Steering set to right";
-        }
-    }
-    return "Unknown command"; */
 }
 
 void CarClient::connectSerial(QString port, int baudrate)
@@ -603,13 +581,58 @@ void CarClient::serialRtcmDataAvailable()
 
 void CarClient::serialArduinoDataAvailable()
 {
-    qDebug() << "Receiving!!";
+#define ARDUINO_INTEGER
+
+#ifdef ARDUINO_INTEGER
+//    qDebug() << "Receiving!!";
     while (mSerialPortArduino->bytesAvailable() > 0) {
         QByteArray data = mSerialPortArduino->readAll();
         for (int i = 0;i < data.size();i++) {
             qDebug() << (uint8_t)data.at(i);
         }
     }
+#endif
+
+#ifdef ARDUINO_FLOAT
+    qDebug() << "Receiving floats!!";
+
+    while (static_cast<quint64>(mSerialPortArduino->bytesAvailable()) >= sizeof(float)) {
+        QByteArray data = mSerialPortArduino->read(sizeof(float));
+
+        if (data.size() == sizeof(float)) {
+            float value;
+            memcpy(&value, data.constData(), sizeof(float));
+            qDebug() << "Received float:" << value;
+
+            // Create a QByteArray with the marker byte and the float data
+            QByteArray message;
+            message.append(static_cast<char>(100)); // Add the marker byte
+            message.append((const char*)&value, sizeof(float)); // Add the float data
+
+            // Call tcpRx with the modified message
+            tcpRx(message);
+        } else {
+            qDebug() << "Incomplete data received";
+        }
+    }
+
+/*
+    qDebug() << "Receiving floats!!";
+
+while (static_cast<quint64>(mSerialPortArduino->bytesAvailable()) >= sizeof(float)) {
+        QByteArray data = mSerialPortArduino->read(sizeof(float));
+
+        if (data.size() == sizeof(float)) {
+            float value;
+            memcpy(&value, data.constData(), sizeof(float));
+            qDebug() << "Received float:" << value;
+        } else {
+            qDebug() << "Incomplete data received";
+        }
+    }
+*/
+#endif
+
 }
 
 void CarClient::serialRtcmPortError(QSerialPort::SerialPortError error)
@@ -1180,6 +1203,29 @@ bool CarClient::setUnixTime(qint64 t)
 
 void CarClient::printTerminal(QString str)
 {
+
+    // Existing behavior (e.g., print to the terminal)
+    qDebug() << "Terminal Output:" << str;
+    // Attempt to connect to the local socket without blocking
+    QLocalSocket socket;
+    socket.connectToServer("ros2_carclient_terminal_channel");
+    if (socket.state() == QLocalSocket::UnconnectedState) {
+        qDebug() << "No ROS 2 channel available, skipping publication.";
+    } else
+    {
+        if (!socket.waitForConnected(0)) {  // Non-blocking wait
+        qDebug() << "Failed to connect to ROS 2 channel.";
+        } else
+        {
+        // Publish the message if the server is available
+        qDebug() << "Published: " << str;
+        QByteArray data = str.toUtf8();
+        socket.write(data);
+        socket.flush();
+        socket.disconnectFromServer();
+        }
+    }
+
     QByteArray packet;
     packet.append((quint8)mCarId);
     packet.append((char)CMD_PRINTF);

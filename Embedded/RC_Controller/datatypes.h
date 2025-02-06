@@ -197,6 +197,8 @@ typedef enum {
 	CMD_IO_BOARD_SET_VALVE,			// 87
 	CMD_HYDRAULIC_MOVE,				// 88
 
+	CMD_GET_ANGLE = 100,
+
 	// vehicle commands
 	CMD_GET_STATE = 120,
 	CMD_RC_CONTROL,
