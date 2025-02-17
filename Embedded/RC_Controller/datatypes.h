@@ -36,6 +36,24 @@
 #define CAN_DW_ID_ANY				255
 #define CAN_MASK_IO_BOARD			(3 << 8)
 
+// CAN ID mask for PVG32
+#define CAN_MASK_PVG32				0x700
+
+typedef enum {
+	PVG32_BOOTUP = 0x00,
+	PVG32_STOPPED = 0x04,
+	PVG32_OPERATIONAL = 0x05,
+	PVG32_PREOPERATIONAL = 0x7F
+} PVG32_MODE;
+
+typedef enum {
+	PVG32_ERROR = 0x03,
+	PVG32_INIT = 0x08,
+	PVG32_DISABLED = 0x09,
+	PVG32_HOLD = 0x0B,
+	PVG32_ACTIVE = 0x0F
+} PVG32_STATUS;
+
 // External log mode
 typedef enum {
 	LOG_EXT_OFF = 0,

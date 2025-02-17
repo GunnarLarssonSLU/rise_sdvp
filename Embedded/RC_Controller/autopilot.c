@@ -933,7 +933,7 @@ static THD_FUNCTION(ap_thread, arg) {
 					#endif
 					#ifdef IS_MACTRAC
 						commands_printf("Is a MacTrac!\n");
-						servo_simple_set_pos_ramp(servo_pos); //GL - Fixa här!!
+						servo_simple_set_pos_ramp(servo_pos, false); //GL - Fixa här!!
 					#endif
 				#endif
 				autopilot_set_motor_speed(speed);
@@ -941,7 +941,7 @@ static THD_FUNCTION(ap_thread, arg) {
 		}
 
 		if (m_route_end) {
-			servo_simple_set_pos_ramp(main_config.vehicle.steering_center);
+			servo_simple_set_pos_ramp(main_config.vehicle.steering_center, false);
 			if (!main_config.vehicle.disable_motor) {
 				bldc_interface_set_current_brake(10.0);
 			}

@@ -92,11 +92,14 @@ void servo_simple_set_pos(float pos) {
 #endif
 }
 
-void servo_simple_set_pos_ramp(float pos) {
+void servo_simple_set_pos_ramp(float pos, bool reset_fault) {
 	utils_truncate_number(&pos, 0.0, 1.0);
 #if SERVO_VESC_ID < 0
 	m_pos_set = pos;
 #else
+	if (reset_fault) {
+		servo_vesc_reset_fault();
+	}
 	servo_vesc_set_pos(pos);
 #endif
 }

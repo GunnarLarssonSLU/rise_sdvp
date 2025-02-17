@@ -42,9 +42,13 @@
 #define FW_VERSION_MAJOR			12
 #define FW_VERSION_MINOR			3
 
-#define IS_DRANGEN
+// IO BOARD
+// #define IO_BOARD
+#define ADDIO
 
-//#define IS_MACTRAC
+// #define IS_DRANGEN
+
+#define IS_MACTRAC
 
 // MacTrac
 // Steering Center: 210
@@ -61,6 +65,10 @@
 #define SERVO_VESC_INVERTED			0
 #define SERVO_VESC_DEADBAND_COMP    0.2
 #define IS_F9_BOARD					1
+
+#ifdef CAN_ADDIO
+#define FTR2_ANGLE                  1
+#endif
 
 #endif
 
@@ -170,6 +178,8 @@
 
 // CAN settings
 #define CAN_EN_DW					1
+#define CAN_ADDIO                   1
+#define CAN_IO_BOARD                0
 
 // Log configuration to enable. Choose one only.
 //#define LOG_EN_vehicleREL
