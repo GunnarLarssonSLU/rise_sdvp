@@ -59,7 +59,7 @@ void ahrs_update_initial_orientation(float *accelXYZ, float *magXYZ, ATTITUDE_IN
 	// See https://cache.freescale.com/files/sensors/doc/app_note/AN4248.pdf
 	// and http://sedris.org/wg8home/Documents/WG80485.pdf
 
-	commands_printf("ahrs update initial orientation\n");
+	//commands_printf("ahrs update initial orientation\n");
 
 	float ax = accelXYZ[0];
 	float ay = accelXYZ[1];

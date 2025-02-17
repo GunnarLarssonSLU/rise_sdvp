@@ -34,6 +34,10 @@
 #define RX_BUFFER_SIZE				PACKET_MAX_PL_LEN
 #define CAN_STATUS_MSGS_TO_STORE	10
 
+//ADDIO CAN
+#define CAN_ADDIO_MASTER			0x28
+#define CAN_ANGLE					0x19F
+
 // Threads
 static THD_WORKING_AREA(cancom_read_thread_wa, 512);
 static THD_WORKING_AREA(cancom_process_thread_wa, 4096);
@@ -56,8 +60,28 @@ static int vesc_id = VESC_ID;
 static float io_board_adc_voltages[8] = {0};
 static bool io_board_lim_sw[8] = {0};
 static float io_board_as5047_angle = 0.0;
+static float can_ftr2_angle = 0.0;
 static ADC_CNT_t io_board_adc0_cnt = {0};
 
+// ADDIO
+static bool addio_lim_sw[8] = {1};
+static uint8_t pvg32_node_id = 0;
+static bool ftr2_activated = false;
+static int ftr2_id = 0x61F;
+static uint8_t ftr2_frame[8] = {0x2f, 0x00, 0x18, 0x02, 0xFE, 0x00, 0x00, 0x00};
+
+#ifdef ADDIO
+/*
+ * 5125KBaud, automatic wakeup, automatic recover
+ * from abort mode.
+ * See section 22.7.7 on the STM32 reference manual.
+ */
+static const CANConfig cancfg = {
+		CAN_MCR_ABOM | CAN_MCR_AWUM | CAN_MCR_TXFP,
+		CAN_BTR_SJW(0) | CAN_BTR_TS2(1) |
+		CAN_BTR_TS1(8) | CAN_BTR_BRP(27)
+};
+#else
 /*
  * 500KBaud, automatic wakeup, automatic recover
  * from abort mode.
@@ -68,10 +92,14 @@ static const CANConfig cancfg = {
 		CAN_BTR_SJW(0) | CAN_BTR_TS2(1) |
 		CAN_BTR_TS1(8) | CAN_BTR_BRP(6)
 };
+#endif
 
 // Private functions
 static void send_packet_wrapper(unsigned char *data, unsigned int len);
 static void printf_wrapper(char *str);
+static uint8_t update_addio_outputs(int valve, bool set);
+static void prop_valve_nmt_sm(uint8_t node_id, uint8_t state);
+static void prop_valve_status_sm(uint8_t node_id, uint8_t* data);
 
 // Function pointers
 static void(*m_range_func)(uint8_t id, uint8_t dest, float range) = 0;
@@ -95,9 +123,10 @@ void comm_can_init(void) {
 
 	canStart(&CANDx, &cancfg);
 
+	#ifndef ADDIO
 	bldc_interface_init(send_packet_wrapper);
 	bldc_interface_set_rx_printf_func(printf_wrapper);
-
+	#endif
 	chThdCreateStatic(cancom_read_thread_wa, sizeof(cancom_read_thread_wa), NORMALPRIO + 1,
 			cancom_read_thread, NULL);
 	chThdCreateStatic(cancom_process_thread_wa, sizeof(cancom_process_thread_wa), NORMALPRIO,
@@ -281,6 +310,7 @@ static THD_FUNCTION(cancom_process_thread, arg) {
 					}
 				}
 #endif
+#if CAN_IO_BOARD
 				if ((rxmsg.SID & 0x700) == CAN_MASK_IO_BOARD) {
 //					uint16_t id = rxmsg.SID & 0x0F;
 					uint16_t msg = (rxmsg.SID >> 4) & 0x0F;
@@ -343,7 +373,24 @@ static THD_FUNCTION(cancom_process_thread, arg) {
 						break;
 					}
 				}
-
+#endif
+#if CAN_ADDIO
+				if (rxmsg.SID == CAN_ANGLE) {
+					ftr2_activated = true;
+					can_ftr2_angle = ((rxmsg.data8[1] << 8) | rxmsg.data8[0]) / 10;
+				}
+				if ((rxmsg.SID & 0x700) == CAN_MASK_PVG32 && rxmsg.SID != 0x71F) {
+					prop_valve_nmt_sm(rxmsg.SID - 0x700, rxmsg.data8[0]); 
+				}
+				if (rxmsg.SID == (0x180 + pvg32_node_id)) {
+					prop_valve_status_sm(pvg32_node_id, rxmsg.data8);
+				}
+				if (rxmsg.SID == CAN_ADDIO_MASTER) {
+					for (int i = 0;i < rxmsg.DLC; i++) {
+						addio_lim_sw[i] = (rxmsg.data8[0] >> i) & 0x01;
+					}
+				}
+#endif
 			}
 
 			if (rx_frame_read == RX_FRAMES_SIZE) {
@@ -352,6 +399,7 @@ static THD_FUNCTION(cancom_process_thread, arg) {
 		}
 	}
 }
+
 
 void comm_can_transmit_eid(uint32_t id, uint8_t *data, uint8_t len) {
 	CANTxFrame txmsg;
@@ -565,6 +613,122 @@ can_status_msg *comm_can_get_status_msg_id(int id) {
 	}
 
 	return 0;
+}
+
+bool comm_can_addio_lim_sw(int sw) {
+	return addio_lim_sw[sw];
+}
+
+float comm_can_ftr2_angle(void) {
+	if (!ftr2_activated) {
+		uint8_t packet[8] = {0};
+		uint8_t ind = 8;
+
+		comm_can_transmit_sid(ftr2_id, ftr2_frame, 8);
+	}
+	return can_ftr2_angle;
+}
+
+void comm_can_addio_set_valve(int valve, bool set){
+	uint8_t packet[2] = {0};
+	int32_t ind = 2;
+
+	packet[0] = 0x24;
+	packet[1] = update_addio_outputs(valve, set);
+
+	comm_can_transmit_sid(0x1F, packet, ind);
+}
+
+static uint8_t update_addio_outputs(int valve, bool set) {
+	static uint8_t addio_board_outputs_bm = 0;
+	if (valve > 7) return addio_board_outputs_bm;
+
+	if (set) {
+		addio_board_outputs_bm |= (1 << valve);
+	} else {
+		addio_board_outputs_bm &= ~(1 << valve);
+	}
+
+	return addio_board_outputs_bm;
+}
+
+static void prop_valve_status_sm(uint8_t node_id, uint8_t* data){
+	uint8_t packet[8] = {0};
+	uint8_t ind = 8;
+
+	switch (data[0])
+	{
+	case PVG32_ERROR:
+		packet[0] = PVG32_HOLD;
+		packet[2] = 0x01;
+		comm_can_transmit_sid(0x300 + node_id, packet, ind);
+		break;
+	case PVG32_INIT:
+		packet[0] = PVG32_DISABLED;
+		packet[2] = 0x01;
+		comm_can_transmit_sid(0x300 + node_id, packet, ind);
+		break;
+	case PVG32_DISABLED:
+		packet[0] = PVG32_HOLD;
+		packet[2] = 0x01;
+		comm_can_transmit_sid(0x300 + node_id, packet, ind);
+		break;
+	case PVG32_HOLD:
+		packet[0] = PVG32_ACTIVE;
+		packet[2] = 0x01;
+		comm_can_transmit_sid(0x300 + node_id, packet, ind);
+		break;
+	case PVG32_ACTIVE:
+		break;
+	
+	default:
+		break;
+	}
+}
+
+static void prop_valve_nmt_sm(uint8_t node_id, uint8_t state){
+	uint8_t packet[2];
+	uint8_t ind = 2;
+	switch (state)
+	{
+	case PVG32_BOOTUP:
+		break;
+	case PVG32_STOPPED:
+		pvg32_node_id = node_id;
+		packet[0] = 0x01;
+		packet[1] = node_id;
+
+		comm_can_transmit_sid(0x00, packet, ind);
+		break;
+	case PVG32_PREOPERATIONAL:
+		pvg32_node_id = node_id;
+		packet[0] = 0x01;
+		packet[1] = node_id;
+
+		comm_can_transmit_sid(0x00, packet, ind);
+		break;
+	case PVG32_OPERATIONAL:
+		pvg32_node_id = node_id;
+		break;
+	
+	default:
+		break;
+	}
+}
+
+void comm_can_addio_set_valve_duty(float duty) {
+	uint8_t packet[8] = {0};
+	int32_t ind = 8;
+
+    // Convert duty (-1.0 - 1.0) to Vpoc setpoint (-16384 to +16384)
+    int16_t vpoc_value = (int16_t)((duty * 32768.0f) - 16384.0);
+
+    // Construct RxPDO1 message
+	packet[2] = (uint8_t)(vpoc_value & 0xFF);
+	packet[3] = (uint8_t)((vpoc_value >> 8) & 0xFF);
+
+    // Send RxPDO1 message (0x200 + NodeID)
+	comm_can_transmit_sid(0x200 + pvg32_node_id, packet, ind);
 }
 
 float comm_can_io_board_adc_voltage(int ch) {

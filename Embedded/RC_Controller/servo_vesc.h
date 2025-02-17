@@ -22,5 +22,6 @@ void servo_vesc_init(void);
 void servo_vesc_set_pos(float pos);
 float servo_vesc_get_pos(void);
 float servo_vesc_get_pos_set(void);
+void servo_vesc_reset_fault(void);
 
 #endif /* SERVO_VESC_H_ */
