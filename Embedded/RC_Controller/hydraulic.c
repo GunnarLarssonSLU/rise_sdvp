@@ -235,15 +235,15 @@ static THD_FUNCTION(hydro_thread, arg) {
 
 		// Control hydraulic actuators
 		#ifdef ADDIO
-		if (!comm_can_addio_lim_sw(0) && m_move_front == HYDRAULIC_MOVE_DOWN) {
+		if (!comm_can_addio_lim_sw(0) && m_move_front == HYDRAULIC_MOVE_UP) {
 			m_move_front = HYDRAULIC_MOVE_STOP;
-		} else if (!comm_can_addio_lim_sw(1) && m_move_front == HYDRAULIC_MOVE_UP) {
+		} else if (!comm_can_addio_lim_sw(1) && m_move_front == HYDRAULIC_MOVE_DOWN) {
 			m_move_front = HYDRAULIC_MOVE_STOP;
 		}
 
-		if (!comm_can_addio_lim_sw(2) && m_move_rear == HYDRAULIC_MOVE_DOWN) {
+		if (!comm_can_addio_lim_sw(2) && m_move_rear == HYDRAULIC_MOVE_UP) {
 			m_move_rear = HYDRAULIC_MOVE_STOP;
-		} else if (!comm_can_addio_lim_sw(3) && m_move_rear == HYDRAULIC_MOVE_UP) {
+		} else if (!comm_can_addio_lim_sw(3) && m_move_rear == HYDRAULIC_MOVE_DOWN) {
 			m_move_rear = HYDRAULIC_MOVE_STOP;
 		}
 

@@ -198,6 +198,34 @@ void terminal_process_string(char *str) {
 				commands_printf("Set valve %d to %d\n", valve, state);
 			}
 		}
+	} else if (strcmp(argv[0], "addio_read") == 0) {
+		for (int i = 0;i < 100;i++) {
+			commands_printf("IOs: %d %d %d %d",
+					comm_can_addio_lim_sw(0),
+					comm_can_addio_lim_sw(1),
+					comm_can_addio_lim_sw(2),
+					comm_can_addio_lim_sw(3));
+			commands_printf("FTR2: %.1f",
+					(double)comm_can_ftr2_angle());
+			chThdSleepMilliseconds(100);
+		}
+		commands_printf("Done\n");
+	} else if (strcmp(argv[0], "addio_set_valve") == 0) {
+		if (argc != 3) {
+			commands_printf("Invalid number of arguments\n");
+		} else {
+			int valve = -1;
+			sscanf(argv[1], "%d", &valve);
+			int state = -1;
+			sscanf(argv[2], "%d", &state);
+
+			if (valve < 0 || state < 0) {
+				commands_printf("Invalid argument\n");
+			} else {
+				comm_can_addio_set_valve(valve, state);
+				commands_printf("Set valve %d to %d\n", valve, state);
+			}
+		}
 	}
 
 	// The help command
@@ -264,6 +292,12 @@ void terminal_process_string(char *str) {
 
 		commands_printf("io_board_set_valve [valve] [state]");
 		commands_printf("  Set IO board valve [valve] to [state]");
+
+		commands_printf("addio_read");
+		commands_printf("  Read and print all addio inputs for 10 seconds.");
+
+		commands_printf("addio_set_valve [valve] [state]");
+		commands_printf("  Set addio valve [valve] to [state]");
 
 		for (int i = 0;i < callback_write;i++) {
 			if (callbacks[i].arg_names) {

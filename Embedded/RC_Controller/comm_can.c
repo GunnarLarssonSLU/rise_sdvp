@@ -659,9 +659,10 @@ static void prop_valve_status_sm(uint8_t node_id, uint8_t* data){
 	switch (data[0])
 	{
 	case PVG32_ERROR:
-		packet[0] = PVG32_HOLD;
-		packet[2] = 0x01;
-		comm_can_transmit_sid(0x300 + node_id, packet, ind);
+		packet[0] = 0x81; //Reset
+		packet[1] = node_id; //node-ide
+		comm_can_transmit_sid(0x00, packet, ind);
+		// comm_can_transmit_sid(0x300 + node_id, packet, ind);
 		break;
 	case PVG32_INIT:
 		packet[0] = PVG32_DISABLED;
