@@ -72,16 +72,7 @@ This will simulate a model car locally, including the autopilot. Then RControlSt
 
 ## Setting up a Raspberry Pi Image to run Car_Client
 
-The login credentials on the image are:
-
-```
-User:     pi
-Password: elpgem1
-```
-
-Starting by changing the password is a good idea.
-
-Once the image is up and running, the repository should be updated to the latest version:
+Pull the code from the repository to update to the latest version:
 
 ```
 cd ~/rise_sdvp
