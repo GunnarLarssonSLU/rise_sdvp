@@ -2,7 +2,7 @@
 
 This is a fork of https://github.com/vedderb/rise_sdvp (further developed as https://github.com/RISE-Dependable-Transport-Systems/ControlTower). Look there for documentation etc.
 
-On this page you find information specific for its application on the Macbot and Drängen
+On this page you find information specific for its application on the Macbot and Drängen. For videos of the machines put into practise at [Youtube](https://www.youtube.com/@mactrac1)
 
 
 ## Hardware
@@ -24,6 +24,7 @@ Hardware components used:
 ### Hardware components @ Macbot
 
 (to add - same as above, but without the IO unit)
+It is possible to attach an Arduino to the Raspberry to attach various sensors.
 
 ## Steering Geometries
 
@@ -89,7 +90,7 @@ Then Car_Client should be rebuilt
 
 ```
 cd ~/rise_sdvp/Linux/Car_Client
-qmake -qt=5 DEFINES+=HAS_CAMERA
+qmake
 make clean
 make
 ```
@@ -100,6 +101,14 @@ After that Car_Client can be started, and a connection can be made from RControl
 ```
 
 Notice that there are udev rules that map the USB-serial device of the Controller to _/dev/car_
+
+If you are attaching an arduino add
+
+```
+--ttyportarduino /dev/ttyUSB0
+```
+
+to the call, where ttyUSBO is the port used.
 
 The next time the raspberry pi boots it will start a screen session with Car_Client. This is done from the ~/start_screen script. It might be a good idea to check if the Car_Client command in that script has the correct arguments for the latest version of rise_sdvp. At this time it should be
 
