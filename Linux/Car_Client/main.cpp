@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
     bool logUsb = false;
     QString logUsbDir = QDir::currentPath() + "/logs";
     bool inputRtcm = false;
-    QString ttyPortRtcm = "/dev/ttyACM0";
+    QString ttyPortRtcm = "/dev/ttyACM1";
     bool inputArduino = true;
     QString ttyPortArduino = "/dev/ttyACM0";
 //    QString ttyPortArduino = "NOTHING";
@@ -290,6 +290,14 @@ int main(int argc, char *argv[])
             if ((i + 1) < args.size()) {
                 i++;
                 ttyPortRtcm = args.at(i);
+                found = true;
+            }
+        }
+
+        if (str == "--ttyportarduino") {
+            if ((i + 1) < args.size()) {
+                i++;
+                ttyPortArduino = args.at(i);
                 found = true;
             }
         }
@@ -541,6 +549,7 @@ int main(int argc, char *argv[])
     }
 
     if (inputArduino) {
+        qDebug() << "Connecting Arduino:" << ttyPortArduino;
         car.connectSerialArduino(ttyPortArduino, arduinoBaud);
     }
 

@@ -212,7 +212,11 @@ typedef enum {
 	// Mote commands
 	CMD_MOTE_UBX_START_BASE = 200,
 	CMD_MOTE_UBX_START_BASE_ACK,
-	CMD_MOTE_UBX_BASE_STATUS
+	CMD_MOTE_UBX_BASE_STATUS,
+
+    CMD_PRINTLOG =220,
+    CMD_ARDUINO_STATUS,
+    CMD_GETANGLE
 } CMD_PACKET;
 
 // RC control modes
@@ -259,10 +263,9 @@ typedef struct {
 	float vesc_p_gain;
 	float vesc_i_gain;
 	float vesc_d_gain;
-    float anglemin;
-    float anglemax;
-//    float angledegrees;
-    float voltage_centre;
+    float sensorinterval;
+    float degreeinterval;
+    float sensorcentre;
 } MAIN_CONFIG_vehicle;
 
 

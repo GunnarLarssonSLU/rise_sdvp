@@ -44,6 +44,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 // Defines
 #define FWD_TIME		20000
@@ -62,9 +63,12 @@ static void rtcm_base_rx(rtcm_ref_sta_pos_t *pos);
 
 // Private variables
 static rtcm3_state m_rtcm_state;
+uint16_t last_sensorvalue;
+float debugvalue;
+static bool arduino_connected = false;
 
-float showData;
-
+extern float io_board_as5047_angle;
+extern float servo_output;
 
 void commands_init(void) {
 	m_send_func = 0;
@@ -79,6 +83,8 @@ void commands_init(void) {
 	(void)stop_forward;
 #endif
 
+	last_sensorvalue=7;
+	debugvalue=0;
 	m_init_done = true;
 }
 
@@ -161,6 +167,25 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 
 		// ==================== Vehicle commands ==================== //
 #if MAIN_MODE_IS_VEHICLE
+
+		case CMD_GETANGLE:
+			int32_t ind = 0;
+			//			uint16_t sensorvalue=buffer_get_uint16(data, &ind);
+			//			float angle = buffer_get_float32(data, 1e4, &ind);
+			uint16_t sensorvalue=data[0]*256+data[1];
+			last_sensorvalue=sensorvalue;
+
+			/*
+            float voltage=1.0*sensorvalue*5/1024;
+            float relative_voltage=voltage-main_config.vehicle.voltage_centre;//   i=40;
+
+            float voltagespan=main_config.vehicle.anglemax-main_config.vehicle.anglemin;
+            float degreespervolt=voltagespan/5;*/
+
+            float angle=(sensorvalue-main_config.vehicle.sensorcentre)*(main_config.vehicle.degreeinterval/main_config.vehicle.sensorinterval);
+			comm_can_io_board_as5047_setangle(angle);
+			break;
+
 		case CMD_SET_POS:
 		case CMD_SET_POS_ACK: {
 			timeout_reset();
@@ -541,10 +566,9 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			main_config.vehicle.vesc_i_gain = buffer_get_float32_auto(data, &ind);
 			main_config.vehicle.vesc_d_gain = buffer_get_float32_auto(data, &ind);
 
-			main_config.vehicle.anglemin = buffer_get_float32_auto(data, &ind);
-			main_config.vehicle.anglemax = buffer_get_float32_auto(data, &ind);
-			main_config.vehicle.voltage_centre = buffer_get_float32_auto(data, &ind);
-//			main_config.vehicle.angledegrees = buffer_get_float32_auto(data, &ind);
+			main_config.vehicle.sensorcentre = buffer_get_float32_auto(data, &ind);
+			main_config.vehicle.sensorinterval = buffer_get_float32_auto(data, &ind);
+			main_config.vehicle.degreeinterval = buffer_get_float32_auto(data, &ind);
 
 
 #if MAIN_MODE == MAIN_MODE_vehicle
@@ -553,7 +577,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 
 
 			conf_general_store_main_config(&main_config);
-
 			// Doing this while driving will get wrong as there is so much accelerometer noise then.
 			//pos_reset_attitude();
 
@@ -646,11 +669,9 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.vesc_i_gain, &send_index);
 			buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.vesc_d_gain, &send_index);
 
-		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.anglemin, &send_index);
-		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.anglemax, &send_index);
-		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.voltage_centre, &send_index);
-//		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.angledegrees, &send_index);
-
+		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.sensorcentre, &send_index);
+		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.sensorinterval, &send_index);
+		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.degreeinterval, &send_index);
 
 			commands_send_packet(m_send_buffer, send_index);
 		} break;
@@ -710,11 +731,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			hydraulic_move(data[0], data[1]);
 			break;
 
-		case CMD_GET_ANGLE:
-//			io_board_as5047_angle = buffer_get_float32(data, 1e3, &ind);
-			io_board_as5047_angle = buffer_get_float32_auto(data, &ind);
-			break;
-
 		// ==================== vehicle commands ==================== //
 #if MAIN_MODE == MAIN_MODE_vehicle
 		case CMD_GET_STATE: {
@@ -769,7 +785,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			#ifdef USE_ADCONV_FOR_VIN
 				buffer_append_float32(m_send_buffer, adconv_get_vin(), 1e6, &send_index); // 68
 			#else
-
 				#ifdef IS_DRANGEN
 						buffer_append_float32(m_send_buffer, mcval.v_in, 1e6, &send_index); // 68
 				#else
@@ -793,10 +808,11 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				buffer_append_float32(m_send_buffer, pos_uwb.py, 1e4, &send_index); // 107
 			}
 			float logtmp;
-			logtmp=0;
-			buffer_append_float32(m_send_buffer, showData, 1e4, &send_index); // 111
-			buffer_append_float32(m_send_buffer, logtmp, 1e4, &send_index); // 115
-			buffer_append_float32(m_send_buffer, logtmp, 1e4, &send_index); // 119
+//			buffer_append_float32(m_send_buffer, (float) packet_id , 1e4, &send_index); // 111
+			buffer_append_float32(m_send_buffer, io_board_as5047_angle, 1e4, &send_index); // 111
+			buffer_append_float32(m_send_buffer, servo_output, 1e4, &send_index); // 115
+			buffer_append_uint16(m_send_buffer, last_sensorvalue, &send_index); // 119
+			buffer_append_float32(m_send_buffer, debugvalue, 1e4, &send_index); // 121
 			commands_send_packet(m_send_buffer, send_index);
 		} break;
 
@@ -824,6 +840,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 
 			autopilot_set_active(false);
 
+			debugvalue=mode;
 			switch (mode) {
 			case RC_MODE_CURRENT:
 				if (!main_config.vehicle.disable_motor) {
@@ -833,8 +850,9 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 					bldc_interface_set_current(throttle);
 					comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
 					bldc_interface_set_current(throttle);
-					comm_can_set_vesc_id(DIFF_STEERING);
-					bldc_interface_set_duty_cycle(steering*steering_scale);
+					//							if ((io_board_as5047_angle>-30) && (io_board_as5047_angle<30))
+//					comm_can_set_vesc_id(DIFF_STEERING);
+//					bldc_interface_set_duty_cycle(steering*steering_scale);
 					comm_can_unlock_vesc();
 				#endif
 
@@ -866,7 +884,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				utils_truncate_number(&throttle, -1.0, 1.0);
 				if (!main_config.vehicle.disable_motor) {
 					#if HAS_DIFF_STEERING
-//					showData=13+throttle + throttle * steering;
 						comm_can_lock_vesc();
 						comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
 						bldc_interface_set_duty_cycle(throttle + throttle * steering);
@@ -887,8 +904,12 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 							bldc_interface_set_duty_cycle(throttle);
 							comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
 							bldc_interface_set_duty_cycle(throttle);
+//							if ((io_board_as5047_angle>-30) && (io_board_as5047_angle<30))
+//							if (1==2)
+//							{
 							comm_can_set_vesc_id(DIFF_STEERING);
 							bldc_interface_set_duty_cycle(steering*VOLTAGEFRACTION);
+//							}
 							comm_can_unlock_vesc();
 
 						#endif
@@ -933,17 +954,20 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				steering = utils_map(steering, -1.0, 1.0,
 					main_config.vehicle.steering_center + (main_config.vehicle.steering_range / 2.0),
 					main_config.vehicle.steering_center - (main_config.vehicle.steering_range / 2.0));
-				servo_simple_set_pos_ramp(steering);
+					servo_simple_set_pos_ramp(steering);
 			#endif
 		} break;
 
 		case CMD_SET_SERVO_DIRECT: {
 			timeout_reset();
+	//		if ((io_board_as5047_angle>-30) && (io_board_as5047_angle<30))
+	//		{
 
 			int32_t ind = 0;
 			float steering = buffer_get_float32(data, 1e6, &ind);
 			utils_truncate_number(&steering, 0.0, 1.0);
 			servo_simple_set_pos_ramp(steering);
+	//		}
 		} break;
 #endif
 #endif
