@@ -52,6 +52,8 @@ static float m_pos_now_raw = 0.0;
 static int m_not_ok_cnt = 0;
 static float m_out_last = 0.0;
 
+float servo_output;
+
 // Threads
 static THD_WORKING_AREA(servo_thread_wa, 1024);
 static THD_FUNCTION(servo_thread, arg);
@@ -180,13 +182,14 @@ static THD_FUNCTION(servo_thread, arg) {
 		}
 
 #ifdef SERVO_VESC_HYDRAULIC
-
 		if (m_not_ok_cnt < 100) {
 			float output_scaled = SERVO_VESC_INVERTED ? output : -output;
 			output_scaled *= 0.75;
 			m_out_last = (output_scaled + 1.0) / 2.0;
+			servo_output=m_out_last;
 			comm_can_io_board_set_pwm_duty(0, m_out_last);
 		} else {
+			servo_output=0.5;
 			comm_can_io_board_set_pwm_duty(0, 0.5);
 		}
 #else

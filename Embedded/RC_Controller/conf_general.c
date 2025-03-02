@@ -161,9 +161,9 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 	conf->vehicle.vesc_i_gain = 1.0;
 	conf->vehicle.vesc_d_gain = 0.5;
 
-	conf->vehicle.anglemin = -20;
-	conf->vehicle.anglemax = 40;
-	conf->vehicle.voltage_centre = 3.24;
+	conf->vehicle.sensorinterval = 160;
+	conf->vehicle.degreeinterval = 68;
+	conf->vehicle.sensorcentre = 580;
 
 
 	/*

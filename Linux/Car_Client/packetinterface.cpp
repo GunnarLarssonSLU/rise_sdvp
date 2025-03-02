@@ -398,6 +398,9 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         state.ap_route_left = utility::buffer_get_int16(data, &ind);
         state.px_uwb = utility::buffer_get_double32(data, 1e4, &ind);
         state.py_uwb = utility::buffer_get_double32(data, 1e4, &ind);
+        state.angle = utility::buffer_get_double32(data, 1e4, &ind);
+        state.servo_output = utility::buffer_get_double32(data, 1e4, &ind);
+        state.sensor_value = utility::buffer_get_uint16(data, &ind);
         emit stateReceived(id, state);
     } break;
 
@@ -499,9 +502,18 @@ unsigned short PacketInterface::crc16(const unsigned char *buf, unsigned int len
 
 bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_packet)
 {
-    qDebug() << "in packetinterface::sendPacket";
-    qDebug() << "in: " << data;
     unsigned int ind = 0;
+/*
+    if (data[0]==CMD_GETANGLE)
+    {
+            qDebug() << "in packetinterface::sendPacket (get data)";
+            qDebug() << "in: " << data[1] << ":" << data[2];
+    } else
+    {
+            qDebug() << "in packetinterface::sendPacket (do not get data)";
+    }
+*/
+
 
     // If the IP is valid, send the packet over UDP
     if (QString::compare(mHostAddress.toString(), "0.0.0.0") != 0) {
@@ -521,7 +533,7 @@ bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_pac
     int len_tot = len_packet;
     unsigned int data_offs = 0;
 
-    qDebug() << "Length: " << len_tot;
+ //   qDebug() << "Length: " << len_tot;
     if (len_tot <= 255) {
         mSendBufferAck[ind++] = 2;
         mSendBufferAck[ind++] = len_tot;

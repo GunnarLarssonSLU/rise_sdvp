@@ -298,15 +298,6 @@ debug-start:
 	openocd -f stm32-bv_openocd.cfg -d
 	
 upload_remote: build/$(PROJECT).bin
-#	./upload_remote build/$(PROJECT).bin pi 10.1.151.19 22 pi_gpio
-#	./upload_remote build/$(PROJECT).bin pi 127.0.0.1 2230 stlink
-#	./upload_remote build/$(PROJECT).bin pi 192.168.1.147 22 pi_gpio
-
-	#MacTrac
-#	./upload_remote build/$(PROJECT).bin pi 192.168.1.147 2230 stlink
-
-#	./upload_remote build/$(PROJECT).bin pi 192.168.200.100 22 stlink
-
 	#Drängen
 #	./upload_remote build/$(PROJECT).bin pi 192.168.43.9 22 pi_gpio
 #	./upload_remote build/$(PROJECT).bin pi 192.168.200.101 22 pi_gpio

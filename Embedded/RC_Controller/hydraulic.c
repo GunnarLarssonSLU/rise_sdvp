@@ -37,8 +37,6 @@
 #define TIMEOUT_SECONDS			2.0
 #define TIMEOUT_SECONDS_MOVE	10.0
 
-//extern float showData;
-
 // Private variables
 static volatile float m_speed_now = 0.0;
 static volatile float m_distance_now = 0.0;

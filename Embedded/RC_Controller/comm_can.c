@@ -55,7 +55,8 @@ static int vesc_id = VESC_ID;
 // IO Board
 static float io_board_adc_voltages[8] = {0};
 static bool io_board_lim_sw[8] = {0};
-static float io_board_as5047_angle = 0.0;
+//static float io_board_as5047_angle = 0.0;
+float io_board_as5047_angle = 0.0;
 static ADC_CNT_t io_board_adc0_cnt = {0};
 
 /*
@@ -577,6 +578,11 @@ float comm_can_io_board_adc_voltage(int ch) {
 float comm_can_io_board_as5047_angle(void) {
 	return io_board_as5047_angle;
 }
+
+void comm_can_io_board_as5047_setangle(float angle) {
+	io_board_as5047_angle=angle;
+}
+
 
 bool comm_can_io_board_lim_sw(int sw) {
 	if (sw < 0 || sw >= 8) {

@@ -95,6 +95,9 @@ struct CAR_STATE {
     Q_PROPERTY(int16_t ap_route_left MEMBER ap_route_left)
     Q_PROPERTY(double px_uwb MEMBER px_uwb)
     Q_PROPERTY(double py_uwb MEMBER py_uwb)
+    Q_PROPERTY(double angle MEMBER angle)
+    Q_PROPERTY(double servo_output MEMBER servo_output)
+    Q_PROPERTY(uint16_t sensor_value MEMBER sensor_value)
 
 public:
     uint8_t fw_major;
@@ -120,6 +123,9 @@ public:
     int16_t ap_route_left;
     double px_uwb;
     double py_uwb;
+    double angle;
+    double servo_output;
+    uint16_t sensor_value;
 
     QList<double> accelList() {
         QList<double> a;
@@ -375,7 +381,9 @@ typedef enum {
     CMD_MOTE_UBX_BASE_STATUS,
 
     // New commands
-    CMD_PRINTLOG =220
+    CMD_PRINTLOG =220,
+    CMD_ARDUINO_STATUS,
+    CMD_GETANGLE
 
 
 } CMD_PACKET;
