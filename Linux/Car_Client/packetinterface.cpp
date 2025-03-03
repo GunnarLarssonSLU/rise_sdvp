@@ -201,10 +201,10 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
 
     emit packetReceived(id, cmd, pkt);
 
-    if (!((cmd==63) || (cmd==82) || (cmd==120)))
-    {
-  //      qDebug() << "Kommando: " << cmd;
-    }
+  //  if (!((cmd==63) || (cmd==82) || (cmd==120)))
+  //  {
+        qDebug() << "Kommando: " << cmd;
+  //  }
 
     switch (cmd) {
     case CMD_PRINTF: {
@@ -369,6 +369,7 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
             break;
         }
 
+        qDebug() << "CMD_GET_STATE";
         state.fw_major = data[ind++];
         state.fw_minor = data[ind++];
         state.roll = utility::buffer_get_double32(data, 1e6, &ind);
@@ -401,6 +402,7 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         state.angle = utility::buffer_get_double32(data, 1e4, &ind);
         state.servo_output = utility::buffer_get_double32(data, 1e4, &ind);
         state.sensor_value = utility::buffer_get_uint16(data, &ind);
+        state.debug_value = utility::buffer_get_double32(data, 1e4, &ind);
         emit stateReceived(id, state);
     } break;
 

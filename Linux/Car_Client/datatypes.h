@@ -98,6 +98,7 @@ struct CAR_STATE {
     Q_PROPERTY(double angle MEMBER angle)
     Q_PROPERTY(double servo_output MEMBER servo_output)
     Q_PROPERTY(uint16_t sensor_value MEMBER sensor_value)
+    Q_PROPERTY(double debug_value MEMBER debug_value)
 
 public:
     uint8_t fw_major;
@@ -126,6 +127,7 @@ public:
     double angle;
     double servo_output;
     uint16_t sensor_value;
+    double debug_value;
 
     QList<double> accelList() {
         QList<double> a;
@@ -384,7 +386,6 @@ typedef enum {
     CMD_PRINTLOG =220,
     CMD_ARDUINO_STATUS,
     CMD_GETANGLE
-
 
 } CMD_PACKET;
 

@@ -84,7 +84,7 @@ void commands_init(void) {
 #endif
 
 	last_sensorvalue=7;
-	debugvalue=0;
+	debugvalue=0.5;
 	m_init_done = true;
 }
 
@@ -167,6 +167,15 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 
 		// ==================== Vehicle commands ==================== //
 #if MAIN_MODE_IS_VEHICLE
+
+		case CMD_ARDUINO_STATUS   :
+			if (data[0])
+			{
+				arduino_connected=true;
+			} else
+			{
+				arduino_connected=false;
+			}
 
 		case CMD_GETANGLE:
 			int32_t ind = 0;
@@ -811,7 +820,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 //			buffer_append_float32(m_send_buffer, (float) packet_id , 1e4, &send_index); // 111
 			buffer_append_float32(m_send_buffer, io_board_as5047_angle, 1e4, &send_index); // 111
 			buffer_append_float32(m_send_buffer, servo_output, 1e4, &send_index); // 115
-			buffer_append_uint16(m_send_buffer, last_sensorvalue, &send_index); // 119
+			buffer_append_uint16(m_send_buffer, (last_sensorvalue+1), &send_index); // 119
 			buffer_append_float32(m_send_buffer, debugvalue, 1e4, &send_index); // 121
 			commands_send_packet(m_send_buffer, send_index);
 		} break;
@@ -840,7 +849,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 
 			autopilot_set_active(false);
 
-			debugvalue=mode;
+			debugvalue=10.0*mode+0.2;
 			switch (mode) {
 			case RC_MODE_CURRENT:
 				if (!main_config.vehicle.disable_motor) {
