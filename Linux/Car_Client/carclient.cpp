@@ -237,9 +237,22 @@ void CarClient::connectSerialArduino(QString port, int baudrate)
 
     if(mSerialPortArduino->isOpen())
         {
+        QByteArray packet;
+        packet.clear();
+        packet.append(this->mCarId);
+        packet.append((char)CMD_ARDUINO_STATUS);
+        packet.append((char)1);
+        mPacketInterface->sendPacket(packet);
+
             // Tell RC_Controller about it
         } else
         {
+        QByteArray packet;
+        packet.clear();
+        packet.append(this->mCarId);
+        packet.append((char)CMD_ARDUINO_STATUS);
+        packet.append((char)0);
+        mPacketInterface->sendPacket(packet);
         return;
         }
 
@@ -569,12 +582,24 @@ void CarClient::readRos2Command() {
     QLocalSocket* clientConnection = qobject_cast<QLocalSocket*>(sender());
     QByteArray rosdata = clientConnection->readAll();
 
-    const unsigned char *data = reinterpret_cast<const unsigned char *>(rosdata.constData());
-    unsigned int len_packet = std::strlen(reinterpret_cast<const char *>(data));
+//    const unsigned char *data = reinterpret_cast<const unsigned char *>(rosdata.constData());
+//    unsigned int len_packet = std::strlen(reinterpret_cast<const char *>(data));
 
-    qDebug() << "Got command via ROS:" << data;
+    qDebug() << "Got command 1 via ROS:" << rosdata[1];
+    qDebug() << "Got command 2 via ROS:" << rosdata[2];
+    qDebug() << "Got command via ROS:" << rosdata;
 
-    mPacketInterface->sendPacket(data, len_packet);
+//        QByteArray packet;
+ //       packet.clear();
+ //       packet.append(this->mCarId);
+ //       packet.append((char)CMD_GETANGLE);
+ //       packet.append(rosdata);
+
+//        mPacketInterface->sendPacket(packet);
+        //            mPacketInterface->sendPacket(data);
+
+
+//    mPacketInterface->sendPacket(data, len_packet);
     QString response = "OK";
 
     qDebug() << "Response to ROS: " << response;
@@ -729,11 +754,11 @@ void CarClient::packetDataToSend(QByteArray &data)
 {
     // This is a packet from RControlStation going to the car.
     // Inspect data and possibly process it here.
-#ifdef JETSON____
-    qDebug() << "in CarClient::packetDataToSend. Data: " << data;
-#else
-    qDebug() << "in CarClient::packetDataToSend. Data: " << data << Qt::flush;
-#endif
+//#ifdef JETSON____
+   // qDebug() << "in CarClient::packetDataToSend. Data: " << data;
+//#else
+//    qDebug() << "in CarClient::packetDataToSend. Data: " << data << Qt::flush;
+//#endif
     bool packetConsumed = false;
 
     VByteArray vb(data);
@@ -746,7 +771,8 @@ void CarClient::packetDataToSend(QByteArray &data)
     (void)id;
     qDebug() << "in CarClient::packetDataToSend.... Id: " << id << ", mCarId: " << mCarId << ", cmd: " << cmd;
 
-    if (id == mCarId || id == 255) {
+//    if (id == mCarId || id == 255) {
+    if (id == mCarId || mCarId == 255) {
         if (cmd == CMD_CAMERA_STREAM_START) {
 #if HAS_CAMERA
 //            qDebug() << "in CarClient::packetDataToSend. Sending camera feed";
@@ -832,10 +858,9 @@ void CarClient::packetDataToSend(QByteArray &data)
     }
 
     if (!packetConsumed) {
-//    	qDebug() << "Try to send to serial port";
         if (mSerialPort->isOpen()) {
-            qDebug() << "Packet sent (port open)";
-            qDebug() << static_cast<int>(data[2]) << ":" << static_cast<int>(data[3]) << ":" << static_cast<int>(data[4]);
+  //          qDebug() << "Packet sent (port open)";
+  //          qDebug() << static_cast<int>(data[2]) << ":" << static_cast<int>(data[3]) << ":" << static_cast<int>(data[4]);
             mSerialPort->writeData(data);
         } else
         {
