@@ -106,35 +106,6 @@ Currently controls the vehicle powertrain via the controller card whilst the hyd
 
 Functions related to calculating the vehicles position. The functions pos_init() and pos_uwb_init() are initiated at startup.
 
-*void pos_init(void);
-
-Initiates the positioning. Set variables to zero, initiates imu, starts ahrs, starts ublox. Adds some terminal commands.
-
-
-*void pos_pps_cb(EXTDriver *extp, expchannel_t channel);
-*void pos_get_imu(float *accel, float *gyro, float *mag);
-*void pos_get_quaternions(float *q);
-*void pos_get_pos(POS_STATE *p);
-*void pos_get_gps(GPS_STATE *p);
-*float pos_get_speed(void);
-*void pos_set_xya(float x, float y, float angle);
-*void pos_set_yaw_offset(float angle);
-*void pos_set_enu_ref(double lat, double lon, double height);
-*void pos_get_enu_ref(double *llh);
-*void pos_reset_enu_ref(void);
-*void pos_get_mc_val(mc_values *v);
-*int32_t pos_get_ms_today(void);
-*void pos_set_ms_today(int32_t ms);
-*bool pos_input_nmea(const char *data);
-
-Reads nmea data from gps.  
-
-*void pos_reset_attitude(void);
-*int pos_time_since_gps_corr(void);
-*void pos_base_rtcm_obs(rtcm_obs_header_t *header, rtcm_obs_t *obs, int obs_num);
-
-
-
 # Timeout
 
 ## Important functions
