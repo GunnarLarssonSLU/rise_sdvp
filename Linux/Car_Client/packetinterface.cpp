@@ -201,10 +201,10 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
 
     emit packetReceived(id, cmd, pkt);
 
-  //  if (!((cmd==63) || (cmd==82) || (cmd==120)))
-  //  {
-        qDebug() << "Kommando: " << cmd;
-  //  }
+//    if (!((cmd==63) || (cmd==82) || (cmd==120)))
+//    {
+//        qDebug() << "Kommando: " << cmd;
+//    }
 
     switch (cmd) {
     case CMD_PRINTF: {
