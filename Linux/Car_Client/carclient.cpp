@@ -769,7 +769,7 @@ void CarClient::packetDataToSend(QByteArray &data)
     vb.chop(3);
 
     (void)id;
-    qDebug() << "in CarClient::packetDataToSend.... Id: " << id << ", mCarId: " << mCarId << ", cmd: " << cmd;
+//    qDebug() << "in CarClient::packetDataToSend.... Id: " << id << ", mCarId: " << mCarId << ", cmd: " << cmd;
 
 //    if (id == mCarId || id == 255) {
     if (id == mCarId || mCarId == 255) {
