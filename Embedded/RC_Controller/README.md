@@ -14,7 +14,11 @@ The main function initiates all threads running on the card. Logging and timeout
 
 # Autopilot
 
-Functions related to the autopilot. 
+Functions related to the autopilot. The function autopilot_init() is initiated at startup.
+
+*autopilot_init()
+
+Set values to default value. Register the terminal commands below. Does not start any functions.
 
 ## Registered terminal commands
 | Command | Description | Calls function |
@@ -86,7 +90,7 @@ Functions that process commands sent to the machine.
 
 # Hydraulic
 
-Starts thread "Hydraulic".
+Starts thread "Hydraulic". hydraulic.init() starts at startup. It only sets default values.
 
 Currently controls the vehicle powertrain via the controller card whilst the hydraulic implements (front/back) is controlled via a bespoke IO-card.
 
@@ -100,7 +104,7 @@ Currently controls the vehicle powertrain via the controller card whilst the hyd
 
 # Pos ([more information](pos.md))
 
-Functions related to calculating the vehicles position
+Functions related to calculating the vehicles position. The functions pos_init() and pos_uwb_init() are initiated at startup.
 
 # Timeout
 
