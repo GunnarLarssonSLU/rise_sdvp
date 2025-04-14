@@ -95,6 +95,10 @@ struct CAR_STATE {
     Q_PROPERTY(int16_t ap_route_left MEMBER ap_route_left)
     Q_PROPERTY(double px_uwb MEMBER px_uwb)
     Q_PROPERTY(double py_uwb MEMBER py_uwb)
+    Q_PROPERTY(double angle MEMBER angle)
+    Q_PROPERTY(double servo_output MEMBER servo_output)
+    Q_PROPERTY(uint16_t sensor_value MEMBER sensor_value)
+    Q_PROPERTY(double debugvalue MEMBER debugvalue)
 
 public:
     uint8_t fw_major;
@@ -120,9 +124,10 @@ public:
     int16_t ap_route_left;
     double px_uwb;
     double py_uwb;
-    double log1;
-    double log2;
-    double log3;
+    double angle;
+    double servo_output;
+    uint16_t sensor_value;
+    double debugvalue;
 
     QList<double> accelList() {
         QList<double> a;
@@ -199,10 +204,9 @@ typedef struct {
     float vesc_p_gain;
     float vesc_i_gain;
     float vesc_d_gain;
-    float anglemin;
-    float anglemax;
-//    float angledegrees;
-    float centrevoltage;
+    float sensorcentre;
+    float sensorinterval;
+    float degreeinterval;
 } MAIN_CONFIG_CAR;
 
 typedef struct {
@@ -333,46 +337,46 @@ typedef enum {
 
     // Common vehicle commands
     CMD_VESC_FWD = 50,
-    CMD_SET_POS,                    // 51
-    CMD_SET_POS_ACK,                // 52
-    CMD_SET_ENU_REF,                // 53
-    CMD_GET_ENU_REF,                // 54
-    CMD_AP_ADD_POINTS,              // 55
-    CMD_AP_REMOVE_LAST_POINT,       // 56
-    CMD_AP_CLEAR_POINTS,            // 57
-    CMD_AP_GET_ROUTE_PART,          // 58
-    CMD_AP_SET_ACTIVE,              // 59
-    CMD_AP_REPLACE_ROUTE,           // 60
-    CMD_AP_SYNC_POINT,              // 61
-    CMD_SEND_RTCM_USB,              // 62
-    CMD_SEND_NMEA_RADIO,            // 63
-    CMD_SET_YAW_OFFSET,             // 64
-    CMD_SET_YAW_OFFSET_ACK,         // 65
-    CMD_LOG_LINE_USB,               // 66
-    CMD_PLOT_INIT,                  // 67
-    CMD_PLOT_DATA,                  // 68
-    CMD_PLOT_ADD_GRAPH,             // 69
-    CMD_PLOT_SET_GRAPH,             // 70
-    CMD_SET_MS_TODAY,               // 71
-    CMD_SET_SYSTEM_TIME,            // 72
-    CMD_SET_SYSTEM_TIME_ACK,        // 73
-    CMD_REBOOT_SYSTEM,              // 74
-    CMD_REBOOT_SYSTEM_ACK,          // 75
-    CMD_EMERGENCY_STOP,             // 76
-    CMD_SET_MAIN_CONFIG,            // 77
-    CMD_GET_MAIN_CONFIG,            // 78
-    CMD_GET_MAIN_CONFIG_DEFAULT,    // 79
-    CMD_ADD_UWB_ANCHOR,             // 80
-    CMD_CLEAR_UWB_ANCHORS,          // 81
-    CMD_LOG_ETHERNET,               // 82
-    CMD_CAMERA_IMAGE,               // 83
-    CMD_CAMERA_STREAM_START,        // 84
-    CMD_CAMERA_FRAME_ACK,           // 85
-    CMD_IO_BOARD_SET_PWM_DUTY,      // 86
-    CMD_IO_BOARD_SET_VALVE,         // 87
-    CMD_HYDRAULIC_MOVE,             // 88
-    CMD_HEARTBEAT,                  // 89
-    CMD_SET_AP_MODE,                // 90
+    CMD_SET_POS,
+    CMD_SET_POS_ACK,
+    CMD_SET_ENU_REF,
+    CMD_GET_ENU_REF,
+    CMD_AP_ADD_POINTS,
+    CMD_AP_REMOVE_LAST_POINT,
+    CMD_AP_CLEAR_POINTS,
+    CMD_AP_GET_ROUTE_PART,
+    CMD_AP_SET_ACTIVE,
+    CMD_AP_REPLACE_ROUTE,
+    CMD_AP_SYNC_POINT,
+    CMD_SEND_RTCM_USB,
+    CMD_SEND_NMEA_RADIO,
+    CMD_SET_YAW_OFFSET,
+    CMD_SET_YAW_OFFSET_ACK,
+    CMD_LOG_LINE_USB,
+    CMD_PLOT_INIT,
+    CMD_PLOT_DATA,
+    CMD_PLOT_ADD_GRAPH,
+    CMD_PLOT_SET_GRAPH,
+    CMD_SET_MS_TODAY,
+    CMD_SET_SYSTEM_TIME,
+    CMD_SET_SYSTEM_TIME_ACK,
+    CMD_REBOOT_SYSTEM,
+    CMD_REBOOT_SYSTEM_ACK,
+    CMD_EMERGENCY_STOP,
+    CMD_SET_MAIN_CONFIG,
+    CMD_GET_MAIN_CONFIG,
+    CMD_GET_MAIN_CONFIG_DEFAULT,
+    CMD_ADD_UWB_ANCHOR,
+    CMD_CLEAR_UWB_ANCHORS,
+    CMD_LOG_ETHERNET,
+    CMD_CAMERA_IMAGE,
+    CMD_CAMERA_STREAM_START,
+    CMD_CAMERA_FRAME_ACK,
+    CMD_IO_BOARD_SET_PWM_DUTY,
+    CMD_IO_BOARD_SET_VALVE,
+    CMD_HYDRAULIC_MOVE,
+    CMD_HEARTBEAT,
+    CMD_SET_AP_MODE,
 
     // Car commands
     CMD_GET_STATE = 120,
@@ -389,8 +393,10 @@ typedef enum {
     CMD_MOTE_UBX_START_BASE_ACK,
     CMD_MOTE_UBX_BASE_STATUS,
 
-    // New commands
-    CMD_PRINTLOG=220
+    CMD_PRINTLOG =220,
+    CMD_ARDUINO_STATUS,
+    CMD_GETANGLE
+
 } CMD_PACKET;
 
 // RC control modes
@@ -430,7 +436,7 @@ typedef enum {
 } JS_TYPE;
 
 // ============== RTCM Datatypes ================== //
-/*
+
 typedef struct {
     double t_tow;       // Time of week (GPS)
     double t_tod;       // Time of day (GLONASS)
@@ -505,7 +511,7 @@ typedef struct {
     void(*rx_rtcm_1019)(rtcm_ephemeris_t *eph);
     void(*rx_rtcm)(uint8_t *data, int len, int type);
 } rtcm3_state;
-*/
+
 typedef struct {
     int id;
     float px;

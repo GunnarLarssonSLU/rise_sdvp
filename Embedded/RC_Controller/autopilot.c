@@ -444,13 +444,14 @@ void autopilot_set_motor_speed(float speed) {
 		comm_can_lock_vesc();
 		#ifdef IS_DRANGEN
 //				comm_can_lock_vesc();
-				commands_printf("In Set Motor Speed. Is Drangen. No Hydraulic Drive\n");
+
+//				commands_printf("In Set Motor Speed. Is Drangen. No Hydraulic Drive\n");
 				comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
-				bldc_interface_set_rpm((int)(rpm*10));
-				commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_LEFT,(float)rpm*10);
+				bldc_interface_set_rpm((int)(rpm*200));
+//				commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_LEFT,(float)rpm*200);
 				comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
-				bldc_interface_set_rpm((int)(rpm*10));
-				commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_RIGHT,(float)rpm*10);
+				bldc_interface_set_rpm((int)(rpm*200));
+//				commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_RIGHT,(float)rpm*200);
 //				comm_can_unlock_vesc();
 			#else
 				comm_can_set_vesc_id(VESC_ID); //ÄNDRA HÄR
@@ -856,6 +857,7 @@ static THD_FUNCTION(ap_thread, arg) {
 				float steering_angle = 0.0;
 				float circle_radius = 1000.0;
 
+
 				steering_angle_to_point(pos_now.px, pos_now.py, -pos_now.yaw * M_PI / 180.0, rp_now.px,
 						rp_now.py, &steering_angle, &distance, &circle_radius);
 
@@ -926,7 +928,15 @@ static THD_FUNCTION(ap_thread, arg) {
 					autopilot_set_turn_rad(circle_radius);
 				#else
 					#ifdef IS_DRANGEN
-//					commands_printf("Not diff steering. Showing motor information.\n");
+					commands_printf("debug: %f\n",iDebug);
+//					if(iDebug==2)
+					//					{
+					commands_printf("AP NOW px: %f, py: %f, angle: %f\n",pos_now.px, pos_now.py, -pos_now.yaw * M_PI / 180.0);
+					commands_printf("AP RP px: %f, py: %f, angle: %f\n",rp_now.px, rp_now.py, steering_angle);
+					commands_printf("Dist: %f, circle radius: %f\n",distance, circle_radius);
+					commands_printf("Servo pos: %f\n",servo_pos);
+					//					}//
+
 					comm_can_set_vesc_id(DIFF_STEERING);
 					bldc_interface_set_duty_cycle(servo_pos);
 //					commands_printf("Motor %d: (steering) Duty cycle: %f.\n", DIFF_STEERING,servo_pos);
@@ -979,6 +989,7 @@ static void steering_angle_to_point(
 	}
 
 	float R = -(dx * dx + dy * dy) / (2.0 * dy);
+//	commands_printf("R (1): %f\n", R);
 
 	/*
 	 * Add correction if the arc is much longer than the total distance.
@@ -990,9 +1001,15 @@ static void steering_angle_to_point(
 	}
 
 	R /= angle_correction;
+//	commands_printf("R (2): %f\n", R);
 
 	*circle_radius = R;
 	*steering_angle = atanf(main_config.vehicle.axis_distance / R);
+/*
+	commands_printf("current x: %f, y: %f, angle: %f\n",current_x, current_y, current_angle);
+	commands_printf("goal x: %f, y: %f, angle: %f\n",goal_x, goal_y, steering_angle);
+	commands_printf("Dist: %f, circle radius: %f\n",distance, circle_radius);
+*/
 }
 
 static bool add_point(ROUTE_POINT *p, bool first) {

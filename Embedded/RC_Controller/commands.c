@@ -70,6 +70,7 @@ static bool arduino_connected = false;
 
 extern float io_board_as5047_angle;
 extern float servo_output;
+extern int iDebug;
 
 float sign(float input)
 	{
@@ -185,11 +186,13 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			break;
 
 		case CMD_GETANGLE:
-			uint16_t sensorvalue=data[0]*256+data[1];
+//			uint16_t sensorvalue=data[0]*256+data[1];
+			uint16_t sensorvalue=data[1]*256+data[0];
 			last_sensorvalue=sensorvalue;
 
             angle=(sensorvalue-main_config.vehicle.sensorcentre)*(main_config.vehicle.degreeinterval/main_config.vehicle.sensorinterval);
-			comm_can_io_board_as5047_setangle(angle);
+            //GUNNAR CHECK
+            comm_can_io_board_as5047_setangle(angle);
 			break;
 
 		case CMD_SET_POS:
@@ -851,18 +854,21 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			case RC_MODE_CURRENT:
 				if (!main_config.vehicle.disable_motor) {
 					#if IS_ALL_ELECTRIC
-						commands_printf("Throttle: %f. (%f,%f)\n", throttle,angle,steering);
-						commands_printf("Signs: (%f,%f)\n", sign(angle),sign(steering));
 						float okdirections=sign(angle)==-sign(steering);
 						float nottooextreme=fabs(angle)<25.0;
-						commands_printf("okdirections: %f, nottooextreme: %f\n", okdirections,nottooextreme);
+						if (iDebug==10)
+						{
+							commands_printf("Throttle: %f. (%f,%f)\n", throttle,angle,steering);
+							commands_printf("Signs: (%f,%f)\n", sign(angle),sign(steering));
+							commands_printf("okdirections: %f, nottooextreme: %f\n", okdirections,nottooextreme);
+						}
 						comm_can_lock_vesc();
 						comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
 						bldc_interface_set_current(throttle);
 						comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
 						bldc_interface_set_current(throttle);
 //						if ((angle>-30) && (angle<30)) && (angle<30))
-						if ((okdirections) || (nottooextreme))
+						if ( (iDebug==10) && ((okdirections) || (nottooextreme)))
 						{
 							commands_printf("steering: %f.\n", steering);
 							commands_printf("angle: %f.\n", angle);

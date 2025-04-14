@@ -11,11 +11,7 @@ QT       += serialport
 QT       += network
 QT       += opengl
 QT       += quick
-QT       += quickcontrols2
-QT	 += gamepad
-QT       +=sql
-QT       +=charts
-QT       +=sensors
+#QT       += quickcontrols2
 
 CONFIG   += c++11
 
@@ -81,16 +77,10 @@ contains(DEFINES, HAS_ASSIMP) {
     LIBS += -lassimp
 }
 
-LIBS += -L/home/gunnar/code/openssl-1.1.1q -lcrypto -L/path/to/openssl-1.1.1q -lssl
-
 SOURCES += main.cpp\
-    CompassWidget.cpp \
-    checkboxdelegate.cpp \
         mainwindow.cpp \
     qcustomplot.cpp \
     packetinterface.cpp \
-    rtcm3_simple.cpp \
-    sensorplot.cpp \
     utility.cpp \
     mapwidget.cpp \
     carinfo.cpp \
@@ -98,8 +88,10 @@ SOURCES += main.cpp\
     perspectivepixmap.cpp \
     carinterface.cpp \
     nmeaserver.cpp \
+    rtcm3_simple.c \
     rtcmclient.cpp \
     tcpbroadcast.cpp \
+    rtcmwidget.cpp \
     basestation.cpp \
     ping.cpp \
     networklogger.cpp \
@@ -111,6 +103,8 @@ SOURCES += main.cpp\
     moteconfig.cpp \
     magcal.cpp \
     imuplot.cpp \
+    copterinfo.cpp \
+    copterinterface.cpp \
     nmeawidget.cpp \
     confcommonwidget.cpp \
     ublox.cpp \
@@ -125,13 +119,9 @@ SOURCES += main.cpp\
     wireguard.cpp
 
 HEADERS  += mainwindow.h \
-    CompassWidget.h \
-    checkboxdelegate.h \
-    core/coordinatetransforms.h \
     qcustomplot.h \
     datatypes.h \
     packetinterface.h \
-    sensorplot.h \
     utility.h \
     mapwidget.h \
     carinfo.h \
@@ -142,6 +132,7 @@ HEADERS  += mainwindow.h \
     rtcm3_simple.h \
     rtcmclient.h \
     tcpbroadcast.h \
+    rtcmwidget.h \
     basestation.h \
     ping.h \
     networklogger.h \
@@ -153,6 +144,8 @@ HEADERS  += mainwindow.h \
     moteconfig.h \
     magcal.h \
     imuplot.h \
+    copterinfo.h \
+    copterinterface.h \
     nmeawidget.h \
     confcommonwidget.h \
     ublox.h \
@@ -177,12 +170,12 @@ FORMS    += mainwindow.ui \
     moteconfig.ui \
     magcal.ui \
     imuplot.ui \
+    copterinterface.ui \
     nmeawidget.ui \
     confcommonwidget.ui \
     intersectiontest.ui \
     ncom.ui \
     correctionanalysis.ui \
-    sensorplot.ui \
     wireguard.ui
 
 contains(DEFINES, HAS_OPENGL) {
@@ -207,6 +200,27 @@ contains(DEFINES, HAS_SIM_SCEN) {
     HEADERS += pagesimscen.h \
             simscentree.h
     FORMS += pagesimscen.ui
+}
+
+greaterThan(QT_MAJOR_VERSION, 5) {
+    # Configurations specific to Qt 6.x
+    message("Using Qt 6.x")
+
+    # Include SDL for gamepad support in Qt 6.x
+    INCLUDEPATH += /usr/include/SDL2
+    LIBS += -lSDL2
+    QT       += openglwidgets
+    QMAKE_CXXFLAGS += -fpermissive
+
+    # Add other Qt 6.x specific configurations here
+} else {
+    # Configurations specific to Qt 5.x
+    message("Using Qt 5.x")
+
+    # Include QtGamepad module for Qt 5.15
+    QT += gamepad
+
+    # Add other Qt 5.x specific configurations here
 }
 
 RESOURCES += \

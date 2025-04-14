@@ -16,10 +16,8 @@
  */
 
 #include "nmeawidget.h"
-#include "qdatetime.h"
 #include "ui_nmeawidget.h"
 #include "nmeaserver.h"
-
 
 #include <QMessageBox>
 #include <QFileDialog>
@@ -30,19 +28,10 @@ NmeaWidget::NmeaWidget(QWidget *parent) :
     ui(new Ui::NmeaWidget)
 {
     ui->setupUi(this);
-
-
-    QDateTime date = QDateTime::currentDateTime();
-    QString formattedTime = date.toString("dd.MM.yyyy hh:mm:ss");
-    QByteArray formattedTimeMsg = formattedTime.toLocal8Bit();
-
-    ui->nmeaLogEdit->setText(formattedTimeMsg+".txt");
     layout()->setContentsMargins(0, 0, 0, 0);
 
     mNmeaForwardServer = new TcpBroadcast(this);
     mFixType = "Unknown";
-    ui->nmeaServerActiveBox->setCheckState(Qt::Checked);
-    on_nmeaLogActiveBox_toggled(true);
 }
 
 NmeaWidget::~NmeaWidget()
@@ -55,8 +44,6 @@ void NmeaWidget::inputNmea(QByteArray msg)
     if (ui->nmeaPrintBox->isChecked()) {
         ui->nmeaBrowser->append(QString::fromLocal8Bit(msg));
     }
-
-//    ((CarInterface*)(parent()))->ui->
 
     mNmeaForwardServer->broadcastData(msg);
 
@@ -75,7 +62,12 @@ void NmeaWidget::inputNmea(QByteArray msg)
 
         if (NmeaServer::decodeNmeaGGA(data, gga) >= 0) {
             QString satStr;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+            satStr = QString("Satellites: %d")
+                      .arg(gga.n_sat);
+#else
             satStr.sprintf("Satellites: %d", gga.n_sat);
+#endif
             ui->nmeaSatsLabel->setText(satStr);
 
             switch (gga.fix_type) {
@@ -113,7 +105,7 @@ void NmeaWidget::on_nmeaLogChooseButton_clicked()
 void NmeaWidget::on_nmeaLogActiveBox_toggled(bool checked)
 {
     if (checked) {
-        bool ok = mNmeaForwardServer->logToFile(QDir("documents/logs").dirName() + ui->nmeaLogEdit->text());
+        bool ok = mNmeaForwardServer->logToFile(ui->nmeaLogEdit->text());
 
         if (!ok) {
             QMessageBox::warning(this, "NMEA Log",

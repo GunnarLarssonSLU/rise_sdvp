@@ -30,7 +30,6 @@
 #include "imagewidget.h"
 
 #ifdef HAS_OPENGL
-#include "CompassWidget.h"
 #include "orientationwidget.h"
 #endif
 
@@ -83,7 +82,6 @@ private slots:
     void udpReadReady();
     void tcpRx(QByteArray &data);
     void terminalPrint(quint8 id, QString str);
-    void logPrint(quint8 id, QString str);
     void vescFwdReceived(quint8 id, QByteArray data);
     void routePointSet(LocPoint pos);
     void lastRoutePointRemoved();
@@ -104,14 +102,13 @@ private slots:
     void on_confReadButton_clicked();
     void on_confReadDefaultButton_clicked();
     void on_confWriteButton_clicked();
-//    void on_setClockButton_clicked();
-//    void on_setClockPiButton_clicked();
+    void on_setClockButton_clicked();
+    void on_setClockPiButton_clicked();
     void on_rebootPiButton_clicked();
     void on_shutdownPiButton_clicked();
     void on_camStartButton_clicked();
     void on_camStopButton_clicked();
     void on_camShowMapBox_toggled(bool checked);
-    /*
     void on_ubxVersionButton_clicked();
     void on_ubxNavSatButton_clicked();
     void on_ubxSolButton_clicked();
@@ -122,12 +119,7 @@ private slots:
     void on_zeroGyroButton_clicked();
     void on_uwbRebootButton_clicked();
     void on_uwbListAnchorsButton_clicked();
-    */
     void on_ioBoardPwmSlider_valueChanged(int value);
-    void on_startCalibration1Button_clicked();
-    void on_startCalibration2Button_clicked();
-    void on_endCalibration1Button_clicked();
-    void on_endCalibration2Button_clicked();
 
 private:
 
@@ -136,7 +128,6 @@ private:
     PacketInterface *mPacketInterface;
 
 #ifdef HAS_OPENGL
-    CompassWidget *mCompassWidget;
     OrientationWidget *mOrientationWidget;
 #endif
 

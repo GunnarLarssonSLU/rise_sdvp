@@ -22,10 +22,15 @@ CarInfo::CarInfo(int id, Qt::GlobalColor color)
     mId = id;
     mColor = color;
     mName = "";
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    mName = QString("Car %d").arg(mId);
+#else
     mName.sprintf("Car %d", mId);
+#endif
+
     mTime = 0;
-    mLength = 4.0;
-    mWidth = 1.65;
+    mLength = 0.8;
+    mWidth = 0.335;
     mCornerRadius = 0.02;
 }
 
@@ -40,7 +45,12 @@ void CarInfo::setId(int id, bool changeName)
 
     if (changeName) {
         mName = "";
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        mName = QString("Car %d").arg(mId);
+#else
         mName.sprintf("Car %d", mId);
+#endif
+
     }
 }
 

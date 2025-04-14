@@ -368,7 +368,7 @@
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout_7">
                <item>
-                <widget class="QDoubleSpinBox" name="refSendLonBox2">
+                <widget class="QDoubleSpinBox" name="refSendLonBox">
                  <property name="prefix">
                   <string>Lon: </string>
                  </property>
@@ -387,7 +387,7 @@
                 </widget>
                </item>
                <item>
-                <widget class="QDoubleSpinBox" name="refSendLatBox2">
+                <widget class="QDoubleSpinBox" name="refSendLatBox">
                  <property name="prefix">
                   <string>Lat: </string>
                  </property>
@@ -406,7 +406,7 @@
                 </widget>
                </item>
                <item>
-                <widget class="QDoubleSpinBox" name="refSendHBox2">
+                <widget class="QDoubleSpinBox" name="refSendHBox">
                  <property name="prefix">
                   <string>h: </string>
                  </property>

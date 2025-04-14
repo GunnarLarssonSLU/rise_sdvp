@@ -52,17 +52,9 @@ CarInterface::CarInterface(QWidget *parent) :
 
 #ifdef HAS_OPENGL
     mOrientationWidget = new OrientationWidget(this);
-    mCompassWidget = new CompassWidget(this);
     ui->orientationLayout->removeItem(ui->orientationSpacer);
-    ui->orientationLayout->insertWidget(0, mCompassWidget, 1);
-    ui->orientationLayout->insertWidget(1, mOrientationWidget, 2);
+    ui->orientationLayout->insertWidget(0, mOrientationWidget, 1);
 #endif
-
-//    ui->tabWidget->removeTab(6);
-//    ui->tabWidget->removeTab(5); //
-//    ui->tabWidget->removeTab(4);
-//    ui->tabWidget->removeTab(2); //
-//    ui->tabWidget->removeTab(0); //
 
     memset(&mLastCarState, 0, sizeof(CAR_STATE));
 
@@ -150,34 +142,44 @@ void CarInterface::setOrientation(double roll, double pitch, double yaw)
 
 void CarInterface::setStateData(CAR_STATE data)
 {
-    qDebug() << ":::CarInterface::setStateData:::";
-    qDebug() << "x (car): " << data.px << ", y (car): " << data.py;
-    qDebug() << "x (gps): " << data.px_gps << ", y (gps): " << data.py_gps;
-    qDebug() << "x (uwb): " << data.px_uwb << ", " << ", y (uwb): " << data.py_uwb;
-    qDebug() << ":::   :::";
-
     mLastCarState = data;
 
     ui->imuPlot->addSample(data.accel, data.gyro, data.mag);
-    ui->sensorPlot->addSample(data.accel, data.gyro, data.mag);
 
     // Firmware label
     QString fwStr;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    fwStr = QString("FW %d.%d").arg(data.fw_major).arg(data.fw_minor);
+#else
     fwStr.sprintf("FW %d.%d", data.fw_major, data.fw_minor);
+#endif
     ui->fwLabel->setText(fwStr);
     setFirmwareVersion(qMakePair(data.fw_major, data.fw_minor));
 
     QString fwStr2;
-    fwStr2.sprintf("Ver. %d.%d", data.fw_major, data.fw_minor);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    fwStr2 = QString("%d.%d").arg(data.fw_major).arg(data.fw_minor);
+#else
+    fwStr2.sprintf("%d.%d", data.fw_major, data.fw_minor);
+#endif
     ui->fwLabel->setText(fwStr2);
-/*
+
     QString fwStrLog1;
-    fwStrLog1.sprintf("ZZ %d.%d", data.fw_major, data.fw_minor);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    fwStrLog1 = QString("%d.%d").arg(data.fw_major).arg(data.fw_minor);
+#else
+    fwStrLog1.sprintf("%d.%d", data.fw_major, data.fw_minor);
+#endif
     ui->fwLabel->setText(fwStrLog1);
-*/
+
+
     // Speed bar
     QString speedTxt;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    speedTxt = QString("Speed: %.2f km/h").arg(data.speed * 3.6);
+#else
     speedTxt.sprintf("Speed: %.2f km/h", data.speed * 3.6);
+#endif
     ui->speedBar->setValue(fabs(data.speed) * 3.6);
     ui->speedBar->setFormat(speedTxt);
 
@@ -185,13 +187,19 @@ void CarInterface::setStateData(CAR_STATE data)
     ui->tempFetBar->setValue(data.temp_fet);
 
     // Battery bar
-//    qDebug() << "V in: " << data.vin;
     double battp = utility::map(data.vin, 34.0, 42.0, 0.0, 100.0);
     if (battp < 0.0) {
         battp = 0.0;
     }
     QString battTxt;
-    battTxt.sprintf("Battery: %.1f %% (%.2f V)", battp, data.vin);
+
+//    battTxt.sprintf("Battery: %.1f %% (%.2f V), Sensor value: %u, Angle: %.1f, Servo output: %.1f, Debug: %.1f", battp, data.sensor_value, data.vin,data.angle,data.servo_output,data.debugvalue);
+//    battTxt.sprintf("Location: %.2f, %.2f , Gps location: %.2f, %.2f", data.px, data.py,data.px_gps, data.py_gps);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    battTxt = QString("Battery: %.1f %% (%.2f V), Sensor value: %u, Angle: %.1f, Servo output: %.1f, Debug: %.1f").arg(battp).arg(data.sensor_value).arg(data.vin).arg(data.angle).arg(data.servo_output).arg(data.debugvalue);
+#else
+    battTxt.sprintf("Battery: %.1f %% (%.2f V), Sensor value: %u, Angle: %.1f, Servo output: %.1f, Debug: %.1f", battp, data.sensor_value, data.vin,data.angle,data.servo_output,data.debugvalue);
+#endif
 
     if (battp > 100.0) {
         battp = 100.0;
@@ -216,7 +224,11 @@ void CarInterface::setStateData(CAR_STATE data)
             ui->mcFaultLabel->setStyleSheet("QLabel { background-color : red; color : black; }");
 
             QString msg;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+            msg = QString("Car %d: ").arg(mId);
+#else
             msg.sprintf("Car %d: ", mId);
+#endif
             emit showStatusInfo(msg + fault_str, false);
         }
     }
@@ -233,15 +245,6 @@ void CarInterface::setStateData(CAR_STATE data)
         loc_gps.setXY(data.px_gps, data.py_gps);
         loc_uwb.setXY(data.px_uwb, data.py_uwb);
         ap_goal.setXY(data.ap_goal_px, data.ap_goal_py);
-
-
-        qDebug() << "px (gps): " << data.px_gps << ", py (gps): " << data.py_gps ;
-        qDebug() << "px (uwb): " << data.px_uwb << ", py (uwb): " << data.py_uwb ;
-        qDebug() << "roll: " << data.roll << ", pitch: " << data.pitch << ", yaw: " << data.yaw;
-        qDebug() << "accel. [0]: " << data.accel[0] << ", [1]: " << data.accel[1] << ", [2]: " << data.accel[0];
-        qDebug() << "gyro. [0]: " << data.gyro[0] << ", [1]: " << data.gyro[1] << ", [2]: " << data.gyro[0];
-        qDebug() << "mag. [0]: " << data.mag[0] << ", [1]: " << data.mag[1] << ", [2]: " << data.mag[0];
-
         ap_goal.setRadius(data.ap_rad);
         car->setLocation(loc);
         car->setLocationGps(loc_gps);
@@ -249,6 +252,7 @@ void CarInterface::setStateData(CAR_STATE data)
         car->setApGoal(ap_goal);
         car->setTime(data.ms_today);
         /*
+
         //QList<LocPoint> bounds = mMap->getRoute(ui->boundsRouteSpinBox->value());
         QList<LocPoint> bounds = mMap->getRoute(0);
         if (RouteMagic::isPointOutside(loc, bounds))
@@ -313,8 +317,6 @@ void CarInterface::setPacketInterface(PacketInterface *packetInterface)
             mPacketInterface, SLOT(sendTerminalCmd(quint8,QString)));
     connect(mPacketInterface, SIGNAL(printReceived(quint8,QString)),
             this, SLOT(terminalPrint(quint8,QString)));
-    connect(mPacketInterface, SIGNAL(logReceived(quint8,QString)),
-            this, SLOT(logPrint(quint8,QString)));
     connect(this, SIGNAL(forwardVesc(quint8,QByteArray)),
             mPacketInterface, SLOT(forwardVesc(quint8,QByteArray)));
     connect(mPacketInterface, SIGNAL(vescFwdReceived(quint8,QByteArray)),
@@ -329,6 +331,14 @@ void CarInterface::setPacketInterface(PacketInterface *packetInterface)
             this, SLOT(nmeaReceived(quint8,QByteArray)));
     connect(mPacketInterface, SIGNAL(configurationReceived(quint8,MAIN_CONFIG)),
             this, SLOT(configurationReceived(quint8,MAIN_CONFIG)));
+/*    connect(mPacketInterface, SIGNAL(plotInitReceived(quint8,QString,QString)),
+            this, SLOT(plotInitReceived(quint8,QString,QString)));
+    connect(mPacketInterface, SIGNAL(plotDataReceived(quint8,double,double)),
+            SLOT(plotDataReceived(quint8,double,double)));
+    connect(mPacketInterface, SIGNAL(plotAddGraphReceived(quint8,QString)),
+            this, SLOT(plotAddGraphReceived(quint8,QString)));
+    connect(mPacketInterface, SIGNAL(plotSetGraphReceived(quint8,int)),
+            this, SLOT(plotSetGraphReceived(quint8,int)));*/
     connect(mPacketInterface, SIGNAL(cameraImageReceived(quint8,QImage,int)),
             this, SLOT(cameraImageReceived(quint8,QImage,int)));
     connect(this, SIGNAL(ioBoardSetPwm(quint8,quint8,double)),
@@ -339,14 +349,11 @@ void CarInterface::setControlValues(double throttle, double steering, double max
 {
     if (ui->keyboardControlBox->isChecked()) {
         if (fabs(throttle) < 0.005) {
-//            qDebug() << "emit setRcCurrent: 0 :: " << steering;
             emit setRcCurrent(mId, 0.0, steering);
         } else {
             if (currentMode) {
- //               qDebug() << "emit setRcCurrent: " << (throttle * 80.0 * max) << " :: " << steering;
                 emit setRcCurrent(mId, throttle * 80.0 * max, steering);
             } else {
- //               qDebug() << "emit setRcDuty: " << (throttle * max) << " :: " << steering;
                 emit setRcDuty(mId, throttle * max, steering);
             }
         }
@@ -431,7 +438,7 @@ void CarInterface::toggleCameraFullscreen()
 void CarInterface::showAutoPilotConfiguration()
 {
     on_confReadButton_clicked();
-    ui->tabWidget->setCurrentIndex(ui->tabWidget->indexOf(ui->tabSettings));
+    ui->tabWidget->setCurrentIndex(ui->tabWidget->indexOf(ui->tab_5));
     ui->confCommonWidget->showAutoPilotConfiguration();
 
 }
@@ -472,13 +479,6 @@ void CarInterface::tcpRx(QByteArray &data)
 }
 
 void CarInterface::terminalPrint(quint8 id, QString str)
-{
-    if (id == mId || id == 255) {
-        ui->terminalBrowser->append(str);
-    }
-}
-
-void CarInterface::logPrint(quint8 id, QString str)
 {
     if (id == mId || id == 255) {
         ui->terminalBrowser->append(str);
@@ -531,23 +531,6 @@ void CarInterface::nmeaReceived(quint8 id, QByteArray nmea_msg)
 {
     if (id == mId) {
         ui->nmeaWidget->inputNmea(nmea_msg);
-        if (ui->calibratingCheckBox->isChecked())
-        {
-//            ui->nmeaTextBrowser->append(QString::fromLocal8Bit(nmea_msg));
-
-            QString nmea_msg_string = QString(nmea_msg);
-            QList<QString> elements = nmea_msg_string.split(',');
-            bool ok;
-            double Xvalue=elements[2].toDouble(&ok);
-   //         Xs.append(Xvalue);
-            double Yvalue=elements[4].toDouble(&ok);
-   //         Ys.append(Yvalue);
-
-//            qDebug() << "X: " << QString("%1").arg(Xvalue,0,'g',13);
-//            qDebug() << "Y: " << QString("%1").arg(Yvalue,0,'g',13);
-            ui->nmeaTextBrowser->append(QString("%1").arg(Xvalue,0,'g',13)+','+QString("%1").arg(Yvalue,0,'g',13));
-        }
-
 
         if (mMap) {
             CarInfo *car = mMap->getCarInfo(mId);
@@ -555,7 +538,7 @@ void CarInterface::nmeaReceived(quint8 id, QByteArray nmea_msg)
             if (car) {
                 LocPoint loc_gps = car->getLocationGps();
                 loc_gps.setInfo(ui->nmeaWidget->fixType());
-//                car->setLocationGps(loc_gps);
+                car->setLocationGps(loc_gps);
             }
         }
     }
@@ -567,19 +550,12 @@ void CarInterface::configurationReceived(quint8 id, MAIN_CONFIG config)
         mSettingsReadDone = true;
         mConfigLast = config;
         setConfGui(config);
-
-        if (ui->currentCalibrationEdit->text()=="1")
-        {
-            ui->voltage1Edit->setText(QString("%1").arg(config.car.centrevoltage,0,'g',3));
-        };
-
-        if (ui->currentCalibrationEdit->text()=="2")
-        {
-            ui->voltage2Edit->setText(QString("%1").arg(config.car.centrevoltage,0,'g',3));
-        };
-
         QString str;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        str = QString("Car %d: Configuration Received").arg(id);
+#else
         str.sprintf("Car %d: Configuration Received", id);
+#endif
         emit showStatusInfo(str, true);
     }
 }
@@ -600,7 +576,6 @@ void CarInterface::loadMagCal()
 
 void CarInterface::cameraImageReceived(quint8 id, QImage image, int bytes)
 {
-    qDebug() << "In cameraImageReceived!";
     if (id == mId || id == 255) {
         mImageByteCnt += bytes;
         mImageCnt++;
@@ -773,10 +748,9 @@ void CarInterface::getConfGui(MAIN_CONFIG &conf)
     conf.car.vesc_p_gain = ui->confServoPGainBox->value();
     conf.car.vesc_i_gain = ui->confServoIGainBox->value();
     conf.car.vesc_d_gain = ui->confServoDGainBox->value();
-    conf.car.anglemin = ui->confAngleMinBox->value();
-    conf.car.anglemax = ui->confAngleMaxBox->value();
-//    conf.car.angledegrees = ui->confAngleDegreesBox->value();
-    conf.car.centrevoltage = ui->confCentreVoltageBox->value();
+    conf.car.sensorcentre = ui->confSensorCentreBox->value();
+    conf.car.sensorinterval = ui->confSensorIntervalBox->value();
+    conf.car.degreeinterval = ui->confDegreeIntervalBox->value();
 
     conf.car.steering_max_angle_rad = atan(ui->confAxisDistanceBox->value() / ui->confTurnRadBox->value());
 
@@ -802,15 +776,15 @@ void CarInterface::setConfGui(MAIN_CONFIG &conf)
     ui->confServoPGainBox->setValue(conf.car.vesc_p_gain);
     ui->confServoIGainBox->setValue(conf.car.vesc_i_gain);
     ui->confServoDGainBox->setValue(conf.car.vesc_d_gain);
-    ui->confAngleMinBox->setValue(conf.car.anglemin);
-    ui->confAngleMaxBox->setValue(conf.car.anglemax);
-  //  ui->confAngleDegreesBox->setValue(conf.car.angledegrees);
-    ui->confCentreVoltageBox->setValue(conf.car.centrevoltage);
+    ui->confSensorCentreBox->setValue(conf.car.sensorcentre);
+    ui->confSensorIntervalBox->setValue(conf.car.sensorinterval);
+    ui->confDegreeIntervalBox->setValue(conf.car.degreeinterval);
+
     ui->confTurnRadBox->setValue(conf.car.axis_distance / tan(conf.car.steering_max_angle_rad));
 
     ui->confCommonWidget->setConfGui(conf);
 }
-/*
+
 void CarInterface::on_setClockButton_clicked()
 {
     if (mPacketInterface) {
@@ -819,144 +793,16 @@ void CarInterface::on_setClockButton_clicked()
         mPacketInterface->setMsToday(mId, current.msecsSinceStartOfDay());
     }
 }
-*/
-void CarInterface::on_startCalibration1Button_clicked()
-{
-    ui->calibratingCheckBox->setChecked(true);
 
-//    ui->pollBox->setChecked(poll);
-
-    if (mPacketInterface) {
-        mPacketInterface->getConfiguration(mId);
-    }
-
-    ui->currentCalibrationEdit->setText("1");
-    on_confReadButton_clicked();
-}
-
-void CarInterface::on_startCalibration2Button_clicked()
-{
-    ui->calibratingCheckBox->setChecked(true);
-    ui->currentCalibrationEdit->setText("2");
-    on_confReadButton_clicked();
-}
-
-void CarInterface::on_endCalibration1Button_clicked()
-{
-    ui->calibratingCheckBox->setChecked(false);
-    ui->currentCalibrationEdit->setText("0");
-
-    std::vector<double> time;
-    std::vector<double> velocity;
-
-
-    QList<QString> lines = ui->nmeaTextBrowser->toPlainText().split("\n");
-    int iDatapoints=lines.size();
-
-    qDebug() << "Datapoints: " << QString("%1").arg(lines.size(),0,'g',13);
-    qDebug() << "Datapoints: " << ui->nmeaTextBrowser->toPlainText();
-
-    std::vector<double> alphas;
-
-    bool ok;
-    int c=0;
-    int iWaitSteps=4;
-    double oldalpha=0;
-    //    while (!file.atEnd()) {
-    for (int i=0;i<iDatapoints;i++) {
-        qDebug() << c++;
-        QString line = lines[i];
-        QList<QString> elements = line.split(',');
-        double Xvalue=elements[0].toDouble(&ok);
-        time.push_back(Xvalue);
-        double Yvalue=elements[1].toDouble(&ok);
-        velocity.push_back(Yvalue);
-        if (c>iWaitSteps)
-        {
-           double dy_long=velocity[velocity.size()]-velocity[velocity.size()-iWaitSteps];
-           double dx_long=time[time.size()]-time[time.size()-iWaitSteps];
-           double alpha=atan(dy_long/dx_long);
-           double dy=velocity[velocity.size()]-velocity[velocity.size()-1];
-           double dx=velocity[velocity.size()]-velocity[velocity.size()-1];
-           double stepsize_m=sqrt(dx*dx+dy*dy);
-           double dalpha=(alpha-oldalpha)/stepsize_m;
-           double dalpha2=std::fmod(dalpha+M_PI,2*M_PI)-M_PI;
-           double dalpha3=std::fmod(dalpha2+M_PI/2,M_PI)-M_PI/2;
-           alphas.push_back(dalpha3);
-           oldalpha=alpha;
-        }
-    }
-    double averageangle = std::accumulate(alphas.begin(), alphas.end(), 0.0) / alphas.size();
-    ui->angle1Edit->setText(QString("%1").arg(averageangle,0,'g',13));
-
-    ui->nmeaTextBrowser->clear();
-}
-
-void CarInterface::on_endCalibration2Button_clicked()
-{
-    ui->calibratingCheckBox->setChecked(false);
-    ui->currentCalibrationEdit->setText("0");
-
-    std::vector<double> time;
-    std::vector<double> velocity;
-
-
-    QList<QString> lines = ui->nmeaTextBrowser->toPlainText().split("\n");
-    int iDatapoints=lines.size();
-
-    qDebug() << "Datapoints: " << QString("%1").arg(lines.size(),0,'g',13);
-    qDebug() << "Datapoints: " << ui->nmeaTextBrowser->toPlainText();
-
-    std::vector<double> alphas;
-
-    bool ok;
-    int c=0;
-    int iWaitSteps=4;
-    double oldalpha=0;
-    //    while (!file.atEnd()) {
-    for (int i=0;i<iDatapoints;i++) {
-        qDebug() << c++;
-        QString line = lines[i];
-        QList<QString> elements = line.split(',');
-        double Xvalue=elements[0].toDouble(&ok);
-        time.push_back(Xvalue);
-        double Yvalue=elements[1].toDouble(&ok);
-        velocity.push_back(Yvalue);
-        if (c>iWaitSteps)
-        {
-           double dy_long=velocity[velocity.size()]-velocity[velocity.size()-iWaitSteps];
-           double dx_long=time[time.size()]-time[time.size()-iWaitSteps];
-           double alpha=atan(dy_long/dx_long);
-           double dy=velocity[velocity.size()]-velocity[velocity.size()-1];
-           double dx=velocity[velocity.size()]-velocity[velocity.size()-1];
-           double stepsize_m=sqrt(dx*dx+dy*dy);
-           double dalpha=(alpha-oldalpha)/stepsize_m;
-           double dalpha2=std::fmod(dalpha+M_PI,2*M_PI)-M_PI;
-           double dalpha3=std::fmod(dalpha2+M_PI/2,M_PI)-M_PI/2;
-           alphas.push_back(dalpha3);
-           oldalpha=alpha;
-           qDebug() << "X: " << QString("%1").arg(Xvalue,0,'g',13);
-           qDebug() << "Y: " << QString("%1").arg(Yvalue,0,'g',13);
-           qDebug() << "alpha: " << QString("%1").arg(alpha,0,'g',13);
-           qDebug() << "dx: " << QString("%1").arg(dx,0,'g',13);
-           qDebug() << "dy: " << QString("%1").arg(dy,0,'g',13);
-           qDebug() << "stepsize_m: " << QString("%1").arg(stepsize_m,0,'g',13);
-           qDebug() << "dalpha: " << QString("%1").arg(dalpha,0,'g',13);
-           qDebug() << "dalpha2: " << QString("%1").arg(dalpha2,0,'g',13);
-           qDebug() << "dalpha3: " << QString("%1").arg(dalpha3,0,'g',13);
-        }
-    }
-    double averageangle = std::accumulate(alphas.begin(), alphas.end(), 0.0) / alphas.size();
-    ui->angle2Edit->setText(QString("%1").arg(averageangle,0,'g',13));
-    ui->nmeaTextBrowser->clear();
-}
-
-/*
 void CarInterface::on_setClockPiButton_clicked()
 {
     if (mPacketInterface) {
         QDateTime date = QDateTime::currentDateTime();
-        bool res = mPacketInterface->setSystemTime(mId, date.toTime_t(), date.time().msec() * 1000.0);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+            bool res = mPacketInterface->setSystemTime(mId, date.toSecsSinceEpoch(), date.time().msec() * 1000.0);
+#else
+            bool res = mPacketInterface->setSystemTime(mId, date.toTime_t(), date.time().msec() * 1000.0);
+#endif
         if (!res) {
             QMessageBox::warning(this, "Set time on Raspberry Pi",
                                  "Could not set time, no ack received. Make sure that the "
@@ -964,7 +810,7 @@ void CarInterface::on_setClockPiButton_clicked()
         }
     }
 }
-*/
+
 void CarInterface::on_rebootPiButton_clicked()
 {
     if (mPacketInterface) {
@@ -1004,13 +850,11 @@ void CarInterface::on_camStartButton_clicked()
                                             ui->camHeightBox->value(),
                                             ui->camFpsBox->value(),
                                             ui->camSkipBox->value());
-        qDebug() << "Start Camera!";
     }
 }
 
 void CarInterface::on_camStopButton_clicked()
 {
-    qDebug() << "Stop Camera!";
     mPacketInterface->startCameraStream(mId, -1, 0, 0, 0, 0, 0);
     ui->camWidget->setPixmap(QPixmap());
 
@@ -1026,7 +870,6 @@ void CarInterface::on_camShowMapBox_toggled(bool checked)
     }
 }
 
-/*
 void CarInterface::on_ubxVersionButton_clicked()
 {
     emit terminalCmd(uint8_t(mId), "ubx_poll UBX_MON_VER");
@@ -1076,7 +919,7 @@ void CarInterface::on_uwbListAnchorsButton_clicked()
 {
     emit terminalCmd(uint8_t(mId), "pos_uwb_anchors");
 }
-*/
+
 void CarInterface::on_ioBoardPwmSlider_valueChanged(int value)
 {
     double val_mapped = (double)value / 1000.0;

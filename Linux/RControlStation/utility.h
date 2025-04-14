@@ -21,9 +21,6 @@
 #include <stdint.h>
 #include "packetinterface.h"
 #include "mapwidget.h"
-#include <QXmlStreamWriter>
-#include <QXmlStreamReader>
-
 
 namespace utility {
 
@@ -62,9 +59,8 @@ double angle_difference(double angle1, double angle2);
 double angle_difference_rad(double angle1, double angle2);
 bool uploadRouteHelper(PacketInterface *packetInterface, int carId, QList<LocPoint> route);
 bool replaceRouteHelper(PacketInterface *packetInterface, int carId, QList<LocPoint> route);
-bool loadXMLRoute(QXmlStreamReader *stream, MapWidget *map);
 int loadRoutes(QString filename, MapWidget *map);
-void saveXMLRoutes(QXmlStreamWriter* stream,MapWidget *map,bool withId);
+
 }
 
 #endif /* BUFFER_H_ */

@@ -754,11 +754,11 @@ void CarClient::packetDataToSend(QByteArray &data)
 {
     // This is a packet from RControlStation going to the car.
     // Inspect data and possibly process it here.
-//#ifdef JETSON____
-   // qDebug() << "in CarClient::packetDataToSend. Data: " << data;
-//#else
-//    qDebug() << "in CarClient::packetDataToSend. Data: " << data << Qt::flush;
-//#endif
+#ifdef JETSON____
+   qDebug() << "in CarClient::packetDataToSend. Data: " << data;
+#else
+    qDebug() << "in CarClient::packetDataToSend. Data: " << data << Qt::flush;
+#endif
     bool packetConsumed = false;
 
     VByteArray vb(data);
@@ -769,7 +769,7 @@ void CarClient::packetDataToSend(QByteArray &data)
     vb.chop(3);
 
     (void)id;
-//    qDebug() << "in CarClient::packetDataToSend.... Id: " << id << ", mCarId: " << mCarId << ", cmd: " << cmd;
+    qDebug() << "in CarClient::packetDataToSend.... Id: " << id << ", mCarId: " << mCarId << ", cmd: " << cmd;
 
 //    if (id == mCarId || id == 255) {
     if (id == mCarId || mCarId == 255) {
@@ -796,7 +796,7 @@ void CarClient::packetDataToSend(QByteArray &data)
 #endif
         } else if (cmd == CMD_TERMINAL_CMD) {
             QString str(vb);
-//            qWarning() << "to terminal:" << str;
+            qDebug() << "to terminal:" << str;
 
             if (str == "help") {
 #if HAS_CAMERA
@@ -821,6 +821,7 @@ void CarClient::packetDataToSend(QByteArray &data)
             }
 
             if (str == "help") {
+                qDebug() << "Read HELP";
                 printTerminal("lsusb\n"
                               "  Print information about connected usbs.");
                 printTerminal("list_ttys\n"
@@ -859,12 +860,12 @@ void CarClient::packetDataToSend(QByteArray &data)
 
     if (!packetConsumed) {
         if (mSerialPort->isOpen()) {
-  //          qDebug() << "Packet sent (port open)";
-  //          qDebug() << static_cast<int>(data[2]) << ":" << static_cast<int>(data[3]) << ":" << static_cast<int>(data[4]);
+            qDebug() << "Packet sent (port open)";
+            qDebug() << static_cast<int>(data[2]) << ":" << static_cast<int>(data[3]) << ":" << static_cast<int>(data[4]);
             mSerialPort->writeData(data);
         } else
         {
-//            qDebug() << "Packet not sent (port closed)";
+            qDebug() << "Packet not sent (port closed)";
 
         }
 /*

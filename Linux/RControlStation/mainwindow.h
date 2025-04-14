@@ -24,16 +24,16 @@
 #include <QSerialPort>
 #include <QLabel>
 #include <QTcpSocket>
-#include <QGamepad>
-#include <QtWidgets>
-#include <QtSql>
-//#include <QtCharts>
-//#include <QtChartView>
-#include <QtWidgets>
-#include <QtCharts>
-#include <QScatterSeries>
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    #include <SDL2/SDL.h>
+    #include <QAction>
+#else
+    #include <QGamepad>
+#endif
 
 #include "carinterface.h"
+#include "copterinterface.h"
 #include "packetinterface.h"
 #include "ping.h"
 #include "nmeaserver.h"
@@ -41,11 +41,7 @@
 #include "intersectiontest.h"
 #include "tcpclientmulti.h"
 #include "wireguard.h"
-#include "checkboxdelegate.h"
 #include <memory>
-#include "rtcmclient.h"
-
-// #include "rtcmwidget.h"
 
 #ifdef HAS_LIME_SDR
 #include "gpssim.h"
@@ -63,43 +59,6 @@ namespace Ui {
 class MainWindow;
 }
 
-
-class CustomDelegate;
-
-class FocusEventFilter : public QObject
-{
-    Q_OBJECT
-
-signals:
-    void focusGained();
-    void focusLost();
-
-protected:
-    bool eventFilter(QObject* watched, QEvent* event) override;
-};
-
-struct coords_cartesian
-{
-    float x,y,z;
-};
-
-struct coords_polar
-{
-    float lon,lat,h;
-};
-
-struct coords_matrix
-{
-    float r1c1,r1c2,r1c3;
-    float r2c1,r2c2,r2c3;
-    float r3c1,r3c2,r3c3;
-};
-
-// Constants
-#define FE_WGS84						(D(1.0)/D(298.257223563)) // earth flattening (WGS84)
-#define RE_WGS84						D(6378137.0)           // earth semimajor axis (WGS84) (m)
-
-
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -109,16 +68,12 @@ public:
     ~MainWindow();
     bool eventFilter(QObject *object, QEvent *e);
 
-    void addCar(int id, QString name, bool pollData = false);
-    bool connectJoystick();
+    void addCar(int id, bool pollData = false);
+    void connectJoystick(QString dev);
     void addTcpConnection(QString ip, int port);
     void setNetworkTcpEnabled(bool enabled, int port = -1);
     void setNetworkUdpEnabled(bool enabled, int port = -1);
     MapWidget *map();
-
-    //RTCM
-    void setRefPos(double lat, double lon, double height, double antenna_height = 0.0);
-
 
 private slots:
     void serialDataAvailable();
@@ -128,6 +83,7 @@ private slots:
     void showStatusInfo(QString info, bool isGood);
     void packetDataToSend(QByteArray &data);
     void stateReceived(quint8 id, CAR_STATE state);
+    void mrStateReceived(quint8 id, MULTIROTOR_STATE state);
     void mapPosSet(quint8 id, LocPoint pos);
     void ackReceived(quint8 id, CMD_PACKET cmd, QString msg);
     void rtcmReceived(QByteArray data);
@@ -139,22 +95,9 @@ private slots:
     void routePointAdded(LocPoint pos);
     void infoTraceChanged(int traceNow);
     void jsButtonChanged(int button, bool pressed);
-    void onSelectedFarmGeneral(QSqlRelationalTableModel *model,QSqlRelationalTableModel *modelFld,QSqlRelationalTableModel *modelPth,const QModelIndex& current, const QModelIndex& previous,bool bAct);
-    void onSelectedFarm(const QModelIndex& current, const QModelIndex& previous);
-    void onSelectedFarmLog(const QModelIndex& current, const QModelIndex& previous);
-    void onSelectedFieldGeneral(QSqlRelationalTableModel *model,QSqlRelationalTableModel *modelPth,const QModelIndex& current, const QModelIndex& previous,bool bAct);
-    void onSelectedField(const QModelIndex& current, const QModelIndex& previous);
-    void onSelectedFieldLog(const QModelIndex& current, const QModelIndex& previous);
-    void onSelectedPathGeneral(QSqlRelationalTableModel *model,const QModelIndex& current, const QModelIndex& previous, bool bAct);
-    void onSelectedPath(const QModelIndex& current, const QModelIndex& previous);
-    void onSelectedPathLog(const QModelIndex& current, const QModelIndex& previous);
-    void onSelectedLog(const QModelIndex& current, const QModelIndex& previous);
-    void onLogStartSliderChange(int newValue);
-    void onLogEndSliderChange(int newValue);
-    void onLogSliderChange();
-    void onUpdateLogGraph();
 
-//    void on_carAddButton_clicked();
+    void on_carAddButton_clicked();
+//    void on_copterAddButton_clicked();
     void on_disconnectButton_clicked();
     void on_mapRemoveTraceButton_clicked();
     void on_MapRemovePixmapsButton_clicked();
@@ -219,6 +162,9 @@ private slots:
     void on_actionTestIntersection_triggered();
     void on_actionSaveSelectedRouteAsDriveFile_triggered();
     void on_actionLoadDriveFile_triggered();
+    void on_mapSaveAsPdfButton_clicked();
+    void on_mapSaveAsPngButton_clicked();
+    void on_mapSaveRetakeButton_clicked();
     void on_modeRouteButton_toggled(bool checked);
     void on_uploadAnchorButton_clicked();
     void on_anchorIdBox_valueChanged(int arg1);
@@ -236,56 +182,38 @@ private slots:
     void on_routeZeroAllButton_clicked();
     void on_mapRoutePosAttrBox_currentIndexChanged(int index);
     void on_clearAnchorButton_clicked();
+    void on_setBoundsRoutePushButton_clicked();
     void on_boundsFillPushButton_clicked();
 
     void on_lowerToolsCheckBox_stateChanged(int arg1);
+
     void on_raiseToolsCheckBox_stateChanged(int arg1);
+
+    void on_WgSettingsPushButton_clicked();
+
     void on_WgConnectPushButton_clicked();
+
     void on_WgDisconnectPushButton_clicked();
+
     void on_AutopilotConfigurePushButton_clicked();
+
     void on_AutopilotStartPushButton_clicked();
+
     void on_AutopilotStopPushButton_clicked();
+
     void on_AutopilotRestartPushButton_clicked();
+
     void on_AutopilotPausePushButton_clicked();
-    void on_actionWireguard_triggered();
-
-    void onLoadLogFile(QString filename);
-    void onLogVariableSelection(const QModelIndex &index);
-    QSqlRelationalTableModel* setupFarmTable(QTableView* uiFarmTable,QString sqlTablename,bool bShowAll);
-    QSqlRelationalTableModel* setupFieldTable(QTableView* uiFieldTable,QString sqlTablename);
-    QSqlRelationalTableModel* setupPathTable(QTableView* uiFieldTable,QString sqlTablename);
-    QSqlRelationalTableModel* setupLogTable(QTableView* uiLogTable,QString sqlTablename);
-
-    // RTCM
-    void timerSlotRtcm();
-    void rtcmRx(QByteArray data, int type, bool sync);
-    //void refPosRx(double lat, double lon, double height, double antenna_height);
-    void refPosRx(llh_t refpos);
-    void on_ntripDisconnectButton_clicked();
-    void ntripConnect(int rowIndex);
-
-    void on_refGetButton_clicked();
-    void on_tcpServerBox_toggled(bool checked);
-    void on_gpsOnlyBox_toggled(bool checked);
-
-signals:
-    void rtcmReceivedStep1(QByteArray data);
-    void refPosGet();
-
-public slots:
-    void on_ntripConnectButton_clicked();
-    void onMouseClickedFieldSelected(int field);
 
 private:
     Ui::MainWindow *ui;
-//    RtcmWidget *rtcmWidget;
-
     QTimer *mTimer;
     QTimer *mHeartbeatTimer; // periodic heartbeat to vehicles for safety
     const int mHeartbeatMS = 300;
     QSerialPort *mSerialPort;
     PacketInterface *mPacketInterface;
     QList<CarInterface*> mCars;
+    QList<CopterInterface*> mCopters;
     QLabel *mStatusLabel;
     int mStatusInfoTime;
     bool mKeyUp;
@@ -304,12 +232,16 @@ private:
     std::unique_ptr<WireGuard> mWireGuard;
     QString mLastImgFileName;
     QList<QPair<int, int> > mSupportedFirmwares;
-    CheckBoxDelegate* checkboxdelegate;
-    bool bLogLoaded;
-    int stepsize;
 
 #ifdef HAS_JOYSTICK_CHECK
-    QGamepad *mJoystick;
+    bool JSconnected();
+
+    #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+//        SDL_Joystick  *mController;
+        SDL_GameController* mController = nullptr;
+#else
+        QGamepad *mJoystick;
+    #endif
 #endif
 
 #ifdef HAS_LIME_SDR
@@ -322,59 +254,12 @@ private:
 
     void saveRoutes(bool withId);
 
-protected:
-//    bool eventFilter(QObject *object, QEvent *event) override;
-
-private:
-    void showError(const QSqlError &err);
-    void handleAddFieldButton();
-    void handleAddFarmButton();
-    void handleImportPathButton();
-    QSqlRelationalTableModel *modelFarm;
-    QSqlRelationalTableModel *modelFarmLog;
-    QSqlRelationalTableModel *modelField;
-    QSqlRelationalTableModel *modelFieldLog;
-    QSqlRelationalTableModel *modelPath;
-    QSqlRelationalTableModel *modelPathLog;
-    QSqlRelationalTableModel *modelTestLog;
-    QSqlRelationalTableModel *modelVehicle;
-    QStandardItemModel *modelVehiclestatus;
-    QScatterSeries scatterSeriesLog;
-    QChart chartLog;
-    QVector<QPointF> datasetX; // Fill this with your data
-    QVector<QPointF> datasetY; // Fill this with your data
-    QVector<QPointF> datasetSpeed; // Fill this with your data
-    QVector<QPointF> datasetAngle; // Fill this with your data
-
-    // RTCM
-    RtcmClient *mRtcm;
-    QTimer *mTimerRtcm;
-    TcpBroadcast *mTcpServerRtcm;
-    CustomDelegate *statustocolourDelegate;
-
-    FocusEventFilter filterFieldtable;
-    FocusEventFilter filterPathtable;
+private slots:
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    void pollGamepad();
+    void handleButtonEvent(const SDL_ControllerButtonEvent& event);
+    void handleAxisEvent(const SDL_ControllerAxisEvent& event);
+#endif
 };
-
-class CustomDelegate : public QStyledItemDelegate {
-public:
-    explicit CustomDelegate(QObject *parent = nullptr);
-
-    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
-};
-
-
-void addField(const QString &title, const QVariant &locationId);
-QVariant addLocation(const QString &name);
-QString readXmlToString(const QString& filePath);
-void addPath(const QString &name,const QString &xmlstring, const QVariant &locationId);
-void deleteField(const QVariant &fieldId);
-
-coords_matrix toOrientationMatrix(coords_polar cp);
-coords_cartesian toCartesian(coords_polar cp);
-coords_cartesian toEnu(coords_polar basestation,coords_polar vehicle);
-coords_cartesian toEnu(coords_cartesian basestation,coords_matrix orientation,coords_polar vehicle);
-
-QSqlError initDb();
 
 #endif // MAINWINDOW_H

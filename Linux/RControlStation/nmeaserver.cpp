@@ -22,7 +22,6 @@
 #include <cstring>
 #include <locale.h>
 #include <QMessageBox>
-#include <QtSql>
 
 namespace
 {
@@ -153,12 +152,33 @@ bool NmeaServer::sendNmeaGga(NmeaServer::nmea_gga_info_t &nmea)
     int frac_s = fmod(nmea.t_tow, 1.0) * 100.0;
 
     QString nmea_str;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    nmea_str = QString("$GPGGA,%1%2%3.%4,"
+                               "%5%6,%7,%8%9,%10,"
+                               "%11,%12,%13,%14,M,,M,,")
+                           .arg(hour, 2, 10, QChar('0'))
+                           .arg(min, 2, 10, QChar('0'))
+                           .arg(sec, 2, 10, QChar('0'))
+                           .arg(frac_s, 2, 10, QChar('0'))
+                           .arg(lat_deg, 2, 10, QChar('0'))
+                           .arg(lat_min, 0, 'f', 7)
+                           .arg(lat_dir)
+                           .arg(lon_deg, 3, 10, QChar('0'))
+                           .arg(lon_min, 0, 'f', 7)
+                           .arg(lon_dir)
+                           .arg(nmea.fix_type)
+                           .arg(nmea.n_sat, 2, 10, QChar('0'))
+                           .arg(nmea.h_dop, 0, 'f', 1)
+                           .arg(nmea.height, 0, 'f', 2);
+#else
     nmea_str.sprintf("$GPGGA,%02d%02d%02d.%02d,"
                      "%02d%010.7f,%c,%03d%010.7f,%c,"
                      "%01d,%02d,%.1f,%.2f,M,,M,,",
                      hour, min, sec, frac_s,
                      lat_deg, lat_min, lat_dir, lon_deg, lon_min, lon_dir,
                      nmea.fix_type, nmea.n_sat, nmea.h_dop, nmea.height);
+#endif
+
     nmea_str.append("*    ");
     QByteArray nmea_bytes = nmea_str.toLocal8Bit();
     nmea_append_checksum(nmea_bytes.data(), nmea_bytes.size());
@@ -198,8 +218,20 @@ bool NmeaServer::sendNmeaZda(quint16 wn, double tow)
     int frac_s = fmod(tow, 1.0) * 100.0;
 
     QString nmea_str;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    nmea_str = QString("$GPZDA,%1%2%3.%4,%5,%6,%7,00,00")
+                           .arg(hour, 2, 10, QChar('0'))
+                           .arg(min, 2, 10, QChar('0'))
+                           .arg(sec, 2, 10, QChar('0'))
+                           .arg(frac_s, 2, 10, QChar('0'))
+                           .arg(day, 2, 10, QChar('0'))
+                           .arg(month, 2, 10, QChar('0'))
+                           .arg(year, 4, 10, QChar('0'));
+#else
     nmea_str.sprintf("$GPZDA,%02d%02d%02d.%02d,%02d,%02d,%04d,00,00",
                      hour, min, sec, frac_s, day, month, year);
+#endif
+
     nmea_str.append("*    ");
     QByteArray nmea_bytes = nmea_str.toLocal8Bit();
     nmea_append_checksum(nmea_bytes.data(), nmea_bytes.size());
@@ -253,6 +285,28 @@ bool NmeaServer::sendNmeaRmc(NmeaServer::nmea_rmc_info_t &nmea)
     velocity = MS2KNOTTS(nmea.vel_x, nmea.vel_y, nmea.vel_z);
 
     QString nmea_str;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    nmea_str = QString("$GPRMC,%1%2%3.%4,A,"
+                               "%5%6,%7,%8%9,%10,"
+                               "%11,%12,"
+                               "%13%14%15,"
+                               ",")
+                           .arg(hour, 2, 10, QChar('0'))
+                           .arg(min, 2, 10, QChar('0'))
+                           .arg(sec, 2, 10, QChar('0'))
+                           .arg(frac_s, 2, 10, QChar('0'))
+                           .arg(lat_deg, 2, 10, QChar('0'))
+                           .arg(lat_min, 0, 'f', 7)
+                           .arg(lat_dir)
+                           .arg(lon_deg, 3, 10, QChar('0'))
+                           .arg(lon_min, 0, 'f', 7)
+                           .arg(lon_dir)
+                           .arg(velocity, 0, 'f', 2)
+                           .arg(course * (180.0 / M_PI), 0, 'f', 1)
+                           .arg(day, 2, 10, QChar('0'))
+                           .arg(month, 2, 10, QChar('0'))
+                           .arg(year % 100, 2, 10, QChar('0'));
+#else
     nmea_str.sprintf("$GPRMC,%02d%02d%02d.%02d,A,"
                      "%02d%010.7f,%c,%03d%010.7f,%c,"
                      "%06.2f,%05.1f,"
@@ -262,6 +316,8 @@ bool NmeaServer::sendNmeaRmc(NmeaServer::nmea_rmc_info_t &nmea)
                      lat_deg, lat_min, lat_dir, lon_deg, lon_min, lon_dir,
                      velocity, course * (180.0 / M_PI),
                      day, month, year % 100);
+#endif
+
     nmea_str.append("*    ");
     QByteArray nmea_bytes = nmea_str.toLocal8Bit();
     nmea_append_checksum(nmea_bytes.data(), nmea_bytes.size());
@@ -296,10 +352,7 @@ bool NmeaServer::logToFile(QString file)
     if (mLog.isOpen()) {
         mLog.close();
     }
-    QSqlQuery query;
-    qDebug() << "INSERT INTO drivelogs (filename, path) values('" + file + "',1)";
-    query.exec("INSERT INTO drivelogs (filename, path) values('" + file + "',1)");
-    qDebug() << "added";
+
     mLog.setFileName(file);
     return mLog.open(QIODevice::ReadWrite | QIODevice::Truncate);
 }

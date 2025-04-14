@@ -36,6 +36,7 @@
 #include "pos_uwb.h"
 #include "comm_can.h"
 #include "hydraulic.h"
+#include "pos.h"
 #include "bmi160_wrapper.h"
 
 // Defines
@@ -73,7 +74,6 @@ static mc_values m_mc_val_right;
 #endif
 static float m_yaw_imu_clamp;
 static bool m_yaw_imu_clamp_set;
-static int iDebug;
 
 // Private functions
 static void cmd_terminal_delay_info(int argc, const char **argv);
@@ -289,9 +289,9 @@ void pos_get_imu(float *accel, float *gyro, float *mag) {
 		gyro[0] = m_gyro[0];
 		gyro[1] = m_gyro[1];
 		gyro[2] = m_gyro[2];
-		commands_printf("gyro 0: %f\n", m_gyro[0]);
-		commands_printf("gyro 1: %f\n", m_gyro[1]);
-		commands_printf("gyro 2: %f\n", m_gyro[2]);
+//		commands_printf("gyro 0: %f\n", m_gyro[0]);
+//		commands_printf("gyro 1: %f\n", m_gyro[1]);
+//		commands_printf("gyro 2: %f\n", m_gyro[2]);
 	}
 
 	if (mag) {
@@ -895,43 +895,6 @@ static void cmd_terminal_testGL(int argc, const char **argv) {
 			m_pos.px,
 			m_pos.py,
 			m_pos.pz);
-
-/*
- *
- * static ATTITUDE_INFO m_att;
-static POS_STATE m_pos;
-static GPS_STATE m_gps;
-static bool m_attitude_init_done;
-static float m_accel[3];
-static float m_gyro[3];
-static float m_mag[3];
-static float m_mag_raw[3];
-static mc_values m_mc_val;
-static float m_imu_yaw_offset;
-static mutex_t m_mutex_pos;
-static mutex_t m_mutex_gps;
-static int32_t m_ms_today;
-static bool m_ubx_pos_valid;
-static int32_t m_nma_last_time;
-static POS_POINT m_pos_history[POS_HISTORY_LEN];
-static int m_pos_history_ptr;
-static bool m_pos_history_print;
-static bool m_gps_corr_print;
-static bool m_en_delay_comp;
-static int32_t m_pps_cnt;
-static nmea_gsv_info_t m_gpgsv_last;
-static nmea_gsv_info_t m_glgsv_last;
-static int m_print_sat_prn;
-#if HAS_DIFF_STEERING
-static bool m_vesc_left_now;
-static mc_values m_mc_val_right;
-#endif
-static float m_yaw_imu_clamp;
-static bool m_yaw_imu_clamp_set;
- *
- *
- */
-
 };
 
 static void mpu9150_read(float *accel, float *gyro, float *mag) {
@@ -1462,6 +1425,8 @@ static void mc_values_received(mc_values *val) {
 	float angle_diff = 0.0;
 	float turn_rad_rear = 0.0;
 
+// GUNNAR CHECK
+
 #if HAS_DIFF_STEERING
 	float distance_diff = (tacho_diff - last_tacho_diff)
 			* main_config.vehicle.gear_ratio * (2.0 / main_config.vehicle.motor_poles)
@@ -1510,6 +1475,13 @@ static void vehicle_update_pos(float distance, float turn_rad_rear, float angle_
 	commands_printf("px: %f, py: %f\n", m_pos.px, m_pos.py);
 	commands_printf("dist: %f, turn_rad_rear: %f, angle_diff: %f, speed: %f\n", distance, turn_rad_rear,angle_diff,speed);
 	}
+	if(iDebug==5) {
+	commands_printf("In vehicle update pos - in:\n");
+	commands_printf("px: %f, py: %f\n", m_pos.px, m_pos.py);
+	commands_printf("dist: %f, turn_rad_rear: %f, angle_diff: %f, speed: %f\n", distance, turn_rad_rear,angle_diff,speed);
+	}
+	if (fabsf(distance) > 2) { distance=0; };
+
 	if (fabsf(distance) > 1e-6) {
 		float angle_rad = -m_pos.yaw * M_PI / 180.0;
 

@@ -118,13 +118,24 @@ void CopterInterface::setStateData(MULTIROTOR_STATE data)
 
     // Firmware label
     QString fwStr;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    fwStr = QString("FW %d.%d")
+                .arg(data.fw_major)
+                .arg(data.fw_minor);
+#else
     fwStr.sprintf("FW %d.%d", data.fw_major, data.fw_minor);
+#endif
     ui->fwLabel->setText(fwStr);    
     setFirmwareVersion(qMakePair(data.fw_major, data.fw_minor));
 
     // Speed bar
     QString speedTxt;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    speedTxt = QString("Speed: %.2f km/h")
+                .arg(data.speed * 3.6);
+#else
     speedTxt.sprintf("Speed: %.2f km/h", data.speed * 3.6);
+#endif
     ui->speedBar->setValue(fabs(data.speed) * 3.6);
     ui->speedBar->setFormat(speedTxt);
 
@@ -134,7 +145,13 @@ void CopterInterface::setStateData(MULTIROTOR_STATE data)
         battp = 0.0;
     }
     QString battTxt;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    battTxt = QString("Battery: %.1f %% (%.2f V)")
+                   .arg(battp)
+                   .arg(data.vin);
+#else
     battTxt.sprintf("Battery: %.1f %% (%.2f V)", battp, data.vin);
+#endif
     if (battp > 100.0) {
         battp = 100.0;
     }
@@ -317,7 +334,12 @@ void CopterInterface::configurationReceived(quint8 id, MAIN_CONFIG config)
         setConfGui(config);
         settingsReadDone = true;
         QString str;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        str = QString("Copter %d: Configuration Received")
+                      .arg(id);
+#else
         str.sprintf("Copter %d: Configuration Received", id);
+#endif
         emit showStatusInfo(str, true);
     }
 }
@@ -524,7 +546,11 @@ void CopterInterface::on_setClockPiButton_clicked()
 {
     if (mPacketInterface) {
         QDateTime date = QDateTime::currentDateTime();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        bool res = mPacketInterface->setSystemTime(mId, date.toSecsSinceEpoch(), date.time().msec() * 1000.0);
+#else
         bool res = mPacketInterface->setSystemTime(mId, date.toTime_t(), date.time().msec() * 1000.0);
+#endif
         if (!res) {
             QMessageBox::warning(this, "Set time on Raspberry Pi",
                                  "Could not set time, no ack received. Make sure that the "

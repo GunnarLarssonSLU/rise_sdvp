@@ -425,7 +425,7 @@ void NetworkInterface::processXml(const QByteArray &xml)
             bool mapOnly = false;
             int mapRoute = -1;
 
-            MapRoute route;
+            QList<LocPoint> route;
             LocPoint p;
 
             while (stream.readNextStartElement()) {
@@ -490,13 +490,13 @@ void NetworkInterface::processXml(const QByteArray &xml)
 
             if (!mapOnly && !ui->disableSendCarBox->isChecked() && mPacketInterface) {
                 if (name == "addRoutePoint") {
-                    if (!utility::uploadRouteHelper(mPacketInterface, id, route.mRoute)) {
+                    if (!utility::uploadRouteHelper(mPacketInterface, id, route)) {
                         ok = false;
                         sendError("No ACK received from car. Make sure that the car connection "
                                   "works.", name);
                     }
                 } else {
-                    if (!utility::replaceRouteHelper(mPacketInterface, id, route.mRoute)) {
+                    if (!utility::replaceRouteHelper(mPacketInterface, id, route)) {
                         ok = false;
                         sendError("No ACK received from car. Make sure that the car connection "
                                   "works.", name);
@@ -505,20 +505,20 @@ void NetworkInterface::processXml(const QByteArray &xml)
             }
 
             if (mMap && (ui->plotRouteMapBox->isChecked() || mapOnly) && mapRoute != -2) {
-                int mapRouteLast = mMap->getPathNow();
+                int mapRouteLast = mMap->getRouteNow();
                 if (mapRoute >= 0) {
-                    mMap->setPathNow(mapRoute);
+                    mMap->setRouteNow(mapRoute);
                 }
 
                 if (name == "replaceRoute") {
-                    mMap->clearPath();
+                    mMap->clearRoute();
                 }
 
                 for (LocPoint p: route) {
                     mMap->addRoutePoint(p.getX(), p.getY(), p.getSpeed(), p.getTime());
                 }
 
-                mMap->setPathNow(mapRouteLast);
+                mMap->setRouteNow(mapRouteLast);
             }
 
             if (ok) {
@@ -554,7 +554,7 @@ void NetworkInterface::processXml(const QByteArray &xml)
             }
             if (mapRoute >= 0) {
                 if (mMap) {
-                    sendRoute(id, mMap->getPath(mapRoute).mRoute);
+                    sendRoute(id, mMap->getRoute(mapRoute));
                 }
             } else {
                 if (!ui->disableSendCarBox->isChecked() && mPacketInterface) {
@@ -643,10 +643,10 @@ void NetworkInterface::processXml(const QByteArray &xml)
             }
 
             if (mapRoute >= 0 && mMap) {
-                int lastRoute = mMap->getPathNow();
-                mMap->setPathNow(mapRoute);
-                mMap->clearPath();
-                mMap->setPathNow(lastRoute);
+                int lastRoute = mMap->getRouteNow();
+                mMap->setRouteNow(mapRoute);
+                mMap->clearRoute();
+                mMap->setRouteNow(lastRoute);
             }
 
             if (ok) {
