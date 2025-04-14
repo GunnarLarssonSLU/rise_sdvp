@@ -61,13 +61,11 @@ int main(int argc, char *argv[])
 
     struct CarConn {
         QString ip;
-        QString name;
         int port;
     };
 
     struct CarToAdd {
         int id;
-        QString name;
         bool pollData;
     };
 
@@ -216,14 +214,12 @@ int main(int argc, char *argv[])
                     found = true;
                     CarToAdd c;
                     c.id = numbers.at(0).toInt();
-                    c.name=c.id;
                     c.pollData = false;
                     carsToAdd.append(c);
                 } else if (numbers.size() == 2) {
                     found = true;
                     CarToAdd c;
                     c.id = numbers.at(0).toInt();
-                    c.name=c.id;
                     c.pollData = numbers.at(1).toInt();
                     carsToAdd.append(c);
                 }
@@ -327,17 +323,16 @@ int main(int argc, char *argv[])
                 map.setDrawRouteText(plotRoutesShowText);
 
                 if (plotRoutesSelect >= 0) {
-                    map.setPathNow(plotRoutesSelect);
+                    map.setRouteNow(plotRoutesSelect);
                 } else {
-                    map.setPathNow(map.getPathNum() - 1);
+                    map.setRouteNow(map.getRouteNum() - 1);
                 }
-/*
+
                 if (plotRoutesFormat == PLOT_ROUTE_FORMAT_PDF) {
                     map.printPdf(plotRoutesFile + ".pdf", plotRoutesW, plotRoutesH);
                 } else {
                     map.printPng(plotRoutesFile + ".png", plotRoutesW, plotRoutesH);
                 }
-*/
             } else {
                 qCritical() << "Could not load routes from" << plotRoutesFile;
             }
@@ -357,11 +352,11 @@ int main(int argc, char *argv[])
             }
 
             for (auto c: carsToAdd) {
-                w->addCar(c.id, c.name,c.pollData);
+                w->addCar(c.id, c.pollData);
             }
 
             if (!jsStr.isEmpty()) {
-                w->connectJoystick();
+                w->connectJoystick(jsStr);
             }
 
             for (auto c: carsToConn) {

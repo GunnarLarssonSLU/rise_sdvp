@@ -23,6 +23,9 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <cmath>
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#include <QRegularExpression>
+#endif
 
 MagCal::MagCal(QWidget *parent) :
     QWidget(parent),
@@ -326,8 +329,11 @@ void MagCal::loadMagPoints(QString path)
 
             while (!in.atEnd()) {
                 QString line = in.readLine();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+                QStringList vals = line.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+#else
                 QStringList vals = line.split(QRegExp("\\s+"), QString::SkipEmptyParts);
-
+#endif
                 if (vals.size() != 3) {
                     ok = false;
                     break;
@@ -555,6 +561,36 @@ void MagCal::on_magCodeButton_clicked()
 {
     if (calculateCompensation()) {
         QString str;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        str = QString("conf->mag_cal_cx = %1;\n"
+                              "conf->mag_cal_cy = %2;\n"
+                              "conf->mag_cal_cz = %3;\n"
+                              "\n"
+                              "conf->mag_cal_xx = %4;\n"
+                              "conf->mag_cal_xy = %5;\n"
+                              "conf->mag_cal_xz = %6;\n"
+                              "\n"
+                              "conf->mag_cal_yx = %7;\n"
+                              "conf->mag_cal_yy = %8;\n"
+                              "conf->mag_cal_yz = %9;\n"
+                              "\n"
+                              "conf->mag_cal_zx = %10;\n"
+                              "conf->mag_cal_zy = %11;\n"
+                              "conf->mag_cal_zz = %12;\n")
+                          .arg(mMagCompCenter.at(0), 0, 'f', 4)
+                          .arg(mMagCompCenter.at(1), 0, 'f', 4)
+                          .arg(mMagCompCenter.at(2), 0, 'f', 4)
+                          .arg(mMagComp.at(0), 0, 'f', 4)
+                          .arg(mMagComp.at(1), 0, 'f', 4)
+                          .arg(mMagComp.at(2), 0, 'f', 4)
+                          .arg(mMagComp.at(3), 0, 'f', 4)
+                          .arg(mMagComp.at(4), 0, 'f', 4)
+                          .arg(mMagComp.at(5), 0, 'f', 4)
+                          .arg(mMagComp.at(6), 0, 'f', 4)
+                          .arg(mMagComp.at(7), 0, 'f', 4)
+                          .arg(mMagComp.at(8), 0, 'f', 4);
+
+#else
         str.sprintf("conf->mag_cal_cx = %.4f;\n"
                     "conf->mag_cal_cy = %.4f;\n"
                     "conf->mag_cal_cz = %.4f;\n"
@@ -574,7 +610,7 @@ void MagCal::on_magCodeButton_clicked()
                     mMagComp.at(0), mMagComp.at(1), mMagComp.at(2),
                     mMagComp.at(3), mMagComp.at(4), mMagComp.at(5),
                     mMagComp.at(6), mMagComp.at(7), mMagComp.at(8));
-
+#endif
         QMessageBox::information(this, "Compensation Code", str);
     } else {
         QMessageBox::warning(this, "Show Code",

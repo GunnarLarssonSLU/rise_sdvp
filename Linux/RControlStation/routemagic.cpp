@@ -1386,7 +1386,6 @@ QList<LocPoint> RouteMagic::fillBoundsWithTrajectory(QList<LocPoint> bounds, QLi
 QList<LocPoint> RouteMagic::fillConvexPolygonWithZigZag(QList<LocPoint> bounds, double spacing, bool keepTurnsInBounds, double speed, double speedInTurns, int turnIntermediateSteps, int visitEveryX,
                                                         uint32_t setAttributesOnStraights, uint32_t setAttributesInTurns, double attributeDistanceAfterTurn, double attributeDistanceBeforeTurn)
 {
-
     QList<LocPoint> route;
 
     // 1. resize bounds to ensure spacing (if applicable). TODO: not sure if helpful
@@ -1395,7 +1394,6 @@ QList<LocPoint> RouteMagic::fillConvexPolygonWithZigZag(QList<LocPoint> bounds, 
 
     // 2. get bound that determines optimal zigzag direction
     QPair<LocPoint, LocPoint> baseline = getBaselineDeterminingMinHeightOfConvexPolygon(bounds);
-
     double angle = atan2(baseline.second.getY() - baseline.first.getY(), baseline.second.getX() - baseline.first.getX());
 
     // 3. draw parallels to baseline that cover whole polygon
@@ -1691,7 +1689,9 @@ void RouteMagic::saveRoutes(bool withId, QList<QList<LocPoint> > routes)
 
 
     QXmlStreamWriter stream(&file);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     stream.setCodec("UTF-8");
+#endif
     stream.setAutoFormatting(true);
     stream.writeStartDocument();
 
@@ -1736,14 +1736,21 @@ int RouteMagic::loadRoutes(QString filename, MapWidget *map) {
     // Look for routes tag
     bool routes_found = false;
     while (stream.readNextStartElement()) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        if (stream.name() == QStringView(u"routes")) {
+            routes_found = true;
+            break;
+        }
+#else
         if (stream.name() == "routes") {
             routes_found = true;
             break;
         }
+#endif
     }
 
     if (routes_found) {
-        QList<QPair<int, MapRoute > > routes;
+        QList<QPair<int, QList<LocPoint> > > routes;
         QList<LocPoint> anchors;
 
         while (stream.readNextStartElement()) {
@@ -1751,7 +1758,7 @@ int RouteMagic::loadRoutes(QString filename, MapWidget *map) {
 
             if (name == "route") {
                 int id = -1;
-                MapRoute route;
+                QList<LocPoint> route;
 
                 while (stream.readNextStartElement()) {
                     QString name2 = stream.name().toString();
@@ -1791,7 +1798,7 @@ int RouteMagic::loadRoutes(QString filename, MapWidget *map) {
                     }
                 }
 
-                routes.append(QPair<int, MapRoute >(id, route));
+                routes.append(QPair<int, QList<LocPoint> >(id, route));
             } else if (name == "anchors") {
                 while (stream.readNextStartElement()) {
                     QString name2 = stream.name().toString();
@@ -1834,14 +1841,14 @@ int RouteMagic::loadRoutes(QString filename, MapWidget *map) {
             }
         }
 
-        for (QPair<int, MapRoute > r: routes) {
+        for (QPair<int, QList<LocPoint> > r: routes) {
             if (r.first >= 0) {
-                int routeLast = map->getPathNow();
-                map->setPathNow(r.first);
-                map->setPath(r.second);
-                map->setPathNow(routeLast);
+                int routeLast = map->getRouteNow();
+                map->setRouteNow(r.first);
+                map->setRoute(r.second);
+                map->setRouteNow(routeLast);
             } else {
-                map->addPath(r.second);
+                map->addRoute(r.second);
             }
         }
 

@@ -224,7 +224,11 @@ void NCom::readPendingDatagrams()
             }
 
             QString tmp;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+            tmp = QString(" (%d)").arg(mData.posMode);
+#else
             tmp.sprintf(" (%d)", mData.posMode);
+#endif
             posModeStr.append(tmp);
 
             ui->posModeLabel->setText("Pos mode: " + posModeStr);
@@ -234,7 +238,11 @@ void NCom::readPendingDatagrams()
             mPacketCounter++;
 
             QString pktStr;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+            pktStr = QString("Packets RX: %d").arg(mPacketCounter);
+#else
             pktStr.sprintf("Packets RX: %d", mPacketCounter);
+#endif
             ui->packetLabel->setText(pktStr);
 
             double illh[3], llh[3], xyz[3];
@@ -257,8 +265,16 @@ void NCom::readPendingDatagrams()
                 mMapCnt = 0;
 
                 QString posStr;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+                posStr = QString("X %.2f, Y: %.2f, H: %.2f, YAW: %.2f")
+                            .arg(xyz[0])
+                            .arg(xyz[1])
+                            .arg(xyz[2])
+                            .arg(mData.mapYawRad * 180 / M_PI);
+#else
                 posStr.sprintf("X %.2f, Y: %.2f, H: %.2f, YAW: %.2f",
                                xyz[0], xyz[1], xyz[2], mData.mapYawRad * 180 / M_PI);
+#endif
                 ui->posLabel->setText(posStr);
 
                 if (ui->mapPlotPointsBox->isChecked()) {
@@ -266,6 +282,22 @@ void NCom::readPendingDatagrams()
                     p.setXY(xyz[0], xyz[1]);
                     QString info;
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+                    info = QString("Head    : %.2f\n"
+                                           "X       : %.2f\n"
+                                           "Y       : %.2f\n"
+                                           "Height  : %.2f\n"
+                                           "velN    : %.2f\n"
+                                           "velE    : %.2f\n"
+                                           "velD    : %.2f\n")
+                                       .arg(mData.mapYawRad * 180 / M_PI, 0, 'f', 2)
+                                       .arg(xyz[0], 0, 'f', 2)
+                                       .arg(xyz[1], 0, 'f', 2)
+                                       .arg(xyz[2], 0, 'f', 2)
+                                       .arg(mData.velN, 0, 'f', 2)
+                                       .arg(mData.velE, 0, 'f', 2)
+                                       .arg(mData.velD, 0, 'f', 2);
+#else
                     info.sprintf("Head    : %.2f\n"
                                  "X       : %.2f\n"
                                  "Y       : %.2f\n"
@@ -276,7 +308,9 @@ void NCom::readPendingDatagrams()
                                  mData.mapYawRad * 180 / M_PI,
                                  xyz[0], xyz[1], xyz[2],
                                  mData.velN, mData.velE, mData.velD
-                            );
+                                 );
+#endif
+
 
                     p.setInfo(info);
                     mMap->addInfoPoint(p, false);

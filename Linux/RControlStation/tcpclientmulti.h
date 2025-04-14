@@ -62,6 +62,16 @@ private:
                 emit client->stateChanged("TCP Disconnected", false);
             });
 
+
+    #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+            connect(&socket, &QTcpSocket::errorOccurred,
+                    [this, client](QAbstractSocket::SocketError e) {
+                        (void)e;
+                        QString errorStr = socket.errorString();
+                        socket.close();
+                        emit client->stateChanged(QString("TCP Error: %1").arg(errorStr), true);
+                    });
+   #else
             connect(&socket, QOverload<QAbstractSocket::SocketError>::of(&QTcpSocket::error),
                     [this,client](QAbstractSocket::SocketError e) {
                 (void)e;
@@ -69,7 +79,7 @@ private:
                 socket.close();
                 emit client->stateChanged(QString("TCP Error: %1").arg(errorStr), true);
             });
-
+    #endif
             connect(&packet, &PacketInterface::packetReceived,
                     [client](quint8 id, CMD_PACKET cmd, const QByteArray &data) {
                 (void)id;

@@ -101,7 +101,11 @@ void NetworkLogger::tcpInputDataAvailable()
         }
 
         if (NmeaServer::decodeNmeaGGA(data, gga) >= 0) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+            mSatNowStr = QString("Satellites: %d").arg(gga.n_sat);
+#else
             mSatNowStr.sprintf("Satellites: %d", gga.n_sat);
+#endif
 
             //qDebug() << data;
             //qDebug() << QString().sprintf("%.9f", gga.lat);
@@ -130,9 +134,20 @@ void NetworkLogger::tcpInputDataAvailable()
         }
 
         QString logStr;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        logStr = QString("%s    %.8f    %.8f    %.3f    %d    %d")
+                    .arg(QDateTime::currentDateTime().toString(Qt::ISODate).toLocal8Bit().data())
+                    .arg(gga.lat)
+                    .arg(gga.lon)
+                    .arg(gga.height)
+                    .arg(gga.fix_type)
+                    .arg(ui->pingLenBox->value());
+#else
         logStr.sprintf("%s    %.8f    %.8f    %.3f    %d    %d",
                        QDateTime::currentDateTime().toString(Qt::ISODate).toLocal8Bit().data(),
                        gga.lat, gga.lon, gga.height, gga.fix_type, ui->pingLenBox->value());
+#endif
+
         bool pingOk = mPing->pingHost(ui->pingHostEdit->text(), ui->pingLenBox->value(), logStr);
 
         // Plot local position on map
@@ -150,13 +165,26 @@ void NetworkLogger::tcpInputDataAvailable()
             mLastPoint.setXY(xyz[0], xyz[1]);
 
             QString info;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+            info = QString("Lat  : %1\n"
+                                   "Lon  : %2\n"
+                                   "H    : %3\n"
+                                   "Fix  : %4\n"
+                                   "Pktzs: %5\n")
+                               .arg(gga.lat, 0, 'f', 8)  // Format latitude with 8 decimal places
+                               .arg(gga.lon, 0, 'f', 8)  // Format longitude with 8 decimal places
+                               .arg(gga.height, 0, 'f', 3)  // Format height with 3 decimal places
+                               .arg(gga.fix_type)
+                               .arg(ui->pingLenBox->value());
+
+#else
             info.sprintf("Lat  : %.8f\n"
                          "Lon  : %.8f\n"
                          "H    : %.3f\n"
                          "Fix  : %d\n"
                          "Pktzs: %d\n",
                          gga.lat, gga.lon, gga.height, gga.fix_type, ui->pingLenBox->value());
-
+#endif
             mLastPoint.setInfo(info);
         }
     }
@@ -180,12 +208,20 @@ void NetworkLogger::tcpInputError(QAbstractSocket::SocketError socketError)
 void NetworkLogger::pingRx(int time, QString msg)
 {
     QString msStr;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    msStr = QString("%.3f ms").arg((double)time / 1000.0);
+#else
     msStr.sprintf("%.3f ms", (double)time / 1000.0);
+#endif
     ui->pingMsLabel->setText(msStr);
 
     if (!msg.isEmpty()) {
         QString msStr;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        msStr = QString("    %.3f").arg((double)time / 1000.0);
+#else
         msStr.sprintf("    %.3f", (double)time / 1000.0);
+#endif
 
         QString logLine;
         logLine += msg + msStr;
@@ -199,7 +235,11 @@ void NetworkLogger::pingRx(int time, QString msg)
 
         if (ui->plotMapBox->isChecked() && mMap) {
             QString info = mLastPoint.getInfo();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+            msStr = QString("Time : %.3f ms").arg( (double)time / 1000.0);
+#else
             msStr.sprintf("Time : %.3f ms", (double)time / 1000.0);
+#endif
             info.append(msStr);
             mLastPoint.setInfo(info);
             mMap->addInfoPoint(mLastPoint);
@@ -280,7 +320,6 @@ void NetworkLogger::on_logFileActiveBox_toggled(bool checked)
         }
 
         mLog.setFileName(ui->logFileEdit->text());
-        qDebug() << ui->logFileEdit->text();
         bool ok = mLog.open(QIODevice::ReadWrite | QIODevice::Append | QIODevice::Text);
 
         if (!ok) {
@@ -310,7 +349,12 @@ void NetworkLogger::on_statLogOpenButton_clicked()
                 LOGPOINT lp;
 
                 QString line = in.readLine();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+                QStringList list = line.split(QRegularExpression("[ ]"), Qt::SkipEmptyParts);
+#else
                 QStringList list = line.split(QRegExp("[ ]"), QString::SkipEmptyParts);
+#endif
+
 
                 lp.date = QDateTime::fromString(list.at(0), Qt::ISODate);
                 lp.llh[0] = list.at(1).toDouble();
@@ -352,6 +396,20 @@ void NetworkLogger::on_statLogOpenButton_clicked()
             ping_avg /= (double)mLogLoaded.size();
 
             QString statStr;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+            statStr = QString("Samples : %1\n"
+                                      "Ping min: %2 ms\n"
+                                      "Ping max: %3 ms\n"
+                                      "Ping avg: %4 ms\n"
+                                      "Ping err: %5 (%.6f %%)")
+                                  .arg(mLogLoaded.size())
+                                  .arg(ping_min, 0, 'f', 3)  // Format ping_min with 3 decimal places
+                                  .arg(ping_max, 0, 'f', 3)  // Format ping_max with 3 decimal places
+                                  .arg(ping_avg, 0, 'f', 3)  // Format ping_avg with 3 decimal places
+                                  .arg(ping_errors)
+                                  .arg(100.0 * (double)ping_errors / (double)mLogLoaded.size(), 0, 'f', 6); // Format percentage with 6 decimal places
+
+#else
             statStr.sprintf("Samples : %d\n"
                             "Ping min: %.3f ms\n"
                             "Ping max: %.3f ms\n"
@@ -360,6 +418,7 @@ void NetworkLogger::on_statLogOpenButton_clicked()
                             mLogLoaded.size(), ping_min, ping_max,
                             ping_avg, ping_errors,
                             100.0 * (double)ping_errors / (double)mLogLoaded.size());
+#endif
             ui->statBrowser->setText(statStr);
 
             // Plot on map
@@ -395,6 +454,22 @@ void NetworkLogger::on_statLogOpenButton_clicked()
                     p.setXY(xyz[0], xyz[1]);
 
                     QString info;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+                    info = QString("Date : %1\n"
+                                           "Lat  : %2\n"
+                                           "Lon  : %3\n"
+                                           "H    : %4\n"
+                                           "Fix  : %5\n"
+                                           "Pktzs: %6\n"
+                                           "Ping : %7")
+                                       .arg(lp.date.toString(Qt::ISODate))
+                                       .arg(lp.llh[0], 0, 'f', 8)  // Format latitude with 8 decimal places
+                                       .arg(lp.llh[1], 0, 'f', 8)  // Format longitude with 8 decimal places
+                                       .arg(lp.llh[2], 0, 'f', 3)  // Format height with 3 decimal places
+                                       .arg(lp.fix_type)
+                                       .arg(lp.datalen)
+                                       .arg(lp.pingRes);
+#else
                     info.sprintf("Date : %s\n"
                                  "Lat  : %.8f\n"
                                  "Lon  : %.8f\n"
@@ -405,7 +480,7 @@ void NetworkLogger::on_statLogOpenButton_clicked()
                                  lp.date.toString(Qt::ISODate).toLocal8Bit().data(),
                                  lp.llh[0], lp.llh[1], lp.llh[2],
                             lp.fix_type, lp.datalen, lp.pingRes.toLocal8Bit().data());
-
+#endif
                     p.setInfo(info);
 
                     const double l_green = ping_avg * 1.2;

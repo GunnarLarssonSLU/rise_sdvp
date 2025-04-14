@@ -65,9 +65,8 @@ void IntersectionTest::nComRx(const ncom_data &data)
         if (mMap && mPacketInterface) {
             LocPoint sync;
             bool syncFound = false;
-            if (mMap->getPath(ui->routeSyncBox->value()).size() > 0) {
-//                sync = mMap->getRoute(ui->routeSyncBox->value()).at(0);
-                sync = mMap->getPath(ui->routeSyncBox->value())[0];
+            if (mMap->getRoute(ui->routeSyncBox->value()).size() > 0) {
+                sync = mMap->getRoute(ui->routeSyncBox->value()).at(0);
                 syncFound = true;
             }
 
@@ -85,6 +84,24 @@ void IntersectionTest::nComRx(const ncom_data &data)
                 utility::truncate_number_abs(&tSync, 1200);
 
                 QString str;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+                str = QString("velE:  %.2f\n"
+                                      "velN:  %.2f\n"
+                                      "v:     %.2f\n"
+                                      "a_diff:%.2f\n"
+                                      "a_vel: %.2f\n"
+                                      "a_car: %.2f\n"
+                                      "vComp: %.2f\n"
+                                      "tSync: %.2f")
+                                  .arg(mRtRangeData.velE, 0, 'f', 2)
+                                  .arg(mRtRangeData.velN, 0, 'f', 2)
+                                  .arg(v, 0, 'f', 2)
+                                  .arg(a_diff * 180.0 / M_PI, 0, 'f', 2)
+                                  .arg(a_vel * 180.0 / M_PI, 0, 'f', 2)
+                                  .arg(a_car * 180.0 / M_PI, 0, 'f', 2)
+                                  .arg(vComp, 0, 'f', 2)
+                                  .arg(tSync, 0, 'f', 2);
+#else
                 str.sprintf("velE:  %.2f\n"
                             "velN:  %.2f\n"
                             "v:     %.2f\n"
@@ -102,6 +119,7 @@ void IntersectionTest::nComRx(const ncom_data &data)
                             a_car * 180.0 / M_PI,
                             vComp,
                             tSync);
+#endif
                 ui->terminalEdit->clear();
                 ui->terminalEdit->appendPlainText(str);
 
@@ -143,25 +161,25 @@ void IntersectionTest::on_runButton_clicked()
             int carId = ui->carABox->value();
 
             if (carId == ui->carABox->value()) {
-                MapRoute route = mMap->getPath(ui->routeABox->value());
+                QList<LocPoint> route = mMap->getRoute(ui->routeABox->value());
 
                 if (!mPacketInterface->clearRoute(carId)) {
                     ok = false;
                 }
 
-                if (!utility::uploadRouteHelper(mPacketInterface, carId, route.mRoute)) {
+                if (!utility::uploadRouteHelper(mPacketInterface, carId, route)) {
                     ok = false;
                 }
             } else if (carId == ui->carBBox->value()) {
                 car->emergencyStop();
 
-                MapRoute route = mMap->getPath(ui->routeBBox->value());
+                QList<LocPoint> route = mMap->getRoute(ui->routeBBox->value());
 
                 if (!mPacketInterface->clearRoute(carId)) {
                     ok = false;
                 }
 
-                if (!utility::uploadRouteHelper(mPacketInterface, carId, route.mRoute)) {
+                if (!utility::uploadRouteHelper(mPacketInterface, carId, route)) {
                     ok = false;
                 }
             }

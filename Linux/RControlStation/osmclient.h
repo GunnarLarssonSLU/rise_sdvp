@@ -94,7 +94,6 @@ public:
     int getTilesDownloaded() const;
     int getMemoryTilesNow() const;
     int getRamTilesLoaded() const;
-    void setType(int typearg);
 
 signals:
     void tileReady(OsmTile tile);
@@ -125,8 +124,6 @@ private:
     quint64 calcKey(int zoom, int x, int y);
     void storeTileMemory(quint64 key, const OsmTile &tile);
     const QPixmap& getStatusPixmap(quint64 key);
-
-    int type; // What format are used on urls etc.
 
 };
 

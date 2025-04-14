@@ -505,7 +505,10 @@ unsigned short PacketInterface::crc16(const unsigned char *buf, unsigned int len
 bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_packet)
 {
     unsigned int ind = 0;
-/*
+    qDebug() << "in packetinterface::sendPacket";
+    qDebug() << "Address: " << mHostAddress.toString() << ", port:" << mUdpPort;
+    qDebug() << "Address: " << mHostAddress2.toString() << ", port:" << mUdpPort;
+    /*
     if (data[0]==CMD_GETANGLE)
     {
             qDebug() << "in packetinterface::sendPacket (get data)";
@@ -523,6 +526,8 @@ bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_pac
         ind += len_packet;
 
         QByteArray toSend = QByteArray::fromRawData((const char*)mSendBufferAck, ind);
+        qDebug() << "ok and about to write";
+
         mUdpSocket->writeDatagram(toSend, mHostAddress, mUdpPort);
 
         if (QString::compare(mHostAddress2.toString(), "0.0.0.0") != 0) {

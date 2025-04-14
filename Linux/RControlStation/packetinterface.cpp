@@ -195,26 +195,14 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     CMD_PACKET cmd = (CMD_PACKET)(quint8)data[0];
     data++;
     len--;
+
     emit packetReceived(id, cmd, pkt);
 
     switch (cmd) {
     case CMD_PRINTF: {
-//        QByteArray tmpArray = QByteArray::fromRawData((const char*)data, len);
-//        tmpArray[len] = '\0';
-//        emit printReceived(id, QString::fromLatin1(tmpArray));
-
-        QByteArray tmpArray((const char*)data, len);
-        tmpArray.append('\0');
-        emit printReceived(id, QString::fromLatin1(tmpArray));
-
-
-
-    } break;
-
-    case CMD_PRINTLOG: {
         QByteArray tmpArray = QByteArray::fromRawData((const char*)data, len);
         tmpArray[len] = '\0';
-        emit logReceived(id, QString::fromLatin1(tmpArray));
+        emit printReceived(id, QString::fromLatin1(tmpArray));
     } break;
 
     case CMD_GET_ENU_REF: {
@@ -223,10 +211,6 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         lat = utility::buffer_get_double64(data, 1e16, &ind);
         lon = utility::buffer_get_double64(data, 1e16, &ind);
         height = utility::buffer_get_double32(data, 1e3, &ind);
-        qDebug() << ":::Get ENU ref:::";
-        qDebug() << "Lat.: " << lat;
-        qDebug() << "Lon.: " << lon;
-        qDebug() << "Height.: " << height;
         emit enuRefReceived(id, lat, lon, height);
     } break;
 
@@ -245,11 +229,11 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
             p.setTime(utility::buffer_get_int32(data, &ind));
             p.setAttributes(utility::buffer_get_uint32(data, &ind));
             route.append(p);
+        }
 
         emit routePartReceived(id, routeLen, route);
     } break;
 
-    }
     case CMD_SEND_RTCM_USB: {
         QByteArray tmpArray((char*)data, len);
         emit rtcmUsbReceived(id, tmpArray);
@@ -331,10 +315,10 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         conf.car.vesc_i_gain = utility::buffer_get_double32_auto(data, &ind);
         conf.car.vesc_d_gain = utility::buffer_get_double32_auto(data, &ind);
 
-        conf.car.anglemin = utility::buffer_get_double32_auto(data, &ind);
-        conf.car.anglemax = utility::buffer_get_double32_auto(data, &ind);
-        conf.car.centrevoltage = utility::buffer_get_double32_auto(data, &ind);
-//        conf.car.angledegrees = utility::buffer_get_double32_auto(data, &ind);
+        conf.car.sensorcentre = utility::buffer_get_double32_auto(data, &ind);
+        conf.car.sensorinterval = utility::buffer_get_double32_auto(data, &ind);
+        conf.car.degreeinterval = utility::buffer_get_double32_auto(data, &ind);
+
         // Multirotor settings
         conf.mr.vel_decay_e = utility::buffer_get_double32_auto(data, &ind);
         conf.mr.vel_decay_l = utility::buffer_get_double32_auto(data, &ind);
@@ -399,7 +383,28 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         tmpArray[len] = '\0';
         emit logLineUsbReceived(id, QString::fromLocal8Bit(tmpArray));
     } break;
+/*
+    case CMD_PLOT_INIT: {
+        QString xL = QString::fromLocal8Bit((const char*)data);
+        QString yL = QString::fromLocal8Bit((const char*)data + xL.size() + 1);
+        emit plotInitReceived(id, xL, yL);
+    } break;
 
+    case CMD_PLOT_DATA: {
+        int32_t ind = 0;
+        double x = utility::buffer_get_double32_auto(data, &ind);
+        double y = utility::buffer_get_double32_auto(data, &ind);
+        emit plotDataReceived(id, x, y);
+    } break;
+
+    case CMD_PLOT_ADD_GRAPH: {
+        emit plotAddGraphReceived(id, QString::fromLocal8Bit((const char*)data));
+    } break;
+
+    case CMD_PLOT_SET_GRAPH: {
+        emit plotSetGraphReceived(id, data[0]);
+    } break;
+*/
     case CMD_SET_SYSTEM_TIME: {
         int32_t ind = 0;
         qint32 sec = utility::buffer_get_int32(data, &ind);
@@ -419,7 +424,6 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     } break;
 
     case CMD_CAMERA_IMAGE: {
-        qDebug() << "Camera Image!";
         emit cameraImageReceived(id, QImage::fromData(data, len), len);
     } break;
 
@@ -460,23 +464,52 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         state.ap_route_left = utility::buffer_get_int16(data, &ind);
         state.px_uwb = utility::buffer_get_double32(data, 1e4, &ind);
         state.py_uwb = utility::buffer_get_double32(data, 1e4, &ind);
-        state.log1 = utility::buffer_get_double32(data, 1e4, &ind);
-        state.log2 = utility::buffer_get_double32(data, 1e4, &ind);
-        state.log3 = utility::buffer_get_double32(data, 1e4, &ind);
-        qDebug() << "::: GetState:::";
-        qDebug() << "px: " << state.px;
-        qDebug() << "py: " << state.py;
-        qDebug() << "px - gps: " << state.px_gps;
-        qDebug() << "py - gps: " << state.py_gps;
-        qDebug() << "px - uwb: " << state.px_uwb;
-        qDebug() << "py - uwb: " << state.py_uwb;
-
+        state.angle = utility::buffer_get_double32(data, 1e4, &ind);
+        state.servo_output = utility::buffer_get_double32(data, 1e4, &ind);
+        state.sensor_value = utility::buffer_get_uint16(data, &ind);
         emit stateReceived(id, state);
     } break;
 
     case CMD_VESC_FWD:
         emit vescFwdReceived(id, QByteArray::fromRawData((char*)data, len));
         break;
+
+        // Multirotor commands
+    case CMD_MR_GET_STATE: {
+        MULTIROTOR_STATE state;
+        int32_t ind = 0;
+
+        if (len <= 1) {
+            break;
+        }
+
+        state.fw_major = data[ind++];
+        state.fw_minor = data[ind++];
+        state.roll = utility::buffer_get_double32_auto(data, &ind);
+        state.pitch = utility::buffer_get_double32_auto(data, &ind);
+        state.yaw = utility::buffer_get_double32_auto(data, &ind);
+        state.accel[0] = utility::buffer_get_double32_auto(data, &ind);
+        state.accel[1] = utility::buffer_get_double32_auto(data, &ind);
+        state.accel[2] = utility::buffer_get_double32_auto(data, &ind);
+        state.gyro[0] = utility::buffer_get_double32_auto(data, &ind);
+        state.gyro[1] = utility::buffer_get_double32_auto(data, &ind);
+        state.gyro[2] = utility::buffer_get_double32_auto(data, &ind);
+        state.mag[0] = utility::buffer_get_double32_auto(data, &ind);
+        state.mag[1] = utility::buffer_get_double32_auto(data, &ind);
+        state.mag[2] = utility::buffer_get_double32_auto(data, &ind);
+        state.px = utility::buffer_get_double32_auto(data, &ind);
+        state.py = utility::buffer_get_double32_auto(data, &ind);
+        state.pz = utility::buffer_get_double32_auto(data, &ind);
+        state.speed = utility::buffer_get_double32_auto(data, &ind);
+        state.vin = utility::buffer_get_double32_auto(data, &ind);
+        state.px_gps = utility::buffer_get_double32_auto(data, &ind);
+        state.py_gps = utility::buffer_get_double32_auto(data, &ind);
+        state.ap_goal_px = utility::buffer_get_double32_auto(data, &ind);
+        state.ap_goal_py = utility::buffer_get_double32_auto(data, &ind);
+        state.ms_today = utility::buffer_get_int32(data, &ind);
+
+        emit mrStateReceived(id, state);
+    } break;
 
         // Acks
     case CMD_AP_ADD_POINTS:
@@ -575,7 +608,6 @@ bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_pac
 
     // If the IP is valid, send the packet over UDP
     if (QString::compare(mHostAddress.toString(), "0.0.0.0") != 0) {
-//    	qDebug() << "Sending over UDP";
         memcpy(mSendBufferAck + ind, data, len_packet);
         ind += len_packet;
 
@@ -588,8 +620,6 @@ bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_pac
 
         return true;
     }
-
-
 
     int len_tot = len_packet;
     unsigned int data_offs = 0;
@@ -620,11 +650,6 @@ bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_pac
     mSendBufferAck[ind++] = 3;
 
     QByteArray sendData = QByteArray::fromRawData((char*)mSendBufferAck, ind);
-//    qDebug() << "Sending over something else:";
-//    qDebug() << "data(2):" << sendData.at(2);
-
-//    qDebug() << "data(3):" << (int) sendData.at(3);
-//    qDebug() << "data(4):" << (int) sendData.at(4);
 
     emit dataToSend(sendData);
 
@@ -886,10 +911,9 @@ bool PacketInterface::setConfiguration(quint8 id, MAIN_CONFIG &conf, int retries
     utility::buffer_append_double32_auto(mSendBuffer, conf.car.vesc_i_gain, &send_index);
     utility::buffer_append_double32_auto(mSendBuffer, conf.car.vesc_d_gain, &send_index);
 
-    utility::buffer_append_double32_auto(mSendBuffer, conf.car.anglemin, &send_index);
-    utility::buffer_append_double32_auto(mSendBuffer, conf.car.anglemax, &send_index);
-    utility::buffer_append_double32_auto(mSendBuffer, conf.car.centrevoltage, &send_index);
-//    utility::buffer_append_double32_auto(mSendBuffer, conf.car.angledegrees, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.car.sensorcentre, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.car.sensorinterval, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.car.degreeinterval, &send_index);
 
     // Multirotor settings
     utility::buffer_append_double32_auto(mSendBuffer, conf.mr.vel_decay_e, &send_index);
@@ -975,10 +999,6 @@ bool PacketInterface::setEnuRef(quint8 id, double *llh, int retries)
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_SET_ENU_REF;
-//    qDebug() << "::Set Enu Ref:::";
-//    qDebug() << "Lat.: " << llh[0];
-//    qDebug() << "Lon.: " << llh[1];
-//    qDebug() << "Hei.: " << llh[2];
     utility::buffer_append_double64(mSendBuffer, llh[0], 1e16, &send_index);
     utility::buffer_append_double64(mSendBuffer, llh[1], 1e16, &send_index);
     utility::buffer_append_double32(mSendBuffer, llh[2], 1e3, &send_index);
@@ -1192,7 +1212,6 @@ void PacketInterface::getMrState(quint8 id)
 
 void PacketInterface::sendTerminalCmd(quint8 id, QString cmd)
 {
-    qDebug() << "Sending terminal message: " << cmd;
     QByteArray packet;
     packet.clear();
     packet.append(id);
@@ -1203,9 +1222,7 @@ void PacketInterface::sendTerminalCmd(quint8 id, QString cmd)
 
 void PacketInterface::forwardVesc(quint8 id, QByteArray data)
 {
-//	qDebug() << "Setting forward to VESC";
-
-	QByteArray packet;
+    QByteArray packet;
     packet.clear();
     packet.append(id);
     packet.append((char)CMD_VESC_FWD);
@@ -1215,7 +1232,6 @@ void PacketInterface::forwardVesc(quint8 id, QByteArray data)
 
 void PacketInterface::setRcControlCurrent(quint8 id, double current, double steering)
 {
-//	qDebug() << "Setting Current";
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_RC_CONTROL;
@@ -1227,7 +1243,6 @@ void PacketInterface::setRcControlCurrent(quint8 id, double current, double stee
 
 void PacketInterface::setRcControlCurrentBrake(quint8 id, double current, double steering)
 {
-//	qDebug() << "Setting Current Brake";
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_RC_CONTROL;
@@ -1239,7 +1254,6 @@ void PacketInterface::setRcControlCurrentBrake(quint8 id, double current, double
 
 void PacketInterface::setRcControlDuty(quint8 id, double duty, double steering)
 {
-//    qDebug() << "Setting Duty (PacketInterface): " << duty << ":: " << steering ;
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_RC_CONTROL;
@@ -1251,7 +1265,6 @@ void PacketInterface::setRcControlDuty(quint8 id, double duty, double steering)
 
 void PacketInterface::setRcControlPid(quint8 id, double speed, double steering)
 {
-//	qDebug() << "Setting PID";
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_RC_CONTROL;
@@ -1263,7 +1276,6 @@ void PacketInterface::setRcControlPid(quint8 id, double speed, double steering)
 
 void PacketInterface::setPos(quint8 id, double x, double y, double angle)
 {
-    qDebug() << "Set pos: " << x << " (x), " << y << " (y)";
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_SET_POS;
@@ -1374,7 +1386,6 @@ void PacketInterface::mrOverridePower(quint8 id, double fl_f, double bl_l, doubl
 void PacketInterface::startCameraStream(quint8 id, int camera, int quality,
                                         int width, int height, int fps, int skip)
 {
-    qDebug () << "In startCameraStream";
     qint32 send_index = 0;
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_CAMERA_STREAM_START;
