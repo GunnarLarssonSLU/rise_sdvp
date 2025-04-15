@@ -942,6 +942,10 @@ static THD_FUNCTION(process_thread, arg) {
 	reset_decoder_state();
 
 	for(;;) {
+		if (iDebug==11)
+		{
+			commands_printf("Ok.\n");
+		}
 		chEvtWaitAny((eventmask_t) 1);
 
 		while (m_serial_rx_read_pos != m_serial_rx_write_pos) {

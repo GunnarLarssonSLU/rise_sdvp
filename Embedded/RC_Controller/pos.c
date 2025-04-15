@@ -359,13 +359,13 @@ void pos_set_enu_ref(double lat, double lon, double height) {
 	double x, y, z;
 	utils_llh_to_xyz(lat, lon, height, &x, &y, &z);
 
-	chMtxLock(&m_mutex_gps);
+//	chMtxLock(&m_mutex_gps);
 
 	m_gps.ix = x;
 	m_gps.iy = y;
 	m_gps.iz = z;
 
-	if(iDebug==2) {
+	if(iDebug==1) {
 		commands_printf(":::Pos Set Enu Ref:::\n");
 		commands_printf("x: %f\n", m_gps.ix);
 		commands_printf("y: %f\n", m_gps.iy);
@@ -399,7 +399,7 @@ void pos_set_enu_ref(double lat, double lon, double height) {
 
 	m_gps.local_init_done = true;
 
-	chMtxUnlock(&m_mutex_gps);
+//	chMtxUnlock(&m_mutex_gps);
 }
 
 void pos_get_enu_ref(double *llh) {
@@ -525,6 +525,11 @@ bool pos_input_nmea(const char *data) {
 				commands_printf("x: %f\n", m_gps.x);
 				commands_printf("ix: %f\n", m_gps.ix);
 			};*/
+
+			if(iDebug==7) {
+				commands_printf("init x: %f,x: %fx: %f\n", m_gps.ix, m_gps.iy, m_gps.iz);
+			};
+
 			chMtxLock(&m_mutex_pos);
 
 			m_pos.px_gps_last = m_pos.px_gps;
@@ -1177,11 +1182,24 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 }
 
 static void init_gps_local(GPS_STATE *gps) {
+
+	if ((iDebug==1) || (iDebug==11))
+	{
+		commands_printf("init_gps_local ( %.5f,%.5f )", gps->lon, gps->lat);
+
+	}
 	//	commands_printf("In init gps local:\n");
 	gps->ix = gps->x;
 	gps->iy = gps->y;
 	gps->iz = gps->z;
 
+	gps->lon=60.06314934424684;
+	gps->lat=18.07893415029704;
+
+
+	pos_set_enu_ref(60.06314934424684, 18.07893415029704, 0);
+
+	/*
 	float so = sinf((float)gps->lon * M_PI / 180.0);
 	float co = cosf((float)gps->lon * M_PI / 180.0);
 	float sa = sinf((float)gps->lat * M_PI / 180.0);
@@ -1203,6 +1221,7 @@ static void init_gps_local(GPS_STATE *gps) {
 	gps->lx = 0.0;
 	gps->ly = 0.0;
 	gps->lz = 0.0;
+	*/
 }
 
 static void ublox_relposned_rx(ubx_nav_relposned *pos) {

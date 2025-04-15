@@ -360,6 +360,7 @@ void CarClient::rtcmRx(QByteArray data, int type)
 void CarClient::restartRtklib()
 {
     QFile ublox("/dev/ublox");
+//    QFile ublox("/dev/rtk");
     if (!ublox.exists()) {
         mRtklibRunning = false;
         return;
