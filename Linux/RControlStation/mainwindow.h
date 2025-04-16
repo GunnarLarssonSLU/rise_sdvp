@@ -184,25 +184,12 @@ private slots:
     void on_clearAnchorButton_clicked();
     void on_setBoundsRoutePushButton_clicked();
     void on_boundsFillPushButton_clicked();
-
     void on_lowerToolsCheckBox_stateChanged(int arg1);
-
     void on_raiseToolsCheckBox_stateChanged(int arg1);
-
-    void on_WgSettingsPushButton_clicked();
-
-    void on_WgConnectPushButton_clicked();
-
-    void on_WgDisconnectPushButton_clicked();
-
     void on_AutopilotConfigurePushButton_clicked();
-
     void on_AutopilotStartPushButton_clicked();
-
     void on_AutopilotStopPushButton_clicked();
-
     void on_AutopilotRestartPushButton_clicked();
-
     void on_AutopilotPausePushButton_clicked();
 
 private:

@@ -23,6 +23,7 @@ DEFINES += HAS_JOYSTICK
 
 # OpenGL support
 #!android: DEFINES += HAS_OPENGL
+
 win32: LIBS += -lopengl32
 
 #win32:QMAKE_LIBS_QT_ENGTRY -= -lqtmain
@@ -114,8 +115,7 @@ SOURCES += main.cpp\
     imagewidget.cpp \
     tcpclientmulti.cpp \
     routemagic.cpp \
-    task_basestation.cpp \
-    wireguard.cpp
+    task_basestation.cpp
 
 HEADERS  += mainwindow.h \
     qcustomplot.h \
@@ -157,8 +157,7 @@ HEADERS  += mainwindow.h \
     routemagic.h \
     attributes_masks.h \
     task.h \
-    task_basestation.h \
-    wireguard.h
+    task_basestation.h
 
 FORMS    += mainwindow.ui \
     carinterface.ui \
@@ -174,8 +173,7 @@ FORMS    += mainwindow.ui \
     confcommonwidget.ui \
     intersectiontest.ui \
     ncom.ui \
-    correctionanalysis.ui \
-    wireguard.ui
+    correctionanalysis.ui
 
 contains(DEFINES, HAS_OPENGL) {
     SOURCES += orientationwidget.cpp
