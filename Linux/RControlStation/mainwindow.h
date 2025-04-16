@@ -69,7 +69,7 @@ public:
     bool eventFilter(QObject *object, QEvent *e);
 
     void addCar(int id, bool pollData = false);
-    void connectJoystick(QString dev);
+    void connectJoystick();
     void addTcpConnection(QString ip, int port);
     void setNetworkTcpEnabled(bool enabled, int port = -1);
     void setNetworkUdpEnabled(bool enabled, int port = -1);
@@ -97,7 +97,6 @@ private slots:
     void jsButtonChanged(int button, bool pressed);
 
     void on_carAddButton_clicked();
-//    void on_copterAddButton_clicked();
     void on_disconnectButton_clicked();
     void on_mapRemoveTraceButton_clicked();
     void on_MapRemovePixmapsButton_clicked();

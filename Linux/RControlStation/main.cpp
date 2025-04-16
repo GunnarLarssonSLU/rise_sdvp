@@ -356,7 +356,7 @@ int main(int argc, char *argv[])
             }
 
             if (!jsStr.isEmpty()) {
-                w->connectJoystick(jsStr);
+                w->connectJoystick();
             }
 
             for (auto c: carsToConn) {
