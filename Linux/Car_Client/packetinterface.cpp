@@ -116,7 +116,7 @@ void PacketInterface::processData(QByteArray &data)
                 mRxDataPtr = 0;
                 mPayloadLength = 0;
             } else if (rx_data == 4) {
-                mRxState++;
+-                mRxState++;
                 mRxTimer = rx_timeout;
                 mRxDataPtr = 0;
                 mPayloadLength = 0;
@@ -508,17 +508,6 @@ bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_pac
     qDebug() << "in packetinterface::sendPacket";
     qDebug() << "Address: " << mHostAddress.toString() << ", port:" << mUdpPort;
     qDebug() << "Address: " << mHostAddress2.toString() << ", port:" << mUdpPort;
-    /*
-    if (data[0]==CMD_GETANGLE)
-    {
-            qDebug() << "in packetinterface::sendPacket (get data)";
-            qDebug() << "in: " << data[1] << ":" << data[2];
-    } else
-    {
-            qDebug() << "in packetinterface::sendPacket (do not get data)";
-    }
-*/
-
 
     // If the IP is valid, send the packet over UDP
     if (QString::compare(mHostAddress.toString(), "0.0.0.0") != 0) {

@@ -166,14 +166,14 @@ void RtcmWidget::refPosRx(double lat, double lon, double height, double antenna_
 {
     QString str;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    str = QString("Lat:            %.8f\n"
-                  "Lon:            %.8f\n"
-                  "Height:         %.3f\n"
-                  "Antenna Height: %.3f")
-              .arg(lat)
-              .arg(lon)
-              .arg(height)
-              .arg(antenna_height);
+    str = QString("Lat:            %1\n"
+                  "Lon:            %2\n"
+                  "Height:         %3\n"
+                  "Antenna Height: %4")
+              .arg(lat,0,'f',8)
+              .arg(lon,0,'f',8)
+              .arg(height,0,'f',3)
+              .arg(antenna_height,0,'f',3);
 #else
     str.sprintf("Lat:            %.8f\n"
                 "Lon:            %.8f\n"

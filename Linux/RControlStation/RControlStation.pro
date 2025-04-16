@@ -9,7 +9,6 @@ QT       += widgets
 QT       += printsupport
 QT       += serialport
 QT       += network
-QT       += opengl
 QT       += quick
 #QT       += quickcontrols2
 
@@ -23,7 +22,7 @@ DEFINES += HAS_JOYSTICK
 #DEFINES += HAS_ASSIMP
 
 # OpenGL support
-!android: DEFINES += HAS_OPENGL
+#!android: DEFINES += HAS_OPENGL
 win32: LIBS += -lopengl32
 
 #win32:QMAKE_LIBS_QT_ENGTRY -= -lqtmain
@@ -209,7 +208,7 @@ greaterThan(QT_MAJOR_VERSION, 5) {
     # Include SDL for gamepad support in Qt 6.x
     INCLUDEPATH += /usr/include/SDL2
     LIBS += -lSDL2
-    QT       += openglwidgets
+    #QT       += openglwidgets
     QMAKE_CXXFLAGS += -fpermissive
 
     # Add other Qt 6.x specific configurations here

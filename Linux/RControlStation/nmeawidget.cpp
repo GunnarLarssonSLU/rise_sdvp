@@ -63,8 +63,8 @@ void NmeaWidget::inputNmea(QByteArray msg)
         if (NmeaServer::decodeNmeaGGA(data, gga) >= 0) {
             QString satStr;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            satStr = QString("Satellites: %d")
-                      .arg(gga.n_sat);
+            satStr = QString("Satellites: %1")
+                      .arg(gga.n_sat,0,'d',0);
 #else
             satStr.sprintf("Satellites: %d", gga.n_sat);
 #endif

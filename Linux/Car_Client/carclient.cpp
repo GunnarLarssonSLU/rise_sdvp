@@ -590,12 +590,6 @@ void CarClient::readRos2Command() {
     qDebug() << "Got command 2 via ROS:" << rosdata[2];
     qDebug() << "Got command via ROS:" << rosdata;
 
-//        QByteArray packet;
- //       packet.clear();
- //       packet.append(this->mCarId);
- //       packet.append((char)CMD_GETANGLE);
- //       packet.append(rosdata);
-
 //        mPacketInterface->sendPacket(packet);
         //            mPacketInterface->sendPacket(data);
 
