@@ -272,14 +272,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     on_mapCameraWidthBox_valueChanged(ui->mapCameraWidthBox->value());
     on_mapCameraOpacityBox_valueChanged(ui->mapCameraOpacityBox->value());
-    if (WireGuard::isWireGuardInstalled()) {
-        ui->wgStatusLabel->setText("Status: Ready");
-        ui->wgGroupBox->setEnabled(true);
-    } else {
-        ui->wgStatusLabel->setText("Status: Not installed");
-        ui->wgGroupBox->setEnabled(false);
-    }
-
 
 #ifdef HAS_SIM_SCEN
     mSimScen = new PageSimScen;
@@ -2242,36 +2234,6 @@ void MainWindow::on_lowerToolsCheckBox_stateChanged(int arg1)
 void MainWindow::on_raiseToolsCheckBox_stateChanged(int arg1)
 {
     ui->raiseToolsDistanceSpinBox->setEnabled(arg1 != 0);
-}
-
-void MainWindow::on_WgSettingsPushButton_clicked()
-{
-    if (!mWireGuard)
-        mWireGuard.reset(new WireGuard(this));
-    mWireGuard->show();
-}
-
-void MainWindow::on_WgConnectPushButton_clicked()
-{
-    system("pkexec wg-quick up wg_sdvp");
-    QList<QNetworkInterface> interfaces = QNetworkInterface::allInterfaces();
-    if (std::find_if(interfaces.begin(), interfaces.end(),
-                     [](QNetworkInterface currInterface){return currInterface.name() == "wg_sdvp";}) != interfaces.end())
-        ui->wgStatusLabel->setText("Status: Interface up");
-    else
-        ui->wgStatusLabel->setText("Status: Config. error");
-}
-
-void MainWindow::on_WgDisconnectPushButton_clicked()
-
-{
-    system("pkexec wg-quick down wg_sdvp");
-    QList<QNetworkInterface> interfaces = QNetworkInterface::allInterfaces();
-    if (std::find_if(interfaces.begin(), interfaces.end(),
-                     [](QNetworkInterface currInterface){return currInterface.name() == "wg_sdvp";}) != interfaces.end())
-        ui->wgStatusLabel->setText("Status: Interface up");
-    else
-        ui->wgStatusLabel->setText("Status: Interface down");
 }
 
 void MainWindow::on_AutopilotConfigurePushButton_clicked()
