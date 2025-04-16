@@ -12,10 +12,10 @@ The figure below shows a current hardware diagram of the implementation of the R
 
 Hardware components used:
 
-- A [Controller](Hardware/Controller) that runs the embedded software that controls the motion and estimates the position of the model car.
-- A [VESC](https://vesc-project.com) motor controller that controls the motor on the car over CAN-bus, and provides speed and position estimation from the motor that is used in the sensor fusion in the controller.
+- A [Controller](Hardware/Controller) that runs the embedded software that controls the motion and estimates the position of the vehicle (Macbot or Drängen).
+- An embedded Linux computer, in our case a [Raspberry PI](https://www.raspberrypi.org/) or a Jetson Xavier running [Car_Client](Linux/Car_Client) on that computer. It communicates with the [Controller PCB](Hardware/Controller) using one or two USB cable(s) and with [RControlStation](Linux/RControlStation) using any internet connection.
 - A computer that runs the [RControlStation](Linux/RControlStation) software.
-- An embedded Linux computer, in our case a [Raspberry PI](https://www.raspberrypi.org/) running [Car_Client](Linux/Car_Client) on that computer. It communicats with the [Controller PCB](Hardware/Controller) using an USB cabel and with [RControlStation](Linux/RControlStation) using any internet connection.
+- A [VESC](https://vesc-project.com) motor controller that can control motors on the vehicle over CAN-bus, and provides speed and position estimation from the motor that is used in the sensor fusion in the controller.
 
 ### Hardware components @ Macbot
 
@@ -56,20 +56,6 @@ The most important parameters for Ackermann steering are listed in the following
 | Servo Range    | Steering range. Negative numbers invert the servo direction [-1 - 1].       |
 
 It is important to get these parameters correct, as they have a large impact on the position estimation and autopilot.
-
-## Simulation Mode
-
-It is possible to test the platform without having access to any other hardware than a computer. This can be done by running [Car_Client](Linux/Car_Client) with the following flags:
-
-```
-./Car_Client --usetcp --simulatecars 1:0
-```
-
-This will simulate a model car locally, including the autopilot. Then RControlStation can connecto to localhost over TCP and control the simulated car as if it were an actual model car. Car_Client accepts several different flags that affect the simulation; all flags can be listed using the -h argument:
-
-```
-./Car_Client -h
-```
 
 ## Setting up a Raspberry Pi Image to run Car_Client
 

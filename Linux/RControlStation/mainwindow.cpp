@@ -282,10 +282,14 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
     //Initialize
-//    on_WgConnectPushButton_clicked();
 //    on_tcpConnectButton_clicked();
 //    on_jsConnectButton_clicked();
-//    on_carAddButton_clicked();
+
+    ui->mainTabWidget->removeTab(8);
+    ui->mainTabWidget->removeTab(7);
+    ui->mainTabWidget->removeTab(6);
+    ui->mainTabWidget->removeTab(5);
+    ui->mainTabWidget->removeTab(4);
 
 
     qApp->installEventFilter(this);
@@ -405,7 +409,7 @@ void MainWindow::addCar(int id, bool pollData)
     connect(car, SIGNAL(showStatusInfo(QString,bool)), this, SLOT(showStatusInfo(QString,bool)));
 }
 
-void MainWindow::connectJoystick(QString dev)
+void MainWindow::connectJoystick()
 {
 }
 
@@ -999,24 +1003,6 @@ void MainWindow::on_carAddButton_clicked()
     addCar(mCars.size() + mCopters.size());
 }
 
-/*
-void MainWindow::on_copterAddButton_clicked()
-{
-    CopterInterface *copter = new CopterInterface(this);
-    int id = mCars.size() + mCopters.size();
-    mCopters.append(copter);
-    QString name;
-    name.sprintf("Copter %d", id);
-    copter->setID(id);
-    ui->carsWidget->addTab(copter, name);
-    copter->setMap(ui->mapWidget);
-    copter->setPacketInterface(mPacketInterface);
-
-    connect(copter, SIGNAL(showStatusInfo(QString,bool)), this, SLOT(showStatusInfo(QString,bool)));
-}*/
-
-
-
 void MainWindow::on_disconnectButton_clicked()
 {
     if (mSerialPort->isOpen()) {
@@ -1057,8 +1043,8 @@ void MainWindow::on_tcpConnectButton_clicked()
             mTcpClientMulti->addConnection(ipPort.at(0),
                                            ipPort.at(1).toInt());
         }
+        on_carAddButton_clicked();
     }
-
 }
 
 void MainWindow::on_tcpPingButton_clicked()
@@ -1093,7 +1079,7 @@ void MainWindow::on_mapRouteSpeedBox_valueChanged(double arg1)
 
 void MainWindow::on_jsConnectButton_clicked()
 {
-    connectJoystick(ui->jsPortEdit->text());
+    connectJoystick();
 }
 
 void MainWindow::on_jsDisconnectButton_clicked()

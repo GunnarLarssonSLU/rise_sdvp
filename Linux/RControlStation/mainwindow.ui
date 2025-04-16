@@ -114,22 +114,16 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QPushButton" name="tcpPingButton">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
+             <widget class="QPushButton" name="disconnectButton">
               <property name="toolTip">
-               <string>Ping</string>
+               <string>Disconnect</string>
               </property>
               <property name="text">
                <string/>
               </property>
               <property name="icon">
                <iconset resource="resources.qrc">
-                <normaloff>:/models/Icons/Ping Pong-96.png</normaloff>:/models/Icons/Ping Pong-96.png</iconset>
+                <normaloff>:/models/Icons/Disconnected-96.png</normaloff>:/models/Icons/Disconnected-96.png</iconset>
               </property>
              </widget>
             </item>
@@ -137,20 +131,6 @@
           </item>
          </layout>
         </widget>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="disconnectButton">
-        <property name="toolTip">
-         <string>Disconnect</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset resource="resources.qrc">
-          <normaloff>:/models/Icons/Disconnected-96.png</normaloff>:/models/Icons/Disconnected-96.png</iconset>
-        </property>
        </widget>
       </item>
       <item>
@@ -172,44 +152,6 @@
          </size>
         </property>
        </spacer>
-      </item>
-      <item>
-       <widget class="QGroupBox" name="groupBox_2">
-        <property name="title">
-         <string>Add Vehicles</string>
-        </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_4">
-         <property name="spacing">
-          <number>2</number>
-         </property>
-         <property name="leftMargin">
-          <number>4</number>
-         </property>
-         <property name="topMargin">
-          <number>4</number>
-         </property>
-         <property name="rightMargin">
-          <number>4</number>
-         </property>
-         <property name="bottomMargin">
-          <number>5</number>
-         </property>
-         <item>
-          <widget class="QPushButton" name="carAddButton">
-           <property name="toolTip">
-            <string>Add car</string>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-           <property name="icon">
-            <iconset resource="resources.qrc">
-             <normaloff>:/models/Icons/Car-96.png</normaloff>:/models/Icons/Car-96.png</iconset>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
       </item>
       <item>
        <widget class="QGroupBox" name="groupBox">
@@ -244,27 +186,18 @@
          <property name="spacing">
           <number>2</number>
          </property>
-         <item row="2" column="0" colspan="2">
-          <widget class="QLabel" name="jsConnectedLabel">
+         <item row="0" column="0">
+          <widget class="QPushButton" name="jsDisconnectButton">
            <property name="text">
-            <string>Not connected</string>
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="resources.qrc">
+             <normaloff>:/models/Icons/Disconnected-96.png</normaloff>:/models/Icons/Disconnected-96.png</iconset>
            </property>
           </widget>
          </item>
-         <item row="4" column="0">
-          <widget class="QProgressBar" name="mrYawBar">
-           <property name="minimum">
-            <number>-100</number>
-           </property>
-           <property name="value">
-            <number>0</number>
-           </property>
-           <property name="format">
-            <string>Yaw: %v%</string>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="1">
+         <item row="3" column="1">
           <widget class="QProgressBar" name="mrRollBar">
            <property name="minimum">
             <number>-100</number>
@@ -277,36 +210,7 @@
            </property>
           </widget>
          </item>
-         <item row="0" column="0" colspan="2">
-          <widget class="QLineEdit" name="jsPortEdit">
-           <property name="text">
-            <string>/dev/input/js0</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QPushButton" name="jsDisconnectButton">
-           <property name="text">
-            <string/>
-           </property>
-           <property name="icon">
-            <iconset resource="resources.qrc">
-             <normaloff>:/models/Icons/Disconnected-96.png</normaloff>:/models/Icons/Disconnected-96.png</iconset>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QPushButton" name="jsConnectButton">
-           <property name="text">
-            <string/>
-           </property>
-           <property name="icon">
-            <iconset resource="resources.qrc">
-             <normaloff>:/models/Icons/Connected-96.png</normaloff>:/models/Icons/Connected-96.png</iconset>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
+         <item row="2" column="0">
           <widget class="QProgressBar" name="mrThrottleBar">
            <property name="minimum">
             <number>0</number>
@@ -319,7 +223,38 @@
            </property>
           </widget>
          </item>
-         <item row="3" column="1">
+         <item row="0" column="1">
+          <widget class="QPushButton" name="jsConnectButton">
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="resources.qrc">
+             <normaloff>:/models/Icons/Connected-96.png</normaloff>:/models/Icons/Connected-96.png</iconset>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0" colspan="2">
+          <widget class="QLabel" name="jsConnectedLabel">
+           <property name="text">
+            <string>Not connected</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QProgressBar" name="mrYawBar">
+           <property name="minimum">
+            <number>-100</number>
+           </property>
+           <property name="value">
+            <number>0</number>
+           </property>
+           <property name="format">
+            <string>Yaw: %v%</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
           <widget class="QProgressBar" name="mrPitchBar">
            <property name="minimum">
             <number>-100</number>
