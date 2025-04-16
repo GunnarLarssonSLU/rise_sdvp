@@ -23,7 +23,7 @@ CarInfo::CarInfo(int id, Qt::GlobalColor color)
     mColor = color;
     mName = "";
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    mName = QString("Car %d").arg(mId);
+    mName = QString("Car %1").arg(mId, 0, 'd', 0);
 #else
     mName.sprintf("Car %d", mId);
 #endif
@@ -46,7 +46,7 @@ void CarInfo::setId(int id, bool changeName)
     if (changeName) {
         mName = "";
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        mName = QString("Car %d").arg(mId);
+        mName = QString("Car %1").arg(mId, 0, 'd', 0);
 #else
         mName.sprintf("Car %d", mId);
 #endif

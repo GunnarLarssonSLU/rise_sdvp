@@ -25,7 +25,7 @@
         <enum>QTabWidget::Triangular</enum>
        </property>
        <property name="currentIndex">
-        <number>6</number>
+        <number>5</number>
        </property>
        <property name="tabsClosable">
         <bool>false</bool>

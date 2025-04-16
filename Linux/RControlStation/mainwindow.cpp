@@ -401,7 +401,7 @@ void MainWindow::addCar(int id, bool pollData)
     mCars.append(car);
     QString name;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    name = QString("Car %d").arg(id);
+    name = QString("Car %1").arg(id,0,'d',0);
 #else
     name.sprintf("Car %d", id);
 #endif
@@ -769,7 +769,7 @@ void MainWindow::rtcmRefPosGet()
 void MainWindow::pingRx(int time, QString msg)
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    QString str = QString("ping response time: %.3f ms").arg((double)time / 1000.0);
+    QString str = QString("ping response time: % ms").arg((double)time / 1000.0,0,'f',3);
 #else
     QString str;
     ("ping response time: %.3f ms", (double)time / 1000.0);
@@ -831,14 +831,14 @@ void MainWindow::nmeaGgaRx(int fields, NmeaServer::nmea_gga_info_t gga)
 
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            info = QString("Fix type: %s\n"
-                         "Sats    : %d\n"
-                         "Height  : %.2f\n"
-                         "Age     : %.2f")
+            info = QString("Fix type: %1\n"
+                         "Sats    : %2\n"
+                         "Height  : %3\n"
+                         "Age     : %4")
                       .arg(fix_t.toLocal8Bit().data())
-                      .arg(gga.n_sat)
-                      .arg(gga.height)
-                      .arg(gga.diff_age);
+                      .arg(gga.n_sat,0,'d',0)
+                      .arg(gga.height,0,'f',2)
+                      .arg(gga.diff_age,0,'f',2);
 
 #else
             info.sprintf("Fix type: %s\n"
@@ -850,9 +850,6 @@ void MainWindow::nmeaGgaRx(int fields, NmeaServer::nmea_gga_info_t gga)
                          gga.height,
                          gga.diff_age);
 #endif
-
-
-
             p.setInfo(info);
             ui->mapWidget->addInfoPoint(p);
 
@@ -1006,7 +1003,7 @@ void MainWindow::jsButtonChanged(int button, bool pressed)
 }
 
 void MainWindow::on_carAddButton_clicked()
-{    
+{
     addCar(mCars.size() + mCopters.size());
 }
 
@@ -1054,7 +1051,6 @@ void MainWindow::on_MapRemovePixmapsButton_clicked()
 
 void MainWindow::on_tcpConnectButton_clicked()
 {
-
     mTcpClientMulti->disconnectAll();
 
     QStringList conns = ui->tcpConnEdit->toPlainText().split("\n");

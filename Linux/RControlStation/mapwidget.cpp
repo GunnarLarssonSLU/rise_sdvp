@@ -1828,7 +1828,7 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
                 painter.setPen(pen);
             } else {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-                txt = QString("%.2f m").arg(i / 1000.0);
+                txt = QString("%1 m").arg(i / 1000.0, 0, 'f', 2);
 #else
                 txt.sprintf("%.2f m", i / 1000.0);
 #endif
@@ -1873,7 +1873,7 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
                 painter.setPen(pen);
             } else {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-                txt = QString("%.2f m").arg(i / 1000.0);
+                txt = QString("%1 m").arg(i / 1000.0, 0, 'f', 2);
 #else
                 txt.sprintf("%.2f m", i / 1000.0);
 #endif
@@ -2275,8 +2275,8 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
         txt = QString("%1\n"
                               "%2\n"
-                              "(%.3f, %.3f, %.0f)\n"
-                              "%3:%4:%5:%6")
+                              "(%3, %4, %5)\n"
+                              "%6:%7:%8:%9")
                           .arg(carInfo.getName())
                           .arg(solStr)
                           .arg(pos.getX(), 0, 'f', 3)  // Format x with 3 decimal places
@@ -2491,20 +2491,20 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
         double res = stepGrid / 1000.0;
         if (res >= 1000.0) {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            txt = QString("Grid res: %.0f km").arg(res / 1000.0);
+            txt = QString("Grid res: %1 km").arg(res / 1000.0, 0, 'f', 0);
 #else
             txt.sprintf("Grid res: %.0f km", res / 1000.0);
 #endif
         } else if (res >= 1.0) {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            txt = QString("Grid res: %.0f km").arg(res);
+            txt = QString("Grid res: %1 m").arg(res / 1000.0, 0, 'f', 0);
 #else
             txt.sprintf("Grid res: %.0f m", res);
 #endif
 
         } else {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            txt = QString("Grid res: %.0f km").arg(res*100);
+            txt = QString("Grid res: %1 km").arg(res*100, 0, 'f', 0);
 #else
             txt.sprintf("Grid res: %.0f cm", res * 100.0);
 #endif
@@ -2516,7 +2516,7 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
 
     // Draw zoom level
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    txt = QString("Zoom: %.7f").arg(mScaleFactor);
+    txt = QString("Zoom: %1").arg(mScaleFactor, 0, 'f', 7);
 #else
     txt.sprintf("Zoom: %.7f", mScaleFactor);
 #endif
@@ -2526,7 +2526,7 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
     // Draw OSM zoom level
     if (mDrawOpenStreetmap) {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        txt = QString("OSM zoom: %d").arg(mOsmZoomLevel);
+        txt = QString("OSM zoom: %1").arg(mOsmZoomLevel, 0, 'd', 0);
 #else
         txt.sprintf("OSM zoom: %d", mOsmZoomLevel);
 #endif

@@ -51,9 +51,11 @@ CarInterface::CarInterface(QWidget *parent) :
     ui->setupUi(this);
 
 #ifdef HAS_OPENGL
+    /*
     mOrientationWidget = new OrientationWidget(this);
     ui->orientationLayout->removeItem(ui->orientationSpacer);
     ui->orientationLayout->insertWidget(0, mOrientationWidget, 1);
+    */
 #endif
 
     memset(&mLastCarState, 0, sizeof(CAR_STATE));
@@ -149,7 +151,7 @@ void CarInterface::setStateData(CAR_STATE data)
     // Firmware label
     QString fwStr;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    fwStr = QString("FW %d.%d").arg(data.fw_major).arg(data.fw_minor);
+    fwStr = QString("FW %1.%2").arg(data.fw_major, 0, 'd', 0).arg(data.fw_minor, 0, 'd', 0);
 #else
     fwStr.sprintf("FW %d.%d", data.fw_major, data.fw_minor);
 #endif
@@ -158,7 +160,7 @@ void CarInterface::setStateData(CAR_STATE data)
 
     QString fwStr2;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    fwStr2 = QString("%d.%d").arg(data.fw_major).arg(data.fw_minor);
+    fwStr2 = QString("FW %1.%2").arg(data.fw_major, 0, 'd', 0).arg(data.fw_minor, 0, 'd', 0);
 #else
     fwStr2.sprintf("%d.%d", data.fw_major, data.fw_minor);
 #endif
@@ -166,7 +168,7 @@ void CarInterface::setStateData(CAR_STATE data)
 
     QString fwStrLog1;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    fwStrLog1 = QString("%d.%d").arg(data.fw_major).arg(data.fw_minor);
+    fwStrLog1 = QString("FW %1.%2").arg(data.fw_major, 0, 'd', 0).arg(data.fw_minor, 0, 'd', 0);
 #else
     fwStrLog1.sprintf("%d.%d", data.fw_major, data.fw_minor);
 #endif
@@ -176,7 +178,7 @@ void CarInterface::setStateData(CAR_STATE data)
     // Speed bar
     QString speedTxt;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    speedTxt = QString("Speed: %.2f km/h").arg(data.speed * 3.6);
+    speedTxt = QString("Speed: %1 km/h").arg(data.speed * 3.6, 0, 'f', 2);
 #else
     speedTxt.sprintf("Speed: %.2f km/h", data.speed * 3.6);
 #endif
@@ -193,12 +195,13 @@ void CarInterface::setStateData(CAR_STATE data)
     }
     QString battTxt;
 
+
 //    battTxt.sprintf("Battery: %.1f %% (%.2f V), Sensor value: %u, Angle: %.1f, Servo output: %.1f, Debug: %.1f", battp, data.sensor_value, data.vin,data.angle,data.servo_output,data.debugvalue);
 //    battTxt.sprintf("Location: %.2f, %.2f , Gps location: %.2f, %.2f", data.px, data.py,data.px_gps, data.py_gps);
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    battTxt = QString("Battery: %.1f %% (%.2f V), Sensor value: %u, Angle: %.1f, Servo output: %.1f, Debug: %.1f").arg(battp).arg(data.sensor_value).arg(data.vin).arg(data.angle).arg(data.servo_output).arg(data.debugvalue);
+    battTxt = QString("Battery: %1 %% (%2 V), Sensor value: %3, Angle: %4, Servo output: %5, Debug: %6").arg(battp, 0, 'f', 1).arg(data.vin, 0, 'f', 2).arg(data.sensor_value, 0, 'f', 2).arg(data.angle, 0, 'f', 1).arg(data.servo_output, 0, 'f', 1).arg(data.debugvalue, 0, 'f', 1);
 #else
-    battTxt.sprintf("Battery: %.1f %% (%.2f V), Sensor value: %u, Angle: %.1f, Servo output: %.1f, Debug: %.1f", battp, data.sensor_value, data.vin,data.angle,data.servo_output,data.debugvalue);
+    battTxt.sprintf("Battery: %.1f %% (%.2f V), Sensor value: %u, Angle: %.1f, Servo output: %.1f, Debug: %.1f", battp, data.vin, data.sensor_value,data.angle,data.servo_output,data.debugvalue);
 #endif
 
     if (battp > 100.0) {
@@ -208,7 +211,7 @@ void CarInterface::setStateData(CAR_STATE data)
     ui->batteryBar->setFormat(battTxt);
 
     // Orientation
-    setOrientation(data.roll, data.pitch, data.yaw);
+//    setOrientation(data.roll, data.pitch, data.yaw);
 
     // Fault label
     QString fault_str;
@@ -225,7 +228,7 @@ void CarInterface::setStateData(CAR_STATE data)
 
             QString msg;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            msg = QString("Car %d: ").arg(mId);
+            msg = QString("Car %1: ").arg(mId, 0, 'd', 0);
 #else
             msg.sprintf("Car %d: ", mId);
 #endif
@@ -251,15 +254,14 @@ void CarInterface::setStateData(CAR_STATE data)
         car->setLocationUwb(loc_uwb);
         car->setApGoal(ap_goal);
         car->setTime(data.ms_today);
-        /*
 
-        //QList<LocPoint> bounds = mMap->getRoute(ui->boundsRouteSpinBox->value());
-        QList<LocPoint> bounds = mMap->getRoute(0);
-        if (RouteMagic::isPointOutside(loc, bounds))
-        {
-        	setAp(false, false);
-        }
-*/
+//        //QList<LocPoint> bounds = mMap->getRoute(ui->boundsRouteSpinBox->value());
+//        QList<LocPoint> bounds = mMap->getRoute(0);
+//        if (RouteMagic::isPointOutside(loc, bounds))
+//        {
+//        	setAp(false, false);
+//        }
+
 
 //        //QList<LocPoint> bounds = mMap->getRoute(ui->boundsRouteSpinBox->value());
 //        QList<LocPoint> bounds = mMap->getRoute(0);
@@ -295,6 +297,8 @@ void CarInterface::setStateData(CAR_STATE data)
     } else {
         ui->clockLabel->setText("00:00:00:000");
     }
+    /*
+    */
 }
 
 void CarInterface::setMap(MapWidget *map)
@@ -529,7 +533,7 @@ void CarInterface::lastRoutePointRemoved()
 
 void CarInterface::nmeaReceived(quint8 id, QByteArray nmea_msg)
 {
-    if (id == mId) {
+//    if (id == mId) {
         ui->nmeaWidget->inputNmea(nmea_msg);
 
         if (mMap) {
@@ -541,7 +545,7 @@ void CarInterface::nmeaReceived(quint8 id, QByteArray nmea_msg)
                 car->setLocationGps(loc_gps);
             }
         }
-    }
+//    }
 }
 
 void CarInterface::configurationReceived(quint8 id, MAIN_CONFIG config)
@@ -552,7 +556,7 @@ void CarInterface::configurationReceived(quint8 id, MAIN_CONFIG config)
         setConfGui(config);
         QString str;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        str = QString("Car %d: Configuration Received").arg(id);
+        str = QString("Car %1: Configuration Received").arg(id,0,'d',0);
 #else
         str.sprintf("Car %d: Configuration Received", id);
 #endif
