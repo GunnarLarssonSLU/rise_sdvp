@@ -30,6 +30,17 @@
 #include <QElapsedTimer>
 #include <QNetworkInterface>
 #include <QLoggingCategory>
+#include <QtSql>
+#include <QtCharts>
+#include <QtWidgets>
+
+//using namespace QtCharts;
+
+#include <QtCharts/QChartView>
+#include <QtCharts/QLineSeries>
+#include <QListView>
+#include <QStringListModel>
+
 
 #include "utility.h"
 #include "routemagic.h"
@@ -203,11 +214,6 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->nComWidget, SIGNAL(dataRx(ncom_data)),
             mIntersectionTest, SLOT(nComRx(ncom_data)));
 
-#ifdef HAS_LIME_SDR
-    mGpsSim = new GpsSim(this);
-    mGpsSim->setMap(ui->mapWidget);
-#endif
-
     mKeyUp = false;
     mKeyDown = false;
     mKeyLeft = false;
@@ -291,6 +297,27 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->mainTabWidget->removeTab(5);
     ui->mainTabWidget->removeTab(4);
 
+    if (!QSqlDatabase::drivers().contains("QSQLITE"))
+            QMessageBox::critical(
+                this,
+                "Unable to load database",
+                "This program needs the SQLITE driver"
+                );
+
+    // Initialize the database:
+    QSqlError err = initDb();
+    if (err.type() != QSqlError::NoError) {
+            showError(err);
+            return;
+    }
+
+    setupFarmTable(ui->farmTable,"locations");
+
+    // Connect the signal from the first table view to a custom slot
+    QObject::connect(ui->farmTable->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onSelectedFarm);
+
+    ui->farmTable->setFocus();
+    ui->farmTable->installEventFilter(this);
 
     qApp->installEventFilter(this);
 }
@@ -391,16 +418,146 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
     return false;
 }
 
-void MainWindow::addCar(int id, bool pollData)
+void MainWindow::setupFarmTable(QTableView* uiFarmTable,QString sqlTablename)
+{
+    // Create the data model:
+    modelFarm = new QSqlRelationalTableModel(uiFarmTable);
+    modelFarm->setEditStrategy(QSqlTableModel::OnFieldChange);
+    modelFarm->setTable(sqlTablename);
+
+    // Set the localized header captions:
+    modelFarm->setHeaderData(modelFarm->fieldIndex("name"), Qt::Horizontal, tr("Name"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("longitude"), Qt::Horizontal, tr("Longitude"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("latitude"), Qt::Horizontal, tr("Latitude"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("user"), Qt::Horizontal, tr("user"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("password"), Qt::Horizontal, tr("password"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("ip"), Qt::Horizontal, tr("ip"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("port"), Qt::Horizontal, tr("port"));
+    modelFarm->setHeaderData(modelFarm->fieldIndex("NTRIP"), Qt::Horizontal, tr("NTRIP"));
+
+    // Populate the model:
+    if (!modelFarm->select()) {
+        showError(modelFarm->lastError());
+        return;
+    }
+
+    // Set the model and hide the ID column:
+    uiFarmTable->setModel(modelFarm);
+    //ui.locationTable->setItemDelegate(new BookDelegate(ui.locationTable));
+    uiFarmTable->setColumnHidden(modelFarm->fieldIndex("id"), true);
+    uiFarmTable->setSelectionMode(QAbstractItemView::SingleSelection);
+    uiFarmTable->setCurrentIndex(modelFarm->index(0, 0));
+
+    QDataWidgetMapper *mapperFarm = new QDataWidgetMapper(this);
+    mapperFarm->setModel(modelFarm);
+
+    mapperFarm->addMapping(this->findChild<QDoubleSpinBox*>("refSendLatBox"), modelFarm->fieldIndex("latitude"));
+    mapperFarm->addMapping(this->findChild<QDoubleSpinBox*>("refSendLonBox"), modelFarm->fieldIndex("longitude"));
+
+    connect(uiFarmTable->selectionModel(),&QItemSelectionModel::currentRowChanged,mapperFarm,&QDataWidgetMapper::setCurrentModelIndex);
+}
+
+void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& previous)
+{
+    //           QMessageBox msg;
+    int row = current.row();
+    int id = modelFarm->data(modelFarm->index(row, 0)).toInt();
+
+//    double lon = modelFarm->data(modelFarm->index(row, 2)).toDouble();
+//    double lat = modelFarm->data(modelFarm->index(row, 3)).toDouble();
+    QString lon = modelFarm->data(modelFarm->index(row, 2)).toString();
+    QString lat = modelFarm->data(modelFarm->index(row, 3)).toString();
+    QString usr = modelFarm->data(modelFarm->index(row, 7)).toString();
+    QString pwd = modelFarm->data(modelFarm->index(row, 8)).toString();
+
+    mPacketInterface->sendSetUserCmd(ui->mapCarBox->value(),usr);
+    mPacketInterface->sendSetPwdCmd(ui->mapCarBox->value(),pwd);
+
+
+    qDebug() << "Vehicle: " << ui->mapCarBox->value();
+    qDebug() << "User: " << usr;
+    qDebug() << "Pwd: " << pwd;
+
+    double llh[3];
+    llh[0]=lat.toDouble();
+    llh[1]=lon.toDouble();
+    llh[2]=0;
+    ui->mapWidget->setEnuRef(llh[0],llh[1],0);
+
+    qDebug() << "lat: " << llh[0];
+    qDebug() << "lon: " << llh[1];
+
+    mPacketInterface->setEnuRef(ui->mapCarBox->value(), llh);
+//    setEnuRef(quint8 id, double *llh, int retries)
+
+
+/*
+    ui->mapWidgetFields->setEnuRef(lat,lon,0);
+    ui->mapWidgetFields->clearAllFields();
+    ui->mapWidgetFields->clearAllPaths();
+    ui->mapWidget->setEnuRef(lat,lon,0);
+    ui->mapWidgetLog->setEnuRef(lat,lon,0);
+*/
+    // Get the selected value from the first table view
+    QVariant selectedValue = id;
+
+    // Construct a new query based on the selected value
+    QString filter = QString("location = %1").arg(id);
+
+    /*
+    // Set the new query for the QSqlRelationalTableModel
+    modelField->setFilter(filter);
+    modelField->select();
+    //To make sure the path table view is empty until a field has been selected
+    QString filter2 = QString("field = %1").arg(0);
+    modelPath->setFilter(filter2);
+    modelPath->select();
+    */
+
+    /*
+
+    // Execute the SQL query
+    QString querystring= QString("SELECT * FROM fields WHERE location = %1").arg(selectedValue.toString());
+    QSqlQuery query(querystring);
+
+    // Loop through the query results
+    while (query.next()) {
+        // Access data for each record
+        QString boundaryXML= query.value("boundaryXML").toString();
+        QXmlStreamReader xmlData(boundaryXML);
+        ui->mapWidgetFields->loadXMLRoute(&xmlData,true);
+    }
+    //            if (ui->fieldTable->model()->rowCount()>0)
+    if (ui->mapWidgetFields->getFieldNum()>0)
+    {
+        std::array<double, 4> extremes_m=ui->mapWidgetFields->findExtremeValuesFieldBorders();
+        double fieldareawidth_m=extremes_m[2]-extremes_m[0];
+        double fieldareaheight_m=extremes_m[3]-extremes_m[1];
+        double offsetx_m=(extremes_m[2]+extremes_m[0])/2;
+        double offsety_m=(extremes_m[3]+extremes_m[1])/2;
+        double scalex=0.5/(fieldareawidth_m);
+        double scaley=0.5/(fieldareaheight_m);
+        ui->mapWidgetFields->moveView(offsetx_m, offsety_m);
+        ui->mapWidgetFields->setScaleFactor(std::min(scalex,scaley));
+        ui->mapWidget->moveView(offsetx_m, offsety_m);
+        ui->mapWidget->setScaleFactor(std::min(scalex,scaley));
+        //                ui->fieldTable->selectRow(0);
+    } else
+    {
+        ui->mapWidgetFields->moveView(0, 0);
+        ui->mapWidget->moveView(0, 0);
+        // If no fields set a zoom matching a with of about 500 m -> scalefactor=0.5/500=0.001
+        ui->mapWidgetFields->setScaleFactor(0.001);
+        ui->mapWidget->setScaleFactor(0.001);
+    }
+    */
+}
+
+
+void MainWindow::addCar(int id, QString name, bool pollData)
 {
     CarInterface *car = new CarInterface(this);
     mCars.append(car);
-    QString name;
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    name = QString("Car %1").arg(id,0,'d',0);
-#else
-    name.sprintf("Car %d", id);
-#endif
     car->setID(id);
     ui->carsWidget->addTab(car, name);
     car->setMap(ui->mapWidget);
@@ -998,11 +1155,6 @@ void MainWindow::jsButtonChanged(int button, bool pressed)
     #endif
 }
 
-void MainWindow::on_carAddButton_clicked()
-{
-    addCar(mCars.size() + mCopters.size());
-}
-
 void MainWindow::on_disconnectButton_clicked()
 {
     if (mSerialPort->isOpen()) {
@@ -1043,7 +1195,7 @@ void MainWindow::on_tcpConnectButton_clicked()
             mTcpClientMulti->addConnection(ipPort.at(0),
                                            ipPort.at(1).toInt());
         }
-        on_carAddButton_clicked();
+        addCar(mCars.size(),ipPort.at(0));
     }
 }
 
@@ -2335,5 +2487,21 @@ void MainWindow::handleAxisEvent(const SDL_ControllerAxisEvent& event) {
         break;
     }
 }
+
+void MainWindow::showError(const QSqlError &err)
+{
+    QMessageBox::critical(this, "Unable to initialize Database",
+                          "Error initializing database: " + err.text());
+}
+
+QSqlError initDb()
+{
+    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+    db.setDatabaseName("test2.db");
+    if (!db.open())
+        return db.lastError();
+    return QSqlError();
+}
+
 
 #endif

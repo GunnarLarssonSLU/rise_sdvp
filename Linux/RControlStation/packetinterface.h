@@ -109,6 +109,9 @@ public slots:
     void sendHeartbeat(quint8 id);
     void getMrState(quint8 id);
     void sendTerminalCmd(quint8 id, QString cmd);
+    void sendSetUserCmd(quint8 id, QString cmd);
+    void sendSetPwdCmd(quint8 id, QString cmd);
+
     void forwardVesc(quint8 id, QByteArray data);
     void setRcControlCurrent(quint8 id, double current, double steering);
     void setRcControlCurrentBrake(quint8 id, double current, double steering);

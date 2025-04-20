@@ -37,9 +37,11 @@
 #include "rtcmclient.h"
 #include "carsim/carsim.h"
 
-#if HAS_CAMERA
-#include "camera.h"
-#endif
+#include <QCoreApplication>
+#include <QProcess>
+#include <QDebug>
+#include <thread>
+#include <chrono>
 
 class CarClient : public QObject
 {
@@ -132,7 +134,6 @@ private slots:
     void logBroadcasterDataReceived(QByteArray &data);
 //    QString processCommand(QByteArray &data);
 
-
 private:
     PacketInterface *mPacketInterface;
     TcpBroadcast *mRtcmBroadcaster;
@@ -161,15 +162,8 @@ private:
     QVector<UWB_ANCHOR> mUwbAnchorsNow;
     int mCarIdToSet;
 
-
-
-#if HAS_CAMERA
-    Camera *mCamera;
-    int mCameraJpgQuality;
-    int mCameraSkipFrames;
-    int mCameraSkipFrameCnt;
-    int mCameraNoAckCnt;
-#endif
+    QString mUsr;
+    QString mPwd;
 
     double mRtcmBaseLat;
     double mRtcmBaseLon;
@@ -185,6 +179,10 @@ private:
     void printLog(QString str);
     bool waitProcess(QProcess &process, int timeoutMs = 300000);
 
+    void startStr2Str(double lat,double lon);
+    void stopStr2Str();
+    QProcess s2sProcess;
 };
 
-#endif // CARCLIENT_H
+
+#endif // CARCLIENT_H´

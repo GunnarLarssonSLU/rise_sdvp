@@ -494,7 +494,7 @@
        <enum>QTabWidget::North</enum>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -3056,6 +3056,171 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="tabFarm">
+       <attribute name="icon">
+        <iconset>
+         <normaloff>512px-Font_Awesome_5_solid_seedling.svg.png</normaloff>512px-Font_Awesome_5_solid_seedling.svg.png</iconset>
+       </attribute>
+       <attribute name="title">
+        <string/>
+       </attribute>
+       <attribute name="toolTip">
+        <string>Fields</string>
+       </attribute>
+       <widget class="QWidget" name="gridLayoutWidget_3">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>759</width>
+          <height>512</height>
+         </rect>
+        </property>
+        <layout class="QGridLayout" name="gridlayout_3">
+         <item row="2" column="2">
+          <widget class="QPushButton" name="pushButton_farm">
+           <property name="text">
+            <string>Add farm</string>
+           </property>
+          </widget>
+         </item>
+         <item row="11" column="2">
+          <widget class="QPushButton" name="pushButton_path">
+           <property name="text">
+            <string>Add path</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="2">
+          <widget class="QCheckBox" name="fencedCheckBox">
+           <property name="text">
+            <string>use electronic fence</string>
+           </property>
+          </widget>
+         </item>
+         <item row="9" column="2">
+          <widget class="QTableView" name="pathTable">
+           <property name="selectionBehavior">
+            <enum>QAbstractItemView::SelectRows</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="8" column="2">
+          <widget class="QLabel" name="label_area_ha">
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+         </item>
+         <item row="9" column="0">
+          <widget class="QLabel" name="labelPaths">
+           <property name="text">
+            <string>Paths</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="2">
+          <widget class="QTableView" name="farmTable">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>600</width>
+             <height>120</height>
+            </size>
+           </property>
+           <property name="selectionBehavior">
+            <enum>QAbstractItemView::SelectRows</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="labelFarm">
+           <property name="text">
+            <string>Farm</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="3">
+          <widget class="QLabel" name="label_11">
+           <property name="text">
+            <string>Boundary</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="QLineEdit" name="locationnameEdit">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="2">
+          <widget class="QLineEdit" name="fieldnameEdit">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="2">
+          <widget class="QTableView" name="fieldTable">
+           <property name="selectionBehavior">
+            <enum>QAbstractItemView::SelectRows</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="labelFields">
+           <property name="text">
+            <string>Fields</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="labelFieldname">
+           <property name="text">
+            <string>Field name:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_16">
+           <property name="text">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Name:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+          </widget>
+         </item>
+         <item row="8" column="0">
+          <widget class="QLabel" name="labelArea">
+           <property name="text">
+            <string>Area:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="2">
+          <widget class="QPushButton" name="pushButton_field">
+           <property name="text">
+            <string>Add field</string>
+           </property>
+          </widget>
+         </item>
+         <item row="10" column="2">
+          <widget class="QLineEdit" name="pathnameEdit"/>
+         </item>
+         <item row="10" column="0">
+          <widget class="QLabel" name="label_6">
+           <property name="text">
+            <string>Path name:</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
       <widget class="QWidget" name="tab_3">
        <attribute name="icon">
         <iconset resource="resources.qrc">
@@ -3236,13 +3401,6 @@
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
-   <widget class="QMenu" name="menuTests">
-    <property name="title">
-     <string>Tests</string>
-    </property>
-    <addaction name="actionTestIntersection"/>
-    <addaction name="actionGPSSimulator"/>
-   </widget>
    <widget class="QMenu" name="menuChronos">
     <property name="title">
      <string>&amp;Chronos</string>
@@ -3251,7 +3409,6 @@
     <addaction name="actionLoadDriveFile"/>
    </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuTests"/>
    <addaction name="menuChronos"/>
    <addaction name="menuHelp"/>
   </widget>

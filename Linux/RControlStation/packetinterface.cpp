@@ -713,7 +713,7 @@ bool PacketInterface::sendPacketAck(const unsigned char *data, unsigned int len_
             break;
         }
 
-        qDebug() << "Retrying to send packet...";
+//        qDebug() << "Retrying to send packet...";
     }
 
     mWaitingAck = false;
@@ -1219,6 +1219,27 @@ void PacketInterface::sendTerminalCmd(quint8 id, QString cmd)
     packet.append(cmd.toLatin1());
     sendPacket(packet);
 }
+
+void PacketInterface::sendSetUserCmd(quint8 id, QString cmd)
+{
+    QByteArray packet;
+    packet.clear();
+    packet.append(id);
+    packet.append((char)CMD_SET_USER);
+    packet.append(cmd.toLatin1());
+    sendPacket(packet);
+}
+
+void PacketInterface::sendSetPwdCmd(quint8 id, QString cmd)
+{
+    QByteArray packet;
+    packet.clear();
+    packet.append(id);
+    packet.append((char)CMD_SET_PWD);
+    packet.append(cmd.toLatin1());
+    sendPacket(packet);
+}
+
 
 void PacketInterface::forwardVesc(quint8 id, QByteArray data)
 {

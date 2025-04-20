@@ -204,11 +204,6 @@ typedef enum {
 	CMD_RC_CONTROL,
 	CMD_SET_SERVO_DIRECT,
 
-	// Multirotor commands
-	CMD_MR_GET_STATE = 160,			// - not intended to be used
-	CMD_MR_RC_CONTROL, 				// - not intended to be used
-	CMD_MR_OVERRIDE_POWER,			// - not intended to be used
-
 	// Mote commands
 	CMD_MOTE_UBX_START_BASE = 200,
 	CMD_MOTE_UBX_START_BASE_ACK,
@@ -216,7 +211,8 @@ typedef enum {
 
     CMD_PRINTLOG =220,
     CMD_ARDUINO_STATUS,
-    CMD_GETANGLE
+    CMD_GETANGLE,
+	CMD_POS_INITIATED
 } CMD_PACKET;
 
 // RC control modes

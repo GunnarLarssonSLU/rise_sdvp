@@ -24,6 +24,8 @@
 #include <QSerialPort>
 #include <QLabel>
 #include <QTcpSocket>
+#include <QtSql>
+#include <QtWidgets>
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     #include <SDL2/SDL.h>
@@ -68,7 +70,7 @@ public:
     ~MainWindow();
     bool eventFilter(QObject *object, QEvent *e);
 
-    void addCar(int id, bool pollData = false);
+    void addCar(int id, QString name, bool pollData = false);
     void connectJoystick();
     void addTcpConnection(QString ip, int port);
     void setNetworkTcpEnabled(bool enabled, int port = -1);
@@ -96,7 +98,7 @@ private slots:
     void infoTraceChanged(int traceNow);
     void jsButtonChanged(int button, bool pressed);
 
-    void on_carAddButton_clicked();
+    void onSelectedFarm(const QModelIndex& current, const QModelIndex& previous);
     void on_disconnectButton_clicked();
     void on_mapRemoveTraceButton_clicked();
     void on_MapRemovePixmapsButton_clicked();
@@ -191,7 +193,13 @@ private slots:
     void on_AutopilotRestartPushButton_clicked();
     void on_AutopilotPausePushButton_clicked();
 
+    void setupFarmTable(QTableView* uiFarmtable,QString SqlTableName);
+
 private:
+    void showError(const QSqlError &err);
+    QSqlRelationalTableModel *modelFarm;
+
+
     Ui::MainWindow *ui;
     QTimer *mTimer;
     QTimer *mHeartbeatTimer; // periodic heartbeat to vehicles for safety
@@ -230,10 +238,6 @@ private:
     #endif
 #endif
 
-#ifdef HAS_LIME_SDR
-    GpsSim *mGpsSim;
-#endif
-
 #ifdef HAS_SIM_SCEN
     PageSimScen *mSimScen;
 #endif
@@ -247,5 +251,8 @@ private slots:
     void handleAxisEvent(const SDL_ControllerAxisEvent& event);
 #endif
 };
+
+
+QSqlError initDb();
 
 #endif // MAINWINDOW_H

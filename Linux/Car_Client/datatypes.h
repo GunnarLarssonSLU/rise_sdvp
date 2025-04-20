@@ -385,7 +385,10 @@ typedef enum {
     // New commands
     CMD_PRINTLOG =220,
     CMD_ARDUINO_STATUS,
-    CMD_GETANGLE
+    CMD_GETANGLE,
+    CMD_POS_INITIATED,
+    CMD_SET_USER,
+    CMD_SET_PWD
 
 } CMD_PACKET;
 

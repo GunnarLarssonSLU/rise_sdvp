@@ -11,6 +11,8 @@ QT       += serialport
 QT       += network
 QT       += quick
 #QT       += quickcontrols2
+QT       +=sql
+QT       +=charts
 
 CONFIG   += c++11
 
@@ -30,9 +32,6 @@ win32: LIBS += -lopengl32
 #win32-g++:DEFINES -= QT_NEEDS_QMAIN
 CONFIG-= windows
 QMAKE_LFLAGS += $$QMAKE_LFLAGS_WINDOWS
-
-# Lime SDR support
-#DEFINES += HAS_LIME_SDR
 
 # Simulation Scennarios
 #DEFINES += HAS_SIM_SCEN
@@ -168,7 +167,6 @@ FORMS    += mainwindow.ui \
     moteconfig.ui \
     magcal.ui \
     imuplot.ui \
-    copterinterface.ui \
     nmeawidget.ui \
     confcommonwidget.ui \
     intersectiontest.ui \
@@ -180,23 +178,16 @@ contains(DEFINES, HAS_OPENGL) {
     HEADERS += orientationwidget.h
 }
 
-contains(DEFINES, HAS_LIME_SDR) {
-    SOURCES += gpssim.cpp gpsgen.cpp limesdr.cpp
-    HEADERS += gpssim.h gpsgen.h limesdr.h
-    FORMS += gpssim.ui
-    LIBS += -lLimeSuite
-}
-
 contains(DEFINES, HAS_SIM_SCEN) {
     INCLUDEPATH += esmini/EnvironmentSimulator/Libraries/esminiLib \
             esmini/EnvironmentSimulator/Modules/RoadManager \
             esmini/externals/pugixml \
             esmini/EnvironmentSimulator/Modules/CommonMini
     LIBS += -L"esmini/bin/" -lesminiLib
-    SOURCES += pagesimscen.cpp
-    HEADERS += pagesimscen.h \
+    SOURCES +=
+    HEADERS += \
             simscentree.h
-    FORMS += pagesimscen.ui
+    FORMS +=
 }
 
 greaterThan(QT_MAJOR_VERSION, 5) {
