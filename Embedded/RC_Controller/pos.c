@@ -356,10 +356,14 @@ void pos_set_yaw_offset(float angle) {
 }
 
 void pos_set_enu_ref(double lat, double lon, double height) {
+
 	double x, y, z;
 	utils_llh_to_xyz(lat, lon, height, &x, &y, &z);
 
 //	chMtxLock(&m_mutex_gps);
+
+	m_gps.lon=lon;
+	m_gps.lat=lat;
 
 	m_gps.ix = x;
 	m_gps.iy = y;
@@ -902,6 +906,16 @@ static void cmd_terminal_testGL(int argc, const char **argv) {
 			m_pos.pz);
 };
 
+void broadcastisInititated(void) {
+	int len;
+	static char print_buffer[255];
+
+	print_buffer[0] = ID_VEHICLE_CLIENT;
+	print_buffer[1] = CMD_POS_INITIATED;
+	comm_usb_send_packet((unsigned char*)print_buffer, 2);
+}
+
+
 static void mpu9150_read(float *accel, float *gyro, float *mag) {
 	static unsigned int cnt_last = 0;
 	volatile unsigned int cnt = TIM6->CNT;
@@ -1192,10 +1206,6 @@ static void init_gps_local(GPS_STATE *gps) {
 	gps->ix = gps->x;
 	gps->iy = gps->y;
 	gps->iz = gps->z;
-
-	gps->lon=60.06314934424684;
-	gps->lat=18.07893415029704;
-
 
 	pos_set_enu_ref(60.06314934424684, 18.07893415029704, 0);
 

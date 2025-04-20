@@ -32,6 +32,12 @@
 #include "datatypes.h"
 #include <cstring>
 
+#include <QCoreApplication>
+#include <QProcess>
+#include <QDebug>
+#include <thread>
+#include <chrono>
+
 namespace {
 void rtcm_rx(uint8_t *data, int len, int type) {
     if (CarClient::currentMsgHandler) {
@@ -108,10 +114,6 @@ CarClient::CarClient(QObject *parent) : QObject(parent)
             this, SLOT(serialRtcmDataAvailable()));
     connect(mSerialPortArduino, SIGNAL(readyRead()),
             this, SLOT(serialArduinoDataAvailable()));
-/*    connect(mSerialPortRtcm, SIGNAL(error(QSerialPort::SerialPortError)),
-            this, SLOT(serialRtcmPortError(QSerialPort::SerialPortError)));
-    connect(mSerialPortArduino, SIGNAL(error(QSerialPort::SerialPortError)),
-            this, SLOT(serialArduinoPortError(QSerialPort::SerialPortError)));*/
     connect(mTcpSocket, SIGNAL(readyRead()), this, SLOT(tcpDataAvailable()));
     connect(mTcpSocket, SIGNAL(connected()), this, SLOT(tcpConnected()));
     connect(mTcpSocket, SIGNAL(disconnected()), this, SLOT(tcpDisconnected()));
@@ -146,15 +148,6 @@ CarClient::CarClient(QObject *parent) : QObject(parent)
     connect(mLogBroadcaster, SIGNAL(dataReceived(QByteArray&)),
             this, SLOT(logBroadcasterDataReceived(QByteArray&)));
 
-#if HAS_CAMERA
-    mCameraJpgQuality = -1;
-    mCameraSkipFrames = 0;
-    mCameraSkipFrameCnt = 0;
-    mCameraNoAckCnt = 0;
-    mCamera = new Camera(this);
-    connect(mCamera->video(), SIGNAL(imageCaptured(QImage)),
-            this, SLOT(cameraImageCaptured(QImage)));
-#endif
     logLineUsbReceived(0, "All Started!");
 }
 
@@ -769,51 +762,9 @@ void CarClient::packetDataToSend(QByteArray &data)
 //    if (id == mCarId || id == 255) {
     if (id == mCarId || mCarId == 255) {
         if (cmd == CMD_CAMERA_STREAM_START) {
-#if HAS_CAMERA
-//            qDebug() << "in CarClient::packetDataToSend. Sending camera feed";
-            int camera = vb.vbPopFrontInt16();
-            mCameraJpgQuality = vb.vbPopFrontInt16();
-            int width = vb.vbPopFrontInt16();
-            int height = vb.vbPopFrontInt16();
-            mCameraNoAckCnt = 0;
-
-            mCamera->closeCamera();
-            int fps = vb.vbPopFrontInt16();
-            mCameraSkipFrames = vb.vbPopFrontInt16();
-
-            if (camera >= 0) {
-                mCamera->openCamera(camera);
-                mCamera->startCameraStream(width, height, fps);
-            }
-
-        } else if (cmd == CMD_CAMERA_FRAME_ACK) {
-            mCameraNoAckCnt--;
-#endif
         } else if (cmd == CMD_TERMINAL_CMD) {
             QString str(vb);
             qDebug() << "to terminal:" << str;
-
-            if (str == "help") {
-#if HAS_CAMERA
-                printTerminal("camera_info\n"
-                              "  Print information about the available camera.");
-#endif
-            } else if (str == "camera_info") {
-#if HAS_CAMERA
-                bool res = true;
-                if (!mCamera->isLoaded()) {
-                    res = mCamera->openCamera();
-                }
-
-                if (res) {
-                    printTerminal(mCamera->cameraInfo());
-                } else {
-                    printTerminal("No camera available.");
-                }
-
-                packetConsumed = true;
-#endif
-            }
 
             if (str == "help") {
                 qDebug() << "Read HELP";
@@ -841,6 +792,22 @@ void CarClient::packetDataToSend(QByteArray &data)
                     printTerminal("Arduino port open!\n");
                     }
             }
+        } else if (cmd == CMD_SET_USER) {
+            QString str(vb);
+            mUsr=str;
+            qDebug() << "User:" << mUsr;
+            packetConsumed=true;
+        } else if (cmd == CMD_SET_PWD) {
+            QString str(vb);
+            mPwd=str;
+            qDebug() << "Pwd:" << mPwd;
+            packetConsumed=true;
+        } else if (cmd == CMD_SET_ENU_REF) {
+//            int id = vb.vbPopFrontInt16();
+            double lat = vb.vbPopFrontDouble64(1.0e16);
+            double lon = vb.vbPopFrontDouble64(1.0e16);
+            stopStr2Str();
+            startStr2Str(lat,lon);
         } else if (cmd == CMD_CLEAR_UWB_ANCHORS) {
             mUwbAnchorsNow.clear();
         } else if (cmd == CMD_ADD_UWB_ANCHOR) {
@@ -1101,39 +1068,7 @@ void CarClient::processCarData(QByteArray data)
 
 void CarClient::cameraImageCaptured(QImage img)
 {
-#if HAS_CAMERA
-    if (mCameraSkipFrames > 0) {
-        mCameraSkipFrameCnt++;
-
-        if (mCameraSkipFrameCnt <= mCameraSkipFrames) {
-            return;
-        }
-    }
-
-    // No ack has been received for a couple of frames, meaning that
-    // the connection probably is bad. Drop frame.
-    if (mCameraNoAckCnt >= 3) {
-        return;
-    }
-
-    mCameraSkipFrameCnt = 0;
-
-    QByteArray data;
-    data.append((quint8)mCarId);
-    data.append((char)CMD_CAMERA_IMAGE);
-    QBuffer buffer;
-    buffer.open(QIODevice::WriteOnly);
-    img.save(&buffer, "jpg", mCameraJpgQuality);
-    buffer.close();
-    data.append(buffer.buffer());
-
-    if (data.size() > 100) {
-        carPacketRx(mCarId, CMD_CAMERA_IMAGE, data);
-        mCameraNoAckCnt++;
-    }
-#else
     (void)img;
-#endif
 }
 
 void CarClient::logBroadcasterDataReceived(QByteArray &data)
@@ -1302,4 +1237,46 @@ bool CarClient::waitProcess(QProcess &process, int timeoutMs)
     }
 
     return !killed;
+}
+
+void CarClient::startStr2Str(double lat,double lon ) {
+    qDebug() << "Lat: " << lat;
+    qDebug() << "Lon: " << lon;
+    QString strLat=QString("%1").arg(lat, 0, 'f', 14);
+    QString strLon=QString("%1").arg(lon, 0, 'f', 14);
+    QString exec="str2str -in ntrip://"+mUsr+":"+mPwd+"@nrtk-swepos.lm.se:80/RTCM3_GNSS -p "+strLat+" "+strLon+" 17 -n 1 -out serial://rtk:115200:8:n:1 -msg ""1005,1074,1084,1094,1230""";
+    qDebug() << exec;
+
+    s2sProcess.start(exec);
+    if (!s2sProcess.waitForStarted()) {
+        qCritical() << "Failed to start str2str.";
+    } else {
+        qDebug() << "Started str2str with PID:" << s2sProcess.processId();
+    }
+
+//    str2strProcess = std::make_shared<sjs::process>(exec);
+//    if (!str2strProcess->running()) {
+//        std::cerr << "Failed to start str2str." << std::endl;
+//    } else {
+//        std::cout << "Started str2str with PID: " << str2strProcess->id() << std::endl;
+//    }
+}
+
+void CarClient::stopStr2Str() {
+    if (s2sProcess.state() == QProcess::Running) {
+        s2sProcess.terminate();
+        s2sProcess.waitForFinished();
+        qDebug() << "Stopped str2str with PID:" << s2sProcess.processId();
+    } else {
+        qCritical() << "No running instance of str2str to stop.";
+    }
+
+//    if (str2strProcess && str2strProcess->running()) {
+//        str2strProcess->terminate(); // Terminate the process
+//        std::cout << "Stopped str2str with PID: " << str2strProcess->id() << std::endl;
+//        str2strProcess.reset(); // Reset the shared pointer
+//    } else {
+//        std::cerr << "No running instance of str2str to stop." << std::endl;
+//    }
+
 }

@@ -352,7 +352,7 @@ int main(int argc, char *argv[])
             }
 
             for (auto c: carsToAdd) {
-                w->addCar(c.id, c.pollData);
+     //           w->addCar(c.id, c.pollData);
             }
 
             if (!jsStr.isEmpty()) {
