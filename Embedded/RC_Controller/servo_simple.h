@@ -18,10 +18,12 @@
 #ifndef SERVO_SIMPLE_H_
 #define SERVO_SIMPLE_H_
 
+#include "stdbool.h"
+
 // Functions
 void servo_simple_init(void);
 void servo_simple_set_pos(float pos);
-void servo_simple_set_pos_ramp(float pos);
+void servo_simple_set_pos_ramp(float pos, bool reset_fault);
 float servo_simple_get_pos_now(void);
 float servo_simple_get_pos_set(void);
 
