@@ -25,6 +25,7 @@
 #include "comm_can.h"
 #include "commands.h"
 #include <math.h>
+#include "autopilot.h"
 
 // Settings
 #define SPI_SW_MISO_GPIO			GPIOC
@@ -74,6 +75,10 @@ void servo_vesc_init(void) {
 			"Print the state of the VESC servo for 30 seconds",
 			"",
 			terminal_state);
+
+	//FTR2 angle init
+	// comm_can_ftr2_angle_init();
+
 }
 
 void servo_vesc_set_pos(float pos) {
@@ -83,6 +88,10 @@ void servo_vesc_set_pos(float pos) {
 
 float servo_vesc_get_pos(void) {
 	return m_pos_now;
+}
+
+void servo_vesc_reset_fault(void) {
+	m_not_ok_cnt = 0;
 }
 
 float servo_vesc_get_pos_set(void) {
@@ -109,22 +118,29 @@ static THD_FUNCTION(servo_thread, arg) {
 		comm_can_set_vesc_id(SERVO_VESC_ID);
 
 		(void)as5047_read;
+		#ifdef ADDIO
+		float pos_addio = comm_can_ftr2_angle();
+
+		bool ok = pos_addio != m_pos_now_raw;
+		m_pos_now_raw = pos_addio;
+		#elif IO_BOARD
 		float pos_io_board = comm_can_io_board_as5047_angle();
 
 		bool ok = pos_io_board != m_pos_now_raw;
 		m_pos_now_raw = pos_io_board;
+		#endif
 #else
 		bool ok = false;
 		m_pos_now_raw = as5047_read(&ok);
 #endif
 
 //		commands_printf("Vinkel i servo_vesc: %f\n",  m_pos_now_raw);
-
 		float pos = m_pos_now_raw;
 		pos -= SERVO_VESC_S1;
 
 		// Allow some margin after limit without wrapping around
 		// TODO: check if this is the correct way
+		
 		if (pos < -20) {
 			utils_norm_angle_360(&pos);
 		}
@@ -134,7 +150,6 @@ static THD_FUNCTION(servo_thread, arg) {
 		m_pos_now = utils_map(pos, 0.0, end, 0.0, 1.0);
 
 		// Run PID-controller on the output
-
 		float error = m_pos_set - m_pos_now;
 
 		float dt = 0.01;
@@ -174,6 +189,7 @@ static THD_FUNCTION(servo_thread, arg) {
 		if (ok) {
 			m_not_ok_cnt = 0;
 		} else {
+			// #define INGENVINKELGIVARE
 #ifndef INGENVINKELGIVARE
 			m_not_ok_cnt++;
 #else
@@ -183,15 +199,25 @@ static THD_FUNCTION(servo_thread, arg) {
 
 #ifdef SERVO_VESC_HYDRAULIC
 		if (m_not_ok_cnt < 100) {
+			
 			float output_scaled = SERVO_VESC_INVERTED ? output : -output;
 			output_scaled *= 0.75;
 			m_out_last = (output_scaled + 1.0) / 2.0;
-			servo_output=m_out_last;
+			//servo_output=m_out_last;
+			#ifdef ADDIO
+			comm_can_addio_set_valve_duty(m_out_last);
+			#elif IO_BOARD
 			comm_can_io_board_set_pwm_duty(0, m_out_last);
+			#endif
 		} else {
-			servo_output=0.5;
+			//servo_output=0.5;
+			#ifdef ADDIO
+			comm_can_addio_set_valve_duty(0.5);
+			#elif IO_BOARD
 			comm_can_io_board_set_pwm_duty(0, 0.5);
+			#endif
 		}
+		
 #else
 		if (m_not_ok_cnt < 100) {
 			m_out_last = SERVO_VESC_INVERTED ? output : -output;

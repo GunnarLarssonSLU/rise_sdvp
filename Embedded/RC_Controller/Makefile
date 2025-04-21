@@ -287,7 +287,10 @@ build/$(PROJECT).bin: build/$(PROJECT).elf
 # Program
 upload: build/$(PROJECT).bin
 #	openocd -f board/stm32f4discovery.cfg -c "reset_config trst_only combined" -c "program build/$(PROJECT).elf verify reset exit" # For openocd 0.9
-	openocd -d -f board/stm32f4discovery.cfg -c "reset_config trst_only combined" -c "program build/$(PROJECT).elf verify reset exit" # For openocd 0.9
+# openocd -d -f board/stm32f4discovery.cfg -c "reset_config trst_only combined" -c "program build/$(PROJECT).elf verify reset exit" # For openocd 0.9
+
+# FOR SEGGER J_LINK
+	openocd -f interface/jlink.cfg -c "transport select swd" -f target/stm32f4x.cfg -c "adapter speed 2000" -c "program build/$(PROJECT).elf verify reset exit"
 
 #program with olimex arm-usb-tiny-h and jtag-swd adapter board. needs openocd>=0.9
 upload-olimex: build/$(PROJECT).bin

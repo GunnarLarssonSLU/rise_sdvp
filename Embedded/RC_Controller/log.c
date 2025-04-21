@@ -468,7 +468,7 @@ static void printf_blocking(bool ethernet, char* format, ...) {
 
 	if(len > 0) {
 		if (ethernet) {
-			commands_send_log_ethernet((unsigned char*)print_buffer, (len < 511) ? len : 511);
+			// commands_send_log_ethernet((unsigned char*)print_buffer, (len < 511) ? len : 511);
 		} else {
 			write_blocking((unsigned char*)print_buffer, (len < 511) ? len : 511);
 		}

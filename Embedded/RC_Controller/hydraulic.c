@@ -63,8 +63,15 @@ void hydraulic_init(void) {
 	pwm_esc_init();
 	pwm_esc_set_all(0.5);
 
+	// prop_valve_init();
+
 	chThdCreateStatic(hydro_thread_wa, sizeof(hydro_thread_wa), NORMALPRIO, hydro_thread, NULL);
 }
+
+// static void prop_valve_init(){
+// 	comm_can_prop_valve_nmt_init();
+// 	comm_can_prop_valve_activate();
+// }
 
 /**
  * Get current speed
@@ -225,17 +232,32 @@ static THD_FUNCTION(hydro_thread, arg) {
 		// comm_can_io_board_lim_sw(3) - Ner bak
 
 		// Control hydraulic actuators
+		#ifdef ADDIO
+		if (!comm_can_addio_lim_sw(0) && m_move_front == HYDRAULIC_MOVE_UP) {
+			m_move_front = HYDRAULIC_MOVE_STOP;
+		} else if (!comm_can_addio_lim_sw(1) && m_move_front == HYDRAULIC_MOVE_DOWN) {
+			m_move_front = HYDRAULIC_MOVE_STOP;
+		}
+
+		if (!comm_can_addio_lim_sw(2) && m_move_rear == HYDRAULIC_MOVE_UP) {
+			m_move_rear = HYDRAULIC_MOVE_STOP;
+		} else if (!comm_can_addio_lim_sw(3) && m_move_rear == HYDRAULIC_MOVE_DOWN) {
+			m_move_rear = HYDRAULIC_MOVE_STOP;
+		}
+
+		#elif IO_BOARD
 		if (comm_can_io_board_lim_sw(0) && m_move_front == HYDRAULIC_MOVE_DOWN) {
 			m_move_front = HYDRAULIC_MOVE_STOP;
 		} else if (comm_can_io_board_lim_sw(1) && m_move_front == HYDRAULIC_MOVE_UP) {
 			m_move_front = HYDRAULIC_MOVE_STOP;
 		}
 
-		if (comm_can_io_board_lim_sw(3) && m_move_rear == HYDRAULIC_MOVE_DOWN) {
+		if (comm_can_io_board_lim_sw(2) && m_move_rear == HYDRAULIC_MOVE_DOWN) {
 			m_move_rear = HYDRAULIC_MOVE_STOP;
-		} else if (comm_can_io_board_lim_sw(2) && m_move_rear == HYDRAULIC_MOVE_UP) {
+		} else if (comm_can_io_board_lim_sw(3) && m_move_rear == HYDRAULIC_MOVE_UP) {
 			m_move_rear = HYDRAULIC_MOVE_STOP;
 		}
+		#endif
 
 /*
 		// var x1 och x2 istf 0 och 1
@@ -248,20 +270,35 @@ static THD_FUNCTION(hydro_thread, arg) {
 
 		if (move_last_front != m_move_front) {
 			move_last_front = m_move_front;
+			#ifdef CAN_ADDIO
+			comm_can_addio_set_valve(0, move_last_front == HYDRAULIC_MOVE_UP);
+			comm_can_addio_set_valve(1, move_last_front == HYDRAULIC_MOVE_DOWN);
+			#elif CAN_IO_BOARD
 			comm_can_io_board_set_valve(0, 1, move_last_front == HYDRAULIC_MOVE_UP);
 			comm_can_io_board_set_valve(0, 2, move_last_front == HYDRAULIC_MOVE_DOWN);
+			#endif
 		}
 
 		if (move_last_rear != m_move_rear) {
 			move_last_rear = m_move_rear;
+			#ifdef CAN_ADDIO
+			comm_can_addio_set_valve(2, move_last_rear == HYDRAULIC_MOVE_UP);
+			comm_can_addio_set_valve(3, move_last_rear == HYDRAULIC_MOVE_DOWN);
+			#elif CAN_IO_BOARD
 			comm_can_io_board_set_valve(0, 5, move_last_rear == HYDRAULIC_MOVE_UP);
 			comm_can_io_board_set_valve(0, 6, move_last_rear == HYDRAULIC_MOVE_DOWN);
+			#endif
 		}
 
 		if (move_last_extra != m_move_extra) {
 			move_last_extra = m_move_extra;
+			#ifdef CAN_ADDIO
+			comm_can_addio_set_valve(4, move_last_extra == HYDRAULIC_MOVE_OUT);
+			comm_can_addio_set_valve(5, move_last_extra == HYDRAULIC_MOVE_IN);
+			#elif CAN_IO_BOARD
 			comm_can_io_board_set_valve(0, 4, move_last_extra == HYDRAULIC_MOVE_OUT);
 			comm_can_io_board_set_valve(0, 3, move_last_extra == HYDRAULIC_MOVE_IN);
+			#endif
 		}
 #else
 		(void)move_last_front;

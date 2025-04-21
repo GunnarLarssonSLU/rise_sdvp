@@ -155,7 +155,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 	data++;
 	len--;
 
-
 	if (id == main_id || id == ID_ALL || id == ID_VEHICLE_CLIENT) {
 		int id_ret = main_id;
 
@@ -737,7 +736,13 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 		} break;
 
 		case CMD_HYDRAULIC_MOVE:
+			// L1,L2 R1,R2
 			hydraulic_move(data[0], data[1]);
+			break;
+
+		case CMD_GET_ANGLE:
+//			io_board_as5047_angle = buffer_get_float32(data, 1e3, &ind);
+			// io_board_as5047_angle = buffer_get_float32_auto(data, &ind);
 			break;
 
 		// ==================== vehicle commands ==================== //
@@ -842,9 +847,11 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			mode = data[ind++];
 			throttle = buffer_get_float32(data, 1e4, &ind);
 			steering = buffer_get_float32(data, 1e6, &ind);
-
+	
 			utils_truncate_number(&steering, -1.0, 1.0);
-			steering *= autopilot_get_steering_scale();
+
+			//TODO: Could be an issue without speed sensor 
+			// steering *= autopilot_get_steering_scale();
 
 			autopilot_set_active(false);
 
@@ -887,6 +894,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 						comm_can_unlock_vesc();
 					#else
 						#if HAS_HYDRAULIC_DRIVE
+							//KAN VARA HÄR
 							hydraulic_set_speed(throttle / 10);
 /*						#else
 							comm_can_lock_vesc();
@@ -903,6 +911,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				break;
 
 			case RC_MODE_DUTY:
+				// Left stick up/down Movement
 				utils_truncate_number(&throttle, -1.0, 1.0);
 				if (!main_config.vehicle.disable_motor) {
 					#if HAS_DIFF_STEERING
@@ -973,10 +982,14 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			}
 
 			#if !HAS_DIFF_STEERING
-				steering = utils_map(steering, -1.0, 1.0,
-					main_config.vehicle.steering_center + (main_config.vehicle.steering_range / 2.0),
-					main_config.vehicle.steering_center - (main_config.vehicle.steering_range / 2.0));
-					servo_simple_set_pos_ramp(steering);
+
+			steering = utils_map(steering, -1.0, 1.0,
+				main_config.vehicle.steering_center + (main_config.vehicle.steering_range / 2.0),
+				main_config.vehicle.steering_center - (main_config.vehicle.steering_range / 2.0));
+			
+			//Steering between 0-1
+			servo_simple_set_pos_ramp(steering, true);
+				
 			#endif
 		} break;
 
@@ -988,8 +1001,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			int32_t ind = 0;
 			float steering = buffer_get_float32(data, 1e6, &ind);
 			utils_truncate_number(&steering, 0.0, 1.0);
-			servo_simple_set_pos_ramp(steering);
-	//		}
+			servo_simple_set_pos_ramp(steering, true);
 		} break;
 #endif
 #endif
