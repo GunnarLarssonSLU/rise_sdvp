@@ -84,6 +84,7 @@ static THD_FUNCTION(mpu_thread, arg);
 static void(*read_callback)(float *accel, float *gyro, float *mag) = 0;
 
 void mpu9150_init(void) {
+	// Sets lots of values to 0
 	failed_reads = 0;
 	failed_mag_reads = 0;
 	read_callback = 0;
@@ -111,10 +112,10 @@ void mpu9150_init(void) {
 	I2C_DEV.state = I2C_STOP;
 	i2cStart(&I2C_DEV, &i2cfg);
 
-	reset_init_mpu();
+	reset_init_mpu();						// A lot of low level initiation
 
 	chThdCreateStatic(mpu_thread_wa, sizeof(mpu_thread_wa), NORMALPRIO + 1,
-			mpu_thread, NULL );
+			mpu_thread, NULL );				// Start thread (the THD_FUNCTION)
 }
 
 /**
@@ -262,6 +263,9 @@ static THD_FUNCTION(mpu_thread, arg) {
 	(void)arg;
 	chRegSetThreadName("MPU Sampling");
 
+	//Thread for the sensor
+
+	//Sets values to zero
 	static int16_t raw_accel_gyro_mag_tmp[9];
 #if USE_MAGNETOMETER
 	static int mag_cnt = MAG_DIV;
@@ -286,7 +290,7 @@ static THD_FUNCTION(mpu_thread, arg) {
 			} else {
 				identical_reads = 0;
 			}
-
+			// Only use values if not identical to prior reads
 			if (identical_reads >= MAX_IDENTICAL_READS) {
 				failed_reads++;
 				chThdSleepMicroseconds(FAIL_DELAY_US);
@@ -298,10 +302,11 @@ static THD_FUNCTION(mpu_thread, arg) {
 				raw_accel_gyro_mag_tmp[4] -= mpu9150_gyro_offsets[1];
 				raw_accel_gyro_mag_tmp[5] -= mpu9150_gyro_offsets[2];
 				memcpy((uint16_t*)raw_accel_gyro_mag, raw_accel_gyro_mag_tmp, sizeof(raw_accel_gyro_mag));
-
+				// Update time
 				update_time_diff = chVTGetSystemTime() - last_update_time;
 				last_update_time = chVTGetSystemTime();
 
+				// Read values (I think..)
 				if (read_callback) {
 					float accel[3], gyro[3], mag[3];
 					mpu9150_get_accel_gyro_mag(accel, gyro, mag);

@@ -633,11 +633,17 @@ void MainWindow::timerSlot()
         if (JSconnected()) {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
                 // Read axis values using SDL_GameController
-                mThrottle = -SDL_GameControllerGetAxis(mController, SDL_CONTROLLER_AXIS_LEFTY);
-                mSteering = SDL_GameControllerGetAxis(mController, SDL_CONTROLLER_AXIS_RIGHTX);
+                mThrottle = -SDL_GameControllerGetAxis(mController, SDL_CONTROLLER_AXIS_LEFTY)*1.0/32768.0;
+                mSteering = SDL_GameControllerGetAxis(mController, SDL_CONTROLLER_AXIS_RIGHTX)*1.0/32768.0;
+                //#ifdef DEBUG_FUNCTIONS
+                if (mThrottle !=0 || mSteering !=0)
+                {
+//sys                    qDebug() << QDateTime::currentDateTime().toString() << " - JOYSTICK (timerslot), mThrottle: " << mThrottle << ", mSteering: " << mSteering;
+                }
+                //  #endif
 
                 js_mr_thr = -SDL_GameControllerGetAxis(mController, SDL_CONTROLLER_AXIS_LEFTY);
-                js_mr_roll = SDL_GameControllerGetAxis(mController, SDL_CONTROLLER_AXIS_RIGHTX);
+               // js_mr_roll = SDL_GameControllerGetAxis(mController, SDL_CONTROLLER_AXIS_RIGHTX);
 
 #else
                 mThrottle = -mJoystick->axisLeftY();
@@ -657,12 +663,6 @@ void MainWindow::timerSlot()
                 utility::truncate_number_abs(&js_mr_roll, 1.0);
                 utility::truncate_number_abs(&js_mr_pitch, 1.0);
                 utility::truncate_number_abs(&js_mr_yaw, 1.0);
-//#ifdef DEBUG_FUNCTIONS
-                if (mThrottle !=0 || mSteering !=0)
-                {
-                    qDebug() << QDateTime::currentDateTime().toString() << " - JOYSTICK (timerslot), mThrottle: " << mThrottle << ", mSteering: " << mSteering;
-                }
-  //  #endif
             //mSteering /= 2.0;
         } else {
             if (mKeyUp) {
@@ -1166,6 +1166,9 @@ void MainWindow::on_disconnectButton_clicked()
     }
 
     mTcpClientMulti->disconnectAll();
+    mCars.clear();
+    ui->carsWidget->clear();
+
 }
 
 void MainWindow::on_mapRemoveTraceButton_clicked()
@@ -2466,23 +2469,23 @@ void MainWindow::handleButtonEvent(const SDL_ControllerButtonEvent& event) {
 void MainWindow::handleAxisEvent(const SDL_ControllerAxisEvent& event) {
     switch (event.axis) {
     case SDL_CONTROLLER_AXIS_LEFTX:
-        qDebug() << "Left X" << event.value;
+ //       qDebug() << "Left X" << event.value;
         break;
     case SDL_CONTROLLER_AXIS_LEFTY:
-        qDebug() << "Left Y" << event.value;
+ //       qDebug() << "Left Y" << event.value;
         break;
     case SDL_CONTROLLER_AXIS_RIGHTX:
-        qDebug() << "Right X" << event.value;
+ //       qDebug() << "Right X" << event.value;
         break;
     case SDL_CONTROLLER_AXIS_RIGHTY:
-        qDebug() << "Right Y" << event.value;
+//        qDebug() << "Right Y" << event.value;
         break;
     case SDL_CONTROLLER_AXIS_TRIGGERLEFT:
-        qDebug() << "Button L2:" << event.value;
+//        qDebug() << "Button L2:" << event.value;
         jsButtonChanged(6, event.value > 0);
         break;
     case SDL_CONTROLLER_AXIS_TRIGGERRIGHT:
-        qDebug() << "Button R2:" << event.value;
+//        qDebug() << "Button R2:" << event.value;
         jsButtonChanged(7, event.value > 0);
         break;
     }

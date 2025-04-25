@@ -185,8 +185,8 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			break;
 
 		case CMD_GETANGLE:
-//			uint16_t sensorvalue=data[0]*256+data[1];
-			uint16_t sensorvalue=data[1]*256+data[0];
+			uint16_t sensorvalue=data[0]*256+data[1];
+//			uint16_t sensorvalue=data[1]*256+data[0];
 			last_sensorvalue=sensorvalue;
 
             angle=(sensorvalue-main_config.vehicle.sensorcentre)*(main_config.vehicle.degreeinterval/main_config.vehicle.sensorinterval);
@@ -792,6 +792,10 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				buffer_append_float32(m_send_buffer, pos_uwb.px, 1e4, &send_index); // 56
 				buffer_append_float32(m_send_buffer, pos_uwb.py, 1e4, &send_index); // 60
 			} else {
+				if(iDebug==7) {
+					commands_printf("sending x: %f,y: %f\n", pos.px, pos.py);
+				};
+
 				buffer_append_float32(m_send_buffer, pos.px, 1e4, &send_index); // 56
 				buffer_append_float32(m_send_buffer, pos.py, 1e4, &send_index); // 60
 			}

@@ -211,6 +211,7 @@ static UARTConfig uart_cfg_ubx_default = {
 };
 
 void ublox_init(void) {
+	//Initiates the ublox. Does a lot of configuring
 	palSetPadMode(HW_UBX_TX_PORT, HW_UBX_TX_PIN, PAL_MODE_ALTERNATE(8));
 	palSetPadMode(HW_UBX_RX_PORT, HW_UBX_RX_PIN, PAL_MODE_ALTERNATE(8));
 	palSetPadMode(HW_UBX_RESET_PORT, HW_UBX_RESET_PIN, PAL_MODE_OUTPUT_PUSHPULL);
@@ -220,10 +221,12 @@ void ublox_init(void) {
 	palSetPad(HW_UBX_RESET_PORT, HW_UBX_RESET_PIN);
 	chThdSleepMilliseconds(3000);
 
-	uartStart(&HW_UART_DEV, &uart_cfg);
+	uartStart(&HW_UART_DEV, &uart_cfg); // Start a uart driver(?)
 
+	// Create thread (THD_FUNCTION)
 	chThdCreateStatic(process_thread_wa, sizeof(process_thread_wa), NORMALPRIO, process_thread, NULL);
 
+	// Register terminal command
 	terminal_register_command_callback(
 			"ubx_poll",
 			"Poll one of the ubx protocol messages. Supported messages:\n"
@@ -939,7 +942,7 @@ static THD_FUNCTION(process_thread, arg) {
 
 	process_tp = chThdGetSelfX();
 
-	reset_decoder_state();
+	reset_decoder_state();		// Sets various variables related to rtcm3 to 0
 
 	for(;;) {
 		if (iDebug==11)
@@ -1031,10 +1034,11 @@ static THD_FUNCTION(process_thread, arg) {
 					m_decoder_state.line_pos = 0;
 
 #if MAIN_MODE_IS_VEHICLE
-					bool found = pos_input_nmea((const char*)m_decoder_state.line);
+					bool found = pos_input_nmea((const char*)m_decoder_state.line);     // Send code for further processing (very important)
 
 					// Only send the lines that pos decoded
 					if (found) {
+						// Send CMD_SEND_NMEA_RADIO message to Raspberry/Laptop
 						commands_send_nmea(m_decoder_state.line, strlen((char*)m_decoder_state.line));
 					}
 #endif

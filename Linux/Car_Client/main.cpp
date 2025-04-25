@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
 //    QString ttyPortRtcm = "/dev/ttyACM1";
     QString ttyPortRtcm = "/dev/vehicle";
     bool inputArduino = false;
-//    QString ttyPortArduino = "/dev/ttyACM0";
+    QString ttyPortArduino = "/dev/tty0";
     QString ttyPortArduino = "/dev/arduino";
 //    QString ttyPortArduino = "NOTHING";
     int rtcmBaud = 9600;
@@ -609,6 +609,13 @@ int main(int argc, char *argv[])
     if (broadcastCarState)
         carstatebroadcaster.reset(new CarStateBroadcaster(a, car.packetInterface(), carId == -1 ? 0 : carId));
 
+    QLocalServer ros2Server = new QLocalServer(this);
+    connect(ros2Server, &QLocalServer::newConnection, this, &CarClient::handleRos2Connection);
+
+    if (!ros2Server->listen("ros2_carclient_channel")) {
+        qDebug() << "Unable to start the ROS 2 local server:" << ros2Server->errorString();
+        // Handle error
+    }
 
 #ifdef HAS_GUI
     if (useGui) {

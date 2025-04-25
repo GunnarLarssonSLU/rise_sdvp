@@ -192,10 +192,12 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     QByteArray pkt = QByteArray((const char*)data, len);
 
     unsigned char id = data[0];
+            qDebug() << "Id: " << id;
     data++;
     len--;
 
     CMD_PACKET cmd = (CMD_PACKET)(quint8)data[0];
+    qDebug() << "Kommando: " << cmd;
     data++;
     len--;
 
@@ -208,10 +210,10 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
 
     switch (cmd) {
     case CMD_PRINTF: {
+        qDebug() << "CMD_PRINTF";
         QByteArray tmpArray((const char*)data, len);
         tmpArray.append('\0');
         emit printReceived(id, QString::fromLatin1(tmpArray));
-//        emit printReceived(id, QString::fromLatin1("Hej!"));
     } break;
 
     case CMD_PRINTLOG: {
@@ -518,6 +520,7 @@ bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_pac
         qDebug() << "ok and about to write";
 
         mUdpSocket->writeDatagram(toSend, mHostAddress, mUdpPort);
+        //ros2 ...
 
         if (QString::compare(mHostAddress2.toString(), "0.0.0.0") != 0) {
             mUdpSocket->writeDatagram(toSend, mHostAddress2, mUdpPort);

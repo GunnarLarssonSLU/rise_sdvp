@@ -43,6 +43,8 @@
 #define ITERATION_TIMER_FREQ			50000
 #define POS_HISTORY_LEN					100
 
+#define UNREMOVE_REMOVEDBYGUNNAR20250317
+
 // Private variables
 static ATTITUDE_INFO m_att;
 static POS_STATE m_pos;
@@ -99,23 +101,26 @@ static void vehicle_update_pos(float distance, float turn_rad_rear, float angle_
 #endif
 
 void pos_init(void) {
-	commands_printf("Initializing Pos.\n");
-	ahrs_init_attitude_info(&m_att);
-	m_attitude_init_done = false;
-	memset(&m_pos, 0, sizeof(m_pos));
-	memset(&m_gps, 0, sizeof(m_gps));
+	if(iDebug==10)
+	{
+		commands_printf("Initializing Pos.\n");
+	}
+	ahrs_init_attitude_info(&m_att);		// Sets initial ahrs values to zero
+	m_attitude_init_done = false;			// Attitude not initiated yet
+	memset(&m_pos, 0, sizeof(m_pos));		// Set vehicle position to 0s
+	memset(&m_gps, 0, sizeof(m_gps));		// Set vehicle position to 0s
 	memset(&m_mc_val, 0, sizeof(m_mc_val));
 	m_ubx_pos_valid = true;
-	m_nma_last_time = 0;
+	m_nma_last_time = 0;					// Last time for read nmEa values = 0?
 	memset(&m_pos_history, 0, sizeof(m_pos_history));
 	m_pos_history_ptr = 0;
 	m_pos_history_print = false;
 	m_gps_corr_print = false;
 	m_en_delay_comp = true;
 	m_pps_cnt = 0;
-	m_imu_yaw_offset = 0.0;
-	memset(&m_gpgsv_last, 0, sizeof(m_gpgsv_last));
-	memset(&m_glgsv_last, 0, sizeof(m_glgsv_last));
+	m_imu_yaw_offset = 0.0;					// No imu yaw offset to start
+	memset(&m_gpgsv_last, 0, sizeof(m_gpgsv_last)); // Set last gpgsv to 0
+	memset(&m_glgsv_last, 0, sizeof(m_glgsv_last)); // Set last glgsv to 0
 	m_print_sat_prn = 0;
 	iDebug=0;
 
@@ -137,10 +142,10 @@ void pos_init(void) {
 	bmi160_wrapper_set_read_callback(mpu9150_read);
 #else
 	commands_printf("Uses MPU 9150\n");
-	mpu9150_init();
+	mpu9150_init();							// Initiates MPU9150 (both sets values to zeros and start thread & low level inititation
 	chThdSleepMilliseconds(1000);
 	led_write(LED_RED, 1);
-	mpu9150_sample_gyro_offsets(100);
+	mpu9150_sample_gyro_offsets(100);		// Reads initial values I think
 	led_write(LED_RED, 0);
 	mpu9150_set_read_callback(mpu9150_read);
 #endif
@@ -156,6 +161,7 @@ void pos_init(void) {
 	TIM_TimeBaseInit(TIM6, &TIM_TimeBaseStructure);
 	TIM_Cmd(TIM6, ENABLE);
 
+	// Set callback functions that check ublox quality (?)
 	ublox_set_rx_callback_relposned(ublox_relposned_rx);
 	ublox_set_rx_callback_rawx(ubx_rx_rawx);
 
@@ -416,12 +422,12 @@ void pos_reset_enu_ref(void) {
 	m_gps.local_init_done = false;
 }
 
-void pos_get_mc_val(mc_values *v) {
-	*v = m_mc_val;
-}
-
 int32_t pos_get_ms_today(void) {
 	return m_ms_today;
+}
+
+void pos_get_mc_val(mc_values *v) {
+	*v = m_mc_val;
 }
 
 void pos_set_ms_today(int32_t ms) {
@@ -437,6 +443,8 @@ bool pos_input_nmea(const char *data) {
 	nmea_gga_info_t gga;
 	static nmea_gsv_info_t gpgsv;
 	static nmea_gsv_info_t glgsv;
+
+	// decode various bits of the text string, fill various structures based on the text string
 	int gga_res = utils_decode_nmea_gga(data, &gga);
 	int gpgsv_res = utils_decode_nmea_gsv("GP", data, &gpgsv);
 	int glgsv_res = utils_decode_nmea_gsv("GL", data, &glgsv);
@@ -475,18 +483,18 @@ bool pos_input_nmea(const char *data) {
 		m_gps.fix_type = gga.fix_type;
 		m_gps.sats = gga.n_sat;
 		m_gps.ms = gga.t_tow;
+		// Convert to x,y,z
 		m_gps.x = (v + gga.height) * cosp * cosl;
 		m_gps.y = (v + gga.height) * cosp * sinl;
 		m_gps.z = (v * (D(1.0) - e2) + gga.height) * sinp;
 
 		if(iDebug==1) {
-
-		commands_printf("::::::::::::::::::::Local init done: %d\n", m_gps.local_init_done);
-				commands_printf("Lat.: %f\n", m_gps.lat);
-				commands_printf("Lon.: %f\n", m_gps.lon);
-				commands_printf("x: %f\n", m_gps.x);
-				commands_printf("y: %f\n", m_gps.y);
-				commands_printf("z: %f\n", m_gps.z);
+			commands_printf("::::::::::::::::::::Local init done: %d\n", m_gps.local_init_done);
+			commands_printf("Lat.: %f\n", m_gps.lat);
+			commands_printf("Lon.: %f\n", m_gps.lon);
+			commands_printf("x: %f\n", m_gps.x);
+			commands_printf("y: %f\n", m_gps.y);
+			commands_printf("z: %f\n", m_gps.z);
 		};
 		// Continue if ENU frame is initialized
 		if (m_gps.local_init_done) {
@@ -517,18 +525,6 @@ bool pos_input_nmea(const char *data) {
 			const float c_yaw = cosf(-m_pos.yaw * M_PI / 180.0);
 			px -= c_yaw * main_config.gps_ant_x - s_yaw * main_config.gps_ant_y;
 			py -= s_yaw * main_config.gps_ant_x + c_yaw * main_config.gps_ant_y;
-/*
-			if(iDebug==1) {
-				commands_printf("::Antenna offset done::\n");
-				commands_printf("px: %f\n", px);
-				commands_printf("py: %f\n", py);
-			};
-
-			if(iDebug==1) {
-				commands_printf("dx: %f\n", dx);
-				commands_printf("x: %f\n", m_gps.x);
-				commands_printf("ix: %f\n", m_gps.ix);
-			};*/
 
 			if(iDebug==7) {
 				commands_printf("init x: %f,x: %fx: %f\n", m_gps.ix, m_gps.iy, m_gps.iz);
@@ -536,12 +532,13 @@ bool pos_input_nmea(const char *data) {
 
 			chMtxLock(&m_mutex_pos);
 
+			// Save last gps position
 			m_pos.px_gps_last = m_pos.px_gps;
 			m_pos.py_gps_last = m_pos.py_gps;
 			m_pos.pz_gps_last = m_pos.pz_gps;
 			m_pos.gps_ms_last = m_pos.gps_ms;
 
-			// Set position of vehicle
+			// Set new gps position
 			m_pos.px_gps = px;
 			m_pos.py_gps = py;
 			m_pos.pz_gps = m_gps.lz;
@@ -553,6 +550,9 @@ bool pos_input_nmea(const char *data) {
 					commands_printf("px gps: %f\n", m_pos.px_gps);
 					commands_printf("py gps: %f\n", m_pos.py_gps);
 					commands_printf("pz gps: %f\n", m_pos.pz_gps);
+					commands_printf("px: %f\n", m_pos.px);
+					commands_printf("py: %f\n", m_pos.py);
+					commands_printf("pz: %f\n", m_pos.pz);
 			};
 /*
 			// Correct position
@@ -568,7 +568,7 @@ bool pos_input_nmea(const char *data) {
 				m_pos.gps_last_corr_diff = sqrtf(SQ(m_pos.px - m_pos.px_gps) +
 						SQ(m_pos.py - m_pos.py_gps));
 
-				correct_pos_gps(&m_pos);
+				correct_pos_gps(&m_pos); // Correct position based on vehicle angle
 				m_pos.gps_corr_time = chVTGetSystemTimeX();
 
 #if MAIN_MODE == MAIN_MODE_vehicle
@@ -586,10 +586,11 @@ bool pos_input_nmea(const char *data) {
 
 			chMtxUnlock(&m_mutex_pos);
 		} else {
+			//If no initiation done before initiate now
 			init_gps_local(&m_gps);
 			m_gps.local_init_done = true;
 		}
-
+		// Read system time and update time for the gps
 		m_gps.update_time = chVTGetSystemTimeX();
 
 		chMtxUnlock(&m_mutex_gps);
@@ -922,15 +923,15 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 	unsigned int time_elapsed = (cnt - cnt_last) % 65536;
 	cnt_last = cnt;
 	float dt = (float)time_elapsed / (float)ITERATION_TIMER_FREQ;
-
-/*	commands_printf("in mpu9150_read");
+	/*
+	commands_printf("in mpu9150_read");
 	commands_printf("accel			     : %f\n"
 	"gyro			     : %f\n"
 	"mag			     : %f\n",
 	accel,
 	gyro,
 	mag);
-*/
+	*/
 
 	update_orientation_angles(accel, gyro, mag, dt);
 
@@ -1103,6 +1104,14 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 	float pitch = ahrs_get_pitch((ATTITUDE_INFO*)&m_att);
 	float yaw = ahrs_get_yaw((ATTITUDE_INFO*)&m_att);
 
+	if ((iDebug==6))
+	{
+		commands_printf("roll ( %.5f )\n", roll);
+		commands_printf("pitch ( %.5f )\n", pitch);
+		commands_printf("yaw ( %.5f )\n", yaw);
+	}
+
+
 	// Apply tilt compensation for magnetometer values and calculate magnetic
 	// field angle. See:
 	// https://cache.freescale.com/files/sensors/doc/app_note/AN4248.pdf
@@ -1128,6 +1137,7 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 	m_pos.roll_rate = -m_gyro[0] * 180.0 / M_PI;
 	m_pos.pitch_rate = m_gyro[1] * 180.0 / M_PI;
 
+	main_config.mag_use=0;			// Enkel test
 	if (main_config.mag_use) {
 		static float yaw_now = 0;
 		static float yaw_imu_last = 0;
@@ -1187,6 +1197,11 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 	utils_norm_angle(&m_pos.yaw);
 #endif
 
+	if ((iDebug==6))
+	{
+		commands_printf("mpos yaw ( %.5f )", m_pos.yaw);
+	}
+
 	m_pos.q0 = m_att.q0;
 	m_pos.q1 = m_att.q1;
 	m_pos.q2 = m_att.q2;
@@ -1196,7 +1211,7 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 }
 
 static void init_gps_local(GPS_STATE *gps) {
-
+	//Initiate GPS, which basically sets the reference frame work
 	if ((iDebug==1) || (iDebug==11))
 	{
 		commands_printf("init_gps_local ( %.5f,%.5f )", gps->lon, gps->lat);
@@ -1210,6 +1225,8 @@ static void init_gps_local(GPS_STATE *gps) {
 	pos_set_enu_ref(60.06314934424684, 18.07893415029704, 0);
 
 	/*
+	 *
+	 * Code moved as it is already in the pos_set_enu_ref function
 	float so = sinf((float)gps->lon * M_PI / 180.0);
 	float co = cosf((float)gps->lon * M_PI / 180.0);
 	float sa = sinf((float)gps->lat * M_PI / 180.0);
@@ -1298,8 +1315,8 @@ static POS_POINT get_closest_point_to_time(int32_t time) {
 
 static void correct_pos_gps(POS_STATE *pos) {
 #ifdef UNREMOVE_REMOVEDBYGUNNAR20250317
-
 	{
+		// Calculate age of gps data
 		static int sample = 0;
 		if (m_pos_history_print) {
 			int32_t diff = m_ms_today - pos->gps_ms;
@@ -1311,20 +1328,28 @@ static void correct_pos_gps(POS_STATE *pos) {
 
 	if(iDebug==2)
 	{
-	commands_printf("time gps: %f\n",pos->gps_ms);
-	commands_printf("time gps last corr: %f\n",pos->gps_ang_corr_last_gps_ms);
+		commands_printf("time gps: %f\n",pos->gps_ms);
+		commands_printf("time gps last corr: %f\n",pos->gps_ang_corr_last_gps_ms);
 	}
+
+	// If has a speed of at least 0.5 km/h
+	// Yaw = Angle on the x/y plane (i.e. the angle that is most relevant on you are on ground)
 	// Angle
 	if (fabsf(pos->speed * 3.6) > 0.5 || 1) {
+		//Calculate yaw from gps
 		float yaw_gps = -atan2f(pos->py_gps - pos->gps_ang_corr_y_last_gps,
 				pos->px_gps - pos->gps_ang_corr_x_last_gps) * 180.0 / M_PI;
+		//Get mose relevant gps position(?)
 		POS_POINT closest = get_closest_point_to_time(
 				(pos->gps_ms + pos->gps_ang_corr_last_gps_ms) / 2.0);
+		//Get change in yaw
 		float yaw_diff = utils_angle_difference(yaw_gps, closest.yaw);
+		//Move m_imu_yaw_offset towards (m_imu_yaw_offset - yaw_diff), with rate depending on set gain parameter
 		utils_step_towards(&m_imu_yaw_offset, m_imu_yaw_offset - yaw_diff,
 				main_config.gps_corr_gain_yaw * pos->gps_corr_cnt);
 	}
 
+	// Keep m_imu_yaw_offset within -180 to +180 interval
 	utils_norm_angle(&m_imu_yaw_offset);
 
 	// Position
@@ -1332,9 +1357,10 @@ static void correct_pos_gps(POS_STATE *pos) {
 			main_config.gps_corr_gain_dyn * pos->gps_corr_cnt;
 
 
+	//Same as above?
 	POS_POINT closest = get_closest_point_to_time(m_en_delay_comp ? pos->gps_ms : m_ms_today);
 	POS_POINT closest_corr = closest;
-
+	// Some stuff done just for printing?
 	{
 		static int sample = 0;
 		static int ms_before = 0;
@@ -1362,6 +1388,7 @@ static void correct_pos_gps(POS_STATE *pos) {
 
 	}
 
+	// Move closest_corr towards gps position
 	utils_step_towards(&closest_corr.px, pos->px_gps, gain);
 	utils_step_towards(&closest_corr.py, pos->py_gps, gain);
 
@@ -1370,7 +1397,7 @@ static void correct_pos_gps(POS_STATE *pos) {
 	commands_printf("closest corr [aft]- px: %f, py: %f, pz: %f\n",closest_corr.px,closest_corr.py,closest_corr.pz);
 	commands_printf("pos [bef]- px: %f, py: %f\n",pos->px,pos->py);
 	}
-	// Explain what this does
+	// Move position the same amount as closest_corr was moved
 	pos->px += closest_corr.px - closest.px;
 	pos->py += closest_corr.py - closest.py;
 
@@ -1380,6 +1407,7 @@ static void correct_pos_gps(POS_STATE *pos) {
 			(double)pos->px, (double)pos->py);
 	}
 	#else
+	// Just use gps position if the above define-bit is not used
 	pos->px=pos->px_gps;
 	pos->py=pos->py_gps;
 
