@@ -68,15 +68,6 @@ CarClient::CarClient(QObject *parent) : QObject(parent)
     mTcpSocket = new QTcpSocket(this);
     mTcpServer = new TcpServerSimple(this);
 
-    // Inside your CarClient class or main function
-    ros2Server = new QLocalServer(this);
-    connect(ros2Server, &QLocalServer::newConnection, this, &CarClient::handleRos2Connection);
-
-    if (!ros2Server->listen("ros2_carclient_channel")) {
-        qDebug() << "Unable to start the ROS 2 local server:" << ros2Server->errorString();
-        // Handle error
-    }
-
     mRtcmClient = new RtcmClient(this);
     mCarId = 255;
     mReconnectTimer = new QTimer(this);
@@ -579,15 +570,17 @@ void CarClient::readRos2Command() {
 //    const unsigned char *data = reinterpret_cast<const unsigned char *>(rosdata.constData());
 //    unsigned int len_packet = std::strlen(reinterpret_cast<const char *>(data));
 
-    qDebug() << "Got command 1 via ROS:" << rosdata[1];
+    rosdata.prepend('\0');
+    rosdata.append('\0');
+    rosdata.append('\0');
+    rosdata.append('\0');
+    qDebug() << "Got command 0 via ROS:" << static_cast<unsigned char>(rosdata[0]);
+    qDebug() << "Got command 1 via ROS:" << static_cast<unsigned char>(rosdata[1]);
     qDebug() << "Got command 2 via ROS:" << rosdata[2];
     qDebug() << "Got command via ROS:" << rosdata;
 
-//        mPacketInterface->sendPacket(packet);
-        //            mPacketInterface->sendPacket(data);
+     packetDataToSend(rosdata);
 
-
-//    mPacketInterface->sendPacket(data, len_packet);
     QString response = "OK";
 
     qDebug() << "Response to ROS: " << response;
@@ -806,6 +799,7 @@ void CarClient::packetDataToSend(QByteArray &data)
 //            int id = vb.vbPopFrontInt16();
             double lat = vb.vbPopFrontDouble64(1.0e16);
             double lon = vb.vbPopFrontDouble64(1.0e16);
+            qDebug() << "setting ENU ref";
             stopStr2Str();
             startStr2Str(lat,lon);
         } else if (cmd == CMD_CLEAR_UWB_ANCHORS) {

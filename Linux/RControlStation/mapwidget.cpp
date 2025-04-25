@@ -1706,10 +1706,6 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
     const QColor textColor = QPalette::Foreground;
 #endif
 
-
-
-
-
     // Grid boundries in mm
     const double xStart = -ceil(width / stepGrid / mScaleFactor) * stepGrid - ceil(mXOffset / stepGrid / mScaleFactor) * stepGrid;
     const double xEnd = ceil(width / stepGrid / mScaleFactor) * stepGrid - floor(mXOffset / stepGrid / mScaleFactor) * stepGrid;
@@ -2604,7 +2600,7 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
         }
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        txt = QString("RP: %d").arg(mRoutes.at(mRouteNow).size());
+        txt = QString("RP: %1").arg(mRoutes.at(mRouteNow).size(), 0, 'd', 0);
 #else
         txt.sprintf("RP: %d", mRoutes.at(mRouteNow).size());
 #endif
@@ -2613,7 +2609,7 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
         start_txt += txt_row_h;
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        txt = QString("RLen: %.2f m").arg(len);
+        txt = QString("RLen: %1 m").arg(len, 0, 'f', 2);
 #else
         txt.sprintf("RLen: %.2f m", len);
 #endif

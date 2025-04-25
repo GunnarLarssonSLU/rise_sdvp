@@ -16,6 +16,7 @@
     */
 
 #include "carinfo.h"
+#include <QDebug>
 
 CarInfo::CarInfo(int id, Qt::GlobalColor color)
 {
@@ -76,6 +77,7 @@ LocPoint &CarInfo::getLocationGps()
 
 void CarInfo::setLocationGps(LocPoint &point)
 {
+    qDebug() << "GPS location: " << point.getX() << ":::" << point.getY();
     mLocationGps = point;
 }
 

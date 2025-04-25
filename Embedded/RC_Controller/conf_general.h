@@ -44,11 +44,10 @@
 
 // IO BOARD
 // #define IO_BOARD
-#define ADDIO
 
-// #define IS_DRANGEN
+#define IS_DRANGEN
 
-#define IS_MACTRAC
+//#define IS_MACTRAC
 
 // MacTrac
 // Steering Center: 210
@@ -65,7 +64,8 @@
 #define SERVO_VESC_INVERTED			0
 #define SERVO_VESC_DEADBAND_COMP    0.2
 #define IS_F9_BOARD					1
-
+#define ADDIO
+//#define IO_BOARD
 #ifdef CAN_ADDIO
 #define FTR2_ANGLE                  1
 #endif

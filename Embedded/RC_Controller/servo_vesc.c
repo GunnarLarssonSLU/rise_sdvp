@@ -118,17 +118,19 @@ static THD_FUNCTION(servo_thread, arg) {
 		comm_can_set_vesc_id(SERVO_VESC_ID);
 
 		(void)as5047_read;
-		#ifdef ADDIO
+	#ifdef ADDIO
 		float pos_addio = comm_can_ftr2_angle();
 
 		bool ok = pos_addio != m_pos_now_raw;
 		m_pos_now_raw = pos_addio;
-		#elif IO_BOARD
+	#elif defined(IO_BOARD)
 		float pos_io_board = comm_can_io_board_as5047_angle();
 
 		bool ok = pos_io_board != m_pos_now_raw;
 		m_pos_now_raw = pos_io_board;
-		#endif
+	#else
+		bool ok = false;
+	#endif
 #else
 		bool ok = false;
 		m_pos_now_raw = as5047_read(&ok);
@@ -206,14 +208,14 @@ static THD_FUNCTION(servo_thread, arg) {
 			//servo_output=m_out_last;
 			#ifdef ADDIO
 			comm_can_addio_set_valve_duty(m_out_last);
-			#elif IO_BOARD
+			#elif defined(IO_BOARD)
 			comm_can_io_board_set_pwm_duty(0, m_out_last);
 			#endif
 		} else {
 			//servo_output=0.5;
 			#ifdef ADDIO
 			comm_can_addio_set_valve_duty(0.5);
-			#elif IO_BOARD
+			#elif defined(IO_BOARD)
 			comm_can_io_board_set_pwm_duty(0, 0.5);
 			#endif
 		}
