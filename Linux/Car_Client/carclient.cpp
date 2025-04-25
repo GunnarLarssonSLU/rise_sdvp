@@ -139,6 +139,15 @@ CarClient::CarClient(QObject *parent) : QObject(parent)
     connect(mLogBroadcaster, SIGNAL(dataReceived(QByteArray&)),
             this, SLOT(logBroadcasterDataReceived(QByteArray&)));
 
+    ros2Server = new QLocalServer(this);
+    connect(ros2Server, &QLocalServer::newConnection, this, &CarClient::handleRos2Connection);
+
+    if (!ros2Server->listen("ros2_carclient_channel")) {
+        qDebug() << "Unable to start the ROS 2 local server:" << ros2Server->errorString();
+        // Handle error
+    }
+
+
     logLineUsbReceived(0, "All Started!");
 }
 
