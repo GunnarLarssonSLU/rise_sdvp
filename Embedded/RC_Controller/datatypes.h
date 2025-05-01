@@ -230,7 +230,10 @@ typedef enum {
     CMD_PRINTLOG =220,
     CMD_ARDUINO_STATUS,
     CMD_GETANGLE,
-	CMD_POS_INITIATED
+    CMD_POS_INITIATED,
+    CMD_SET_USER,
+    CMD_SET_PWD,
+    CMD_SLEEP
 } CMD_PACKET;
 
 // RC control modes

@@ -39,5 +39,6 @@ void commands_printf_log_usb(char* format, ...);
 void commands_forward_vesc_packet(unsigned char *data, unsigned int len);
 void commands_send_nmea(unsigned char *data, unsigned int len);
 rtcm3_state* commands_get_rtcm3_state(void);
+void commands_sleep(void);
 
 #endif /* COMMANDS_H_ */

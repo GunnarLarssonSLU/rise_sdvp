@@ -45,7 +45,7 @@
 // IO BOARD
 // #define IO_BOARD
 
-#define IS_DRANGEN
+#define IS_MACTRAC
 
 //#define IS_MACTRAC
 

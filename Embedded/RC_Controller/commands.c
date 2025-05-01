@@ -40,6 +40,10 @@
 #include "comm_can.h"
 #include "hydraulic.h"
 
+//#include "stm32f4xx_hal.h"
+#include "stm32f4xx_conf.h"
+//#include "usbd_cdc_if.h" // Include the USB CDC interface header
+
 #include <math.h>
 #include <string.h>
 #include <stdarg.h>
@@ -497,6 +501,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			m_send_buffer[send_index++] = id_ret;
 			m_send_buffer[send_index++] = CMD_REBOOT_SYSTEM_ACK;
 			commands_send_packet(m_send_buffer, send_index);
+			commands_sleep();			// Stop execution on the card
 		} break;
 
 		case CMD_SET_MAIN_CONFIG: {
@@ -792,10 +797,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				buffer_append_float32(m_send_buffer, pos_uwb.px, 1e4, &send_index); // 56
 				buffer_append_float32(m_send_buffer, pos_uwb.py, 1e4, &send_index); // 60
 			} else {
-				if(iDebug==7) {
-					commands_printf("sending x: %f,y: %f\n", pos.px, pos.py);
-				};
-
 				buffer_append_float32(m_send_buffer, pos.px, 1e4, &send_index); // 56
 				buffer_append_float32(m_send_buffer, pos.py, 1e4, &send_index); // 60
 			}
@@ -1007,6 +1008,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			utils_truncate_number(&steering, 0.0, 1.0);
 			servo_simple_set_pos_ramp(steering, true);
 		} break;
+
 #endif
 #endif
 
@@ -1175,4 +1177,16 @@ static void rtcm_base_rx(rtcm_ref_sta_pos_t *pos) {
 
 rtcm3_state* commands_get_rtcm3_state(void) {
 	return &m_rtcm_state;
+}
+
+void commands_sleep(void)
+{
+    // Clear wake-up flag
+    __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
+
+    // Enable WakeUp Pin (if needed)
+    HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN1);
+
+    // Enter Standby mode
+    HAL_PWR_EnterSTANDBYMode();
 }
