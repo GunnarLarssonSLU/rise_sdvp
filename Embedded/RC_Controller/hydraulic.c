@@ -24,6 +24,9 @@
 #include "comm_can.h"
 #include <math.h>
 
+#include "pos.h"
+
+
 // Settings
 #ifdef IS_MACTRAC
 #define SERVO_LEFT				10 // Only one servo
@@ -46,6 +49,8 @@ static volatile HYDRAULIC_MOVE m_move_rear = HYDRAULIC_MOVE_STOP;
 static volatile HYDRAULIC_MOVE m_move_extra = HYDRAULIC_MOVE_STOP;
 static volatile float m_move_timeout_cnt = 0.0;
 static volatile float m_throttle_set = 0.0;
+
+extern int iDebug;
 
 // Threads
 static THD_WORKING_AREA(hydro_thread_wa, 1024);
@@ -180,7 +185,6 @@ static THD_FUNCTION(hydro_thread, arg) {
 	(void)arg;
 
 	chRegSetThreadName("Hydraulic");
-
 	HYDRAULIC_MOVE move_last_front = HYDRAULIC_MOVE_STOP;
 	HYDRAULIC_MOVE move_last_rear = HYDRAULIC_MOVE_STOP;
 	HYDRAULIC_MOVE move_last_extra = HYDRAULIC_MOVE_STOP;
@@ -192,6 +196,10 @@ static THD_FUNCTION(hydro_thread, arg) {
 		}
 
 		chThdSleepMilliseconds(10);
+//		if (iDebug==13)
+//		{
+//			commands_printf("speed ( %.5f )\n", m_speed_now);
+//		}
 
 		m_timeout_cnt += 0.01;
 
@@ -227,7 +235,17 @@ static THD_FUNCTION(hydro_thread, arg) {
 		float time_last = fmaxf(cnt.high_time_current, cnt.high_time_last) +
 				fmaxf(cnt.low_time_current, cnt.low_time_last);
 		m_speed_now = SIGN(m_throttle_set) * (wheel_diam * M_PI) / (time_last * cnts_per_rev);
+				if (iDebug==13)
+				{
+					commands_printf("cnt.low_time_last( %.5f )\n", cnt.low_time_last);
+					commands_printf("cnt.high_time_last( %.5f )\n", cnt.high_time_last);
+					commands_printf("cnt.low_time_current( %.5f )\n", cnt.low_time_current);
+					commands_printf("cnt.high_time_current( %.5f )\n", cnt.high_time_current);
 
+					commands_printf("time_last ( %.5f )\n", time_last);
+					commands_printf("speed ( %.5f )\n", m_speed_now);
+				}
+		m_speed_now=3.6;   // Just to give it some speed
 		// comm_can_io_board_lim_sw(2) - Upp bak
 		// comm_can_io_board_lim_sw(3) - Ner bak
 

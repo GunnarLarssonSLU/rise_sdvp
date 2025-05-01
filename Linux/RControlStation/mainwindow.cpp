@@ -48,11 +48,36 @@
 #include "attributes_masks.h"
 #include "datatypes.h"
 
+
+
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     #include <SDL2/SDL.h>
 #else
     #include <QGamepad>
 #endif
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#define FRONT_UP 5
+#define FRONT_DOWN 7
+#define REAR_UP 4
+#define REAR_DOWN 6
+// 7: Front Up
+// 5: Front Down
+// 6: Rear up
+// 4: Rear down
+#else
+#define FRONT_UP 5
+#define FRONT_DOWN 7
+#define REAR_UP 4
+#define REAR_DOWN 6
+// 5: Front Up
+// 7: Front Down
+// 4: Rear up
+// 6: Rear down
+#endif
+
+
+
 
 namespace {
 void stepTowards(double &value, double goal, double step) {
@@ -117,6 +142,8 @@ MainWindow::MainWindow(QWidget *parent) :
     // Connect joystick by default
     bool connectJs = false;
 
+    static MainWindow *mThis=this;          // Just to be able to get the lambdas to work
+
     #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
         if (SDL_Init(SDL_INIT_GAMECONTROLLER) != 0) {
             qDebug() << "SDL_Init Error:" << SDL_GetError();
@@ -141,6 +168,25 @@ MainWindow::MainWindow(QWidget *parent) :
                 qDebug() << "Could not open game controller 0:" << SDL_GetError();
             }
         }
+/*
+    connect(mJoystick, &QGamepad::buttonL1Changed, this, [](bool pressed){
+        qDebug() << "Button L1" << pressed;
+        mThis->jsButtonChanged(4, pressed);
+    });
+    connect(mJoystick, &QGamepad::buttonR1Changed, this, [](bool pressed){
+        qDebug() << "Button R1" << pressed;
+        mThis->jsButtonChanged(5, pressed);
+    });
+    connect(mJoystick, &QGamepad::buttonL2Changed, this, [](double value){
+        qDebug() << "Button L2: " << value;
+        mThis->jsButtonChanged(6, value>0);
+    });
+
+    connect(mJoystick, &QGamepad::buttonR2Changed, this, [](double value){
+        qDebug() << "Button R2: " << value;
+        mThis->jsButtonChanged(7, value>0);
+    });
+*/
 #else
     auto gamepads = QGamepadManager::instance()->connectedGamepads();
     if (gamepads.isEmpty()) {
@@ -166,7 +212,6 @@ MainWindow::MainWindow(QWidget *parent) :
         //           qDebug() << "Right Y" << value;
     });
 
-    static MainWindow *mThis=this;          // Just to be able to get the lambdas to work
     connect(mJoystick, &QGamepad::buttonL1Changed, this, [](bool pressed){
         qDebug() << "Button L1" << pressed;
         mThis->jsButtonChanged(4, pressed);
@@ -238,8 +283,6 @@ MainWindow::MainWindow(QWidget *parent) :
             this, SLOT(packetDataToSend(QByteArray&)));
     connect(mPacketInterface, SIGNAL(stateReceived(quint8,CAR_STATE)),
             this, SLOT(stateReceived(quint8,CAR_STATE)));
-    connect(mPacketInterface, SIGNAL(mrStateReceived(quint8,MULTIROTOR_STATE)),
-            this, SLOT(mrStateReceived(quint8,MULTIROTOR_STATE)));
     connect(ui->mapWidget, SIGNAL(posSet(quint8,LocPoint)),
             this, SLOT(mapPosSet(quint8,LocPoint)));
     connect(mPacketInterface, SIGNAL(ackReceived(quint8,CMD_PACKET,QString)),
@@ -326,7 +369,7 @@ MainWindow::~MainWindow()
 {
     // Remove all vehicles before this window is destroyed to not get segfaults
     // in their destructors.
-    while (mCars.size() > 0 || mCopters.size() > 0) {
+    while (mCars.size() > 0) {
         QWidget *w = ui->carsWidget->currentWidget();
 
         if (dynamic_cast<CarInterface*>(w) != NULL) {
@@ -335,12 +378,6 @@ MainWindow::~MainWindow()
             ui->carsWidget->removeTab(ui->carsWidget->currentIndex());
             mCars.removeOne(car);
             delete car;
-        } else if (dynamic_cast<CopterInterface*>(w) != NULL) {
-            CopterInterface *copter = (CopterInterface*)w;
-
-            ui->carsWidget->removeTab(ui->carsWidget->currentIndex());
-            mCopters.removeOne(copter);
-            delete copter;
         }
     }
 
@@ -472,7 +509,6 @@ void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& p
 
     mPacketInterface->sendSetUserCmd(ui->mapCarBox->value(),usr);
     mPacketInterface->sendSetPwdCmd(ui->mapCarBox->value(),pwd);
-
 
     qDebug() << "Vehicle: " << ui->mapCarBox->value();
     qDebug() << "User: " << usr;
@@ -696,13 +732,6 @@ void MainWindow::timerSlot()
         CarInterface *car = *it_car;
         car->setControlValues(mThrottle, mSteering, ui->throttleMaxBox->value(), ui->throttleCurrentButton->isChecked());
     }
-#ifdef HAS_JOYSTICK
-    // Notify about joystick events
-    for(QList<CopterInterface*>::Iterator it_copter = mCopters.begin();it_copter < mCopters.end();it_copter++) {
-        CopterInterface *copter = *it_copter;
-        copter->setControlValues(js_mr_thr, js_mr_roll, js_mr_pitch, js_mr_yaw);
-    }
-#endif
     // Update status label
     if (mStatusInfoTime) {
         mStatusInfoTime--;
@@ -733,22 +762,6 @@ void MainWindow::timerSlot()
         }
 
         if (car->pollData() && ind > largest) {
-            largest = ind;
-        }
-
-        ind++;
-    }
-
-    for(QList<CopterInterface*>::Iterator it_copter = mCopters.begin();it_copter < mCopters.end();it_copter++) {
-        CopterInterface *copter = *it_copter;
-        if ((mSerialPort->isOpen() || mPacketInterface->isUdpConnected() || mTcpClientMulti->isAnyConnected()) &&
-                copter->pollData() && ind >= next_car && !polled) {
-            mPacketInterface->getMrState(copter->getId());
-            next_car = ind + 1;
-            polled = true;
-        }
-
-        if (copter->pollData() && ind > largest) {
             largest = ind;
         }
 
@@ -817,10 +830,6 @@ void MainWindow::sendHeartbeat()
     for(QList<CarInterface*>::Iterator it_car = mCars.begin();it_car < mCars.end();it_car++)
         if ((*it_car)->getFirmwareVersion().first >= 20)
             mPacketInterface->sendHeartbeat((*it_car)->getId());
-
-    for(QList<CopterInterface*>::Iterator it_copter = mCopters.begin();it_copter < mCopters.end();it_copter++)
-        if ((*it_copter)->getFirmwareVersion().first >= 20)
-            mPacketInterface->sendHeartbeat((*it_copter)->getId());
 }
 
 void MainWindow::showStatusInfo(QString info, bool isGood)
@@ -864,16 +873,6 @@ void MainWindow::stateReceived(quint8 id, CAR_STATE state)
             if (car->getId() == id) {
                 car->setStateData(state);
             }
-        }
-    }
-}
-
-void MainWindow::mrStateReceived(quint8 id, MULTIROTOR_STATE state)
-{
-    for(QList<CopterInterface*>::Iterator it_copter = mCopters.begin();it_copter < mCopters.end();it_copter++) {
-        CopterInterface *copter = *it_copter;
-        if (copter->getId() == id) {
-            copter->setStateData(state);
         }
     }
 }
@@ -1095,28 +1094,25 @@ void MainWindow::jsButtonChanged(int button, bool pressed)
 {
         qDebug() << "JS BT:" << button << pressed;
 
-    #ifdef HAS_JOYSTICK
-
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-
-#else
-
+    #ifdef HAS_JOYSTICK        
         if (1) {
-            // 5: Front Up
-            // 7: Front Down
-            // 4: Rear up
-            // 6: Rear down
             // 1: Extra out
             // 3: Extra in
+        qDebug() << "in logic 1";
 
-            if (button == 5 || button == 7 || button == 1 ||
-                    button == 3 || button == 4 || button == 6) {
+            if (button == FRONT_UP || button == FRONT_DOWN || button == 1 ||
+                    button == REAR_DOWN || button == REAR_UP || button == 6) {
+            qDebug() << "in logic 2";
                 for(QList<CarInterface*>::Iterator it_car = mCars.begin();it_car < mCars.end();it_car++) {
+                qDebug() << "in logic 3";
                     CarInterface *car = *it_car;
                     if (car->getCtrlKb()) {
-                        if (button == 5 || button == 7) {
+                    qDebug() << "in logic 4";
+                        if (button == FRONT_UP || button == FRONT_DOWN) {
+                        qDebug() << "in logic 5";
                             if (pressed) {
-                                if (button == 5) {
+                            qDebug() << "pressed";
+                                if (button == FRONT_UP) {
                                     qDebug() << "Hydraulic, front up";
                                     mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_UP);
                                 } else {
@@ -1126,11 +1122,13 @@ void MainWindow::jsButtonChanged(int button, bool pressed)
                             } else {
                                 mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_STOP);
                             }
-                        } else if (button == 4 || button == 6) {
+                        } else if (button == REAR_UP || button == REAR_DOWN) {
                             if (pressed) {
-                                if (button == 4) {
+                                if (button == REAR_UP) {
+                                    qDebug() << "Hydraulic, rear up";
                                     mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_UP);
                                 } else {
+                                    qDebug() << "Hydraulic, rear down";
                                     mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
                                 }
                             } else {
@@ -1151,7 +1149,6 @@ void MainWindow::jsButtonChanged(int button, bool pressed)
                 }
             }
         }
-#endif
     #endif
 }
 
@@ -1255,10 +1252,6 @@ void MainWindow::on_carsWidget_tabCloseRequested(int index)
         CarInterface *car = (CarInterface*)w;
         mCars.removeOne(car);
         delete car;
-    } else if (dynamic_cast<CopterInterface*>(w) != NULL) {
-        CopterInterface *copter = (CopterInterface*)w;
-        mCopters.removeOne(copter);
-        delete copter;
     }
 }
 
@@ -2445,8 +2438,10 @@ void MainWindow::pollGamepad() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_CONTROLLERBUTTONDOWN || event.type == SDL_CONTROLLERBUTTONUP) {
+            qDebug() << "up or down";
             handleButtonEvent(event.cbutton);
         } else if (event.type == SDL_CONTROLLERAXISMOTION) {
+//            qDebug() << "axis";
             handleAxisEvent(event.caxis);
         }
     }

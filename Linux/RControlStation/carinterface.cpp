@@ -250,7 +250,7 @@ void CarInterface::setStateData(CAR_STATE data)
         ap_goal.setXY(data.ap_goal_px, data.ap_goal_py);
         ap_goal.setRadius(data.ap_rad);
         car->setLocation(loc);
-        qDebug() << "state";
+//        qDebug() << "state";
         car->setLocationGps(loc_gps);
         car->setLocationUwb(loc_uwb);
         car->setApGoal(ap_goal);
@@ -543,7 +543,7 @@ void CarInterface::nmeaReceived(quint8 id, QByteArray nmea_msg)
             if (car) {
                 LocPoint loc_gps = car->getLocationGps();
                 loc_gps.setInfo(ui->nmeaWidget->fixType());
-                qDebug() << "nmea";
+//                qDebug() << "nmea";
                 car->setLocationGps(loc_gps);
             }
         }

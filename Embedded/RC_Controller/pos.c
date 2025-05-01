@@ -76,6 +76,10 @@ static mc_values m_mc_val_right;
 #endif
 static float m_yaw_imu_clamp;
 static bool m_yaw_imu_clamp_set;
+static float m_yaw_bias;
+static int iCounter;
+static int iCounterShow;
+static float yawdrifttotal;
 
 // Private functions
 static void cmd_terminal_delay_info(int argc, const char **argv);
@@ -123,6 +127,10 @@ void pos_init(void) {
 	memset(&m_glgsv_last, 0, sizeof(m_glgsv_last)); // Set last glgsv to 0
 	m_print_sat_prn = 0;
 	iDebug=0;
+	m_yaw_bias=0.0;
+	iCounter=0;
+	iCounterShow=0;
+	yawdrifttotal=0.0;
 
 #if HAS_DIFF_STEERING
 	m_vesc_left_now = true;
@@ -305,6 +313,11 @@ void pos_get_imu(float *accel, float *gyro, float *mag) {
 		mag[1] = m_mag_raw[1];
 		mag[2] = m_mag_raw[2];
 	}
+	if(iDebug==3) {
+	commands_printf("mag 0: %f\n", m_mag_raw[0]);
+	commands_printf("mag 1: %f\n", m_mag_raw[1]);
+	commands_printf("mag 2: %f\n", m_mag_raw[2]);
+	};
 }
 
 void pos_get_quaternions(float *q) {
@@ -969,6 +982,7 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 		float turn_rad_rear = 0.0;
 		float angle_diff = 0.0;
 		float distance = hydraulic_get_distance(true);
+
 		float speed = hydraulic_get_speed();
 
 		float steering_angle = (servo_simple_get_pos_now()
@@ -1094,6 +1108,7 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 
 	if (!m_attitude_init_done) {
 		ahrs_update_initial_orientation(m_accel, m_mag, (ATTITUDE_INFO*)&m_att);
+		m_yaw_bias=0.02;
 		m_attitude_init_done = true;
 	} else {
 		//		ahrs_update_mahony_imu(gyro, accel, dt, (ATTITUDE_INFO*)&m_att);
@@ -1104,14 +1119,14 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 	float pitch = ahrs_get_pitch((ATTITUDE_INFO*)&m_att);
 	float yaw = ahrs_get_yaw((ATTITUDE_INFO*)&m_att);
 
-	if ((iDebug==6))
-	{
-		commands_printf("roll ( %.5f )\n", roll);
-		commands_printf("pitch ( %.5f )\n", pitch);
+	if (iDebug==6)
+		{
+//		commands_printf("roll ( %.5f )\n", roll);
+//		commands_printf("pitch ( %.5f )\n", pitch);
 		commands_printf("yaw ( %.5f )\n", yaw);
-	}
+		}
 
-
+	yaw+=m_yaw_bias;
 	// Apply tilt compensation for magnetometer values and calculate magnetic
 	// field angle. See:
 	// https://cache.freescale.com/files/sensors/doc/app_note/AN4248.pdf
@@ -1156,18 +1171,43 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 	}
 
 	utils_norm_angle(&m_pos.yaw_imu);
-	m_pos.yaw_rate = -m_gyro[2] * 180.0 / M_PI;
+	m_pos.yaw_rate = -m_gyro[2] * 180.0 / M_PI ;
+	if ((iDebug==8))
+	{
+		iCounter=(iCounter+1);
+		iCounterShow=(iCounterShow+1) % 50;
+		yawdrifttotal+=m_pos.yaw_rate;
+		if (iCounterShow==10) {
+			commands_printf("yaw_rate ( %.5f )\n", m_pos.yaw_rate);
+			commands_printf("yawdrifttotal ( %.5f )\n", yawdrifttotal);
+			commands_printf("yawdrift rate ( %.5f )\n", yawdrifttotal/iCounter);
+		}
+	}
 
 	// Correct yaw
 #if MAIN_MODE == MAIN_MODE_vehicle
 	{
 		if (!m_yaw_imu_clamp_set) {
 			m_yaw_imu_clamp = m_pos.yaw_imu - m_imu_yaw_offset;
+			if ((iDebug==6))
+			{
+			commands_printf("m_imu_yaw_offset ( %.5f )\n", m_imu_yaw_offset);
+			commands_printf("m_pos.yaw_imu ( %.5f )\n", m_pos.yaw_imu);
+//			commands_printf("m_yaw_imu_clamp ( %.5f )\n", m_yaw_imu_clamp);
+			}
 			m_yaw_imu_clamp_set = true;
 		}
 
 		if (main_config.vehicle.clamp_imu_yaw_stationary && fabsf(m_pos.speed) < 0.05) {
 			m_imu_yaw_offset = m_pos.yaw_imu - m_yaw_imu_clamp;
+			if ((iDebug==16))
+			{
+//			commands_printf("m_pos.speed ( %.5f )\n", m_pos.speed);
+//			commands_printf("m_yaw_imu_clamp ( %.5f )\n", m_yaw_imu_clamp);
+			commands_printf("m_pos.yaw ( %.5f )\n", m_pos.yaw_imu);
+//			commands_printf("m_pos.yaw_imu ( %.5f )\n", m_pos.yaw_imu);
+//			commands_printf("m_imu_yaw_offset ( %.5f )\n", m_imu_yaw_offset);
+			}
 		} else {
 			m_yaw_imu_clamp = m_pos.yaw_imu - m_imu_yaw_offset;
 		}
@@ -1178,12 +1218,15 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 			float ang_diff = utils_angle_difference(m_pos.yaw, m_pos.yaw_imu - m_imu_yaw_offset);
 
 			if (ang_diff > 1.2 * main_config.vehicle.yaw_imu_gain) {
+				//				commands_printf("a");
 				m_pos.yaw -= main_config.vehicle.yaw_imu_gain;
 				utils_norm_angle(&m_pos.yaw);
 			} else if (ang_diff < -1.2 * main_config.vehicle.yaw_imu_gain) {
+				//				commands_printf("b");
 				m_pos.yaw += main_config.vehicle.yaw_imu_gain;
 				utils_norm_angle(&m_pos.yaw);
 			} else {
+//				commands_printf("c");
 				m_pos.yaw -= ang_diff;
 				utils_norm_angle(&m_pos.yaw);
 			}

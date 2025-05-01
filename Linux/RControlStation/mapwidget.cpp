@@ -284,26 +284,9 @@ CarInfo *MapWidget::getCarInfo(int car)
     return 0;
 }
 
-CopterInfo *MapWidget::getCopterInfo(int copter)
-{
-    for (int i = 0;i < mCopterInfo.size();i++) {
-        if (mCopterInfo[i].getId() == copter) {
-            return &mCopterInfo[i];
-        }
-    }
-
-    return 0;
-}
-
 void MapWidget::addCar(const CarInfo &car)
 {
     mCarInfo.append(car);
-    update();
-}
-
-void MapWidget::addCopter(const CopterInfo &copter)
-{
-    mCopterInfo.append(copter);
     update();
 }
 
@@ -320,28 +303,11 @@ bool MapWidget::removeCar(int carId)
     return false;
 }
 
-bool MapWidget::removeCopter(int copterId)
-{
-    QMutableListIterator<CopterInfo> i(mCopterInfo);
-    while (i.hasNext()) {
-        if (i.next().getId() == copterId) {
-            i.remove();
-            return true;
-        }
-    }
-
-    return false;
-}
-
 void MapWidget::clearCars()
 {
     mCarInfo.clear();
 }
 
-void MapWidget::clearCopters()
-{
-    mCopterInfo.clear();
-}
 
 LocPoint *MapWidget::getAnchor(int id)
 {
@@ -746,17 +712,6 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
                         emit posSet(mSelectedCar, pos);
                     }
                 }
-
-                for (int i = 0;i < mCopterInfo.size();i++) {
-                    CopterInfo &copterInfo = mCopterInfo[i];
-                    if (copterInfo.getId() == mSelectedCar) {
-                        LocPoint pos = copterInfo.getLocation();
-                        QPoint p = getMousePosRelative();
-                        pos.setXY(p.x() / 1000.0, p.y() / 1000.0);
-                        copterInfo.setLocation(pos);
-                        emit posSet(mSelectedCar, pos);
-                    }
-                }
             }
         } else if (e->buttons() & Qt::RightButton) {
             if (mAnchorMode) {
@@ -924,19 +879,6 @@ void MapWidget::wheelEvent(QWheelEvent *e)
                 normalizeAngleRad(angle);
                 pos.setYaw(angle);
                 carInfo.setLocation(pos);
-                emit posSet(mSelectedCar, pos);
-                update();
-            }
-        }
-
-        for (int i = 0;i < mCopterInfo.size();i++) {
-            CopterInfo &copterInfo = mCopterInfo[i];
-            if (copterInfo.getId() == mSelectedCar) {
-                LocPoint pos = copterInfo.getLocation();
-                double angle = pos.getYaw() + (double)e->angleDelta().y() * 0.0005;
-                normalizeAngleRad(angle);
-                pos.setYaw(angle);
-                copterInfo.setLocation(pos);
                 emit posSet(mSelectedCar, pos);
                 update();
             }
@@ -1632,15 +1574,6 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
                 mYOffset = -followLoc.getY() * 1000.0 * mScaleFactor;
             }
         }
-
-        for (int i = 0;i < mCopterInfo.size();i++) {
-            CopterInfo &copterInfo = mCopterInfo[i];
-            if (copterInfo.getId() == mFollowCar) {
-                LocPoint followLoc = copterInfo.getLocation();
-                mXOffset = -followLoc.getX() * 1000.0 * mScaleFactor;
-                mYOffset = -followLoc.getY() * 1000.0 * mScaleFactor;
-            }
-        }
     }
 
     // Limit the offset to avoid overflow at 2^31 mm
@@ -2301,112 +2234,6 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
         painter.drawText(rect_txt, txt);
     }
 
-    // Draw copters
-    for(int i = 0;i < mCopterInfo.size();i++) {
-        pen.setWidthF(2.0 / mScaleFactor);
-        pen.setColor(textColor);
-        painter.setPen(pen);
-
-        CopterInfo &copterInfo = mCopterInfo[i];
-        LocPoint pos = copterInfo.getLocation();
-        LocPoint pos_gps = copterInfo.getLocationGps();
-        x = pos.getX() * 1000.0;
-        y = pos.getY() * 1000.0;
-
-        double x_gps = pos_gps.getX() * 1000.0;
-        double y_gps = pos_gps.getY() * 1000.0;
-        angle = pos.getYaw() * 180.0 / M_PI;
-
-        painter.setTransform(drawTrans);
-        painter.translate(x, y);
-        painter.rotate(-angle);
-
-        QColor col_frame = copterInfo.getColor();
-        QColor col_prop_main = Qt::red;
-        QColor col_prop_other = Qt::green;
-        QColor col_gps = Qt::magenta;
-        QColor col_ap = copterInfo.getColor();
-
-        if (copterInfo.getId() != mSelectedCar) {
-            col_prop_main = Qt::darkGray;
-            col_prop_other = Qt::lightGray;
-            col_ap = Qt::lightGray;
-        }
-
-        // Draw the Quadcopter
-        painter.setBrush(col_frame);
-        painter.drawRoundedRect(-20, -300, 40, 600, 10, 10);
-        painter.drawRoundedRect(-300, -20, 600, 40, 10, 10);
-
-        // Draw propellers
-        QColor col = col_prop_main;
-        col.setAlphaF(0.3);
-        painter.setBrush(QBrush(col));
-        painter.drawEllipse(QPointF(275, 0), 130, 130);
-        col = col_prop_other;
-        col.setAlphaF(0.3);
-        painter.setBrush(QBrush(col));
-        painter.drawEllipse(QPointF(0, 275), 130, 130);
-        painter.drawEllipse(QPointF(0, -275), 130, 130);
-        painter.drawEllipse(QPointF(-275, 0), 130, 130);
-
-        // Draw the acceleration vector
-        if (fabs(pos.getRoll()) > 1e-5 || fabs(pos.getPitch()) > 1e-5) {
-            painter.setBrush(QBrush(Qt::green));
-            painter.setPen(QPen(Qt::green, 30));
-            painter.drawLine(QPointF(0.0, 0.0), QPointF(-pos.getPitch() * 800.0, -pos.getRoll() * 800.0));
-        }
-
-        // Print data
-        QTime t = QTime::fromMSecsSinceStartOfDay(copterInfo.getTime());
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        txt = QString("%1\n"
-                              "(%.3f, %.3f, %.0f)\n"
-                              "%2:%3:%4:%5")
-                          .arg(copterInfo.getName())
-                          .arg(pos.getX(), 0, 'f', 3)  // Format x with 3 decimal places
-                          .arg(pos.getY(), 0, 'f', 3)  // Format y with 3 decimal places
-                          .arg(angle, 0, 'f', 0)       // Format angle with 0 decimal places
-                          .arg(t.hour(), 2, 10, QChar('0'))    // Format hour with leading zeros
-                          .arg(t.minute(), 2, 10, QChar('0'))  // Format minute with leading zeros
-                          .arg(t.second(), 2, 10, QChar('0'))   // Format second with leading zeros
-                          .arg(t.msec(), 3, 10, QChar('0'));    // Format millisecond with leading zeros
-
-#else
-        txt.sprintf("%s\n"
-                    "(%.3f, %.3f, %.0f)\n"
-                    "%02d:%02d:%02d:%03d",
-                    copterInfo.getName().toLocal8Bit().data(),
-                    pos.getX(), pos.getY(), angle,
-                    t.hour(), t.minute(), t.second(), t.msec());
-#endif
-
-        pt_txt.setX(x + 450);
-        pt_txt.setY(y);
-        painter.setTransform(txtTrans);
-        pt_txt = drawTrans.map(pt_txt);
-        rect_txt.setCoords(pt_txt.x(), pt_txt.y() - 20,
-                           pt_txt.x() + 300, pt_txt.y() + 25);
-        painter.setPen(QPen(textColor));
-        painter.drawText(rect_txt, txt);
-
-        // Restore transform
-        painter.setTransform(drawTrans);
-
-        // Autopilot state
-        LocPoint ap_goal = copterInfo.getApGoal();
-        if (ap_goal.getRadius() > 0.0) {
-            QPointF p = ap_goal.getPointMm();
-            pen.setColor(col_ap);
-            painter.setPen(pen);
-            painter.drawEllipse(p, 10 / mScaleFactor, 10 / mScaleFactor);
-        }
-
-        // GPS Location
-        painter.setBrush(col_gps);
-        painter.drawEllipse(QPointF(x_gps, y_gps), 335.0 / 15.0, 335.0 / 15.0);
-    }
-
     painter.setPen(QPen(textColor));
 
     // Draw anchors
@@ -2646,25 +2473,6 @@ void MapWidget::updateTraces()
                 }
                 if (mCarTraceUwb.last().getDistanceTo(carInfo.getLocationUwb()) > mTraceMinSpaceCar) {
                     mCarTraceUwb.append(carInfo.getLocationUwb());
-                }
-            }
-        }
-
-        for (int i = 0;i < mCopterInfo.size();i++) {
-            CopterInfo &copterInfo = mCopterInfo[i];
-            if (copterInfo.getId() == mTraceCar) {
-                if (mCarTrace.isEmpty()) {
-                    mCarTrace.append(copterInfo.getLocation());
-                }
-                if (mCarTrace.last().getDistanceTo(copterInfo.getLocation()) > mTraceMinSpaceCar) {
-                    mCarTrace.append(copterInfo.getLocation());
-                }
-                // GPS trace
-                if (mCarTraceGps.isEmpty()) {
-                    mCarTraceGps.append(copterInfo.getLocationGps());
-                }
-                if (mCarTraceGps.last().getDistanceTo(copterInfo.getLocationGps()) > mTraceMinSpaceGps) {
-                    mCarTraceGps.append(copterInfo.getLocationGps());
                 }
             }
         }

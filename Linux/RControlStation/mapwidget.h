@@ -34,7 +34,7 @@
 
 #include "locpoint.h"
 #include "carinfo.h"
-#include "copterinfo.h"
+//#include "copterinfo.h"
 #include "perspectivepixmap.h"
 #include "osmclient.h"
 
@@ -63,16 +63,12 @@ public:
 
     explicit MapWidget(QWidget *parent = 0);
     CarInfo* getCarInfo(int car);
-    CopterInfo* getCopterInfo(int copter);
     void setFollowCar(int car);
     void setTraceCar(int car);
     void setSelectedCar(int car);
     void addCar(const CarInfo &car);
-    void addCopter(const CopterInfo &copter);
     bool removeCar(int carId);
-    bool removeCopter(int copterId);
     void clearCars();
-    void clearCopters();
     LocPoint* getAnchor(int id);
     void addAnchor(const LocPoint &anchor);
     bool removeAnchor(int id);
@@ -197,7 +193,6 @@ protected:
 
 private:
     QList<CarInfo> mCarInfo;
-    QList<CopterInfo> mCopterInfo;
     QVector<LocPoint> mCarTrace;
     QVector<LocPoint> mCarTraceGps;
     QVector<LocPoint> mCarTraceUwb;

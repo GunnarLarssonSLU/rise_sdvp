@@ -77,7 +77,7 @@ LocPoint &CarInfo::getLocationGps()
 
 void CarInfo::setLocationGps(LocPoint &point)
 {
-    qDebug() << "GPS location: " << point.getX() << ":::" << point.getY();
+//    qDebug() << "GPS location: " << point.getX() << ":::" << point.getY();
     mLocationGps = point;
 }
 

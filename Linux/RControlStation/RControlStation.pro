@@ -10,7 +10,6 @@ QT       += printsupport
 QT       += serialport
 QT       += network
 QT       += quick
-#QT       += quickcontrols2
 QT       +=sql
 QT       +=charts
 
@@ -102,8 +101,8 @@ SOURCES += main.cpp\
     moteconfig.cpp \
     magcal.cpp \
     imuplot.cpp \
-    copterinfo.cpp \
-    copterinterface.cpp \
+#    copterinfo.cpp \
+#    copterinterface.cpp \
     nmeawidget.cpp \
     confcommonwidget.cpp \
     ublox.cpp \
@@ -142,8 +141,8 @@ HEADERS  += mainwindow.h \
     moteconfig.h \
     magcal.h \
     imuplot.h \
-    copterinfo.h \
-    copterinterface.h \
+#    copterinfo.h \
+#    copterinterface.h \
     nmeawidget.h \
     confcommonwidget.h \
     ublox.h \

@@ -304,7 +304,7 @@ upload_remote: build/$(PROJECT).bin
 	#Drängen
 #	./upload_remote build/$(PROJECT).bin pi 192.168.43.9 22 pi_gpio
 #	./upload_remote build/$(PROJECT).bin pi 192.168.200.101 22 pi_gpio
-	./upload_remote build/$(PROJECT).bin pi 192.168.200.105 22 stlink
+	./upload_remote build/$(PROJECT).bin pi 192.168.200.4 22 stlink
 
 
 touch_conf_general:
