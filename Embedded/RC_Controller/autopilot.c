@@ -509,6 +509,13 @@ static THD_FUNCTION(ap_thread, arg) {
 	uint32_t attributes_now = 0;
 
 	for(;;) {
+/*        if (chEvtWaitOneTimeout(EMERGENCY_STOP_EVENT, TIME_IMMEDIATE) == MSG_OK) {
+            // Perform cleanup if necessary
+            // ...
+            break;
+        }*/
+
+
 		chThdSleep(CH_CFG_ST_FREQUENCY / AP_HZ);
 
 		chMtxLock(&m_ap_lock);
@@ -928,13 +935,13 @@ static THD_FUNCTION(ap_thread, arg) {
 					autopilot_set_turn_rad(circle_radius);
 				#else
 					#ifdef IS_DRANGEN
-					commands_printf("debug: %f\n",iDebug);
+//					commands_printf("debug: %f\n",iDebug);
 //					if(iDebug==2)
 					//					{
-					commands_printf("AP NOW px: %f, py: %f, angle: %f\n",pos_now.px, pos_now.py, -pos_now.yaw * M_PI / 180.0);
-					commands_printf("AP RP px: %f, py: %f, angle: %f\n",rp_now.px, rp_now.py, steering_angle);
-					commands_printf("Dist: %f, circle radius: %f\n",distance, circle_radius);
-					commands_printf("Servo pos: %f\n",servo_pos);
+	//				commands_printf("AP NOW px: %f, py: %f, angle: %f\n",pos_now.px, pos_now.py, -pos_now.yaw * M_PI / 180.0);
+	//				commands_printf("AP RP px: %f, py: %f, angle: %f\n",rp_now.px, rp_now.py, steering_angle);
+	//				commands_printf("Dist: %f, circle radius: %f\n",distance, circle_radius);
+	//				commands_printf("Servo pos: %f\n",servo_pos);
 					//					}//
 
 					comm_can_set_vesc_id(DIFF_STEERING);

@@ -40,9 +40,6 @@
 #include "comm_can.h"
 #include "hydraulic.h"
 
-//#include "stm32f4xx_hal.h"
-#include "stm32f4xx_conf.h"
-//#include "usbd_cdc_if.h" // Include the USB CDC interface header
 
 #include <math.h>
 #include <string.h>
@@ -75,6 +72,8 @@ static bool arduino_connected = false;
 extern float io_board_as5047_angle;
 extern float servo_output;
 extern int iDebug;
+extern event_source_t emergency_event;
+//extern thread_t *hydro_thread;
 
 float sign(float input)
 	{
@@ -880,13 +879,14 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 						comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
 						bldc_interface_set_current(throttle);
 //						if ((angle>-30) && (angle<30)) && (angle<30))
-						if ( (iDebug==10) && ((okdirections) || (nottooextreme)))
-						{
-							commands_printf("steering: %f.\n", steering);
-							commands_printf("angle: %f.\n", angle);
+
+//						if ( (iDebug==10) && ((okdirections) || (nottooextreme)))
+//						{
+//							commands_printf("steering: %f.\n", steering);
+//							commands_printf("angle: %f.\n", angle);
 							comm_can_set_vesc_id(DIFF_STEERING);
 							bldc_interface_set_duty_cycle(steering*VOLTAGEFRACTION);
-						}
+//						}
 						comm_can_unlock_vesc();
 					#endif
 
@@ -1181,12 +1181,19 @@ rtcm3_state* commands_get_rtcm3_state(void) {
 
 void commands_sleep(void)
 {
-    // Clear wake-up flag
-    __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
 
-    // Enable WakeUp Pin (if needed)
-    HAL_PWR_EnableWakeUpPin(PWR_WAKEUP_PIN1);
+    chSysLock(); // Enter system lock to manipulate thread states safely
+/*
+    if (hydro_thread != NULL) {
+        chThdTerminate(hydro_thread);
+    }
+    */
+/*
+    if (thread2 != NULL) {
+        chThdTerminate(thread2);
+    }*/
 
-    // Enter Standby mode
-    HAL_PWR_EnterSTANDBYMode();
+    chSysUnlock(); // Exit system lock
+	// Signal all threads to terminate
+//    chEvtBroadcastFlags(&emergency_event, EMERGENCY_STOP_EVENT);
 }

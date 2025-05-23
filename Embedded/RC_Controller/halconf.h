@@ -30,6 +30,12 @@
 
 #include "mcuconf.h"
 
+
+#define HAL_USE_ICU             TRUE
+#define STM32_ICU_USE_TIM1      TRUE
+
+
+
 /**
  * @brief   Enables the PAL subsystem.
  */

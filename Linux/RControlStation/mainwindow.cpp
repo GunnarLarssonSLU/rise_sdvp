@@ -47,6 +47,7 @@
 #include "wireguard.h"
 #include "attributes_masks.h"
 #include "datatypes.h"
+#include "arduinoreader.h"
 
 
 
@@ -113,6 +114,7 @@ void deadband(double &value, double tres, double max) {
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
+    serialReader("/dev/arduino", 9600),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
@@ -168,25 +170,6 @@ MainWindow::MainWindow(QWidget *parent) :
                 qDebug() << "Could not open game controller 0:" << SDL_GetError();
             }
         }
-/*
-    connect(mJoystick, &QGamepad::buttonL1Changed, this, [](bool pressed){
-        qDebug() << "Button L1" << pressed;
-        mThis->jsButtonChanged(4, pressed);
-    });
-    connect(mJoystick, &QGamepad::buttonR1Changed, this, [](bool pressed){
-        qDebug() << "Button R1" << pressed;
-        mThis->jsButtonChanged(5, pressed);
-    });
-    connect(mJoystick, &QGamepad::buttonL2Changed, this, [](double value){
-        qDebug() << "Button L2: " << value;
-        mThis->jsButtonChanged(6, value>0);
-    });
-
-    connect(mJoystick, &QGamepad::buttonR2Changed, this, [](double value){
-        qDebug() << "Button R2: " << value;
-        mThis->jsButtonChanged(7, value>0);
-    });
-*/
 #else
     auto gamepads = QGamepadManager::instance()->connectedGamepads();
     if (gamepads.isEmpty()) {
@@ -317,6 +300,10 @@ MainWindow::MainWindow(QWidget *parent) :
             qWarning() << "TCP Error:" << msg;
             QMessageBox::warning(this, "TCP Error", msg);
         }
+    });
+    QObject::connect(&serialReader, &ArduinoReader::signalLost, [this]() {
+            on_stopButton_clicked();
+            qWarning() << "Signal lost! Did not receive '1'.";
     });
 
     on_mapCameraWidthBox_valueChanged(ui->mapCameraWidthBox->value());

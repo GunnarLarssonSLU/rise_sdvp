@@ -79,6 +79,8 @@ static bool m_print_next_mon_ver = false;
 static bool m_print_next_cfg_gnss = false;
 static decoder_state m_decoder_state;
 
+extern int iDebug;
+
 // Private functions
 static void reset_decoder_state(void);
 static void ubx_terminal_cmd_poll(int argc, const char **argv);

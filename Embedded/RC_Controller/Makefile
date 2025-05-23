@@ -57,6 +57,9 @@ ifeq ($(USE_SMART_BUILD),)
   USE_SMART_BUILD = yes
 endif
 
+
+HAL_COMPONENTS = ICU
+
 #
 # Build global options
 ##############################################################################
@@ -201,7 +204,8 @@ INCDIR = $(STARTUPINC) $(KERNINC) $(PORTINC) $(OSALINC) \
          $(HALINC) $(PLATFORMINC) $(BOARDINC) $(TESTINC) \
          $(CHIBIOS)/os/various \
          $(CHIBIOS)/os/hal/lib/streams \
-         $(CC2520INC) $(CC1120INC) $(IMUINC)
+         $(CC2520INC) $(CC1120INC) $(IMUINC) \
+         $(CHIBIOS)/os/hal/include
 
 #
 # Project, sources and paths
@@ -301,10 +305,11 @@ debug-start:
 	openocd -f stm32-bv_openocd.cfg -d
 	
 upload_remote: build/$(PROJECT).bin
-	#Drängen
 #	./upload_remote build/$(PROJECT).bin pi 192.168.43.9 22 pi_gpio
 #	./upload_remote build/$(PROJECT).bin pi 192.168.200.101 22 pi_gpio
-	./upload_remote build/$(PROJECT).bin pi 192.168.200.4 22 stlink
+#	./upload_remote build/$(PROJECT).bin pi 192.168.200.105 22 stlink
+	./upload_remote build/$(PROJECT).bin nvidia 192.168.200.7 22 stlink
+#	./upload_remote build/$(PROJECT).bin pi 192.168.200.4 22 stlink
 
 
 touch_conf_general:
