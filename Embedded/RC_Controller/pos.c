@@ -99,6 +99,9 @@ static POS_POINT get_closest_point_to_time(int32_t time);
 static void correct_pos_gps(POS_STATE *pos);
 static void ubx_rx_rawx(ubx_rxm_rawx *rawx);
 
+int iDebug;
+
+
 #if MAIN_MODE == MAIN_MODE_vehicle
 static void mc_values_received(mc_values *val);
 static void vehicle_update_pos(float distance, float turn_rad_rear, float angle_diff, float speed);

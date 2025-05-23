@@ -44,6 +44,7 @@
 #include "tcpclientmulti.h"
 #include "wireguard.h"
 #include <memory>
+#include "arduinoreader.h"
 
 #ifdef HAS_LIME_SDR
 #include "gpssim.h"
@@ -224,6 +225,7 @@ private:
     std::unique_ptr<WireGuard> mWireGuard;
     QString mLastImgFileName;
     QList<QPair<int, int> > mSupportedFirmwares;
+    ArduinoReader serialReader;
 
 #ifdef HAS_JOYSTICK_CHECK
     bool JSconnected();

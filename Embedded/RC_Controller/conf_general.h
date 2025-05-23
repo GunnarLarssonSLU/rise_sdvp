@@ -45,7 +45,7 @@
 // IO BOARD
 // #define IO_BOARD
 
-#define IS_MACTRAC
+#define IS_DRANGEN
 
 //#define IS_MACTRAC
 
@@ -69,6 +69,7 @@
 #ifdef CAN_ADDIO
 #define FTR2_ANGLE                  1
 #endif
+#define SERVO_READ
 
 #endif
 
@@ -103,6 +104,7 @@
 #define IS_F9_BOARD					1
 #define IS_ALL_ELECTRIC             1
 #define ANALOG_ANGLE
+#define SERVO_READ
 #endif
 
 

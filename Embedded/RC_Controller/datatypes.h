@@ -31,6 +31,8 @@
 // Constants
 #define MS_PER_DAY					(24 * 60 * 60 * 1000)
 
+#define EMERGENCY_STOP_EVENT  (1U << 2)  // Use a specific bit for the emergency stop event
+
 // CAN ID mask for DecaWave module
 #define CAN_MASK_DW					(5 << 8)
 #define CAN_DW_ID_ANY				255

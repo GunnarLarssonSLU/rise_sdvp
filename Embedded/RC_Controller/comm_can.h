@@ -51,4 +51,8 @@ ADC_CNT_t* comm_can_io_board_adc0_cnt(void);
 void comm_can_io_board_set_valve(int board, int valve, bool set);
 void comm_can_io_board_set_pwm_duty(int board, float duty);
 
+void find_ones_positions(unsigned long number);
+
+
+
 #endif /* COMM_CAN_H_ */

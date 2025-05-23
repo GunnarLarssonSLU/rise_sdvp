@@ -26,6 +26,7 @@
 
 #include "pos.h"
 
+//thread_t *hydro_thread = NULL;
 
 // Settings
 #ifdef IS_MACTRAC
@@ -50,7 +51,9 @@ static volatile HYDRAULIC_MOVE m_move_extra = HYDRAULIC_MOVE_STOP;
 static volatile float m_move_timeout_cnt = 0.0;
 static volatile float m_throttle_set = 0.0;
 
+extern event_source_t emergency_event;
 extern int iDebug;
+
 
 // Threads
 static THD_WORKING_AREA(hydro_thread_wa, 1024);
@@ -184,13 +187,27 @@ void hydraulic_move(HYDRAULIC_POS pos, HYDRAULIC_MOVE move) {
 static THD_FUNCTION(hydro_thread, arg) {
 	(void)arg;
 
+	event_listener_t el;
+    eventmask_t events;
+
 	chRegSetThreadName("Hydraulic");
 	HYDRAULIC_MOVE move_last_front = HYDRAULIC_MOVE_STOP;
 	HYDRAULIC_MOVE move_last_rear = HYDRAULIC_MOVE_STOP;
 	HYDRAULIC_MOVE move_last_extra = HYDRAULIC_MOVE_STOP;
 	int move_repeat_cnt = 0;
 
-	for(;;) {
+    chEvtRegister(&emergency_event, &el, EMERGENCY_STOP_EVENT);
+
+    while (!chThdShouldTerminateX()) {
+/*
+		events = chEvtWaitAnyTimeout(EMERGENCY_STOP_EVENT, MS2ST(100));
+
+		if (events & EMERGENCY_STOP_EVENT)
+		{// Perform cleanup if necessary
+            // ...
+            break;
+        }
+*/
 		if (fabsf(m_speed_now) > 0.01) {
 			m_distance_now += m_speed_now * 0.01;
 		}
@@ -324,4 +341,6 @@ static THD_FUNCTION(hydro_thread, arg) {
 		(void)move_last_extra;
 #endif
 	}
+    chEvtUnregister(&emergency_event, &el);
+    chThdExit(MSG_OK);
 }

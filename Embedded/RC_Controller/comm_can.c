@@ -44,6 +44,9 @@ static THD_WORKING_AREA(cancom_process_thread_wa, 4096);
 static THD_FUNCTION(cancom_read_thread, arg);
 static THD_FUNCTION(cancom_process_thread, arg);
 
+// Functions
+static void cmd_terminal_useeid(int argc, const char **argv);
+
 // Variables
 static can_status_msg stat_msgs[CAN_STATUS_MSGS_TO_STORE];
 static mutex_t can_mtx;
@@ -56,13 +59,18 @@ static int rx_frame_write;
 static thread_t *process_tp;
 static int vesc_id = VESC_ID;
 
+int iEid;
+
+
 // IO Board
 static float io_board_adc_voltages[8] = {0};
 static bool io_board_lim_sw[8] = {0};
 //static float io_board_as5047_angle = 0.0; //static?
 float io_board_as5047_angle = 0.0; //static?
 static float can_ftr2_angle = 0.0;
-static ADC_CNT_t io_board_adc0_cnt = {0};
+ADC_CNT_t io_board_adc0_cnt = {0};
+
+extern int iDebug;
 
 // ADDIO
 static bool addio_lim_sw[8] = {1};
@@ -115,6 +123,13 @@ void comm_can_init(void) {
 	rx_frame_read = 0;
 	rx_frame_write = 0;
 	vesc_id = VESC_ID;
+
+	terminal_register_command_callback(
+			"eid",
+			"Set value for eid filter for debug info",
+			0,
+			cmd_terminal_useeid);
+
 
 	chMtxObjectInit(&can_mtx);
 	chMtxObjectInit(&vesc_mtx_ext);
@@ -183,6 +198,29 @@ static THD_FUNCTION(cancom_read_thread, arg) {
 	chEvtUnregister(&CANDx.rxfull_event, &el);
 }
 
+/*
+ * void find_ones_positions(unsigned long number) {
+    unsigned long mask = 1;
+    int position = 1;
+
+    commands_printf("Positions of '1's in the binary representation of %lu are: ", number);
+
+    while (number > 0) {
+        if (number & mask) {
+        	commands_printf("%d ", position);
+        }
+        number >>= 1;
+        position++;
+    }
+    commands_printf("\n");
+}*/
+
+static void cmd_terminal_useeid(int argc, const char **argv) {
+	sscanf(argv[1], "%i", &iEid);
+	commands_printf("Eid: %i\n",iEid);
+}
+
+
 static THD_FUNCTION(cancom_process_thread, arg) {
 	(void)arg;
 
@@ -201,12 +239,29 @@ static THD_FUNCTION(cancom_process_thread, arg) {
 
 		while (rx_frame_read != rx_frame_write) {
 			CANRxFrame rxmsg = rx_frames[rx_frame_read++];
+//			if ((rxmsg.EID > 0) && (rxmsg.EID!=211) && (rxmsg.EID!=212) && (rxmsg.EID!=213) && (rxmsg.EID!=214) && (rxmsg.EID!=415)  && (rxmsg.EID!=415)   && (rxmsg.EID!=416) && (rxmsg.EID!=672) && (rxmsg.EID!=1824)) {
 
+				if ((iDebug==20) && (rxmsg.EID==iEid))
+				{
+				commands_printf("EID: %u\n",rxmsg.EID);
+				commands_printf("SID: %u\n",rxmsg.SID);
+				commands_printf("IDE: %u\n",rxmsg.IDE);
+				commands_printf("DLC: %u\n",rxmsg.DLC);
+				commands_printf("TIME_u: %u\n",rxmsg.TIME);
+				commands_printf("TIME_i: %i\n",rxmsg.TIME);
+				commands_printf("TIME_f: %f\n",rxmsg.TIME);
+				for (int ii=0;ii<rxmsg.DLC;ii++)
+				{
+					commands_printf("data[%i]: %i\n",ii,rxmsg.data8[ii]);
+				}
+//				CAN_PACKET_ID cmd = rxmsg.EID >> 8;
+//				commands_printf("cmd: %u\n",cmd);
+//				commands_printf("cmd: %u\n",rxmsg.EID & 255);
+//				find_ones_positions(rxmsg.EID);
+	//			};
+			}
 			if (rxmsg.IDE == CAN_IDE_EXT) {
 				// Process extended IDs (VESC Communication)
-//				commands_printf("VESC ID: %f\n",vesc_id);
-//				commands_printf("ID: %f\n",rxmsg.EID);
-
 				uint8_t id = rxmsg.EID & 0xFF;
 				CAN_PACKET_ID cmd = rxmsg.EID >> 8;
 				can_status_msg *stat_tmp;

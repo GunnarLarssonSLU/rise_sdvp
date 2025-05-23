@@ -53,6 +53,10 @@
 #include "hydraulic.h"
 #include "timer.h"
 
+event_source_t emergency_event;
+
+#define MS2ST(ms)   ((systime_t)((ms) * CH_CFG_ST_FREQUENCY / 1000))
+
 /*
  * Timers used:
  * TIM6: Pos
@@ -82,6 +86,9 @@
 int main(void) {
 	halInit();
 	chSysInit();
+
+    // Initialize event source
+    chEvtObjectInit(&emergency_event);
 
 	timer_init();
 	led_init();
