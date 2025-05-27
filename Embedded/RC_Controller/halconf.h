@@ -33,7 +33,9 @@
 
 #define HAL_USE_ICU             TRUE
 #define STM32_ICU_USE_TIM1      TRUE
-
+#ifdef PWMTEST
+#define HAL_USE_ADC                 TRUE
+#endif
 
 
 /**
@@ -336,5 +338,7 @@
 #endif
 
 #endif /* _HALCONF_H_ */
+
+
 
 /** @} */
