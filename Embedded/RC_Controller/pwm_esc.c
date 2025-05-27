@@ -1,3 +1,5 @@
+
+
 /*
 	Copyright 2017 Benjamin Vedder	benjamin@vedder.se
 
@@ -15,6 +17,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
     */
 
+#define SERVO_WRITE
+#define SERVO_READ
+
 #include "pwm_esc.h"
 #include "ch.h"
 #include "hal.h"
@@ -27,18 +32,21 @@
 #include "chsys.h"
 #include "chvt.h"
 
-//#include "io_board_adc.h"  // or wherever ADC_CNT_t is defined
+// #include "io_board_adc.h"  // or wherever ADC_CNT_t is defined
 
 extern ADC_CNT_t io_board_adc0_cnt;
 
 static uint16_t last_capture = 0;
 static systime_t last_tick = 0;
 
+#ifdef PWMTEST
+// Pin definition for PA2
+#define TACHO_INPUT_PORT      GPIOA
+#define TACHO_INPUT_PAD       2
 
-#define SERVO_READ
+static adcsample_t samplePWM = 0;
+static ADCConversionGroup adcgrpcfg;
 
-#ifndef SERVO_READ
-#define SERVO_WRITE
 #endif
 
 // Settings
@@ -136,7 +144,32 @@ void pwm_esc_init(void) {
 #ifdef SERVO_READ
 	tach_input_init();
 #endif
+#ifdef PWMTEST
+	adcgrpcfg.circular     = FALSE;
+	adcgrpcfg.num_channels = 1;
+	adcgrpcfg.end_cb       = NULL;
+	adcgrpcfg.error_cb     = NULL;
+	adcgrpcfg.cr1          = 0;
+	adcgrpcfg.cr2          = ADC_CR2_SWSTART;
+	adcgrpcfg.smpr1 = 0;       // Channel 2 isn't in SMPR1
+	adcgrpcfg.smpr2 = 6 << 6;  // Set sample time for channel 2 (bits 8:6)
+	adcgrpcfg.sqr1         = ADC_SQR1_NUM_CH(1);
+	adcgrpcfg.sqr2         = 0;
+	adcgrpcfg.sqr3         = ADC_SQR3_SQ1_N(ADC_CHANNEL_IN2);
+
+
+	  adcStart(&ADCD1, NULL);  // Start ADC driver
+
+    // Configure the pin as input with pull-down
+    palSetPadMode(TACHO_INPUT_PORT, TACHO_INPUT_PAD, PAL_MODE_INPUT_PULLDOWN);
+
+    // Start a debug thread
+    static THD_WORKING_AREA(waTachoDebug, 128);
+    chThdCreateStatic(waTachoDebug, sizeof(waTachoDebug), NORMALPRIO, tacho_debug_thread, NULL);
+#endif
 }
+
+
 
 void pwm_esc_set_all(float pulse_width) {
 	pwm_esc_set(ALL_CHANNELS, pulse_width);
@@ -155,6 +188,8 @@ void pwm_esc_set_all(float pulse_width) {
  * Range: [0.0 - 1.0]
  *
  */
+
+
 void pwm_esc_set(uint8_t channel, float pulse_width) {
 	uint32_t cnt_val;
 
@@ -197,64 +232,8 @@ void pwm_esc_set(uint8_t channel, float pulse_width) {
 	}
 }
 
+#ifdef SERVO_READ
 
-/*
-static void icuwidthcb(ICUDriver *icup, icucnt_t width) {
-	commands_printf("::Rising edge::\n");
-
-	// Move current to last
-    io_board_adc0_cnt.high_time_last = io_board_adc0_cnt.high_time_current;
-
-    // Store new width (high pulse duration)
-    io_board_adc0_cnt.high_time_current = (float)width;
-
-    // Increment high edge count
-    io_board_adc0_cnt.toggle_high_cnt++;
-
-    // Update state
-    io_board_adc0_cnt.is_high = true;
-}
-
-static void icuperiodcb(ICUDriver *icup, icucnt_t period) {
-	commands_printf("::Falling edge::\n");
-    // Compute low time as: period - high time
-    float low_time = (float)period - io_board_adc0_cnt.high_time_current;
-
-    // Move current to last
-    io_board_adc0_cnt.low_time_last = io_board_adc0_cnt.low_time_current;
-
-    // Store new low time
-    io_board_adc0_cnt.low_time_current = low_time;
-
-    // Increment low edge count
-    io_board_adc0_cnt.toggle_low_cnt++;
-
-    // Update state
-    io_board_adc0_cnt.is_high = false;
-}
-*/
-/*
-static ICUConfig icucfg = {
-    ICU_INPUT_ACTIVE_HIGH,
-    1000000,            // 1 MHz ICU clock = 1 µs resolution
-    icuwidthcb,
-    icuperiodcb,
-    NULL,
-    ICU_CHANNEL_2,      // For PA9; change to CHANNEL_3 if using PA10
-    0
-};*/
-
-/*
-static ICUConfig icu_cfg = {
-    .mode = ICU_INPUT_ACTIVE_HIGH,
-    .frequency = 1000000, // 1 MHz = 1 µs resolution
-    .width_cb = icuwidthcb,
-    .period_cb = icuperiodcb,
-    .overflow_cb = NULL,
-    .channel = ICU_CHANNEL_3,
-    .dier = 0
-};
-*/
 
 void tach_input_init(void) {
 	// Enable TIM2 clock
@@ -286,11 +265,10 @@ CH_IRQ_HANDLER(STM32_TIM2_HANDLER) {
         uint16_t capture = TIM2->CCR3;
         uint16_t delta = capture - last_capture;
         last_capture = capture;
- //   	commands_printf("::Got signal::\n");
 
         io_board_adc0_cnt.high_time_last = io_board_adc0_cnt.high_time_current;
         io_board_adc0_cnt.high_time_current = (float)delta;
-    	commands_printf("Value: %u\n",delta);
+//    	commands_printf("Value: %u\n",delta);
 
         io_board_adc0_cnt.low_time_last = io_board_adc0_cnt.low_time_current;
         io_board_adc0_cnt.low_time_current = 0; // You can improve this later with a state machine
@@ -302,3 +280,35 @@ CH_IRQ_HANDLER(STM32_TIM2_HANDLER) {
     }
     CH_IRQ_EPILOGUE();
 }
+#endif
+
+#ifdef PWMTEST
+void read_adc_test(void) {
+
+//	  samplePWM = 0;
+		adcConvert(&ADCD1, &adcgrpcfg, &samplePWM, 1);
+//		commands_printf("Raw ADC value: %d", samplePWM);
+
+	  // Convert to voltage: STM32F4 has 12-bit ADC (0–4095)
+//	  float voltage = (3.3f * sample) / 4095.0f;
+
+	  // Print/log voltage
+//	  commands_printf("ADC voltage on PA2");
+//	  commands_printf("ADC voltage on PA2: %.3f V", voltage);
+//	  commands_printf("Voltage raw bits: %d", (int)(0));
+//	  commands_printf("Voltage raw bits: %d", samplePWM);
+
+}
+
+
+static void tacho_debug_thread(void *arg) {
+    (void)arg;
+    chRegSetThreadName("tacho_debug");
+    palSetPadMode(GPIOA, 2, PAL_MODE_INPUT_ANALOG); // Set PA2 to analog input
+
+    while (true) {
+        read_adc_test();
+        chThdSleepMilliseconds(1000); // Adjust as needed
+    }
+}
+#endif
