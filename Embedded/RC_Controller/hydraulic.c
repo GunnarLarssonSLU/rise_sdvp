@@ -23,6 +23,10 @@
 #include "utils.h"
 #include "comm_can.h"
 #include <math.h>
+#ifdef SERVO_READ
+//#include <time.h> // For time functions
+#define READING_TIMEOUT 1000
+#endif
 
 #include "pos.h"
 
@@ -54,6 +58,12 @@ static volatile float m_throttle_set = 0.0;
 extern event_source_t emergency_event;
 extern int iDebug;
 
+#ifdef SERVO_READ
+extern ADC_CNT_t io_board_adc0_cnt;
+//extern time_t last_reading_time = 0;
+extern systime_t last_reading_time;
+//static const time_t READING_TIMEOUT = 1.0; // Timeout in seconds
+#endif
 
 // Threads
 static THD_WORKING_AREA(hydro_thread_wa, 1024);
@@ -198,6 +208,10 @@ static THD_FUNCTION(hydro_thread, arg) {
 
     chEvtRegister(&emergency_event, &el, EMERGENCY_STOP_EVENT);
 
+#ifdef SERVO_READ
+//    const systime_t READING_TIMEOUT = TIME_MS2I(1000);// Timeout in milli seconds
+#endif
+
     while (!chThdShouldTerminateX()) {
 /*
 		events = chEvtWaitAnyTimeout(EMERGENCY_STOP_EVENT, MS2ST(100));
@@ -213,10 +227,6 @@ static THD_FUNCTION(hydro_thread, arg) {
 		}
 
 		chThdSleepMilliseconds(10);
-//		if (iDebug==13)
-//		{
-//			commands_printf("speed ( %.5f )\n", m_speed_now);
-//		}
 
 		m_timeout_cnt += 0.01;
 
@@ -248,21 +258,32 @@ static THD_FUNCTION(hydro_thread, arg) {
 		// Measure speed
 		const float wheel_diam = 0.65;
 		const float cnts_per_rev = 16.0;
-		ADC_CNT_t cnt = *comm_can_io_board_adc0_cnt();
+
+		ADC_CNT_t cnt;
+#ifdef SERVO_READ
+		cnt=io_board_adc0_cnt;
+#else
+		cnt = *comm_can_io_board_adc0_cnt();
+#endif
 		float time_last = fmaxf(cnt.high_time_current, cnt.high_time_last) +
 				fmaxf(cnt.low_time_current, cnt.low_time_last);
-		m_speed_now = SIGN(m_throttle_set) * (wheel_diam * M_PI) / (time_last * cnts_per_rev);
-				if (iDebug==13)
-				{
-					commands_printf("cnt.low_time_last( %.5f )\n", cnt.low_time_last);
-					commands_printf("cnt.high_time_last( %.5f )\n", cnt.high_time_last);
-					commands_printf("cnt.low_time_current( %.5f )\n", cnt.low_time_current);
-					commands_printf("cnt.high_time_current( %.5f )\n", cnt.high_time_current);
-
-					commands_printf("time_last ( %.5f )\n", time_last);
-					commands_printf("speed ( %.5f )\n", m_speed_now);
-				}
-		m_speed_now=3.6;   // Just to give it some speed
+		if (time_last>0)
+		{
+			m_speed_now = SIGN(m_throttle_set) * (wheel_diam * M_PI) / (time_last * cnts_per_rev);
+		} else
+		{
+			m_speed_now = 0;
+		}
+#ifdef SERVO_READ
+		systime_t current_time = chVTGetSystemTimeX();
+/*		if (iDebug==22)
+		{
+			commands_printf("time: %u",current_time);
+		}*/
+	    if ((current_time - last_reading_time) > READING_TIMEOUT) {
+	        m_speed_now = 0; // Set speed to zero if no recent reading
+	    }
+#endif
 		// comm_can_io_board_lim_sw(2) - Upp bak
 		// comm_can_io_board_lim_sw(3) - Ner bak
 
