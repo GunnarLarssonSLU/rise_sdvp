@@ -73,6 +73,13 @@ void terminal_process_string(char *str) {
 
 	if (strcmp(argv[0], "ping") == 0) {
 		commands_printf("pong\n");
+		uint16_t test2 = 1200000000000;
+		uint16_t test3 = 3400000000000;
+		uint16_t test4 = 5600000000000;
+		uint16_t test5 = 7800000000000;
+//		float test = 1234.5f;
+		float test = fmaxf(test2,test3)+ fmaxf(test4,test5);
+		commands_printf("Test = %f\n", test);
 	} else if (strcmp(argv[0], "mem") == 0) {
 		size_t n, size;
 		n = chHeapStatus(NULL, &size);
@@ -174,11 +181,12 @@ void terminal_process_string(char *str) {
 					comm_can_io_board_lim_sw(3));
 			commands_printf("AS5047: %.1f",
 					(double)comm_can_io_board_as5047_angle());
-			ADC_CNT_t cnt = *comm_can_io_board_adc0_cnt();
+/*			ADC_CNT_t cnt = *comm_can_io_board_adc0_cnt();
 			commands_printf("ADC0 CNT: HCurr: %.2f HLast: %.2f LCurr: %.2f LLast: %.2f HCNT: %d LCNT: %d\n",
 					(double)cnt.high_time_current, (double)cnt.high_time_last,
 					(double)cnt.low_time_current, (double)cnt.low_time_last,
 					cnt.toggle_high_cnt, cnt.toggle_low_cnt);
+			*/
 			chThdSleepMilliseconds(100);
 		}
 		commands_printf("Done\n");

@@ -68,7 +68,10 @@ static bool io_board_lim_sw[8] = {0};
 //static float io_board_as5047_angle = 0.0; //static?
 float io_board_as5047_angle = 0.0; //static?
 static float can_ftr2_angle = 0.0;
-ADC_CNT_t io_board_adc0_cnt = {0};
+
+#ifndef SERVO_READ
+ADC_CNT_t io_board_adc0_cnt = {1};
+#endif
 
 extern int iDebug;
 
@@ -373,7 +376,7 @@ static THD_FUNCTION(cancom_process_thread, arg) {
 					int32_t ind = 0;
 
 					switch (msg) {
-					case CAN_IO_PACKET_ADC_VOLTAGES_0_1_2_3:
+/*					case CAN_IO_PACKET_ADC_VOLTAGES_0_1_2_3:
 						ind = 0;
 						io_board_adc_voltages[0] = buffer_get_float16(rxmsg.data8, 0.5e3, &ind);
 						io_board_adc_voltages[1] = buffer_get_float16(rxmsg.data8, 0.5e3, &ind);
@@ -386,7 +389,7 @@ static THD_FUNCTION(cancom_process_thread, arg) {
 							io_board_adc0_cnt.is_high = false;
 						}
 						break;
-
+*/
 					case CAN_IO_PACKET_ADC_VOLTAGES_4_5_6_7:
 						ind = 0;
 						io_board_adc_voltages[4] = buffer_get_float16(rxmsg.data8, 0.5e3, &ind);
@@ -811,9 +814,12 @@ bool comm_can_io_board_lim_sw(int sw) {
 	return io_board_lim_sw[sw];
 }
 
+#ifndef SERVO_READ
 ADC_CNT_t* comm_can_io_board_adc0_cnt(void) {
 	return &io_board_adc0_cnt;
 }
+#endif
+
 
 void comm_can_io_board_set_valve(int board, int valve, bool set) {
 	uint8_t packet[8];

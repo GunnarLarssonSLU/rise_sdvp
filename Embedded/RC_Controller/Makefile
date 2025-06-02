@@ -83,9 +83,10 @@ endif
 # Enables the use of FPU on Cortex-M4 (no, softfp, hard).
 ifeq ($(USE_FPU),)
   USE_FPU = hard
+  USE_OPT += -mfpu=fpv4-sp-d16 -mfloat-abi=hard
 endif
 
-# Enable this if you really want to use the STM FWLib.
+# Enable this if you really want to use the STM FWLiarm-none-eabi-gcc -c -mcpu=cortex-m4 -O2 -ggdb -fomit-frame-pointer -falign-functions=16 -std=gnu99 -DBOARD_OTG_NOVBUSSENS -DSTM32F405xx  -fsingle-precision-constant -Wdouble-promotion --specs=nosys.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -DUSE_STDPERIPH_DRIVER -ffunction-sections -fdata-sections -fno-common -mfloat-abi=hard -mfpu=fpv4-sp-d16 -fsingle-precision-constant  -Wall -Wextra -Wundef -Wstrict-prototypes -Wa,-alms=build/lst/hydraulic.lst -DCORTEX_USE_FPU=TRUE  -DTHUMB_PRESENT -mno-thumb-interwork -DTHUMB_NO_INTERWORKING -MD -MP -MF .dep/hydraulic.o.d -mthumb -DTHUMB -I. -IChibiOS_3.0.5/os/common/ports/ARMCMx/devices/STM32F4xx -IChibiOS_3.0.5/os/ext/CMSIS/include -IChibiOS_3.0.5/os/ext/CMSIS/ST -IChibiOS_3.0.5/os/rt/include -IChibiOS_3.0.5/os/rt/ports/ARMCMx -IChibiOS_3.0.5/os/rt/ports/ARMCMx/compilers/GCC -IChibiOS_3.0.5/os/hal/osal/rt -IChibiOS_3.0.5/os/hal/include -IChibiOS_3.0.5/os/hal/ports/common/ARMCMx -IChibiOS_3.0.5/os/hal/ports/STM32/STM32F4xx -IChibiOS_3.0.5/os/hal/ports/STM32/LLD -IChibiOS_3.0.5/os/hal/ports/STM32/LLD/DACv1 -IChibiOS_3.0.5/os/hal/ports/STM32/LLD/GPIOv2 -IChibiOS_3.0.5/os/hal/ports/STM32/LLD/I2Cv1 -IChibiOS_3.0.5/os/hal/ports/STM32/LLD/OTGv1 -IChibiOS_3.0.5/os/hal/ports/STM32/LLD/RTCv2 -IChibiOS_3.0.5/os/hal/ports/STM32/LLD/SPIv1 -IChibiOS_3.0.5/os/hal/ports/STM32/LLD/TIMv1 -IChibiOS_3.0.5/os/hal/ports/STM32/LLD/USARTv1 -IChibiOS_3.0.5/os/hal/ports/STM32/LLD/FSMCv1 -IChibiOS_3.0.5/os/hal/boards/ST_STM32F4_DISCOVERY -IChibiOS_3.0.5/os/various -IChibiOS_3.0.5/os/hal/lib/streams -Icc2520/driver -Icc2520/basicrf -Icc1120 -Iimu -Iimu/BMI160_driver -IChibiOS_3.0.5/os/hal/include -IChibiOS_3.0.5/ext/stdperiph_stm32f4/inc hydraulic.c -o build/obj/hydraulic.ob.
 ifeq ($(USE_FWLIB),)
   USE_FWLIB = yes
 endif
@@ -308,8 +309,8 @@ upload_remote: build/$(PROJECT).bin
 #	./upload_remote build/$(PROJECT).bin pi 192.168.43.9 22 pi_gpio
 #	./upload_remote build/$(PROJECT).bin pi 192.168.200.101 22 pi_gpio
 #	./upload_remote build/$(PROJECT).bin pi 192.168.200.105 22 stlink
-	./upload_remote build/$(PROJECT).bin nvidia 192.168.200.7 22 stlink
-#	./upload_remote build/$(PROJECT).bin pi 192.168.200.4 22 stlink
+#	./upload_remote build/$(PROJECT).bin nvidia 192.168.200.7 22 stlink
+	./upload_remote build/$(PROJECT).bin pi 192.168.200.4 22 stlink
 
 
 touch_conf_general:

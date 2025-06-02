@@ -17,9 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
     */
 
-#define SERVO_WRITE
-#define SERVO_READ
-
 #include "pwm_esc.h"
 #include "ch.h"
 #include "hal.h"
@@ -34,14 +31,21 @@
 
 // #include "io_board_adc.h"  // or wherever ADC_CNT_t is defined
 
-extern ADC_CNT_t io_board_adc0_cnt;
+//extern ADC_CNT_t io_board_adc0_cnt;
 
-static uint16_t last_capture = 0;
+#ifdef SERVO_READ
+//#include <time.h> // For time functions
+#define TACHO_INPUT_PORT      GPIOA
+ADC_CNT_t io_board_adc0_cnt = {1};
+//static time_t last_reading_time = 0;
+systime_t last_reading_time = 0;
+static uint16_t last_capture = 2;
 static systime_t last_tick = 0;
+#endif
+
 
 #ifdef PWMTEST
 // Pin definition for PA2
-#define TACHO_INPUT_PORT      GPIOA
 #define TACHO_INPUT_PAD       2
 
 static adcsample_t samplePWM = 0;
@@ -79,9 +83,6 @@ static ADCConversionGroup adcgrpcfg;
 #ifndef CORTEX_PRIORITY_MASK
 #define CORTEX_PRIORITY_MASK(n) ((n) << (8 - CORTEX_PRIORITY_BITS))
 #endif
-
-
-extern ADC_CNT_t io_board_adc0_cnt;
 
 static PWMConfig pwmcfg3 = {
 		TIM_CLOCK,
@@ -175,20 +176,6 @@ void pwm_esc_set_all(float pulse_width) {
 	pwm_esc_set(ALL_CHANNELS, pulse_width);
 }
 
-/**
- * Set output pulsewidth.
- *
- * @param channel
- * Channel to use
- * Range: [0 - 3]
- * 0xFF: All Channels
- *
- * @param pulse_width
- * Pulsewidth to use
- * Range: [0.0 - 1.0]
- *
- */
-
 
 void pwm_esc_set(uint8_t channel, float pulse_width) {
 	uint32_t cnt_val;
@@ -234,29 +221,34 @@ void pwm_esc_set(uint8_t channel, float pulse_width) {
 
 #ifdef SERVO_READ
 
-
 void tach_input_init(void) {
-	// Enable TIM2 clock
-	rccEnableTIM2(TRUE);
+    // Enable TIM2 clock
+    rccEnableTIM2(TRUE);
 
-	// Configure PA2 as TIM2_CH3 (AF1)
-	palSetPadMode(GPIOA, 2, PAL_MODE_ALTERNATE(1));
+    // Configure PA2 as TIM2_CH3 (AF1)
+    palSetPadMode(TACHO_INPUT_PORT, 2, PAL_MODE_ALTERNATE(1));
 
-	// Timer configuration
-	TIM2->PSC = 84 - 1;        // 84 MHz / 84 = 1 MHz → 1 µs per count
-	TIM2->ARR = 0xFFFF;        // Max period
-	TIM2->CCMR2 &= ~TIM_CCMR2_CC3S;
-	TIM2->CCMR2 |= TIM_CCMR2_CC3S_0;  // CC3 input, map to TI3
-	TIM2->CCER &= ~TIM_CCER_CC3P;     // Rising edge
-	TIM2->CCER |= TIM_CCER_CC3E;      // Enable input capture
+    // Timer configuration
+    TIM2->PSC = 84 - 1;        // 84 MHz / 84 = 1 MHz → 1 µs per count
+    TIM2->ARR = 0xFFFF;        // Max period
+    TIM2->CCMR2 &= ~TIM_CCMR2_CC3S;
+    TIM2->CCMR2 |= TIM_CCMR2_CC3S_0;  // CC3 input, map to TI3
+    TIM2->CCER &= ~TIM_CCER_CC3P;     // Rising edge
+    TIM2->CCER |= TIM_CCER_CC3E;      // Enable input capture
 
-	// Enable interrupt on CC3 match
-	TIM2->DIER |= TIM_DIER_CC3IE;
-	TIM2->CR1 |= TIM_CR1_CEN;         // Start the timer
+    // Enable interrupt on CC3 match
+    TIM2->DIER |= TIM_DIER_CC3IE;
+    TIM2->CR1 |= TIM_CR1_CEN;         // Start the timer
 
-	// Enable TIM2 IRQ in NVIC
-	nvicEnableVector(STM32_TIM2_NUMBER, CORTEX_PRIORITY_MASK(7));
+    // Enable TIM2 IRQ in NVIC
+    nvicEnableVector(STM32_TIM2_NUMBER, CORTEX_PRIORITY_MASK(7));
+
+    last_capture = 0;
+
+    // Debug: Print initialization complete
+    commands_printf("Tachometer input initialized\n");
 }
+
 
 CH_IRQ_HANDLER(STM32_TIM2_HANDLER) {
     CH_IRQ_PROLOGUE();
@@ -266,15 +258,23 @@ CH_IRQ_HANDLER(STM32_TIM2_HANDLER) {
         uint16_t delta = capture - last_capture;
         last_capture = capture;
 
-        io_board_adc0_cnt.high_time_last = io_board_adc0_cnt.high_time_current;
-        io_board_adc0_cnt.high_time_current = (float)delta;
-//    	commands_printf("Value: %u\n",delta);
+		last_reading_time  = chVTGetSystemTimeX();;
 
-        io_board_adc0_cnt.low_time_last = io_board_adc0_cnt.low_time_current;
-        io_board_adc0_cnt.low_time_current = 0; // You can improve this later with a state machine
+
+		// lämpligen i ett ChibiOS-shell-kommando eller debugger-prompt
+
+        // Update high and low times using a state machine
+        if (io_board_adc0_cnt.is_high) {
+            io_board_adc0_cnt.high_time_last = io_board_adc0_cnt.high_time_current;
+            io_board_adc0_cnt.high_time_current = 0.000001*delta;
+        } else {
+
+            io_board_adc0_cnt.low_time_last = io_board_adc0_cnt.low_time_current;
+            io_board_adc0_cnt.low_time_current = 0.000001*delta;
+        }
 
         io_board_adc0_cnt.toggle_high_cnt++;
-        io_board_adc0_cnt.is_high = true;
+        io_board_adc0_cnt.is_high = !io_board_adc0_cnt.is_high; // Toggle state
 
         TIM2->SR &= ~TIM_SR_CC3IF; // Clear interrupt flag
     }
@@ -284,19 +284,8 @@ CH_IRQ_HANDLER(STM32_TIM2_HANDLER) {
 
 #ifdef PWMTEST
 void read_adc_test(void) {
-
-//	  samplePWM = 0;
 		adcConvert(&ADCD1, &adcgrpcfg, &samplePWM, 1);
 //		commands_printf("Raw ADC value: %d", samplePWM);
-
-	  // Convert to voltage: STM32F4 has 12-bit ADC (0–4095)
-//	  float voltage = (3.3f * sample) / 4095.0f;
-
-	  // Print/log voltage
-//	  commands_printf("ADC voltage on PA2");
-//	  commands_printf("ADC voltage on PA2: %.3f V", voltage);
-//	  commands_printf("Voltage raw bits: %d", (int)(0));
-//	  commands_printf("Voltage raw bits: %d", samplePWM);
 
 }
 

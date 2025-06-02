@@ -44,5 +44,4 @@ int pos_time_since_gps_corr(void);
 void pos_base_rtcm_obs(rtcm_obs_header_t *header, rtcm_obs_t *obs, int obs_num);
 void broadcastisInititated(void);
 
-
 #endif /* POS_H_ */

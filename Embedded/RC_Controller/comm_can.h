@@ -47,7 +47,9 @@ void comm_can_io_board_as5047_setangle(float angle);
 float comm_can_ftr2_angle(void);
 bool comm_can_io_board_lim_sw(int sw);
 bool comm_can_addio_lim_sw(int sw);
+#ifndef SERVO_READ
 ADC_CNT_t* comm_can_io_board_adc0_cnt(void);
+#endif
 void comm_can_io_board_set_valve(int board, int valve, bool set);
 void comm_can_io_board_set_pwm_duty(int board, float duty);
 

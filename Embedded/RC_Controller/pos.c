@@ -248,7 +248,6 @@ void pos_init(void) {
 
 	(void)save_pos_history();
 	commands_printf("Done initializing! \n");
-
 }
 
 void pos_pps_cb(EXTDriver *extp, expchannel_t channel) {
@@ -382,7 +381,7 @@ void pos_set_enu_ref(double lat, double lon, double height) {
 	double x, y, z;
 	utils_llh_to_xyz(lat, lon, height, &x, &y, &z);
 
-//	chMtxLock(&m_mutex_gps);
+	chMtxLock(&m_mutex_gps); //
 
 	m_gps.lon=lon;
 	m_gps.lat=lat;
@@ -425,7 +424,7 @@ void pos_set_enu_ref(double lat, double lon, double height) {
 
 	m_gps.local_init_done = true;
 
-//	chMtxUnlock(&m_mutex_gps);
+	chMtxUnlock(&m_mutex_gps); //
 }
 
 void pos_get_enu_ref(double *llh) {
@@ -542,7 +541,7 @@ bool pos_input_nmea(const char *data) {
 			px -= c_yaw * main_config.gps_ant_x - s_yaw * main_config.gps_ant_y;
 			py -= s_yaw * main_config.gps_ant_x + c_yaw * main_config.gps_ant_y;
 
-			if(iDebug==7) {
+			if(iDebug==2) {
 				commands_printf("init x: %f,x: %fx: %f\n", m_gps.ix, m_gps.iy, m_gps.iz);
 			};
 
@@ -570,7 +569,7 @@ bool pos_input_nmea(const char *data) {
 					commands_printf("py: %f\n", m_pos.py);
 					commands_printf("pz: %f\n", m_pos.pz);
 			};
-/*
+//////
 			// Correct position
 			// Optionally require RTK and good ublox quality indication.
 			if (main_config.gps_comp &&
@@ -580,7 +579,7 @@ bool pos_input_nmea(const char *data) {
 				if(iDebug==4) {
 				commands_printf("Compensation!");
 				}
-*/
+//////
 				m_pos.gps_last_corr_diff = sqrtf(SQ(m_pos.px - m_pos.px_gps) +
 						SQ(m_pos.py - m_pos.py_gps));
 
@@ -590,13 +589,16 @@ bool pos_input_nmea(const char *data) {
 #if MAIN_MODE == MAIN_MODE_vehicle
 				m_pos.pz = m_pos.pz_gps - m_pos.gps_ground_level;
 #endif
-/*			} else
+
+//////
+			} else
 			{
 				if(iDebug==4) {
 				commands_printf("No compensation!");
 				correct_pos_gps(&m_pos);
 				}
-			}*/
+			}
+//////
 
 			m_pos.gps_corr_cnt = 0.0;
 
@@ -704,7 +706,6 @@ void pos_base_rtcm_obs(rtcm_obs_header_t *header, rtcm_obs_t *obs, int obs_num) 
 			sample++;
 		}
 	}
-
 	print_before = m_print_sat_prn;
 }
 
@@ -1124,8 +1125,8 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 
 	if (iDebug==6)
 		{
-//		commands_printf("roll ( %.5f )\n", roll);
-//		commands_printf("pitch ( %.5f )\n", pitch);
+		commands_printf("roll ( %.5f )\n", roll);
+		commands_printf("pitch ( %.5f )\n", pitch);
 		commands_printf("yaw ( %.5f )\n", yaw);
 		}
 
@@ -1157,23 +1158,50 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 
 	main_config.mag_use=0;			// Enkel test
 	if (main_config.mag_use) {
+		if (iDebug==6)
+		{
+			commands_printf("main_config.mag_use");
+		}
 		static float yaw_now = 0;
 		static float yaw_imu_last = 0;
 
 		float yaw_imu_diff = utils_angle_difference_rad(yaw, yaw_imu_last);
 		yaw_imu_last = yaw;
+		if (iDebug==6)
+		{
+			commands_printf("yaw: %f",yaw_imu_last);
+		}
 		yaw_now += yaw_imu_diff;
+		if (iDebug==6)
+		{
+			commands_printf("yaw now(1): %f",yaw_now);
+		}
 
 		float diff = utils_angle_difference_rad(yaw_mag, yaw_now);
 		yaw_now += SIGN(diff) * main_config.yaw_mag_gain * M_PI / 180.0 * dt;
+		if (iDebug==6)
+		{
+			commands_printf("yaw now(2): %f",yaw_now);
+		}
 		utils_norm_angle_rad(&yaw_now);
+		if (iDebug==6)
+		{
+			commands_printf("yaw now(3): %f",yaw_now);
+		}
 
 		m_pos.yaw_imu = yaw_now * 180.0 / M_PI;
 	} else {
 		m_pos.yaw_imu = yaw * 180.0 / M_PI;
 	}
-
+	if ((iDebug==8))
+	{
+		commands_printf("yaw now(A): %f",m_pos.yaw_imu);
+	}
 	utils_norm_angle(&m_pos.yaw_imu);
+	if ((iDebug==8))
+	{
+		commands_printf("yaw now(B): %f",m_pos.yaw_imu);
+	}
 	m_pos.yaw_rate = -m_gyro[2] * 180.0 / M_PI ;
 	if ((iDebug==8))
 	{
@@ -1221,15 +1249,15 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 			float ang_diff = utils_angle_difference(m_pos.yaw, m_pos.yaw_imu - m_imu_yaw_offset);
 
 			if (ang_diff > 1.2 * main_config.vehicle.yaw_imu_gain) {
-				//				commands_printf("a");
+				commands_printf("a");
 				m_pos.yaw -= main_config.vehicle.yaw_imu_gain;
 				utils_norm_angle(&m_pos.yaw);
 			} else if (ang_diff < -1.2 * main_config.vehicle.yaw_imu_gain) {
-				//				commands_printf("b");
+				commands_printf("b");
 				m_pos.yaw += main_config.vehicle.yaw_imu_gain;
 				utils_norm_angle(&m_pos.yaw);
 			} else {
-//				commands_printf("c");
+				commands_printf("c");
 				m_pos.yaw -= ang_diff;
 				utils_norm_angle(&m_pos.yaw);
 			}
@@ -1362,6 +1390,10 @@ static POS_POINT get_closest_point_to_time(int32_t time) {
 static void correct_pos_gps(POS_STATE *pos) {
 #ifdef UNREMOVE_REMOVEDBYGUNNAR20250317
 	{
+		if(iDebug==2)
+		{
+			commands_printf("Executing!\n");
+		}
 		// Calculate age of gps data
 		static int sample = 0;
 		if (m_pos_history_print) {
@@ -1484,90 +1516,131 @@ static void ubx_rx_rawx(ubx_rxm_rawx *rawx) {
 	}
 }
 
+// Define the macro to switch between old and new implementations
+// Uncomment the line below to use the new implementation
+#define MISTRAL
+
 #if MAIN_MODE == MAIN_MODE_vehicle
 static void mc_values_received(mc_values *val) {
 #if HAS_DIFF_STEERING
-	if (val->vesc_id == DIFF_STEERING_VESC_RIGHT || !m_vesc_left_now) {
-		m_mc_val_right = *val;
-		return;
-	}
+    if (val->vesc_id == DIFF_STEERING_VESC_RIGHT || !m_vesc_left_now) {
+        m_mc_val_right = *val;
+        return;
+    }
 #endif
 
-	m_mc_val = *val;
+    m_mc_val = *val;
 
 #if !HAS_HYDRAULIC_DRIVE
-	static float last_tacho = 0;
-	static bool tacho_read = false;
+    static float last_tacho = 0;
+    static bool tacho_read = false;
 
-#if HAS_DIFF_STEERING
-	static float last_tacho_diff = 0;
-	float tacho_diff = m_mc_val_right.tachometer - m_mc_val.tachometer;
+#ifdef MISTRAL
+    // New implementation
+    static float last_tacho_time = 0;
 
-	if (!tacho_read) {
-		last_tacho_diff = 0;
-	}
+    // Calculate time_last from the tachometer readings
+    float time_last = fmaxf(io_board_adc0_cnt.high_time_current, io_board_adc0_cnt.high_time_last) +
+                      fmaxf(io_board_adc0_cnt.low_time_current, io_board_adc0_cnt.low_time_last);
+    if(iDebug==9)
+    {
+        command_printf('time_last: %f', time_last );
+    }
 
-	float tacho = (m_mc_val.tachometer + m_mc_val_right.tachometer) / 2.0;
-	float rpm = (m_mc_val.rpm + m_mc_val_right.rpm) / 2.0;
+    // Calculate RPM based on time_last
+    float rpm = 0;
+    if (time_last > 0) {
+        // Calculate the frequency of the tachometer pulses
+        float frequency = 1.0 / (time_last * 1e-6); // Convert time_last to seconds
+
+        // Calculate RPM (assuming one pulse per revolution, adjust as needed)
+        rpm = frequency * 60.0;
+    }
+
+    // Reset tacho_time the first time
+    if (!tacho_read) {
+        tacho_read = true;
+        last_tacho_time = time_last;
+    }
+
+    // Calculate distance based on RPM and vehicle properties
+    float distance = (rpm * main_config.vehicle.gear_ratio * (2.0 / main_config.vehicle.motor_poles) * (1.0 / 60.0) * main_config.vehicle.wheel_diam * M_PI) * (time_last - last_tacho_time) * 1e-6;
+    last_tacho_time = time_last;
+    if(iDebug==9)
+    {
+        command_printf('distance: %f', distance );
+    }
+
 #else
-	float tacho = m_mc_val.tachometer;
-	float rpm = m_mc_val.rpm;
+    // Old implementation
+#if HAS_DIFF_STEERING
+    static float last_tacho_diff = 0;
+    float tacho_diff = m_mc_val_right.tachometer - m_mc_val.tachometer;
+
+    if (!tacho_read) {
+        last_tacho_diff = 0;
+    }
+
+    float tacho = (m_mc_val.tachometer + m_mc_val_right.tachometer) / 2.0;
+    float rpm = (m_mc_val.rpm + m_mc_val_right.rpm) / 2.0;
+#else
+    float tacho = m_mc_val.tachometer;
+    float rpm = m_mc_val.rpm;
 #endif
 
-	// Reset tacho the first time.
-	if (!tacho_read) {
-		tacho_read = true;
-		last_tacho = tacho;
-	}
+    // Reset tacho the first time
+    if (!tacho_read) {
+        tacho_read = true;
+        last_tacho = tacho;
+    }
 
-	float distance = (tacho - last_tacho) * main_config.vehicle.gear_ratio
-			* (2.0 / main_config.vehicle.motor_poles) * (1.0 / 6.0)
-			* main_config.vehicle.wheel_diam * M_PI;
-	last_tacho = tacho;
-
-	float angle_diff = 0.0;
-	float turn_rad_rear = 0.0;
-
-// GUNNAR CHECK
-
-#if HAS_DIFF_STEERING
-	float distance_diff = (tacho_diff - last_tacho_diff)
-			* main_config.vehicle.gear_ratio * (2.0 / main_config.vehicle.motor_poles)
-			* (1.0 / 6.0) * main_config.vehicle.wheel_diam * M_PI;
-	last_tacho_diff = tacho_diff;
-
-	const float d1 = distance - distance_diff / 2.0;
-	const float d2 = distance + distance_diff / 2.0;
-
-	if (fabsf(d2 - d1) > 1e-6) {
-		turn_rad_rear = main_config.vehicle.axis_distance * (d2 + d1) / (2 * (d2 - d1));
-		angle_diff = (d2 - d1) / main_config.vehicle.axis_distance;
-		utils_norm_angle_rad(&angle_diff);
-	}
-#else
-	float steering_angle = (servo_simple_get_pos_now()
-			- main_config.vehicle.steering_center)
-			* ((2.0 * main_config.vehicle.steering_max_angle_rad)
-					/ main_config.vehicle.steering_range);
-
-	if (fabsf(steering_angle) >= 1e-6) {
-		turn_rad_rear = main_config.vehicle.axis_distance / tanf(steering_angle);
-		float turn_rad_front = sqrtf(
-				main_config.vehicle.axis_distance * main_config.vehicle.axis_distance
-				+ turn_rad_rear * turn_rad_rear);
-
-		if (turn_rad_rear < 0) {
-			turn_rad_front = -turn_rad_front;
-		}
-
-		angle_diff = (distance * 2.0) / (turn_rad_rear + turn_rad_front);
-	}
+    float distance = (tacho - last_tacho) * main_config.vehicle.gear_ratio
+            * (2.0 / main_config.vehicle.motor_poles) * (1.0 / 6.0)
+            * main_config.vehicle.wheel_diam * M_PI;
+    last_tacho = tacho;
 #endif
 
-	float speed = rpm * main_config.vehicle.gear_ratio
-			* (2.0 / main_config.vehicle.motor_poles) * (1.0 / 60.0)
-			* main_config.vehicle.wheel_diam * M_PI;
-	vehicle_update_pos(distance, turn_rad_rear, angle_diff, speed);
+    float angle_diff = 0.0;
+    float turn_rad_rear = 0.0;
+
+#if HAS_DIFF_STEERING && !defined(MISTRAL)
+    float distance_diff = (tacho_diff - last_tacho_diff)
+            * main_config.vehicle.gear_ratio * (2.0 / main_config.vehicle.motor_poles)
+            * (1.0 / 6.0) * main_config.vehicle.wheel_diam * M_PI;
+    last_tacho_diff = tacho_diff;
+
+    const float d1 = distance - distance_diff / 2.0;
+    const float d2 = distance + distance_diff / 2.0;
+
+    if (fabsf(d2 - d1) > 1e-6) {
+        turn_rad_rear = main_config.vehicle.axis_distance * (d2 + d1) / (2 * (d2 - d1));
+        angle_diff = (d2 - d1) / main_config.vehicle.axis_distance;
+        utils_norm_angle_rad(&angle_diff);
+    }
+#elif !defined(MISTRAL)
+    float steering_angle = (servo_simple_get_pos_now()
+            - main_config.vehicle.steering_center)
+            * ((2.0 * main_config.vehicle.steering_max_angle_rad)
+                    / main_config.vehicle.steering_range);
+
+    if (fabsf(steering_angle) >= 1e-6) {
+        turn_rad_rear = main_config.vehicle.axis_distance / tanf(steering_angle);
+        float turn_rad_front = sqrtf(
+                main_config.vehicle.axis_distance * main_config.vehicle.axis_distance
+                + turn_rad_rear * turn_rad_rear);
+
+        if (turn_rad_rear < 0) {
+            turn_rad_front = -turn_rad_front;
+        }
+
+        angle_diff = (distance * 2.0) / (turn_rad_rear + turn_rad_front);
+    }
+#endif
+
+    float speed = rpm * main_config.vehicle.gear_ratio
+            * (2.0 / main_config.vehicle.motor_poles) * (1.0 / 60.0)
+            * main_config.vehicle.wheel_diam * M_PI;
+    vehicle_update_pos(distance, turn_rad_rear, angle_diff, speed);
 #endif
 }
 
