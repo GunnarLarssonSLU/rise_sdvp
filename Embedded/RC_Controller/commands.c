@@ -72,7 +72,9 @@ static bool arduino_connected = false;
 extern float io_board_as5047_angle;
 extern float servo_output;
 extern int iDebug;
-extern event_source_t emergency_event;
+
+//extern event_source_t emergency_event;
+
 //extern thread_t *hydro_thread;
 
 float sign(float input)
