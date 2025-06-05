@@ -24,7 +24,6 @@
 #include "comm_can.h"
 #include <math.h>
 #ifdef SERVO_READ
-//#include <time.h> // For time functions
 #define READING_TIMEOUT 1000
 #endif
 
@@ -55,7 +54,7 @@ static volatile HYDRAULIC_MOVE m_move_extra = HYDRAULIC_MOVE_STOP;
 static volatile float m_move_timeout_cnt = 0.0;
 static volatile float m_throttle_set = 0.0;
 
-extern event_source_t emergency_event;
+//extern event_source_t emergency_event;
 extern int iDebug;
 
 #ifdef SERVO_READ
@@ -197,8 +196,8 @@ void hydraulic_move(HYDRAULIC_POS pos, HYDRAULIC_MOVE move) {
 static THD_FUNCTION(hydro_thread, arg) {
 	(void)arg;
 
-	event_listener_t el;
-    eventmask_t events;
+//	event_listener_t el;
+//    eventmask_t events;
 
 	chRegSetThreadName("Hydraulic");
 	HYDRAULIC_MOVE move_last_front = HYDRAULIC_MOVE_STOP;
@@ -206,7 +205,7 @@ static THD_FUNCTION(hydro_thread, arg) {
 	HYDRAULIC_MOVE move_last_extra = HYDRAULIC_MOVE_STOP;
 	int move_repeat_cnt = 0;
 
-    chEvtRegister(&emergency_event, &el, EMERGENCY_STOP_EVENT);
+//   chEvtRegister(&emergency_event, &el, EMERGENCY_STOP_EVENT);
 
 #ifdef SERVO_READ
 //    const systime_t READING_TIMEOUT = TIME_MS2I(1000);// Timeout in milli seconds
@@ -362,6 +361,6 @@ static THD_FUNCTION(hydro_thread, arg) {
 		(void)move_last_extra;
 #endif
 	}
-    chEvtUnregister(&emergency_event, &el);
-    chThdExit(MSG_OK);
+//    chEvtUnregister(&emergency_event, &el);
+//    chThdExit(MSG_OK);
 }

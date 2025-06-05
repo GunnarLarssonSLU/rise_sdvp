@@ -73,13 +73,6 @@ void terminal_process_string(char *str) {
 
 	if (strcmp(argv[0], "ping") == 0) {
 		commands_printf("pong\n");
-		uint16_t test2 = 1200000000000;
-		uint16_t test3 = 3400000000000;
-		uint16_t test4 = 5600000000000;
-		uint16_t test5 = 7800000000000;
-//		float test = 1234.5f;
-		float test = fmaxf(test2,test3)+ fmaxf(test4,test5);
-		commands_printf("Test = %f\n", test);
 	} else if (strcmp(argv[0], "mem") == 0) {
 		size_t n, size;
 		n = chHeapStatus(NULL, &size);
