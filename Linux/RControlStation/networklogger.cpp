@@ -35,7 +35,7 @@ NetworkLogger::NetworkLogger(QWidget *parent) :
     mTcpSocket = new QTcpSocket(this);
     mTcpConnected = false;
     mFixNowStr = "Solution...";
-    mSatNowStr = "Sats...";
+    mSatNowStr = "SATs...";
     mPing = new Ping(this);
     mMap = 0;
 
@@ -43,8 +43,8 @@ NetworkLogger::NetworkLogger(QWidget *parent) :
     connect(mTcpSocket, SIGNAL(connected()), this, SLOT(tcpInputConnected()));
     connect(mTcpSocket, SIGNAL(disconnected()),
             this, SLOT(tcpInputDisconnected()));
-    connect(mTcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
-            this, SLOT(tcpInputError(QAbstractSocket::SocketError)));
+/*    connect(mTcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
+            this, SLOT(tcpInputError(QAbstractSocket::SocketError)));*/
     connect(mPing, SIGNAL(pingRx(int,QString)), this, SLOT(pingRx(int,QString)));
     connect(mPing, SIGNAL(pingError(QString,QString)), this, SLOT(pingError(QString,QString)));
 

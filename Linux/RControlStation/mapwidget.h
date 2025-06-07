@@ -152,6 +152,7 @@ public:
     bool getDrawUwbTrace() const;
     void setDrawUwbTrace(bool drawUwbTrace);
 
+    /*
     void setLastCameraImage(const QImage &lastCameraImage);
 
     double getCameraImageWidth() const;
@@ -159,7 +160,7 @@ public:
 
     double getCameraImageOpacity() const;
     void setCameraImageOpacity(double cameraImageOpacity);
-
+*/
     MapWidget::InteractionMode getInteractionMode() const;
     void setInteractionMode(const MapWidget::InteractionMode &controlMode);
 

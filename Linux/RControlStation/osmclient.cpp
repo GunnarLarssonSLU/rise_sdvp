@@ -119,7 +119,7 @@ bool OsmClient::setCacheDir(QString path)
 
     if (file.isDir()) {
         mCacheDir = path;
-        qDebug() << "Cache folder:" << path;
+//        qDebug() << "Cache folder:" << path;
         return true;
     } else {
         qWarning() << "Invalid cache directory provided.";
@@ -133,7 +133,7 @@ bool OsmClient::setTileServerUrl(QString path)
 
     if (url.isValid()) {
         mTileServer = path;
-        qDebug() << "Tile server:" << path;
+//        qDebug() << "Tile server:" << path;
         return true;
     } else {
         qWarning() << "Invalid tile server url provided:" << url.errorString();

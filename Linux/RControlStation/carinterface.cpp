@@ -601,9 +601,9 @@ void CarInterface::cameraImageReceived(quint8 id, QImage image, int bytes)
         } else {
             ui->camWidget->setPixmap(QPixmap::fromImage(image));
 
-            if (mMap && ui->camShowMapBox->isChecked()) {
+/*            if (mMap && ui->camShowMapBox->isChecked()) {
                 mMap->setLastCameraImage(image);
-            }
+            }*/
         }
     }
 }
@@ -841,6 +841,7 @@ void CarInterface::on_shutdownPiButton_clicked()
     }
 }
 
+/*
 void CarInterface::on_camStartButton_clicked()
 {
     mImageByteCnt = 0;
@@ -859,6 +860,7 @@ void CarInterface::on_camStartButton_clicked()
     }
 }
 
+
 void CarInterface::on_camStopButton_clicked()
 {
     mPacketInterface->startCameraStream(mId, -1, 0, 0, 0, 0, 0);
@@ -875,7 +877,7 @@ void CarInterface::on_camShowMapBox_toggled(bool checked)
         mMap->setLastCameraImage(QImage());
     }
 }
-
+*/
 void CarInterface::on_ubxVersionButton_clicked()
 {
     emit terminalCmd(uint8_t(mId), "ubx_poll UBX_MON_VER");

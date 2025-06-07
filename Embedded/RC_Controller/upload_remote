@@ -5,17 +5,26 @@ user=$2
 server=$3
 port=$4
 mode=$5
+targetos=$6
+
 
 if [[ !($mode == @(uart|stlink|pi_gpio)) ]]; then
-    echo No valid mode specified. Please use
-    echo ./upload_fw [mode]
-    echo where [mode] can be uart, stlink or pi_gpio
+    echo No valid mode specified. [mode] can be uart, stlink or pi_gpio
+    exit 1
+fi
+
+if [[ !($targetos == @(raspberry|jetson)) ]]; then
+    echo No valid targetos specified. [targetos] can be raspberry or jetson
     exit 1
 fi
 
 # Upload elf file to server
-#scp -P $port $bin $user@$server:/home/$user/
-scp -P $port $bin $user@$server:/home/$user/openocd/tcl
+if [ "$targetos" = "raspberry" ]; then
+	scp -P $port $bin $user@$server:/home/$user/
+else
+	scp -P $port $bin $user@$server:/home/$user/openocd/tcl
+fi
+
 
 # Run programming command on server
 filename="$(basename $bin)"
@@ -26,9 +35,13 @@ fi
 
 if [ "$mode" == "stlink" ]; then
 ##	ssh $user@$server -p $port "openocd -f board/stm32f4discovery.cfg -c 'reset_config trst_only combined' -c 'program $filename verify reset exit 0x08000000'"
-#   ssh $user@$server -p $port "bash -c 'source ~/.bashrc && openocd -f board/stm32f4discovery.cfg -c \"reset_config trst_only combined\" -c \"program $filename verify reset exit 0x08000000\"'"
 ##    ssh $user@$server -p $port "/home/nvidia/openocd/src/openocd -f board/stm32f4discovery.cfg -c 'reset_config trst_only combined' -c 'program $filename verify reset exit 0x08000000'"
+if [ "$targetos" = "raspberry" ]; then
+    ssh $user@$server -p $port "bash -c 'source ~/.bashrc && openocd -f board/stm32f4discovery.cfg -c \"reset_config trst_only combined\" -c \"program $filename verify reset exit 0x08000000\"'"
+else
     ssh $user@$server -p $port "cd ~/openocd/tcl && /home/nvidia/openocd/src/openocd -f /home/nvidia/openocd/tcl/board/stm32f4discovery.cfg -c 'reset_config trst_only combined' -c 'program $filename verify reset exit 0x08000000'"
+fi
+
 fi
 
 if [ "$mode" == "pi_gpio" ]; then
@@ -36,8 +49,12 @@ if [ "$mode" == "pi_gpio" ]; then
 fi
 
 # Remove elf file from server
-#ssh $user@$server -p $port "rm /home/$user/$(basename $bin)"
-ssh $user@$server -p $port "rm /home/$user/openocd/tcl/$(basename $bin)"
+if [ "$targetos" = "raspberry" ]; then
+	ssh $user@$server -p $port "rm /home/$user/$(basename $bin)"
+else
+	ssh $user@$server -p $port "rm /home/$user/openocd/tcl/$(basename $bin)"
+fi
+
 
 #openocd -f board/stm32f4discovery.cfg -c "reset_config trst_only combined" -c "program build/$(PROJECT).elf verify reset exit"
 

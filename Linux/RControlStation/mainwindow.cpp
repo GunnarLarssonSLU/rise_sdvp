@@ -120,8 +120,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     mVersion = "0.8";
-    mSupportedFirmwares.append(qMakePair(12, 3));
-    mSupportedFirmwares.append(qMakePair(20, 1));
+    mSupportedFirmwares.append(qMakePair(30, 1));
 
     qRegisterMetaType<LocPoint>("LocPoint");
 
@@ -138,96 +137,18 @@ MainWindow::MainWindow(QWidget *parent) :
     mSteering = 0.0;
 
     qDebug() << "Start";
+    static MainWindow *mThis=this;          // Just to be able to get the lambdas to work
 
 #ifdef HAS_JOYSTICK
 
     // Connect joystick by default
-    bool connectJs = false;
+    bool connectJs = connectJoystick();
 
-    static MainWindow *mThis=this;          // Just to be able to get the lambdas to work
-
-    #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        if (SDL_Init(SDL_INIT_GAMECONTROLLER) != 0) {
-            qDebug() << "SDL_Init Error:" << SDL_GetError();
-            return;
-        }
-
-        if (SDL_NumJoysticks() < 1) {
-            qDebug() << "No joysticks connected!";
-        } else {
-            SDL_GameController* controller = SDL_GameControllerOpen(0);
-            if (controller) {
-                qDebug() << "Game controller connected:" << SDL_GameControllerName(controller);
-                mController = controller;
-
-                // Set up a timer to poll for gamepad events
-                QTimer* timer = new QTimer(this);
-                connect(timer, &QTimer::timeout, this, &MainWindow::pollGamepad);
-                timer->start(16); // Poll every 16ms
-
-                connectJs=true;
-            } else {
-                qDebug() << "Could not open game controller 0:" << SDL_GetError();
-            }
-        }
-#else
-    auto gamepads = QGamepadManager::instance()->connectedGamepads();
-    if (gamepads.isEmpty()) {
-        qDebug() << "Did not find any connected gamepads";
-        //        return;
-    }
-
-    mJoystick = new QGamepad(*gamepads.begin(), this);
-
-    connect(mJoystick, SIGNAL(buttonChanged(int,bool)),
-            this, SLOT(jsButtonChanged(int,bool)));
-
-    connect(mJoystick, &QGamepad::axisLeftXChanged, this, [](double value){
-        //           qDebug() << "Left X" << value;
-    });
-    connect(mJoystick, &QGamepad::axisLeftYChanged, this, [](double value){
-        //           qDebug() << "Left Y" << value;
-    });
-    connect(mJoystick, &QGamepad::axisRightXChanged, this, [](double value){
-        //           qDebug() << "Right X" << value;
-    });
-    connect(mJoystick, &QGamepad::axisRightYChanged, this, [](double value){
-        //           qDebug() << "Right Y" << value;
-    });
-
-    connect(mJoystick, &QGamepad::buttonL1Changed, this, [](bool pressed){
-        qDebug() << "Button L1" << pressed;
-        mThis->jsButtonChanged(4, pressed);
-    });
-    connect(mJoystick, &QGamepad::buttonR1Changed, this, [](bool pressed){
-        qDebug() << "Button R1" << pressed;
-        mThis->jsButtonChanged(5, pressed);
-    });
-    connect(mJoystick, &QGamepad::buttonL2Changed, this, [](double value){
-        qDebug() << "Button L2: " << value;
-        mThis->jsButtonChanged(6, value>0);
-    });
-
-    connect(mJoystick, &QGamepad::buttonR2Changed, this, [](double value){
-        qDebug() << "Button R2: " << value;
-        mThis->jsButtonChanged(7, value>0);
-    });
-
-
-
-    {
-        QGamepad js;
-        if (js.isConnected()) {
-            connectJs = true;
-        }
+    if (connectJs) {
+        on_jsConnectButton_clicked();
     }
 
 #endif
-        if (connectJs) {
-            on_jsConnectButton_clicked();
-        }
-
-    #endif
 
     mPing = new Ping(this);
     mNmea = new NmeaServer(this);
@@ -259,8 +180,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(mTimer, SIGNAL(timeout()), this, SLOT(timerSlot()));
     connect(mSerialPort, SIGNAL(readyRead()),
             this, SLOT(serialDataAvailable()));
-    connect(mSerialPort, SIGNAL(error(QSerialPort::SerialPortError)),
-            this, SLOT(serialPortError(QSerialPort::SerialPortError)));
+/*    connect(mSerialPort, SIGNAL(error(QSerialPort::SerialPortError)),
+            this, SLOT(serialPortError(QSerialPort::SerialPortError)));*/
     connect(mHeartbeatTimer, SIGNAL(timeout()), this, SLOT(sendHeartbeat()));
     connect(mPacketInterface, SIGNAL(dataToSend(QByteArray&)),
             this, SLOT(packetDataToSend(QByteArray&)));
@@ -293,12 +214,19 @@ MainWindow::MainWindow(QWidget *parent) :
         mPacketInterface->processPacket((unsigned char*)data.data(), data.size());
     });
 
-    connect(mTcpClientMulti, &TcpClientMulti::stateChanged, [this](QString msg, bool isError) {
+    connect(mTcpClientMulti, &TcpClientMulti::stateChanged, [this](QString msg, QString ip, bool isError) {
         showStatusInfo(msg, !isError);
 
         if (isError) {
-            qWarning() << "TCP Error:" << msg;
-            QMessageBox::warning(this, "TCP Error", msg);
+            qWarning() << "TCP Error:" << msg << ", ip: " << ip;
+            QString all=msg  + ", ip: " + ip;
+            QMessageBox::warning(this, "TCP Error", all);
+            for (int i = 0; i < ui->carsWidget->count(); ++i) {
+                if (ui->carsWidget->tabText(i) == ip) {
+                    ui->carsWidget->removeTab(i);
+                    break; // Exit the loop once the tab is found and removed
+                }
+            }
         }
     });
     QObject::connect(&serialReader, &ArduinoReader::signalLost, [this]() {
@@ -306,8 +234,6 @@ MainWindow::MainWindow(QWidget *parent) :
             qWarning() << "Signal lost! Did not receive '1'.";
     });
 
-    on_mapCameraWidthBox_valueChanged(ui->mapCameraWidthBox->value());
-    on_mapCameraOpacityBox_valueChanged(ui->mapCameraOpacityBox->value());
 
 #ifdef HAS_SIM_SCEN
     mSimScen = new PageSimScen;
@@ -315,11 +241,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->mainTabWidget->setTabToolTip(ui->mainTabWidget->count() - 1,
                                      "Simulation Scenarios");
 #endif
-
-
-    //Initialize
-//    on_tcpConnectButton_clicked();
-//    on_jsConnectButton_clicked();
 
     ui->mainTabWidget->removeTab(8);
     ui->mainTabWidget->removeTab(7);
@@ -589,8 +510,99 @@ void MainWindow::addCar(int id, QString name, bool pollData)
     connect(car, SIGNAL(showStatusInfo(QString,bool)), this, SLOT(showStatusInfo(QString,bool)));
 }
 
-void MainWindow::connectJoystick()
+void MainWindow::removeCars()
 {
+    int iCars=mCars.size();
+    for (int i=0;i<iCars;i++)
+    {
+        int iCarId=mCars.at(i)->getId();
+        ui->mapWidget->removeCar(iCarId);
+    }
+    mCars.clear();
+    ui->mapWidget->update();
+}
+
+bool MainWindow::connectJoystick()
+{
+    bool connectJs = false;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    if (SDL_Init(SDL_INIT_GAMECONTROLLER) != 0) {
+        qDebug() << "SDL_Init Error:" << SDL_GetError();
+        return;
+    }
+
+    if (SDL_NumJoysticks() < 1) {
+        qDebug() << "No joysticks connected!";
+    } else {
+        SDL_GameController* controller = SDL_GameControllerOpen(0);
+        if (controller) {
+            qDebug() << "Game controller connected:" << SDL_GameControllerName(controller);
+            mController = controller;
+
+            // Set up a timer to poll for gamepad events
+            QTimer* timer = new QTimer(this);
+            connect(timer, &QTimer::timeout, this, &MainWindow::pollGamepad);
+            timer->start(16); // Poll every 16ms
+
+            connectJs=true;
+        } else {
+            qDebug() << "Could not open game controller 0:" << SDL_GetError();
+        }
+    }
+#else
+    auto gamepads = QGamepadManager::instance()->connectedGamepads();
+    if (gamepads.isEmpty()) {
+        qDebug() << "Did not find any connected gamepads";
+        //        return;
+    }
+
+    mJoystick = new QGamepad(*gamepads.begin(), this);
+
+    connect(mJoystick, SIGNAL(buttonChanged(int,bool)),
+            this, SLOT(jsButtonChanged(int,bool)));
+
+    connect(mJoystick, &QGamepad::axisLeftXChanged, this, [](double value){
+        //           qDebug() << "Left X" << value;
+    });
+    connect(mJoystick, &QGamepad::axisLeftYChanged, this, [](double value){
+        //           qDebug() << "Left Y" << value;
+    });
+    connect(mJoystick, &QGamepad::axisRightXChanged, this, [](double value){
+        //           qDebug() << "Right X" << value;
+    });
+    connect(mJoystick, &QGamepad::axisRightYChanged, this, [](double value){
+        //           qDebug() << "Right Y" << value;
+    });
+
+    connect(mJoystick, &QGamepad::buttonL1Changed, this, [](bool pressed){
+        qDebug() << "Button L1" << pressed;
+        mThis->jsButtonChanged(4, pressed);
+    });
+    connect(mJoystick, &QGamepad::buttonR1Changed, this, [](bool pressed){
+        qDebug() << "Button R1" << pressed;
+        mThis->jsButtonChanged(5, pressed);
+    });
+    connect(mJoystick, &QGamepad::buttonL2Changed, this, [](double value){
+        qDebug() << "Button L2: " << value;
+        mThis->jsButtonChanged(6, value>0);
+    });
+
+    connect(mJoystick, &QGamepad::buttonR2Changed, this, [](double value){
+        qDebug() << "Button R2: " << value;
+        mThis->jsButtonChanged(7, value>0);
+    });
+
+
+
+    {
+        QGamepad js;
+        if (js.isConnected()) {
+            connectJs = true;
+        }
+    }
+
+#endif
+    return connectJs;
 }
 
 void MainWindow::addTcpConnection(QString ip, int port)
@@ -1150,7 +1162,7 @@ void MainWindow::on_disconnectButton_clicked()
     }
 
     mTcpClientMulti->disconnectAll();
-    mCars.clear();
+    removeCars();
     ui->carsWidget->clear();
 
 }
@@ -2259,6 +2271,7 @@ void MainWindow::on_actionToggleFullscreen_triggered()
     }
 }
 
+/*
 void MainWindow::on_mapCameraWidthBox_valueChanged(double arg1)
 {
     ui->mapWidget->setCameraImageWidth(arg1);
@@ -2268,7 +2281,7 @@ void MainWindow::on_mapCameraOpacityBox_valueChanged(double arg1)
 {
     ui->mapWidget->setCameraImageOpacity(arg1);
 }
-
+*/
 void MainWindow::on_actionToggleCameraFullscreen_triggered()
 {
     if (mCars.size() == 1) {
