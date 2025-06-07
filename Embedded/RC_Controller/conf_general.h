@@ -39,8 +39,8 @@
 #define MAIN_MODE_IS_BASE			(MAIN_MODE == MAIN_MODE_M8T_BASE_2400 || MAIN_MODE == MAIN_MODE_M8T_BASE_400)
 
 // Firmware version
-#define FW_VERSION_MAJOR			12
-#define FW_VERSION_MINOR			3
+#define FW_VERSION_MAJOR			30
+#define FW_VERSION_MINOR			1
 
 // IO BOARD
 // #define IO_BOARD
@@ -70,27 +70,15 @@
 #endif
 #define SERVO_WRITE
 #define SERVO_READ
-//#define TACHOATCARD
 #endif
 
 
 #ifdef IS_DRANGEN
-
-// Bägge följande var "aktiva" när fungerade
-//#define HAS_HYDRAULIC_DRIVE			1
-//#define HAS_DIFF_STEERING            1
-//#define IS_ALL_ELECTRIC 1
-//#define DIFF_THROTTLE_VESC_LEFT 61
-//#define DIFF_THROTTLE_VESC_RIGHT 69
-//#define DIFF_STEERING 113
-//#define SERVO_VESC_ID				0
-
 #define DIFF_THROTTLE_VESC_LEFT 28
 #define DIFF_THROTTLE_VESC_RIGHT 36
 #define DIFF_STEERING 16
 #define SERVO_VESC_ID				0
 #define VESC_ID				0
-// Testat med 36 ooh 28
 #define VOLTAGEFRACTION 1
 #define SERVO_VESC_S1				178.0 // Left
 #define SERVO_VESC_S2				240.0 // Right
@@ -109,8 +97,6 @@
 //#define TACHOATCARD
 #endif
 
-
-
 // Differential steering
 #ifndef HAS_DIFF_STEERING
 #define HAS_DIFF_STEERING			0
@@ -121,7 +107,6 @@
 #ifndef DIFF_STEERING_VESC_RIGHT
 #define DIFF_STEERING_VESC_RIGHT	1
 #endif
-
 
 // Hydraulic drive
 #ifndef HAS_HYDRAULIC_DRIVE

@@ -170,8 +170,6 @@ void pwm_esc_init(void) {
 #endif
 }
 
-
-
 void pwm_esc_set_all(float pulse_width) {
 	pwm_esc_set(ALL_CHANNELS, pulse_width);
 }

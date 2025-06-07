@@ -72,7 +72,8 @@ public:
     bool eventFilter(QObject *object, QEvent *e);
 
     void addCar(int id, QString name, bool pollData = false);
-    void connectJoystick();
+    void removeCars();
+    bool connectJoystick();
     void addTcpConnection(QString ip, int port);
     void setNetworkTcpEnabled(bool enabled, int port = -1);
     void setNetworkUdpEnabled(bool enabled, int port = -1);
@@ -175,8 +176,8 @@ private slots:
     void on_actionGPSSimulator_triggered();
     void on_mapDrawUwbTraceBox_toggled(bool checked);
     void on_actionToggleFullscreen_triggered();
-    void on_mapCameraWidthBox_valueChanged(double arg1);
-    void on_mapCameraOpacityBox_valueChanged(double arg1);
+//    void on_mapCameraWidthBox_valueChanged(double arg1);
+//    void on_mapCameraOpacityBox_valueChanged(double arg1);
     void on_actionToggleCameraFullscreen_triggered();
     void on_tabWidget_currentChanged(int index);
     void on_routeZeroButton_clicked();
@@ -231,7 +232,6 @@ private:
     bool JSconnected();
 
     #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-//        SDL_Joystick  *mController;
         SDL_GameController* mController = nullptr;
 #else
         QGamepad *mJoystick;

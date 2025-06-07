@@ -47,8 +47,6 @@ bool MyVideoSurface::present(const QVideoFrame &frame)
 {
     QVideoFrame localCopy = frame;
 
-//    qDebug() << "Frame received";
-
     localCopy.map(QVideoFrame::ReadOnly);
 //    localCopy.map(QAbstractVideoBuffer::ReadOnly);
 
@@ -87,9 +85,7 @@ bool Camera::openCamera(int cameraIndex)
 //    QList<QCameraDevice> availableCameras = QCameraDevice::availableCameras();
     const QList<QCameraDevice> availableCameras = QMediaDevices::videoInputs();
 
-    qDebug() << "cameraIndex:" << cameraIndex;
     for (const QCameraDevice &cameraInfo : availableCameras)
- //       qDebug() << cameraInfo.deviceName();
 
     if (availableCameras.size() > cameraIndex) {
         mCamera = new QCamera(availableCameras.at(cameraIndex), this);
@@ -123,8 +119,6 @@ void Camera::closeCamera()
 
 bool Camera::startCameraStream(int width, int height, int fps)
 {
-    qDebug() << "In Camera::startCameraStream";
-    qDebug() << "Parameters: width: " << width << ", height: " << height << ", fps: " << fps;
     int res = false;
 
     if (mCamera) {

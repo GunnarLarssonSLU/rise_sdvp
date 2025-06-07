@@ -68,7 +68,6 @@ Packet::Packet(QObject *parent) : QObject(parent)
 
 void Packet::sendPacket(const QByteArray &data)
 {
-//    qDebug() << "in packet::sendPacket";
     QByteArray to_send;
     unsigned int len_tot = data.size();
 
@@ -107,10 +106,7 @@ unsigned short Packet::crc16(const unsigned char *buf, unsigned int len)
 
 void Packet::processData(QByteArray data)
 {
-    qDebug() << "in packet::processData";
-
     unsigned char rx_data;
-
     for(int i = 0;i < data.length();i++) {
         rx_data = data.at(i);
 
@@ -183,7 +179,6 @@ void Packet::processData(QByteArray data)
                     emit packetReceived(mRxBuffer);
                 }
             }
-
             mRxState = 0;
             break;
 

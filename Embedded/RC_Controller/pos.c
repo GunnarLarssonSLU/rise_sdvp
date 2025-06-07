@@ -451,7 +451,7 @@ void pos_set_ms_today(int32_t ms) {
 
 bool pos_input_nmea(const char *data) {
 	if(iDebug==1) {
-		commands_printf("::Input::\n");
+		commands_printf(":::Input:::\n");
 		commands_printf("data: %s\n", data);
 	};
 

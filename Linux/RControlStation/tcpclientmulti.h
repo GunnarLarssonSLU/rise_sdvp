@@ -35,7 +35,7 @@ public:
     void sendAll(QByteArray data);
 
 signals:
-    void stateChanged(QString msg, bool isError);
+    void stateChanged(QString msg, QString ip, bool isError);
     void packetRx(QByteArray data);
 
 public slots:
@@ -45,6 +45,7 @@ private:
     public:
         TcpConn(QString ip, int port, TcpClientMulti *client) : QObject(client) {
             socket.abort();
+            attempedip=ip;
             socket.connectToHost(ip, port);
 
             connect(&socket, &QTcpSocket::readyRead, [this]() {
@@ -55,11 +56,11 @@ private:
             });
 
             connect(&socket, &QTcpSocket::connected, [this,client]() {
-                emit client->stateChanged("TCP Connected", false);
+                emit client->stateChanged("TCP Connected", attempedip, false);
             });
 
             discConn = connect(&socket, &QTcpSocket::disconnected, [this,client]() {
-                emit client->stateChanged("TCP Disconnected", false);
+                emit client->stateChanged("TCP Disconnected", attempedip,  false);
             });
 
 
@@ -67,9 +68,17 @@ private:
             connect(&socket, &QTcpSocket::errorOccurred,
                     [this, client](QAbstractSocket::SocketError e) {
                         (void)e;
+/*
+                        QHostAddress peerIp = socket.peerAddress();
+                        QString ip=peerIp.toString();
+                        if (!ip)
+                            {
+                            ip=attempedip;
+                            }
+*/
                         QString errorStr = socket.errorString();
                         socket.close();
-                        emit client->stateChanged(QString("TCP Error: %1").arg(errorStr), true);
+                        emit client->stateChanged(QString("TCP Error: %1").arg(errorStr), attempedip, true);
                     });
    #else
             connect(&socket, QOverload<QAbstractSocket::SocketError>::of(&QTcpSocket::error),
@@ -108,6 +117,7 @@ private:
         QTcpSocket socket;
         PacketInterface packet;
         QMetaObject::Connection discConn;
+        QString attempedip;
     };
 
     QVector<TcpConn*> mTcpConns;

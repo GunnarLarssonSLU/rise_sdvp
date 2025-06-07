@@ -58,11 +58,11 @@ RtcmClient::RtcmClient(QObject *parent) : QObject(parent)
     connect(mTcpSocket, SIGNAL(connected()), this, SLOT(tcpInputConnected()));
     connect(mTcpSocket, SIGNAL(disconnected()),
             this, SLOT(tcpInputDisconnected()));
-    connect(mTcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
-            this, SLOT(tcpInputError(QAbstractSocket::SocketError)));
+/*    connect(mTcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
+            this, SLOT(tcpInputError(QAbstractSocket::SocketError)));*/
     connect(mSerialPort, SIGNAL(readyRead()), this, SLOT(serialDataAvailable()));
-    connect(mSerialPort, SIGNAL(error(QSerialPort::SerialPortError)),
-            this, SLOT(serialPortError(QSerialPort::SerialPortError)));
+/*    connect(mSerialPort, SIGNAL(error(QSerialPort::SerialPortError)),
+            this, SLOT(serialPortError(QSerialPort::SerialPortError)));*/
 }
 
 bool RtcmClient::connectNtrip(QString server, QString stream, QString user, QString pass, int port)

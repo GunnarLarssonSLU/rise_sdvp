@@ -98,8 +98,6 @@ void PacketInterface::processData(QByteArray &data)
     unsigned char rx_data;
     const int rx_timeout = 50;
 
-//    qDebug() << "in packetinterface::processData";
-//    qDebug() << data;
     for(int i = 0;i < data.length();i++) {
         rx_data = data[i];
 
@@ -116,7 +114,7 @@ void PacketInterface::processData(QByteArray &data)
                 mRxDataPtr = 0;
                 mPayloadLength = 0;
             } else if (rx_data == 4) {
--                mRxState++;
+                mRxState++;
                 mRxTimer = rx_timeout;
                 mRxDataPtr = 0;
                 mPayloadLength = 0;
@@ -172,7 +170,6 @@ void PacketInterface::processData(QByteArray &data)
                 if (crc16(mRxBuffer, mPayloadLength) ==
                         ((unsigned short)mCrcHigh << 8 | (unsigned short)mCrcLow)) {
                     // Packet received!
-//                    qDebug() << "Ready to process packet";
                     processPacket(mRxBuffer, mPayloadLength);
                 }
             }
@@ -192,25 +189,17 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     QByteArray pkt = QByteArray((const char*)data, len);
 
     unsigned char id = data[0];
-            qDebug() << "Id: " << id;
     data++;
     len--;
 
     CMD_PACKET cmd = (CMD_PACKET)(quint8)data[0];
-    qDebug() << "Kommando: " << cmd;
     data++;
     len--;
 
     emit packetReceived(id, cmd, pkt);
 
-//    if (!((cmd==63) || (cmd==82) || (cmd==120)))
-//    {
-//        qDebug() << "Kommando: " << cmd;
-//    }
-
     switch (cmd) {
     case CMD_PRINTF: {
-        qDebug() << "CMD_PRINTF";
         QByteArray tmpArray((const char*)data, len);
         tmpArray.append('\0');
         emit printReceived(id, QString::fromLatin1(tmpArray));
@@ -218,7 +207,6 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
 
     case CMD_PRINTLOG: {
 //        QByteArray tmpArray = QByteArray::fromRawData((const char*)data, len);
-//        tmpArray[len] = '\0';
 //        emit printReceived(id, QString::fromLatin1(tmpArray));
         QByteArray tmpArray((const char*)data, len);
         tmpArray.append('\0');
@@ -261,6 +249,9 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
 
     case CMD_SEND_NMEA_RADIO: {
         QByteArray tmpArray((char*)data, len);
+        qDebug() << "NMEA radio len: " << len;
+//        QString string = QString::fromUtf8(tmpArray);
+        qDebug() << "NMEA radio data: " << QString(tmpArray);
         emit nmeaRadioReceived(id, tmpArray);
     } break;
 
@@ -475,8 +466,6 @@ void PacketInterface::timerSlot()
 
 void PacketInterface::readPendingDatagrams()
 {
-    qDebug() << "in packetinterface::readPendingDatagram";
-
     while (mUdpSocket->hasPendingDatagrams()) {
         QByteArray datagram;
         datagram.resize(mUdpSocket->pendingDatagramSize());
@@ -485,11 +474,9 @@ void PacketInterface::readPendingDatagrams()
 
         mUdpSocket->readDatagram(datagram.data(), datagram.size(),
                                  &sender, &senderPort);
-
         if (mUdpServer) {
             mHostAddress = sender;
         }
-
         processPacket((unsigned char*)datagram.data(), datagram.length());
     }
 }
@@ -508,8 +495,6 @@ bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_pac
 {
     unsigned int ind = 0;
     qDebug() << "in packetinterface::sendPacket";
-    qDebug() << "Address: " << mHostAddress.toString() << ", port:" << mUdpPort;
-    qDebug() << "Address: " << mHostAddress2.toString() << ", port:" << mUdpPort;
 
     // If the IP is valid, send the packet over UDP
     if (QString::compare(mHostAddress.toString(), "0.0.0.0") != 0) {

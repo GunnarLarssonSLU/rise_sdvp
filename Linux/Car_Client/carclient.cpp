@@ -146,8 +146,6 @@ CarClient::CarClient(QObject *parent) : QObject(parent)
         qDebug() << "Unable to start the ROS 2 local server:" << ros2Server->errorString();
         // Handle error
     }
-
-
     logLineUsbReceived(0, "All Started!");
 }
 
@@ -353,7 +351,6 @@ void CarClient::rtcmRx(QByteArray data, int type)
 void CarClient::restartRtklib()
 {
     QFile ublox("/dev/ublox");
-//    QFile ublox("/dev/rtk");
     if (!ublox.exists()) {
         mRtklibRunning = false;
         return;
@@ -588,7 +585,7 @@ void CarClient::readRos2Command() {
     qDebug() << "Got command 2 via ROS:" << rosdata[2];
     qDebug() << "Got command via ROS:" << rosdata;
 
-     packetDataToSend(rosdata);
+    packetDataToSend(rosdata);
 
     QString response = "OK";
 
@@ -604,8 +601,6 @@ void CarClient::serialArduinoDataAvailable()
 #define ARDUINO_INTEGER
 
 #ifdef ARDUINO_INTEGER
-//    qDebug() << "Receiving!!";
-
     while (mSerialPortArduino->bytesAvailable() >= 2) {
         QByteArray data = mSerialPortArduino->read(2);
         if (data.size() == 2) {
@@ -1180,22 +1175,27 @@ bool CarClient::setUnixTime(qint64 t)
 
 void CarClient::printTerminal(QString str)
 {
+    QByteArray packet;
+    packet.append((quint8)mCarId);
+    packet.append((char)CMD_PRINTF);
+    packet.append(str.toLocal8Bit());
+    carPacketRx(mCarId, CMD_PRINTF, packet);
 
     // Existing behavior (e.g., print to the terminal)
-    qDebug() << "Terminal Output:" << str;
+//    qDebug() << "Terminal Output:" << str;
     // Attempt to connect to the local socket without blocking
     QLocalSocket socket;
     socket.connectToServer("ros2_carclient_terminal_channel");
     if (socket.state() == QLocalSocket::UnconnectedState) {
-        qDebug() << "No ROS 2 channel available, skipping publication.";
+     //   qDebug() << "No ROS 2 channel available, skipping publication.";
     } else
     {
         if (!socket.waitForConnected(0)) {  // Non-blocking wait
-        qDebug() << "Failed to connect to ROS 2 channel.";
+     //   qDebug() << "Failed to connect to ROS 2 channel.";
         } else
         {
         // Publish the message if the server is available
-        qDebug() << "Published: " << str;
+     //   qDebug() << "Published: " << str;
         QByteArray data = str.toUtf8();
         socket.write(data);
         socket.flush();
@@ -1203,11 +1203,6 @@ void CarClient::printTerminal(QString str)
         }
     }
 
-    QByteArray packet;
-    packet.append((quint8)mCarId);
-    packet.append((char)CMD_PRINTF);
-    packet.append(str.toLocal8Bit());
-    carPacketRx(mCarId, CMD_PRINTF, packet);
 }
 
 void CarClient::printLog(QString str)
@@ -1243,14 +1238,27 @@ bool CarClient::waitProcess(QProcess &process, int timeoutMs)
 }
 
 void CarClient::startStr2Str(double lat,double lon ) {
-    qDebug() << "Lat: " << lat;
-    qDebug() << "Lon: " << lon;
+    qDebug() << "Lat: " << lat << ", Lon: " << lon;
     QString strLat=QString("%1").arg(lat, 0, 'f', 14);
     QString strLon=QString("%1").arg(lon, 0, 'f', 14);
-    QString exec="str2str -in ntrip://"+mUsr+":"+mPwd+"@nrtk-swepos.lm.se:80/RTCM3_GNSS -p "+strLat+" "+strLon+" 17 -n 1 -out serial://rtk:115200:8:n:1 -msg ""1005,1074,1084,1094,1230""";
-    qDebug() << exec;
+//    QString exec="str2str -in ntrip://"+mUsr+":"+mPwd+"@nrtk-swepos.lm.se:80/RTCM3_GNSS -p "+strLat+" "+strLon+" 17 -n 1 -out serial://rtk:115200:8:n:1 -msg ""1005,1074,1084,1094,1230""";
+//    qDebug() << exec;
 
-    s2sProcess.start(exec);
+    QStringList args;
+    args << "-in" << QString("ntrip://%1:%2@nrtk-swepos.lm.se:80/RTCM3_GNSS").arg(mUsr, mPwd)
+         << "-p" << strLat << strLon << "17"
+         << "-n" << "1"
+         << "-out" << "serial://rtk:115200:8:n:1"
+         << "-msg" << "1005,1074,1084,1094,1230";
+
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    s2sProcess.setProcessEnvironment(env);
+
+    s2sProcess.setProgram("str2str");
+    s2sProcess.setArguments(args);
+    s2sProcess.start();
+
+//    s2sProcess.start(exec);
     if (!s2sProcess.waitForStarted()) {
         qCritical() << "Failed to start str2str.";
     } else {

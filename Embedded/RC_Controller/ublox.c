@@ -309,11 +309,7 @@ void ublox_init(void) {
 	ublox_cfg_msg(UBX_CLASS_RTCM3, UBX_RTCM3_4072_0, 0);
 	ublox_cfg_msg(UBX_CLASS_RTCM3, UBX_RTCM3_4072_1, 0);
 
-#if UBLOX_IS_F9P
 	ublox_cfg_rate(200, 1, 0);
-#else
-	ublox_cfg_rate(200, 1, 0);
-#endif
 
 	// Dynamic model
 	ubx_cfg_nav5 nav5;
@@ -954,6 +950,10 @@ static THD_FUNCTION(process_thread, arg) {
 		chEvtWaitAny((eventmask_t) 1);
 
 		while (m_serial_rx_read_pos != m_serial_rx_write_pos) {
+			if (iDebug==11)
+			{
+				commands_printf("m_serial_rx_read_pos != m_serial_rx_write_pos\n");
+			}
 			uint8_t ch = m_serial_rx_buffer[m_serial_rx_read_pos++];
 			bool ch_used = false;
 
@@ -968,6 +968,10 @@ static THD_FUNCTION(process_thread, arg) {
 
 			// Ubx
 			if (!ch_used && m_decoder_state.line_pos == 0) {
+				if (iDebug==11)
+				{
+					commands_printf("(!ch_used && m_decoder_state.line_pos == 0)\n");
+				}
 				int ubx_pos_last = m_decoder_state.ubx_pos;
 
 				if (m_decoder_state.ubx_pos == 0) {
@@ -1026,6 +1030,10 @@ static THD_FUNCTION(process_thread, arg) {
 
 			// NMEA
 			if (!ch_used) {
+				if (iDebug==11)
+				{
+					commands_printf("(!ch_used)\n");
+				}
 				m_decoder_state.line[m_decoder_state.line_pos++] = ch;
 				if (m_decoder_state.line_pos == LINE_BUFFER_SIZE) {
 					m_decoder_state.line_pos = 0;
@@ -1035,7 +1043,6 @@ static THD_FUNCTION(process_thread, arg) {
 					m_decoder_state.line[m_decoder_state.line_pos] = '\0';
 					m_decoder_state.line_pos = 0;
 
-#if MAIN_MODE_IS_VEHICLE
 					bool found = pos_input_nmea((const char*)m_decoder_state.line);     // Send code for further processing (very important)
 
 					// Only send the lines that pos decoded
@@ -1043,7 +1050,6 @@ static THD_FUNCTION(process_thread, arg) {
 						// Send CMD_SEND_NMEA_RADIO message to Raspberry/Laptop
 						commands_send_nmea(m_decoder_state.line, strlen((char*)m_decoder_state.line));
 					}
-#endif
 				}
 			}
 		}

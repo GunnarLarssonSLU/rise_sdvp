@@ -114,8 +114,8 @@ NmeaServer::NmeaServer(QObject *parent) : QObject(parent)
     connect(mTcpClient, SIGNAL(connected()), this, SLOT(tcpInputConnected()));
     connect(mTcpClient, SIGNAL(disconnected()),
             this, SLOT(tcpInputDisconnected()));
-    connect(mTcpClient, SIGNAL(error(QAbstractSocket::SocketError)),
-            this, SLOT(tcpInputError(QAbstractSocket::SocketError)));
+/*    connect(mTcpClient, SIGNAL(error(QAbstractSocket::SocketError)),
+            this, SLOT(tcpInputError(QAbstractSocket::SocketError)));*/
 }
 
 NmeaServer::~NmeaServer()

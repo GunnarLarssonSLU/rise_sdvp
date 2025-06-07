@@ -652,8 +652,6 @@ void Ublox::serialPortError(QSerialPort::SerialPortError error)
     }
 
     if(!message.isEmpty()) {
-        qDebug() << message;
-
         if(mSerialPort->isOpen()) {
             mSerialPort->close();
         }

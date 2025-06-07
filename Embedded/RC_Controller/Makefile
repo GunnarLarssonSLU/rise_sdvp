@@ -306,13 +306,8 @@ debug-start:
 	openocd -f stm32-bv_openocd.cfg -d
 	
 upload_remote: build/$(PROJECT).bin
-#	./upload_remote build/$(PROJECT).bin pi 192.168.43.9 22 pi_gpio
-#	./upload_remote build/$(PROJECT).bin pi 192.168.200.101 22 pi_gpio
-#	./upload_remote build/$(PROJECT).bin pi 192.168.200.105 22 stlink
-#	./upload_remote build/$(PROJECT).bin nvidia 192.168.200.7 22 stlink
-	./upload_remote build/$(PROJECT).bin nvidia 192.168.1.168 22 stlink
-#	./upload_remote build/$(PROJECT).bin pi 192.168.200.4 22 stlink
-
+#	./upload_remote build/$(PROJECT).bin nvidia 192.168.200.7 22 stlink jetson
+	./upload_remote build/$(PROJECT).bin pi 192.168.200.4 22 stlink raspberry
 
 touch_conf_general:
 	touch ./conf_general.h

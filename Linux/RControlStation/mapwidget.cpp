@@ -1022,6 +1022,7 @@ void MapWidget::removeMapModuleLast()
     }
 }
 
+/*
 double MapWidget::getCameraImageOpacity() const
 {
     return mCameraImageOpacity;
@@ -1053,6 +1054,7 @@ void MapWidget::setLastCameraImage(const QImage &lastCameraImage)
     }
 }
 
+*/
 bool MapWidget::getDrawRouteText() const
 {
     return mDrawRouteText;
