@@ -14,7 +14,7 @@ if [[ !($mode == @(uart|stlink|pi_gpio)) ]]; then
 fi
 
 # Upload elf file to server
-scp -P $port $bin $user@$server:/home/$user/
+scp -P $port $bin $user@$server:/home/$user/openocd/tcl
 
 # Run programming command on server
 filename="$(basename $bin)"
@@ -24,7 +24,8 @@ if [ "$mode" == "uart" ]; then
 fi
 
 if [ "$mode" == "stlink" ]; then
-	ssh $user@$server -p $port "openocd -f board/stm32f4discovery.cfg -c 'reset_config trst_only combined' -c 'program $filename verify reset exit 0x08000000'"
+	#ssh $user@$server -p $port "openocd -f board/stm32f4discovery.cfg -c 'reset_config trst_only combined' -c 'program $filename verify reset exit 0x08000000'"
+    ssh $user@$server -p $port "cd ~/openocd/tcl && /home/nvidia/openocd/src/openocd -f /home/nvidia/openocd/tcl/board/stm32f4discovery.cfg -c 'reset_config trst_only combined' -c 'program $filename verify reset exit 0x08000000'"
 fi
 
 if [ "$mode" == "pi_gpio" ]; then
@@ -32,7 +33,7 @@ if [ "$mode" == "pi_gpio" ]; then
 fi
 
 # Remove elf file from server
-ssh $user@$server -p $port "rm /home/$user/$(basename $bin)"
+ssh $user@$server -p $port "rm /home/$user/openocd/tcl/$(basename $bin)"
 
 #openocd -f board/stm32f4discovery.cfg -c "reset_config trst_only combined" -c "program build/$(PROJECT).elf verify reset exit"
 
