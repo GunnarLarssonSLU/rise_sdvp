@@ -151,7 +151,7 @@ void CarInterface::setStateData(CAR_STATE data)
     // Firmware label
     QString fwStr;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    fwStr = QString("FW %1.%2").arg(data.fw_major, 0, 'd', 0).arg(data.fw_minor, 0, 'd', 0);
+    fwStr = QString("FW %1.%2").arg(QString::number(data.fw_major)).arg(QString::number(data.fw_minor));
 #else
     fwStr.sprintf("FW %d.%d", data.fw_major, data.fw_minor);
 #endif
@@ -160,7 +160,7 @@ void CarInterface::setStateData(CAR_STATE data)
 
     QString fwStr2;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    fwStr2 = QString("FW %1.%2").arg(data.fw_major, 0, 'd', 0).arg(data.fw_minor, 0, 'd', 0);
+    fwStr2 = QString("FW %1.%2").arg(QString::number(data.fw_major)).arg(QString::number(data.fw_minor));
 #else
     fwStr2.sprintf("%d.%d", data.fw_major, data.fw_minor);
 #endif
@@ -168,7 +168,7 @@ void CarInterface::setStateData(CAR_STATE data)
 
     QString fwStrLog1;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    fwStrLog1 = QString("FW %1.%2").arg(data.fw_major, 0, 'd', 0).arg(data.fw_minor, 0, 'd', 0);
+    fwStrLog1 = QString("FW %1.%2").arg(QString::number(data.fw_major)).arg(QString::number(data.fw_minor));
 #else
     fwStrLog1.sprintf("%d.%d", data.fw_major, data.fw_minor);
 #endif
@@ -199,7 +199,7 @@ void CarInterface::setStateData(CAR_STATE data)
 //    battTxt.sprintf("Battery: %.1f %% (%.2f V), Sensor value: %u, Angle: %.1f, Servo output: %.1f, Debug: %.1f", battp, data.sensor_value, data.vin,data.angle,data.servo_output,data.debugvalue);
 //    battTxt.sprintf("Location: %.2f, %.2f , Gps location: %.2f, %.2f", data.px, data.py,data.px_gps, data.py_gps);
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    battTxt = QString("Battery: %1 %% (%2 V), Sensor value: %3, Angle: %4, Servo output: %5, Debug: %6").arg(battp, 0, 'f', 1).arg(data.vin, 0, 'f', 2).arg(data.sensor_value, 0, 'f', 2).arg(data.angle, 0, 'f', 1).arg(data.servo_output, 0, 'f', 1).arg(data.debugvalue, 0, 'f', 1);
+    battTxt = QString("Battery: %1 %% (%2 V), Sensor value: %3, Angle: %4, Servo output: %5, Debug: %6").arg(battp, 0, 'f', 1).arg(QString::number(data.vin, 'f', 2)).arg(QString::number(data.sensor_value, 'f', 2)).arg(QString::number(data.angle, 'f', 1)).arg(QString::number(data.servo_output, 'f', 1)).arg(QString::number(data.debugvalue, 'f', 1));
 #else
     battTxt.sprintf("Battery: %.1f %% (%.2f V), Sensor value: %u, Angle: %.1f, Servo output: %.1f, Debug: %.1f", battp, data.vin, data.sensor_value,data.angle,data.servo_output,data.debugvalue);
 #endif
@@ -228,7 +228,7 @@ void CarInterface::setStateData(CAR_STATE data)
 
             QString msg;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            msg = QString("Car %1: ").arg(mId, 0, 'd', 0);
+            msg = QString("Car %1: ").arg(QString::number(mId));
 #else
             msg.sprintf("Car %d: ", mId);
 #endif
@@ -558,7 +558,7 @@ void CarInterface::configurationReceived(quint8 id, MAIN_CONFIG config)
         setConfGui(config);
         QString str;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        str = QString("Car %1: Configuration Received").arg(id,0,'d',0);
+        str = QString("Car %1: Configuration Received").arg(QString::number(id));
 #else
         str.sprintf("Car %d: Configuration Received", id);
 #endif

@@ -102,7 +102,7 @@ static void ubx_rx_rawx(ubx_rxm_rawx *rawx);
 int iDebug;
 
 
-#if MAIN_MODE == MAIN_MODE_vehicle
+#if MAIN_MODE == MAIN_MODE_VEHICLE
 static void mc_values_received(mc_values *val);
 static void vehicle_update_pos(float distance, float turn_rad_rear, float angle_diff, float speed);
 #endif
@@ -178,7 +178,7 @@ void pos_init(void) {
 
 	commands_printf("Communicate VESC\n");
 
-#if MAIN_MODE == MAIN_MODE_vehicle
+#if MAIN_MODE == MAIN_MODE_VEHICLE
 	bldc_interface_set_rx_value_func(mc_values_received);
 #endif
 
@@ -567,9 +567,18 @@ bool pos_input_nmea(const char *data) {
 //////
 			// Correct position
 			// Optionally require RTK and good ublox quality indication.
+			if(iDebug==9)
+			{
+			commands_printf("gps_comp: %d\n", main_config.gps_comp);
+			commands_printf("gps_req_rtk: %d\n", main_config.gps_req_rtk);
+			commands_printf("gps_use_ubx_info: %d\n", main_config.gps_use_ubx_info);
+			commands_printf("m_ubx_pos_valid: %d\n", m_ubx_pos_valid);
+			}
 			if (main_config.gps_comp &&
 					(!main_config.gps_req_rtk || (gga.fix_type == 4 || gga.fix_type == 5)) &&
 					(!main_config.gps_use_ubx_info || m_ubx_pos_valid)) {
+
+				/*				if (1) {*/
 
 				if(iDebug==4) {
 				commands_printf("Compensation!");
@@ -580,7 +589,7 @@ bool pos_input_nmea(const char *data) {
 				correct_pos_gps(&m_pos); // Correct position based on vehicle angle
 				m_pos.gps_corr_time = chVTGetSystemTimeX();
 
-#if MAIN_MODE == MAIN_MODE_vehicle
+#if MAIN_MODE == MAIN_MODE_VEHICLE
 				m_pos.pz = m_pos.pz_gps - m_pos.gps_ground_level;
 #endif
 
@@ -946,7 +955,7 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 
 	update_orientation_angles(accel, gyro, mag, dt);
 
-#if MAIN_MODE == MAIN_MODE_vehicle
+#if MAIN_MODE == MAIN_MODE_VEHICLE
 	// Read MC values every 10 iterations (should be 100 Hz)
 	static int mc_read_cnt = 0;
 	mc_read_cnt++;
@@ -1210,7 +1219,7 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 	}
 
 	// Correct yaw
-#if MAIN_MODE == MAIN_MODE_vehicle
+#if MAIN_MODE == MAIN_MODE_VEHICLE
 	{
 		if (!m_yaw_imu_clamp_set) {
 			m_yaw_imu_clamp = m_pos.yaw_imu - m_imu_yaw_offset;
@@ -1383,7 +1392,7 @@ static void correct_pos_gps(POS_STATE *pos)
 {
 	if(iDebug==4)
 	{
-		commands_printf("Executing!\n");
+		commands_printf("Executing correct_pos_gps!\n");
 	}
 	// Calculate age of gps data
 	static int sample = 0;
@@ -1460,6 +1469,7 @@ static void correct_pos_gps(POS_STATE *pos)
 
 	if(iDebug==2)
 	{
+	commands_printf("gain: %f\n",gain);
 	commands_printf("closest corr [aft]- px: %f, py: %f, pz: %f\n",closest_corr.px,closest_corr.py,closest_corr.pz);
 	commands_printf("pos [bef]- px: %f, py: %f\n",pos->px,pos->py);
 	}
@@ -1478,6 +1488,12 @@ static void correct_pos_gps(POS_STATE *pos)
 	pos->gps_ang_corr_x_last_gps = pos->px_gps;
 	pos->gps_ang_corr_y_last_gps = pos->py_gps;
 	pos->gps_ang_corr_last_gps_ms = pos->gps_ms;
+
+	if(iDebug==4)
+	{
+		commands_printf("Leaving correct_pos_gps!\n");
+	}
+
 }
 
 static void ubx_rx_rawx(ubx_rxm_rawx *rawx) {
@@ -1504,7 +1520,7 @@ static void ubx_rx_rawx(ubx_rxm_rawx *rawx) {
 // Uncomment the line below to use the new implementation
 #define MISTRAL
 
-#if MAIN_MODE == MAIN_MODE_vehicle
+#if MAIN_MODE == MAIN_MODE_VEHICLE
 static void mc_values_received(mc_values *val) {
 #if HAS_DIFF_STEERING
     if (val->vesc_id == DIFF_STEERING_VESC_RIGHT || !m_vesc_left_now) {

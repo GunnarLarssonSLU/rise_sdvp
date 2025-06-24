@@ -12,6 +12,10 @@ QT       += network
 QT       += quick
 QT       +=sql
 QT       +=charts
+#CONFIG += static
+
+#QMAKE_LFLAGS += -static
+
 
 CONFIG   += c++11
 

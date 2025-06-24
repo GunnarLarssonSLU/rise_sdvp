@@ -2351,7 +2351,7 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
     // Draw OSM zoom level
     if (mDrawOpenStreetmap) {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        txt = QString("OSM zoom: %1").arg(mOsmZoomLevel, 0, 'd', 0);
+        txt = QString("OSM zoom: %1").arg(QString::number(mOsmZoomLevel));
 #else
         txt.sprintf("OSM zoom: %d", mOsmZoomLevel);
 #endif
@@ -2429,7 +2429,7 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
         }
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        txt = QString("RP: %1").arg(mRoutes.at(mRouteNow).size(), 0, 'd', 0);
+        txt = QString("RP: %1").arg(QString::number(mRoutes.at(mRouteNow).size()));
 #else
         txt.sprintf("RP: %d", mRoutes.at(mRouteNow).size());
 #endif

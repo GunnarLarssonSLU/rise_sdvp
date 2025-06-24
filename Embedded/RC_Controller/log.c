@@ -149,7 +149,7 @@ static THD_FUNCTION(log_thread, arg) {
 				m_write_split = false;
 			}
 
-#ifdef LOG_EN_vehicleREL
+#ifdef LOG_EN_CARREL
 			mc_values val;
 			POS_STATE pos;
 			GPS_STATE gps;
