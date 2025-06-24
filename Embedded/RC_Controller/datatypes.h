@@ -285,7 +285,7 @@ typedef struct {
     float sensorinterval;
     float degreeinterval;
     float sensorcentre;
-} MAIN_CONFIG_vehicle;
+} MAIN_CONFIG_VEHICLE;
 
 
 
@@ -405,7 +405,7 @@ typedef struct {
 	LOG_EXT_MODE log_mode_ext;
 	int log_uart_baud;
 
-	MAIN_CONFIG_vehicle vehicle;
+	MAIN_CONFIG_VEHICLE vehicle;
 	MAIN_CONFIG_MULTIROTOR mr;
 } MAIN_CONFIG;
 

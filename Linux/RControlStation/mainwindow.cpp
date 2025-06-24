@@ -34,6 +34,8 @@
 #include <QtCharts>
 #include <QtWidgets>
 
+
+
 //using namespace QtCharts;
 
 #include <QtCharts/QChartView>
@@ -118,12 +120,12 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-
     mVersion = "0.8";
+    mSupportedFirmwares.append(qMakePair(12, 3));
+    mSupportedFirmwares.append(qMakePair(20, 1));
     mSupportedFirmwares.append(qMakePair(30, 1));
 
     qRegisterMetaType<LocPoint>("LocPoint");
-
     mTimer = new QTimer(this);
     mTimer->start(ui->pollIntervalBox->value());
     mHeartbeatTimer = new QTimer(this);
@@ -136,18 +138,14 @@ MainWindow::MainWindow(QWidget *parent) :
     mThrottle = 0.0;
     mSteering = 0.0;
 
-    qDebug() << "Start";
     static MainWindow *mThis=this;          // Just to be able to get the lambdas to work
-
 #ifdef HAS_JOYSTICK
-
     // Connect joystick by default
     bool connectJs = connectJoystick();
 
     if (connectJs) {
         on_jsConnectButton_clicked();
     }
-
 #endif
 
     mPing = new Ping(this);
@@ -982,14 +980,25 @@ void MainWindow::nmeaGgaRx(int fields, NmeaServer::nmea_gga_info_t gga)
 
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            info = QString("Fix type: %1\n"
+/*            info = QString("Fix type: %1\n"
                          "Sats    : %2\n"
                          "Height  : %3\n"
                          "Age     : %4")
                       .arg(fix_t.toLocal8Bit().data())
                       .arg(gga.n_sat,0,'d',0)
                       .arg(gga.height,0,'f',2)
-                      .arg(gga.diff_age,0,'f',2);
+                      .arg(gga.diff_age,0,'f',2);*/
+            QByteArray fixBytes = fix_t.toLocal8Bit();
+            info = QString("Fix type: %1\n"
+                           "Sats    : %2\n"
+                           "Height  : %3\n"
+                           "Age     : %4")
+                       .arg(QString::fromLocal8Bit(fixBytes))
+                       .arg(QString::number(gga.n_sat))
+                       .arg(gga.height, 0, 'f', 2)
+                       .arg(gga.diff_age, 0, 'f', 2);
+
+
 
 #else
             info.sprintf("Fix type: %s\n"

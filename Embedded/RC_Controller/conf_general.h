@@ -21,7 +21,7 @@
 
 #include "datatypes.h"
 
-#define MAIN_MODE_vehicle 				0
+#define MAIN_MODE_VEHICLE 				0
 #define MAIN_MODE_MOTE_2400			1
 #define MAIN_MODE_MOTE_400			2
 #define MAIN_MODE_MOTE_HYBRID		3 // Use 400 for slow and critical communication and 2400 for the rest.
@@ -30,12 +30,12 @@
 
 // Main mode
 #ifndef MAIN_MODE
-#define MAIN_MODE					MAIN_MODE_vehicle
+#define MAIN_MODE					MAIN_MODE_VEHICLE
 #endif
 
 // Mode macros
 #define MAIN_MODE_IS_MOTE			(MAIN_MODE == MAIN_MODE_MOTE_2400 || MAIN_MODE == MAIN_MODE_MOTE_400 || MAIN_MODE == MAIN_MODE_MOTE_HYBRID)
-#define MAIN_MODE_IS_VEHICLE		(MAIN_MODE == MAIN_MODE_vehicle)
+#define MAIN_MODE_IS_VEHICLE		(MAIN_MODE == MAIN_MODE_VEHICLE)
 #define MAIN_MODE_IS_BASE			(MAIN_MODE == MAIN_MODE_M8T_BASE_2400 || MAIN_MODE == MAIN_MODE_M8T_BASE_400)
 
 // Firmware version
@@ -171,7 +171,7 @@
 #define CAN_IO_BOARD                0
 
 // Log configuration to enable. Choose one only.
-//#define LOG_EN_vehicleREL
+//#define LOG_EN_CARREL
 //#define LOG_EN_ITRANSIT
 
 // CC2520 Settings
