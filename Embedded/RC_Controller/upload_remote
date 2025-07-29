@@ -34,8 +34,6 @@ if [ "$mode" == "uart" ]; then
 fi
 
 if [ "$mode" == "stlink" ]; then
-##	ssh $user@$server -p $port "openocd -f board/stm32f4discovery.cfg -c 'reset_config trst_only combined' -c 'program $filename verify reset exit 0x08000000'"
-##    ssh $user@$server -p $port "/home/nvidia/openocd/src/openocd -f board/stm32f4discovery.cfg -c 'reset_config trst_only combined' -c 'program $filename verify reset exit 0x08000000'"
 if [ "$targetos" = "raspberry" ]; then
     ssh $user@$server -p $port "bash -c 'source ~/.bashrc && openocd -f board/stm32f4discovery.cfg -c \"reset_config trst_only combined\" -c \"program $filename verify reset exit 0x08000000\"'"
 else

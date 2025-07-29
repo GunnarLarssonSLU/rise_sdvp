@@ -64,10 +64,7 @@
 #define SERVO_VESC_DEADBAND_COMP    0.2
 #define IS_F9_BOARD					1
 #define ADDIO
-//#define IO_BOARD
-#ifdef CAN_ADDIO
-#define FTR2_ANGLE                  1
-#endif
+#define CAN_ADDIO					1
 #define SERVO_WRITE
 #define SERVO_READ
 #endif
@@ -95,6 +92,10 @@
 #define SERVO_WRITE
 #define SERVO_READ
 //#define TACHOATCARD
+#endif
+
+#ifdef CAN_ADDIO
+#define FTR2_ANGLE                  1
 #endif
 
 // Differential steering
@@ -167,8 +168,6 @@
 
 // CAN settings
 #define CAN_EN_DW					1
-#define CAN_ADDIO                   1
-#define CAN_IO_BOARD                0
 
 // Log configuration to enable. Choose one only.
 //#define LOG_EN_CARREL

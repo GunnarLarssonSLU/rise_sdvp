@@ -19,13 +19,13 @@
      <item>
       <widget class="QTabWidget" name="tabWidget">
        <property name="tabPosition">
-        <enum>QTabWidget::South</enum>
+        <enum>QTabWidget::TabPosition::South</enum>
        </property>
        <property name="tabShape">
-        <enum>QTabWidget::Triangular</enum>
+        <enum>QTabWidget::TabShape::Triangular</enum>
        </property>
        <property name="currentIndex">
-        <number>5</number>
+        <number>3</number>
        </property>
        <property name="tabsClosable">
         <bool>false</bool>
@@ -47,7 +47,7 @@
            <item>
             <spacer name="orientationSpacer">
              <property name="orientation">
-              <enum>Qt::Vertical</enum>
+              <enum>Qt::Orientation::Vertical</enum>
              </property>
              <property name="sizeHint" stdset="0">
               <size>
@@ -196,7 +196,7 @@
                 <string>Car</string>
                </property>
                <property name="alignment">
-                <set>Qt::AlignCenter</set>
+                <set>Qt::AlignmentFlag::AlignCenter</set>
                </property>
               </widget>
              </item>
@@ -221,7 +221,7 @@
                 <string>Ublox</string>
                </property>
                <property name="alignment">
-                <set>Qt::AlignCenter</set>
+                <set>Qt::AlignmentFlag::AlignCenter</set>
                </property>
               </widget>
              </item>
@@ -271,7 +271,7 @@
                 <string>UWB</string>
                </property>
                <property name="alignment">
-                <set>Qt::AlignCenter</set>
+                <set>Qt::AlignmentFlag::AlignCenter</set>
                </property>
               </widget>
              </item>
@@ -318,7 +318,7 @@
              <item>
               <spacer name="verticalSpacer_2">
                <property name="orientation">
-                <enum>Qt::Vertical</enum>
+                <enum>Qt::Orientation::Vertical</enum>
                </property>
                <property name="sizeHint" stdset="0">
                 <size>
@@ -417,7 +417,7 @@
               <item row="0" column="2">
                <widget class="QLCDNumber" name="servoDirectNumber">
                 <property name="segmentStyle">
-                 <enum>QLCDNumber::Flat</enum>
+                 <enum>QLCDNumber::SegmentStyle::Flat</enum>
                 </property>
                 <property name="value" stdset="0">
                  <double>0.500000000000000</double>
@@ -446,7 +446,7 @@
                  <number>0</number>
                 </property>
                 <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
+                 <enum>Qt::Orientation::Horizontal</enum>
                 </property>
                </widget>
               </item>
@@ -472,14 +472,14 @@
                  <number>500</number>
                 </property>
                 <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
+                 <enum>Qt::Orientation::Horizontal</enum>
                 </property>
                </widget>
               </item>
               <item row="1" column="2">
                <widget class="QLCDNumber" name="servoMappedNumber">
                 <property name="segmentStyle">
-                 <enum>QLCDNumber::Flat</enum>
+                 <enum>QLCDNumber::SegmentStyle::Flat</enum>
                 </property>
                 <property name="value" stdset="0">
                  <double>0.000000000000000</double>
@@ -505,14 +505,14 @@
                  <number>500</number>
                 </property>
                 <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
+                 <enum>Qt::Orientation::Horizontal</enum>
                 </property>
                </widget>
               </item>
               <item row="2" column="2">
                <widget class="QLCDNumber" name="ioBoardPwmNumber">
                 <property name="segmentStyle">
-                 <enum>QLCDNumber::Flat</enum>
+                 <enum>QLCDNumber::SegmentStyle::Flat</enum>
                 </property>
                </widget>
               </item>
@@ -878,7 +878,7 @@
            <item>
             <spacer name="horizontalSpacer_3">
              <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+              <enum>Qt::Orientation::Horizontal</enum>
              </property>
              <property name="sizeHint" stdset="0">
               <size>
@@ -1106,7 +1106,7 @@
         <string>Fault code...</string>
        </property>
        <property name="alignment">
-        <set>Qt::AlignCenter</set>
+        <set>Qt::AlignmentFlag::AlignCenter</set>
        </property>
       </widget>
      </item>
@@ -1270,7 +1270,7 @@
      <item>
       <spacer name="verticalSpacer">
        <property name="orientation">
-        <enum>Qt::Vertical</enum>
+        <enum>Qt::Orientation::Vertical</enum>
        </property>
        <property name="sizeHint" stdset="0">
         <size>

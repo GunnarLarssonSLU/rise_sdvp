@@ -53,6 +53,8 @@ private:
     Packet *mPacket;
     bool mUsePacket;
 
+    void sendMessageToRos2(const QByteArray& data);
+
 };
 
 #endif // TCPSERVERSIMPLE_H

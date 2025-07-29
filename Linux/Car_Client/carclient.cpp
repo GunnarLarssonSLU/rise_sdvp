@@ -38,6 +38,8 @@
 #include <thread>
 #include <chrono>
 
+#define JETSON____
+
 namespace {
 void rtcm_rx(uint8_t *data, int len, int type) {
     if (CarClient::currentMsgHandler) {
@@ -573,9 +575,6 @@ void CarClient::readRos2Command() {
     QLocalSocket* clientConnection = qobject_cast<QLocalSocket*>(sender());
     QByteArray rosdata = clientConnection->readAll();
 
-//    const unsigned char *data = reinterpret_cast<const unsigned char *>(rosdata.constData());
-//    unsigned int len_packet = std::strlen(reinterpret_cast<const char *>(data));
-
     rosdata.prepend('\0');
     rosdata.append('\0');
     rosdata.append('\0');
@@ -828,10 +827,6 @@ void CarClient::packetDataToSend(QByteArray &data)
             qDebug() << "Packet not sent (port closed)";
 
         }
-/*
-        for (CarSim *s: mSimulatedCars) {
-            s->processData(data);
-        }*/
     }
 }
 
@@ -1062,7 +1057,7 @@ void CarClient::logEthernetReceived(quint8 id, QByteArray data)
 void CarClient::processCarData(QByteArray data)
 {
     mPacketInterface->processData(data);
-}
+}     //   qDebug() << "Published: " << str;
 
 void CarClient::cameraImageCaptured(QImage img)
 {
@@ -1072,14 +1067,11 @@ void CarClient::cameraImageCaptured(QImage img)
 void CarClient::logBroadcasterDataReceived(QByteArray &data)
 {
     mLogBroadcasterDataBuffer.append(data);
-
     int newLineIndex = mLogBroadcasterDataBuffer.indexOf("\n");
     while (newLineIndex >= 0) {
         QString line = mLogBroadcasterDataBuffer.left(newLineIndex);
         mLogBroadcasterDataBuffer.remove(0, newLineIndex + 1);
-
         QStringList tokens = line.split(" ");
-
         if (tokens.at(0) == "plot_init") {
             if (tokens.size() == 3) {
                 QByteArray data;
@@ -1139,10 +1131,8 @@ void CarClient::logBroadcasterDataReceived(QByteArray &data)
                              arg(a.height, 0, 'f', 3));
             }
             reply.append("\r\n");
-
             mLogBroadcaster->broadcastData(reply.toLocal8Bit());
         }
-
         newLineIndex = mLogBroadcasterDataBuffer.indexOf("\n");
     }
 }
@@ -1182,7 +1172,6 @@ void CarClient::printTerminal(QString str)
     carPacketRx(mCarId, CMD_PRINTF, packet);
 
     // Existing behavior (e.g., print to the terminal)
-//    qDebug() << "Terminal Output:" << str;
     // Attempt to connect to the local socket without blocking
     QLocalSocket socket;
     socket.connectToServer("ros2_carclient_terminal_channel");
@@ -1195,14 +1184,12 @@ void CarClient::printTerminal(QString str)
         } else
         {
         // Publish the message if the server is available
-     //   qDebug() << "Published: " << str;
         QByteArray data = str.toUtf8();
         socket.write(data);
         socket.flush();
         socket.disconnectFromServer();
         }
     }
-
 }
 
 void CarClient::printLog(QString str)
@@ -1217,7 +1204,6 @@ void CarClient::printLog(QString str)
 bool CarClient::waitProcess(QProcess &process, int timeoutMs)
 {
     bool killed = false;
-
     process.waitForStarted();
 
     QEventLoop loop;
@@ -1233,7 +1219,6 @@ bool CarClient::waitProcess(QProcess &process, int timeoutMs)
         process.waitForFinished();
         killed = true;
     }
-
     return !killed;
 }
 
@@ -1242,7 +1227,8 @@ void CarClient::startStr2Str(double lat,double lon ) {
     QString strLat=QString("%1").arg(lat, 0, 'f', 14);
     QString strLon=QString("%1").arg(lon, 0, 'f', 14);
 //    QString exec="str2str -in ntrip://"+mUsr+":"+mPwd+"@nrtk-swepos.lm.se:80/RTCM3_GNSS -p "+strLat+" "+strLon+" 17 -n 1 -out serial://rtk:115200:8:n:1 -msg ""1005,1074,1084,1094,1230""";
-//    qDebug() << exec;
+    QString exec="str2str -in ntrip://"+mUsr+":"+mPwd+"@nrtk-swepos.lm.se:80/RTCM3_GNSS -p "+strLat+" "+strLon+" 17 -n 5 -out serial://rtk:115200:8:r:1 -msg ""1005,1074""";
+    qDebug() << exec;
 
     QStringList args;
     args << "-in" << QString("ntrip://%1:%2@nrtk-swepos.lm.se:80/RTCM3_GNSS").arg(mUsr, mPwd)

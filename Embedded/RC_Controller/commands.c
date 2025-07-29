@@ -785,6 +785,8 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			} else {
 				buffer_append_float32(m_send_buffer, pos.yaw, 1e6, &send_index); // 16
 			}
+//			commands_printf("Sending yaw: %f\n",pos.yaw);
+
 			buffer_append_float32(m_send_buffer, accel[0], 1e6, &send_index); // 20
 			buffer_append_float32(m_send_buffer, accel[1], 1e6, &send_index); // 24
 			buffer_append_float32(m_send_buffer, accel[2], 1e6, &send_index); // 28

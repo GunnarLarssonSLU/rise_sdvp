@@ -612,6 +612,7 @@ void CarInterface::on_terminalSendButton_clicked()
 {
     emit terminalCmd(mId, ui->terminalEdit->text());
     ui->terminalEdit->clear();
+    qDebug() << "out on_terminalSendButton_clicked";
 }
 
 void CarInterface::on_terminalSendVescButton_clicked()

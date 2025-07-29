@@ -15,6 +15,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
     */
 
+#define JETSON____
 #ifdef HAS_GUI
 #include <QApplication>
 #include <QQmlApplicationEngine>

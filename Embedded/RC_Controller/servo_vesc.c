@@ -54,6 +54,8 @@ static int m_not_ok_cnt = 0;
 static float m_out_last = 0.0;
 
 float servo_output;
+extern int iDebug;
+
 
 // Threads
 static THD_WORKING_AREA(servo_thread_wa, 1024);
@@ -120,9 +122,12 @@ static THD_FUNCTION(servo_thread, arg) {
 		(void)as5047_read;
 	#ifdef ADDIO
 		float pos_addio = comm_can_ftr2_angle();
-
 		bool ok = pos_addio != m_pos_now_raw;
 		m_pos_now_raw = pos_addio;
+		if (iDebug==15)
+		{
+			commands_printf("Addio angle: %f\n",pos_addio);
+		}
 	#elif defined(IO_BOARD)
 		float pos_io_board = comm_can_io_board_as5047_angle();
 
@@ -136,7 +141,6 @@ static THD_FUNCTION(servo_thread, arg) {
 		m_pos_now_raw = as5047_read(&ok);
 #endif
 
-//		commands_printf("Vinkel i servo_vesc: %f\n",  m_pos_now_raw);
 		float pos = m_pos_now_raw;
 		pos -= SERVO_VESC_S1;
 
@@ -153,6 +157,13 @@ static THD_FUNCTION(servo_thread, arg) {
 
 		// Run PID-controller on the output
 		float error = m_pos_set - m_pos_now;
+
+		if (iDebug==28)
+		{
+			commands_printf("Vinkel i servo_vesc (m_pos_now): %f\n",  m_pos_now);
+			commands_printf("m_pos_set: %f\n",  m_pos_set);
+			commands_printf("error: %f\n",  error);
+		}
 
 		float dt = 0.01;
 		float p_term = error * main_config.vehicle.vesc_p_gain;
