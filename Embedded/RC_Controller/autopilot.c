@@ -63,6 +63,8 @@ static bool m_route_end;
 static float m_turn_rad_now;
 #endif
 
+extern int iDebug;
+
 // Private functions
 static THD_FUNCTION(ap_thread, arg);
 static void steering_angle_to_point(
@@ -547,9 +549,14 @@ static THD_FUNCTION(ap_thread, arg) {
 		if (len >= 2) {
 			POS_STATE pos_now;
 
+
             // Set positioning according to attributes
 			switch (attributes_now & ATTR_POSITIONING_MASK) {
 			case ATTR_POSITIONING_DEFAULT:
+				if ((iDebug==21))
+				{
+					commands_printf("autopilot calls pos_get_pos");
+				}
 				pos_get_pos(&pos_now);
 				break;
 
@@ -691,6 +698,11 @@ static THD_FUNCTION(ap_thread, arg) {
 					}
 				}
 
+
+				if ((iDebug==21))
+				{
+					commands_printf("Finding closest point to vehicle");
+				}
 				// Find closest point to vehicle
 				if (utils_rp_distance(&vehicle_pos, &m_route[ind]) <
 						utils_rp_distance(&vehicle_pos, closest_to_vehicle)) {
@@ -864,7 +876,18 @@ static THD_FUNCTION(ap_thread, arg) {
 				float steering_angle = 0.0;
 				float circle_radius = 1000.0;
 
-
+				if ((iDebug==21))
+				{
+					commands_printf("steering_angle_to_point");
+					commands_printf("pos_now.px: %f",(double) pos_now.px);
+					commands_printf("pos_now.py: %f",(double) pos_now.py);
+					commands_printf("-pos_now.yaw * M_PI / 180.0: %f",(double) -pos_now.yaw * M_PI / 180.0);
+					commands_printf("rp_now.px: %f",(double) rp_now.px);
+					commands_printf("rp_now.py: %f",(double) rp_now.py);
+					commands_printf("steering_angle: %f",(double) steering_angle);
+					commands_printf("distance: %f",(double) distance);
+					commands_printf("circle_radius: %f",(double) circle_radius);
+				}
 				steering_angle_to_point(pos_now.px, pos_now.py, -pos_now.yaw * M_PI / 180.0, rp_now.px,
 						rp_now.py, &steering_angle, &distance, &circle_radius);
 
@@ -923,6 +946,10 @@ static THD_FUNCTION(ap_thread, arg) {
 					const float dist_tot = utils_rp_distance(&rp_now, closest1_speed) + utils_rp_distance(&rp_now, closest2_speed);
 					speed = utils_map(dist_prev, 0.0, dist_tot, closest1_speed->speed, closest2_speed->speed);
 				}
+				if ((iDebug==22))
+				{
+					commands_printf("speed: %f",(double) speed);
+				}
 
 				if (m_is_speed_override) {
 					speed = m_override_speed;
@@ -935,23 +962,17 @@ static THD_FUNCTION(ap_thread, arg) {
 					autopilot_set_turn_rad(circle_radius);
 				#else
 					#ifdef IS_DRANGEN
-//					commands_printf("debug: %f\n",iDebug);
-//					if(iDebug==2)
-					//					{
-	//				commands_printf("AP NOW px: %f, py: %f, angle: %f\n",pos_now.px, pos_now.py, -pos_now.yaw * M_PI / 180.0);
-	//				commands_printf("AP RP px: %f, py: %f, angle: %f\n",rp_now.px, rp_now.py, steering_angle);
-	//				commands_printf("Dist: %f, circle radius: %f\n",distance, circle_radius);
-	//				commands_printf("Servo pos: %f\n",servo_pos);
-					//					}//
 
 					comm_can_set_vesc_id(DIFF_STEERING);
 					bldc_interface_set_duty_cycle(servo_pos);
-//					commands_printf("Motor %d: (steering) Duty cycle: %f.\n", DIFF_STEERING,servo_pos);
-//						commands_printf("Vinkel: %f\n",  pos_now.yaw);
 
 					#endif
 					#ifdef IS_MACTRAC
-						commands_printf("Is a MacTrac!\n");
+						if (iDebug==22)
+						{
+//							commands_printf("Is a MacTrac!\n");
+							commands_printf("Servo pos in autopilot:%f\n",servo_pos);
+						}
 						servo_simple_set_pos_ramp(servo_pos, false); //GL - Fixa här!!
 					#endif
 				#endif
@@ -1012,11 +1033,13 @@ static void steering_angle_to_point(
 
 	*circle_radius = R;
 	*steering_angle = atanf(main_config.vehicle.axis_distance / R);
-/*
+
+	if (iDebug==23)
+	{
 	commands_printf("current x: %f, y: %f, angle: %f\n",current_x, current_y, current_angle);
 	commands_printf("goal x: %f, y: %f, angle: %f\n",goal_x, goal_y, steering_angle);
 	commands_printf("Dist: %f, circle radius: %f\n",distance, circle_radius);
-*/
+	}
 }
 
 static bool add_point(ROUTE_POINT *p, bool first) {

@@ -309,8 +309,8 @@ debug-start:
 	openocd -f stm32-bv_openocd.cfg -d
 	
 upload_remote: build/$(PROJECT).bin
-#	./upload_remote build/$(PROJECT).bin nvidia 192.168.200.7 22 stlink jetson
-	./upload_remote build/$(PROJECT).bin pi 192.168.200.4 22 stlink raspberry
+	./upload_remote build/$(PROJECT).bin nvidia 192.168.200.7 22 stlink jetson
+#	./upload_remote build/$(PROJECT).bin pi 192.168.200.4 22 stlink raspberry
 
 touch_conf_general:
 	touch ./conf_general.h
@@ -338,3 +338,4 @@ mactrac: touch_conf_general build/fw_mactrac.elf build/fw_mactrac.bin
 
 RULESPATH = $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC
 include $(RULESPATH)/rules.mk
+

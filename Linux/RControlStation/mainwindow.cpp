@@ -1404,24 +1404,29 @@ void MainWindow::on_stopButton_clicked()
 
 void MainWindow::on_mapUploadRouteButton_clicked()
 {
+    qDebug() << "in on_mapUploadRouteButton_clicked()";
     if (!mSerialPort->isOpen() && !mPacketInterface->isUdpConnected() && !mTcpClientMulti->isAnyConnected()) {
         QMessageBox::warning(this, "Upload route",
                              "Serial port not connected.");
         return;
     }
+    qDebug() << "step 1";
 
     QList<LocPoint> route = ui->mapWidget->getRoute();
     int len = route.size();
     int car = ui->mapCarBox->value();
     bool ok = true;
+    qDebug() << "step 2";
 
     if (len <= 0) {
         QMessageBox::warning(this, "Upload route",
                              "No route on map.");
         return;
     }
+    qDebug() << "step 3";
 
     ui->mapUploadRouteButton->setEnabled(false);
+    qDebug() << "step 4";
 
     // Stop car
     for (int i = 0;i < mCars.size();i++) {
@@ -1430,11 +1435,13 @@ void MainWindow::on_mapUploadRouteButton_clicked()
             break;
         }
     }
+    qDebug() << "step 5";
 
     // Clear previous route
     if (ok) {
         ok = mPacketInterface->clearRoute(car);
     }
+    qDebug() << "step 6";
 
     QElapsedTimer timer;
     timer.start();
@@ -1461,6 +1468,7 @@ void MainWindow::on_mapUploadRouteButton_clicked()
             }
         }
     }
+    qDebug() << "step 7";
 
     if (!ok) {
         QMessageBox::warning(this, "Upload route",

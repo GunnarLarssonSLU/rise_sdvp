@@ -45,7 +45,7 @@ static THD_FUNCTION(cancom_read_thread, arg);
 static THD_FUNCTION(cancom_process_thread, arg);
 
 // Functions
-static void cmd_terminal_useeid(int argc, const char **argv);
+//static void cmd_terminal_useeid(int argc, const char **argv);
 
 // Variables
 static can_status_msg stat_msgs[CAN_STATUS_MSGS_TO_STORE];
@@ -60,7 +60,6 @@ static thread_t *process_tp;
 static int vesc_id = VESC_ID;
 
 int iEid;
-
 
 // IO Board
 static float io_board_adc_voltages[8] = {0};
@@ -126,13 +125,13 @@ void comm_can_init(void) {
 	rx_frame_read = 0;
 	rx_frame_write = 0;
 	vesc_id = VESC_ID;
-
+/*
 	terminal_register_command_callback(
 			"eid",
 			"Set value for eid filter for debug info",
 			0,
 			cmd_terminal_useeid);
-
+*/
 
 	chMtxObjectInit(&can_mtx);
 	chMtxObjectInit(&vesc_mtx_ext);
@@ -218,11 +217,12 @@ static THD_FUNCTION(cancom_read_thread, arg) {
     commands_printf("\n");
 }*/
 
+/*
 static void cmd_terminal_useeid(int argc, const char **argv) {
 	sscanf(argv[1], "%i", &iEid);
 	commands_printf("Eid: %i\n",iEid);
 }
-
+*/
 
 static THD_FUNCTION(cancom_process_thread, arg) {
 	(void)arg;
@@ -436,7 +436,15 @@ static THD_FUNCTION(cancom_process_thread, arg) {
 #if CAN_ADDIO
 				if (rxmsg.SID == CAN_ANGLE) {
 					ftr2_activated = true;
-					can_ftr2_angle = ((rxmsg.data8[1] << 8) | rxmsg.data8[0]) / 10;
+					can_ftr2_angle = (((rxmsg.data8[1] << 8) | rxmsg.data8[0]) / 10);
+					if (iDebug==15)
+					{
+						commands_printf("Addio A: %d\n",(rxmsg.data8[1] << 8));
+						commands_printf("Addio B: %d\n",rxmsg.data8[0]);
+					}
+
+					//can_ftr2_angle = (((rxmsg.data8[1] << 8) | rxmsg.data8[0]) / 10)*0.00017836-192752.4;
+					//rough conversion to angles based on test with the MacTrac
 				}
 				if ((rxmsg.SID & 0x700) == CAN_MASK_PVG32 && rxmsg.SID != 0x71F) {
 					prop_valve_nmt_sm(rxmsg.SID - 0x700, rxmsg.data8[0]); 

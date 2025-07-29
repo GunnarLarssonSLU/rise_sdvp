@@ -17,6 +17,7 @@
 
 #include "tcpserversimple.h"
 #include <QDebug>
+#include <QLocalSocket>
 
 TcpServerSimple::TcpServerSimple(QObject *parent) : QObject(parent)
 {
@@ -37,7 +38,6 @@ bool TcpServerSimple::startServer(int port, QHostAddress addr)
     if (!mTcpServer->listen(addr,  port)) {
         return false;
     }
-
     return true;
 }
 
@@ -56,20 +56,31 @@ void TcpServerSimple::stopServer()
 
 bool TcpServerSimple::sendData(const QByteArray &data)
 {
-/*
     qDebug() << "in TcpServerSimple::sendData: " << data;
-    qDebug() << "The data(0) is:" << (int)data.at(0);
-    qDebug() << "The data(1) is:" << (int)data.at(1);
-    qDebug() << "The data(2) is:" << (int)data.at(2);
-*/
     bool res = false;
 
     if (mTcpSocket) {
         mTcpSocket->write(data);
+        sendMessageToRos2(data);
         res = true;
     }
 
     return res;
+}
+
+void TcpServerSimple::sendMessageToRos2(const QByteArray& data)
+{
+    QLocalSocket socket;
+    socket.connectToServer("carclient_ros2_channel");
+
+    if (!socket.waitForConnected(3000)) {
+        qDebug() << "Failed to connect to ROS2 channel";
+        return;
+    }
+    qDebug() << "in TcpServerSimple::sendMessageToRos2: " << data;
+    socket.write(data);
+    socket.flush();
+    socket.disconnectFromServer();
 }
 
 QString TcpServerSimple::errorString()

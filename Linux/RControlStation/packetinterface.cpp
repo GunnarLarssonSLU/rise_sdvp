@@ -97,7 +97,6 @@ void PacketInterface::processData(QByteArray &data)
 {
     unsigned char rx_data;
     const int rx_timeout = 50;
-
     for(int i = 0;i < data.length();i++) {
         rx_data = data[i];
 
@@ -186,6 +185,7 @@ void PacketInterface::processData(QByteArray &data)
 
 void PacketInterface::processPacket(const unsigned char *data, int len)
 {
+    qDebug() << "in processPacket";
     QByteArray pkt = QByteArray((const char*)data, len);
 
     unsigned char id = data[0];
@@ -195,14 +195,22 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     CMD_PACKET cmd = (CMD_PACKET)(quint8)data[0];
     data++;
     len--;
+    qDebug() << "command:" << cmd;
 
     emit packetReceived(id, cmd, pkt);
 
+    qDebug() << "ready to switch";
+
     switch (cmd) {
     case CMD_PRINTF: {
-        QByteArray tmpArray = QByteArray::fromRawData((const char*)data, len);
-        tmpArray[len] = '\0';
-        emit printReceived(id, QString::fromLatin1(tmpArray));
+        QByteArray array(len + 1, Qt::Uninitialized);
+        memcpy(array.data(), data, len);
+        array[len] = '\0';  // Safe: array owns the memory
+
+/*        QByteArray tmpArray = QByteArray::fromRawData((const char*)data, len);
+        tmpArray[len] = '\0';*/
+        emit printReceived(id, QString::fromLatin1(array)); // Might need to change this to avoid bad format
+        qDebug() << "step 3";
     } break;
 
     case CMD_GET_ENU_REF: {
@@ -383,28 +391,6 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         tmpArray[len] = '\0';
         emit logLineUsbReceived(id, QString::fromLocal8Bit(tmpArray));
     } break;
-/*
-    case CMD_PLOT_INIT: {
-        QString xL = QString::fromLocal8Bit((const char*)data);
-        QString yL = QString::fromLocal8Bit((const char*)data + xL.size() + 1);
-        emit plotInitReceived(id, xL, yL);
-    } break;
-
-    case CMD_PLOT_DATA: {
-        int32_t ind = 0;
-        double x = utility::buffer_get_double32_auto(data, &ind);
-        double y = utility::buffer_get_double32_auto(data, &ind);
-        emit plotDataReceived(id, x, y);
-    } break;
-
-    case CMD_PLOT_ADD_GRAPH: {
-        emit plotAddGraphReceived(id, QString::fromLocal8Bit((const char*)data));
-    } break;
-
-    case CMD_PLOT_SET_GRAPH: {
-        emit plotSetGraphReceived(id, data[0]);
-    } break;
-*/
     case CMD_SET_SYSTEM_TIME: {
         int32_t ind = 0;
         qint32 sec = utility::buffer_get_int32(data, &ind);
@@ -525,6 +511,7 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     default:
         break;
     }
+    qDebug() << "out processPacket";
 }
 
 void PacketInterface::timerSlot()
@@ -1181,6 +1168,7 @@ void PacketInterface::sendTerminalCmd(quint8 id, QString cmd)
     packet.append((char)CMD_TERMINAL_CMD);
     packet.append(cmd.toLatin1());
     sendPacket(packet);
+    qDebug() << "out sendTerminalCmd";
 }
 
 void PacketInterface::sendSetUserCmd(quint8 id, QString cmd)
