@@ -46,7 +46,7 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>187</width>
+           <width>207</width>
            <height>71</height>
           </rect>
          </property>
@@ -520,7 +520,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_2">
+      <widget class="QWidget" name="tabMap">
        <attribute name="icon">
         <iconset resource="resources.qrc">
          <normaloff>:/models/Icons/Waypoint Map-96.png</normaloff>:/models/Icons/Waypoint Map-96.png</iconset>
@@ -850,12 +850,12 @@
                <enum>QTabWidget::TabShape::Rounded</enum>
               </property>
               <property name="currentIndex">
-               <number>1</number>
+               <number>5</number>
               </property>
               <property name="usesScrollButtons">
                <bool>false</bool>
               </property>
-              <widget class="QWidget" name="tab_6">
+              <widget class="QWidget" name="tabVehicle">
                <attribute name="icon">
                 <iconset resource="resources.qrc">
                  <normaloff>:/models/Icons/Sedan-96.png</normaloff>:/models/Icons/Sedan-96.png</iconset>
@@ -1131,7 +1131,7 @@
                 </item>
                </layout>
               </widget>
-              <widget class="QWidget" name="tab_10">
+              <widget class="QWidget" name="tabPen">
                <attribute name="icon">
                 <iconset resource="resources.qrc">
                  <normaloff>:/models/Icons/Pencil-96.png</normaloff>:/models/Icons/Pencil-96.png</iconset>
@@ -1168,8 +1168,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>332</width>
-                     <height>975</height>
+                     <width>239</width>
+                     <height>749</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_23">
@@ -1746,7 +1746,7 @@
                 </item>
                </layout>
               </widget>
-              <widget class="QWidget" name="tab_8">
+              <widget class="QWidget" name="tabStreamImport">
                <attribute name="icon">
                 <iconset resource="resources.qrc">
                  <normaloff>:/models/Icons/Import-96.png</normaloff>:/models/Icons/Import-96.png</iconset>
@@ -1784,7 +1784,7 @@
                      <x>0</x>
                      <y>0</y>
                      <width>196</width>
-                     <height>431</height>
+                     <height>433</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -2038,7 +2038,7 @@
                 </item>
                </layout>
               </widget>
-              <widget class="QWidget" name="tab_9">
+              <widget class="QWidget" name="tabMapSettings">
                <attribute name="icon">
                 <iconset resource="resources.qrc">
                  <normaloff>:/models/Icons/Visible-96.png</normaloff>:/models/Icons/Visible-96.png</iconset>
@@ -2078,8 +2078,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>204</width>
-                     <height>774</height>
+                     <width>244</width>
+                     <height>776</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_15">
@@ -2641,7 +2641,7 @@
                 </item>
                </layout>
               </widget>
-              <widget class="QWidget" name="tab_5">
+              <widget class="QWidget" name="tabMDfill">
                <attribute name="icon">
                 <iconset resource="resources.qrc">
                  <normaloff>:/models/Icons/Polygon-96.png</normaloff>:/models/Icons/Polygon-96.png</iconset>
@@ -3048,6 +3048,57 @@
                 </item>
                </layout>
               </widget>
+              <widget class="QWidget" name="tabGLfill">
+               <attribute name="title">
+                <string>GL-fill</string>
+               </attribute>
+               <layout class="QVBoxLayout" name="verticalLayout">
+                <item>
+                 <layout class="QFormLayout" name="formLayout">
+                  <item row="0" column="0">
+                   <widget class="QLabel" name="implementWidthLabel">
+                    <property name="text">
+                     <string>Implement Width (m)</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="0" column="1">
+                   <widget class="QLineEdit" name="implementWidthLineEdit"/>
+                  </item>
+                  <item row="1" column="0">
+                   <widget class="QLabel" name="implementLengthMLabel">
+                    <property name="text">
+                     <string>Implement Length (m)</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="1">
+                   <widget class="QLineEdit" name="implementLengthMLineEdit"/>
+                  </item>
+                  <item row="99" column="0" colspan="2">
+                    <widget class="QPushButton" name="buttonGenerate">
+                      <property name="text">
+                        <string>Generate</string>
+                      </property>
+                    </widget>
+                  </item>
+                 </layout>
+                </item>
+                <item>
+                 <spacer name="verticalSpacer">
+                  <property name="orientation">
+                   <enum>Qt::Orientation::Vertical</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>20</width>
+                    <height>240</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+               </layout>
+              </widget>
              </widget>
             </item>
            </layout>
@@ -3272,7 +3323,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_11">
+      <widget class="QWidget" name="tab_11_UNUSED">
        <attribute name="icon">
         <iconset resource="resources.qrc">
          <normaloff>:/models/Icons/Radio Tower-96.png</normaloff>:/models/Icons/Radio Tower-96.png</iconset>
@@ -3289,7 +3340,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_12">
+      <widget class="QWidget" name="tab_12_UNUSED">
        <attribute name="icon">
         <iconset resource="resources.qrc">
          <normaloff>:/models/Icons/Gyroscope-96.png</normaloff>:/models/Icons/Gyroscope-96.png</iconset>
@@ -3306,7 +3357,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_13">
+      <widget class="QWidget" name="tab_13_UNUSED">
        <attribute name="icon">
         <iconset resource="resources.qrc">
          <normaloff>:/models/Icons/Electrical Sensor-96.png</normaloff>:/models/Icons/Electrical Sensor-96.png</iconset>
@@ -3401,15 +3452,7 @@
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
-   <widget class="QMenu" name="menuChronos">
-    <property name="title">
-     <string>&amp;Chronos</string>
-    </property>
-    <addaction name="actionSaveSelectedRouteAsDriveFile"/>
-    <addaction name="actionLoadDriveFile"/>
-   </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuChronos"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
