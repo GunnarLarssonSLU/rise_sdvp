@@ -118,6 +118,7 @@ SOURCES += main.cpp\
     imagewidget.cpp \
     tcpclientmulti.cpp \
     routemagic.cpp \
+    routegenerator.cpp \
     task_basestation.cpp
 
 HEADERS  += mainwindow.h \
@@ -159,6 +160,7 @@ HEADERS  += mainwindow.h \
     imagewidget.h \
     tcpclientmulti.h \
     routemagic.h \
+    routegenerator.h \
     attributes_masks.h \
     task.h \
     task_basestation.h
