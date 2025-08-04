@@ -45,6 +45,8 @@
 #include "wireguard.h"
 #include <memory>
 #include "arduinoreader.h"
+#include "routegenerator.h"
+#include "checkboxdelegate.h"
 
 #ifdef HAS_LIME_SDR
 #include "gpssim.h"
@@ -100,6 +102,9 @@ private slots:
     void jsButtonChanged(int button, bool pressed);
 
     void onSelectedFarm(const QModelIndex& current, const QModelIndex& previous);
+    void onSelectedField(const QModelIndex& current, const QModelIndex& previous);
+    void onSelectedFieldGeneral(QSqlRelationalTableModel *model,QSqlRelationalTableModel *modelPth,const QModelIndex& current, const QModelIndex& previous);
+
     void on_disconnectButton_clicked();
     void on_mapRemoveTraceButton_clicked();
     void on_MapRemovePixmapsButton_clicked();
@@ -112,7 +117,7 @@ private slots:
     void on_jsDisconnectButton_clicked();
     void on_mapAntialiasBox_toggled(bool checked);
     void on_carsWidget_tabCloseRequested(int index);
-    void on_genCircButton_clicked();
+//    void on_genCircButton_clicked();
     void on_mapSetAbsYawButton_clicked();
     void on_mapAbsYawSlider_valueChanged(int value);
     void on_mapAbsYawSlider_sliderReleased();
@@ -164,9 +169,6 @@ private slots:
     void on_actionTestIntersection_triggered();
     void on_actionSaveSelectedRouteAsDriveFile_triggered();
     void on_actionLoadDriveFile_triggered();
-    void on_mapSaveAsPdfButton_clicked();
-    void on_mapSaveAsPngButton_clicked();
-    void on_mapSaveRetakeButton_clicked();
     void on_modeRouteButton_toggled(bool checked);
     void on_uploadAnchorButton_clicked();
     void on_anchorIdBox_valueChanged(int arg1);
@@ -193,13 +195,19 @@ private slots:
     void on_AutopilotStopPushButton_clicked();
     void on_AutopilotRestartPushButton_clicked();
     void on_AutopilotPausePushButton_clicked();
+    void onGeneratePathButtonClicked();
+    void onLoadShapefile();
 
-    void setupFarmTable(QTableView* uiFarmtable,QString SqlTableName);
+    QSqlRelationalTableModel* setupFarmTable(QTableView* uiFarmtable,QString SqlTableName);
+    QSqlRelationalTableModel* setupFieldTable(QTableView* uiFieldtable,QString SqlTableName);
+    QSqlRelationalTableModel* setupPathTable(QTableView* uiPathTable,QString sqlTablename);
 
 private:
     void showError(const QSqlError &err);
     QSqlRelationalTableModel *modelFarm;
-
+    QSqlRelationalTableModel *modelField;
+    QSqlRelationalTableModel *modelPath;
+    CheckBoxDelegate* checkboxdelegate;
 
     Ui::MainWindow *ui;
     QTimer *mTimer;

@@ -74,6 +74,10 @@ public:
     bool operator==(const LocPoint& point);
     bool operator!=(const LocPoint& point);
 
+    static double LocPoint::calculateDistance(const LocPoint& p1, const LocPoint& p2);
+    static double LocPoint::calculateAngle(const LocPoint& p1, const LocPoint& p2);
+
+
 private:
     double mX;
     double mY;

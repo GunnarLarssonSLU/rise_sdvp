@@ -323,16 +323,17 @@ int main(int argc, char *argv[])
                 map.setDrawRouteText(plotRoutesShowText);
 
                 if (plotRoutesSelect >= 0) {
-                    map.setRouteNow(plotRoutesSelect);
+                    map.setPathNow(plotRoutesSelect);
                 } else {
-                    map.setRouteNow(map.getRouteNum() - 1);
+                    map.setPathNow(map.getPathNum() - 1);
                 }
-
+                /*
                 if (plotRoutesFormat == PLOT_ROUTE_FORMAT_PDF) {
                     map.printPdf(plotRoutesFile + ".pdf", plotRoutesW, plotRoutesH);
                 } else {
                     map.printPng(plotRoutesFile + ".png", plotRoutesW, plotRoutesH);
                 }
+*/
             } else {
                 qCritical() << "Could not load routes from" << plotRoutesFile;
             }

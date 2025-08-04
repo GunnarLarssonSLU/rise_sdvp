@@ -258,3 +258,15 @@ void LocPoint::setAttributes(quint32 attributes)
 {
     mAttributes = attributes;
 }
+
+static double LocPoint::calculateDistance(const LocPoint& p1, const LocPoint& p2) {
+    double dx = p2.getX() - p1.getX();
+    double dy = p2.getY() - p1.getY();
+    return std::sqrt(dx * dx + dy * dy);
+}
+
+static double LocPoint::calculateAngle(const LocPoint& p1, const LocPoint& p2) {
+    double dx = p2.getX() - p1.getX();
+    double dy = p2.getY() - p1.getY();
+    return std::atan2(dy, dx); // Angle in radians
+}
