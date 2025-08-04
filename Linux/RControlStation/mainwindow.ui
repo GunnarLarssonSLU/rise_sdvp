@@ -494,7 +494,7 @@
        <enum>QTabWidget::TabPosition::North</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -537,7 +537,7 @@
           <property name="orientation">
            <enum>Qt::Orientation::Horizontal</enum>
           </property>
-          <widget class="MapWidget" name="mapWidget" native="true">
+          <widget class="MapWidget" name="mapLiveWidget" native="true">
            <property name="sizePolicy">
             <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
              <horstretch>1</horstretch>
@@ -1169,7 +1169,7 @@
                      <x>0</x>
                      <y>0</y>
                      <width>239</width>
-                     <height>749</height>
+                     <height>748</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_23">
@@ -3063,24 +3063,112 @@
                    </widget>
                   </item>
                   <item row="0" column="1">
-                   <widget class="QLineEdit" name="implementWidthLineEdit"/>
+                   <widget class="QLineEdit" name="implementWidthLineEdit">
+                    <property name="locale">
+                     <locale language="English" country="UnitedKingdom"/>
+                    </property>
+                    <property name="text">
+                     <string>2.4</string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                    </property>
+                    <property name="placeholderText">
+                     <string/>
+                    </property>
+                   </widget>
                   </item>
                   <item row="1" column="0">
-                   <widget class="QLabel" name="implementLengthMLabel">
+                   <widget class="QLabel" name="implementLengthLabel">
                     <property name="text">
                      <string>Implement Length (m)</string>
                     </property>
                    </widget>
                   </item>
                   <item row="1" column="1">
-                   <widget class="QLineEdit" name="implementLengthMLineEdit"/>
+                   <widget class="QLineEdit" name="implementLengthLineEdit">
+                    <property name="text">
+                     <string>4</string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="2" column="0">
+                   <widget class="QLabel" name="plotsInDrivingDirectionLabel">
+                    <property name="text">
+                     <string>Plots (in driving direction, dd)</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="2" column="1">
+                   <widget class="QLineEdit" name="plotsInDrivingDirectionLineEdit">
+                    <property name="text">
+                     <string>1</string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="3" column="0">
+                   <widget class="QLabel" name="plotsInNonDrivingDirectionLabel">
+                    <property name="text">
+                     <string>Plots (in non-driving direction, ndd)</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="3" column="1">
+                   <widget class="QLineEdit" name="plotsInNonDrivingDirectionLineEdit">
+                    <property name="text">
+                     <string>1</string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                    </property>
+                   </widget>
                   </item>
                   <item row="99" column="0" colspan="2">
-                    <widget class="QPushButton" name="buttonGenerate">
-                      <property name="text">
-                        <string>Generate</string>
-                      </property>
-                    </widget>
+                   <widget class="QPushButton" name="buttonGenerate">
+                    <property name="text">
+                     <string>Generate</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="4" column="0">
+                   <widget class="QLabel" name="distanceBetweenPlotsMDdLabel">
+                    <property name="text">
+                     <string>Distance between plots (m), dd</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="4" column="1">
+                   <widget class="QLineEdit" name="distanceBetweenPlotsMDdLineEdit">
+                    <property name="text">
+                     <string>12</string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="5" column="0">
+                   <widget class="QLabel" name="distanceBetweenPlotsMNddLabel">
+                    <property name="text">
+                     <string>Distance between plots (m), ndd</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="5" column="1">
+                   <widget class="QLineEdit" name="distanceBetweenPlotsMNddLineEdit">
+                    <property name="text">
+                     <string>9</string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                    </property>
+                   </widget>
                   </item>
                  </layout>
                 </item>
@@ -3124,10 +3212,31 @@
           <x>0</x>
           <y>0</y>
           <width>759</width>
-          <height>512</height>
+          <height>542</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridlayout_3">
+         <item row="10" column="0">
+          <widget class="QLabel" name="labelPaths">
+           <property name="text">
+            <string>Paths</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="QLineEdit" name="locationnameEdit">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="labelFieldname">
+           <property name="text">
+            <string>Field name:</string>
+           </property>
+          </widget>
+         </item>
          <item row="2" column="2">
           <widget class="QPushButton" name="pushButton_farm">
            <property name="text">
@@ -3136,37 +3245,47 @@
           </widget>
          </item>
          <item row="11" column="2">
-          <widget class="QPushButton" name="pushButton_path">
+          <widget class="QLineEdit" name="pathnameEdit"/>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_16">
            <property name="text">
-            <string>Add path</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Name:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
          </item>
-         <item row="6" column="2">
-          <widget class="QCheckBox" name="fencedCheckBox">
-           <property name="text">
-            <string>use electronic fence</string>
-           </property>
-          </widget>
-         </item>
-         <item row="9" column="2">
+         <item row="10" column="2">
           <widget class="QTableView" name="pathTable">
            <property name="selectionBehavior">
             <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
            </property>
           </widget>
          </item>
-         <item row="8" column="2">
-          <widget class="QLabel" name="label_area_ha">
+         <item row="12" column="2">
+          <widget class="QPushButton" name="pushButton_path">
            <property name="text">
-            <string/>
+            <string>Add path</string>
            </property>
           </widget>
          </item>
-         <item row="9" column="0">
-          <widget class="QLabel" name="labelPaths">
+         <item row="3" column="0">
+          <widget class="QLabel" name="labelFields">
            <property name="text">
-            <string>Paths</string>
+            <string>Fields</string>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="2">
+          <widget class="QPushButton" name="pushButton_field">
+           <property name="text">
+            <string>Add field</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="3">
+          <widget class="QLabel" name="label_11">
+           <property name="text">
+            <string>Boundary</string>
            </property>
           </widget>
          </item>
@@ -3189,24 +3308,17 @@
            </property>
           </widget>
          </item>
-         <item row="0" column="0">
-          <widget class="QLabel" name="labelFarm">
+         <item row="11" column="0">
+          <widget class="QLabel" name="label_6">
            <property name="text">
-            <string>Farm</string>
+            <string>Path name:</string>
            </property>
           </widget>
          </item>
-         <item row="0" column="3">
-          <widget class="QLabel" name="label_11">
+         <item row="6" column="2">
+          <widget class="QCheckBox" name="fencedCheckBox">
            <property name="text">
-            <string>Boundary</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="2">
-          <widget class="QLineEdit" name="locationnameEdit">
-           <property name="enabled">
-            <bool>true</bool>
+            <string>use electronic fence</string>
            </property>
           </widget>
          </item>
@@ -3224,52 +3336,51 @@
            </property>
           </widget>
          </item>
-         <item row="3" column="0">
-          <widget class="QLabel" name="labelFields">
-           <property name="text">
-            <string>Fields</string>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="0">
-          <widget class="QLabel" name="labelFieldname">
-           <property name="text">
-            <string>Field name:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_16">
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Name:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item row="8" column="0">
+         <item row="9" column="0">
           <widget class="QLabel" name="labelArea">
            <property name="text">
             <string>Area:</string>
            </property>
           </widget>
          </item>
-         <item row="7" column="2">
-          <widget class="QPushButton" name="pushButton_field">
+         <item row="0" column="0">
+          <widget class="QLabel" name="labelFarm">
            <property name="text">
-            <string>Add field</string>
+            <string>Farm</string>
            </property>
           </widget>
          </item>
-         <item row="10" column="2">
-          <widget class="QLineEdit" name="pathnameEdit"/>
-         </item>
-         <item row="10" column="0">
-          <widget class="QLabel" name="label_6">
+         <item row="9" column="2">
+          <widget class="QLabel" name="label_area_ha">
            <property name="text">
-            <string>Path name:</string>
+            <string/>
+           </property>
+          </widget>
+         </item>
+         <item row="8" column="2">
+          <widget class="QPushButton" name="pushButton_load_shapefile">
+           <property name="text">
+            <string>Load Shape file</string>
            </property>
           </widget>
          </item>
         </layout>
+       </widget>
+       <widget class="MapWidget" name="mapWidgetFields" native="true">
+        <property name="geometry">
+         <rect>
+          <x>797</x>
+          <y>24</y>
+          <width>961</width>
+          <height>1211</height>
+         </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>1</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
        </widget>
       </widget>
       <widget class="QWidget" name="tab_3">
@@ -3417,6 +3528,81 @@
          </widget>
         </item>
        </layout>
+      </widget>
+      <widget class="QWidget" name="tabActivity">
+       <attribute name="title">
+        <string>Log</string>
+       </attribute>
+       <widget class="QWidget" name="tabAnalysis">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>1301</width>
+          <height>771</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="hBoxLayoutMain">
+         <item>
+          <layout class="QVBoxLayout" name="vBoxDisplay">
+           <item>
+            <widget class="QChartView" name="Graph" native="true">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+               <horstretch>1</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="MapWidget" name="mapWidgetAnalysis" native="true">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+               <horstretch>1</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="vBoxTools">
+           <item>
+            <widget class="QLabel" name="labelAnalysis">
+             <property name="text">
+              <string>Analysis Tool</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QTextEdit" name="textEditAnalysis"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="buttonRunAnalysis">
+             <property name="text">
+              <string>Run</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="verticalSpacerTools">
+             <property name="orientation">
+              <enum>Qt::Orientation::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
       </widget>
      </widget>
     </item>
@@ -3635,6 +3821,11 @@
    <extends>QWidget</extends>
    <header>correctionanalysis.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>QChartView</class>
+   <extends>QWidget</extends>
+   <header>qchartview.h</header>
   </customwidget>
  </customwidgets>
  <resources>

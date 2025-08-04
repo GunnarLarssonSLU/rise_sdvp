@@ -81,6 +81,7 @@ contains(DEFINES, HAS_ASSIMP) {
 
 SOURCES += main.cpp\
     arduinoreader.cpp \
+    checkboxdelegate.cpp \
         mainwindow.cpp \
     qcustomplot.cpp \
     packetinterface.cpp \
@@ -111,7 +112,7 @@ SOURCES += main.cpp\
     nmeawidget.cpp \
     confcommonwidget.cpp \
     ublox.cpp \
-    intersectiontest.cpp \
+#    intersectiontest.cpp \
     ncom.cpp \
     correctionanalysis.cpp \
     historylineedit.cpp \
@@ -123,6 +124,7 @@ SOURCES += main.cpp\
 
 HEADERS  += mainwindow.h \
     arduinoreader.h \
+    checkboxdelegate.h \
     qcustomplot.h \
     datatypes.h \
     packetinterface.h \
@@ -153,7 +155,6 @@ HEADERS  += mainwindow.h \
     nmeawidget.h \
     confcommonwidget.h \
     ublox.h \
-    intersectiontest.h \
     ncom.h \
     correctionanalysis.h \
     historylineedit.h \
@@ -176,7 +177,6 @@ FORMS    += mainwindow.ui \
     imuplot.ui \
     nmeawidget.ui \
     confcommonwidget.ui \
-    intersectiontest.ui \
     ncom.ui \
     correctionanalysis.ui
 
@@ -196,6 +196,11 @@ contains(DEFINES, HAS_SIM_SCEN) {
             simscentree.h
     FORMS +=
 }
+
+# --- GDAL support ---
+INCLUDEPATH += /usr/include/gdal
+LIBS += -L/usr/lib -lgdal
+
 
 greaterThan(QT_MAJOR_VERSION, 5) {
     # Configurations specific to Qt 6.x

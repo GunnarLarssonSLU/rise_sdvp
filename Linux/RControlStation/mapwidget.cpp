@@ -23,9 +23,10 @@
 #include <QTime>
 
 #include "mapwidget.h"
+#include "qmessagebox.h"
 #include "utility.h"
 #include "attributes_masks.h"
-
+#include "routemagic.h"
 
 namespace
 {
@@ -90,9 +91,9 @@ bool lineSegmentIntersection(const QPointF &p1, const QPointF &p2, const QPointF
         minMaxEps(q1.y(), q2.y(), q1YMin, q1YMax);
 
         if (    x <= p1XMax && x >= p1XMin &&
-                y <= p1YMax && y >= p1YMin &&
-                x <= q1XMax && x >= q1XMin &&
-                y <= q1YMax && y >= q1YMin) {
+            y <= p1YMax && y >= p1YMin &&
+            x <= q1XMax && x >= q1XMin &&
+            y <= q1YMax && y >= q1YMin) {
             res = true;
         }
     }
@@ -158,16 +159,17 @@ MapWidget::MapWidget(QWidget *parent) : QWidget(parent)
     mDrawGrid = true;
     mRoutePointSelected = -1;
     mAnchorSelected = -1;
-    mRouteNow = 0;
     mTraceMinSpaceCar = 0.05;
     mTraceMinSpaceGps = 0.05;
     mInfoTraceNow = 0;
     mAnchorMode = false;
-    mDrawRouteText = true;
+    mDrawRouteText = false;
     mDrawUwbTrace = false;
     mCameraImageWidth = 0.46;
     mCameraImageOpacity = 0.8;
     mInteractionMode = InteractionModeDefault;
+
+    bUpdateable=true;
 
     mOsm = new OsmClient(this);
     mDrawOpenStreetmap = true;
@@ -176,38 +178,28 @@ MapWidget::MapWidget(QWidget *parent) : QWidget(parent)
     mOsmMaxZoomLevel = 18;
     mDrawOsmStats = false;
 
-    mRoutes.clear();
-    QList<LocPoint> l;
-    mRoutes.append(l);
+    focusBorder=false;
+    mPaths=new MapRouteCollection();
+    mFields=new MapRouteCollection();
 
-    mInfoTraces.clear();
-    mInfoTraces.append(l);
+    mPaths->clear();
+
+//    MapRoute maproute;
+//    mPaths->append(maproute);
 
     mTimer = new QTimer(this);
     mTimer->start(20);
 
     // Set this to the SP base station position for now
-//    mRefLat = 57.71495867;
-//    mRefLon = 12.89134921;
-//    mRefHeight = 219.0;
-
-    // ASTA
-    mRefLat = 60.06314934424684;
-    mRefLon = 18.07893415029704;
-    mRefHeight = 253.76;
-
-    // Home
-    //    mRefLat = 57.57848470;
-    //    mRefLon = 13.11463205;
-    //    mRefHeight = 204.626;
+    // Ultuna
+    mRefLat = 59.812;
+    mRefLon = 17.658;
+    mRefHeight = 38;
 
     // Hardcoded for now
     mOsm->setCacheDir("osm_tiles");
-    //    mOsm->setTileServerUrl("http://tile.openstreetmap.org");
-    //mOsm->setTileServerUrl("http://c.osm.rrze.fau.de/osmhd"); // Also https
     mOsm->setTileServerUrl("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/");
-    //    mOsm->setTileServerUrl("http://tiles.vedder.se/osm_tiles");
-    //mOsm->setTileServerUrl("http://tiles.vedder.se/osm_tiles_hd");
+    //    mOsm->setTileServerUrl("http://tile.openstreetmap.org");
 
     connect(mOsm, SIGNAL(tileReady(OsmTile)), this, SLOT(tileReady(OsmTile)));
     connect(mOsm, SIGNAL(errorGetTile(QString)), this, SLOT(errorGetTile(QString)));
@@ -271,6 +263,8 @@ MapWidget::MapWidget(QWidget *parent) : QWidget(parent)
     }
 
     grabGesture(Qt::PinchGesture);
+    // Install the event filter on itself
+//    this->installEventFilter(this);
 }
 
 CarInfo *MapWidget::getCarInfo(int car)
@@ -282,6 +276,11 @@ CarInfo *MapWidget::getCarInfo(int car)
     }
 
     return 0;
+}
+
+// Function to set the mouse event handler
+void MapWidget::setMouseEventHandler(MouseEventHandler handler) {
+    mouseEventHandler = handler;
 }
 
 void MapWidget::addCar(const CarInfo &car)
@@ -307,7 +306,6 @@ void MapWidget::clearCars()
 {
     mCarInfo.clear();
 }
-
 
 LocPoint *MapWidget::getAnchor(int id)
 {
@@ -407,65 +405,117 @@ void MapWidget::addRoutePoint(double px, double py, double speed, qint32 time)
     pos.setXY(px, py);
     pos.setSpeed(speed);
     pos.setTime(time);
-    mRoutes[mRouteNow].append(pos);
+    mPaths->getCurrent().append(pos);
     update();
 }
 
-QList<LocPoint> MapWidget::getRoute(int ind)
+MapRoute MapWidget::getPath(int ind)
 {
-    if (ind < 0) {
-        return mRoutes[mRouteNow];
-    } else {
-        if (mRoutes.size() > ind) {
-            return mRoutes[ind];
-        } else {
-            QList<LocPoint> tmp;
-            return tmp;
-        }
-    }
+    return mPaths->getRoute(ind);
 }
 
-QList<QList<LocPoint> > MapWidget::getRoutes()
+MapRoute MapWidget::getField(int ind)
 {
-    return mRoutes;
+    return mFields->getRoute(ind);
 }
 
-void MapWidget::setRoute(const QList<LocPoint> &route)
+
+QList<MapRoute> MapWidget::getPaths()
 {
-    mRoutes[mRouteNow] = route;
+    return mPaths->getRoutes();
+}
+
+QList<MapRoute> MapWidget::getFields()
+{
+    return mFields->getRoutes();
+}
+
+void MapWidget::setPath(const MapRoute &path)
+{
+    mPaths->setRoute(path);
     update();
 }
 
-void MapWidget::addRoute(const QList<LocPoint> &route)
+void MapWidget::setField(const MapRoute &field)
 {
-    while (!mRoutes.isEmpty() &&
-           mRoutes.last().isEmpty() &&
-           mRouteNow < mRoutes.size()) {
-        mRoutes.removeLast();
-    }
-
-    mRoutes.append(route);
+    mFields->setRoute(field);
     update();
 }
 
-int MapWidget::getRouteNum()
-{
-    return mRoutes.size();
-}
 
-void MapWidget::clearRoute()
+void MapWidget::addPath(const MapRoute &path)
 {
-    mRoutes[mRouteNow].clear();
+    mPaths->addRoute(path);
     update();
 }
 
-void MapWidget::clearAllRoutes()
+void MapWidget::addField(const MapRoute &field)
 {
-    for (int i = 0;i < mRoutes.size();i++) {
-        mRoutes[i].clear();
-    }
-
+    mFields->addRoute(field);
     update();
+}
+
+
+int MapWidget::getPathNum()
+{
+    return mPaths->size();
+}
+
+int MapWidget::getFieldNum()
+{
+    return mFields->size();
+}
+
+void MapWidget::clearPath()
+{
+    mPaths->clearRoute();
+    update();
+}
+
+void MapWidget::clearField()
+{
+    mFields->clearRoute();
+    update();
+}
+
+void MapWidget::clearAllPaths()
+{
+    mPaths->clearAllRoutes();
+    update();
+}
+
+void MapWidget::clearAllFields()
+{
+    mFields->clearAllRoutes();
+    update();
+}
+
+int MapWidget::getPathNow() const
+{
+    return mPaths->mRouteNow;
+}
+
+void MapWidget::setPathNow(int pathNow)
+{
+    mPaths->setRouteNow(pathNow);
+    update();
+}
+
+int MapWidget::getFieldNow() const
+{
+    return mFields->mRouteNow;
+}
+
+void MapWidget::setFieldNow(int fieldNow)
+{
+    mFields->setRouteNow(fieldNow);
+    update();
+}
+
+
+void MapWidget::setBorderFocus(bool focus)
+{
+    focusBorder=focus;
 }
 
 void MapWidget::setRoutePointSpeed(double speed)
@@ -636,7 +686,9 @@ void MapWidget::mouseMoveEvent(QMouseEvent *e)
     }
 
     if (mRoutePointSelected >= 0) {
-        mRoutes[mRouteNow][mRoutePointSelected].setXY(mousePosMap.getX(), mousePosMap.getY());
+        //       MapRoute *current=mPaths->getCurrent();
+        //       *current[mRoutePointSelected].setXY(mousePosMap.getX(), mousePosMap.getY());
+        mPaths->getCurrent()[mRoutePointSelected].setXY(mousePosMap.getX(), mousePosMap.getY());
         update();
     }
 
@@ -648,9 +700,183 @@ void MapWidget::mouseMoveEvent(QMouseEvent *e)
     updateClosestInfoPoint();
 }
 
-void MapWidget::mousePressEvent(QMouseEvent *e)
+void MapWidget::mousePressEventFields(QMouseEvent *e)
 {
-    setFocus();
+    bool ctrl = e->modifiers() == Qt::ControlModifier;
+    bool shift = e->modifiers() == Qt::ShiftModifier;
+    bool ctrl_shift = e->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier);
+
+    if (mInteractionMode == InteractionModeCtrlDown) {
+        ctrl = true;
+        shift = false;
+        ctrl_shift = false;
+    } else if (mInteractionMode == InteractionModeShiftDown) {
+        ctrl = false;
+        shift = true;
+        ctrl_shift = false;
+    } else if (mInteractionMode == InteractionModeCtrlShiftDown) {
+        ctrl = false;
+        shift = false;
+        ctrl_shift = true;
+    }
+
+    QPoint mousePosWidget = this->mapFromGlobal(QCursor::pos());
+    LocPoint mousePosMap;
+    QPoint p = getMousePosRelative();
+    mousePosMap.setXY(p.x() / 1000.0, p.y() / 1000.0);
+
+    qDebug() << "Still working 1!";
+
+    for (MapModule *m: mMapModules) {
+        if (m->processMouse(true, false, false, false,
+                            mousePosWidget, mousePosMap, 0.0,
+                            ctrl, shift, ctrl_shift,
+                            e->buttons() & Qt::LeftButton,
+                            e->buttons() & Qt::RightButton,
+                            mScaleFactor)) {
+            return;
+        }
+    }
+
+    mousePosMap.setSpeed(mRoutePointSpeed);
+    mousePosMap.setTime(mRoutePointTime);
+    mousePosMap.setAttributes(mRoutePointAttributes);
+    mousePosMap.setId(mAnchorId);
+    mousePosMap.setHeight(mAnchorHeight);
+
+    qDebug() << "Still working 1!";
+
+    double routeDist = 0.0;
+    double anchorDist = 0.0;
+
+    int anchorInd = getClosestPoint(mousePosMap, mAnchors, anchorDist);
+    bool routeFound = false;
+    bool anchorFound = false;
+
+    MapRoute *currentRoute;
+    int mRoutePointSelected;
+    bool bHasCurrentRoute=false;
+    qDebug() << "Still working 2!";
+
+    if (mFields->size()>0)
+    {
+        qDebug() << "Items: " << mFields->size();
+        currentRoute=&(mFields->getCurrent());
+        bHasCurrentRoute=true;
+        routeFound = (routeDist * mScaleFactor * 1000.0) < 20 && routeDist >= 0.0;
+        anchorFound = (anchorDist * mScaleFactor * 1000.0) < 20 && anchorDist >= 0.0;
+        mRoutePointSelected = getClosestPoint(mousePosMap, currentRoute->mRoute, routeDist);
+    } else
+    {
+        currentRoute=new MapRoute();
+    }
+    //    if (bHasCurrentRoute)
+    qDebug() << "Still working 3!";
+
+    if (ctrl) {
+        qDebug() << "Ctrl clicked!";
+        if (e->buttons() & Qt::LeftButton) {
+            if (mSelectedCar >= 0) {
+                for (int i = 0;i < mCarInfo.size();i++) {
+                    CarInfo &carInfo = mCarInfo[i];
+                    if (carInfo.getId() == mSelectedCar) {
+                        LocPoint pos = carInfo.getLocation();
+                        QPoint p = getMousePosRelative();
+                        pos.setXY(p.x() / 1000.0, p.y() / 1000.0);
+                        carInfo.setLocation(pos);
+                        emit posSet(mSelectedCar, pos);
+                    }
+                }
+            }
+        } else if (e->buttons() & Qt::RightButton) {
+            if (mAnchorMode) {
+                if (anchorFound) {
+                    mAnchors[anchorInd].setId(mAnchorId);
+                    mAnchors[anchorInd].setHeight(mAnchorHeight);
+                }
+            } else {
+                if (routeFound && (!focusBorder) && bHasCurrentRoute) {
+                    (*currentRoute)[mRoutePointSelected].setSpeed(mRoutePointSpeed);
+                    (*currentRoute)[mRoutePointSelected].setTime(mRoutePointTime);
+                    (*currentRoute)[mRoutePointSelected].setAttributes(mRoutePointAttributes);
+                }
+            }
+        }
+        update();
+    } else if (shift) {
+        qDebug() << "Shift clicked!";
+        if (mAnchorMode) {
+            /*
+            if (e->buttons() & Qt::LeftButton) {
+                if (anchorFound) {
+                    mAnchorSelected = anchorInd;
+                    mAnchors[anchorInd].setXY(mousePosMap.getX(), mousePosMap.getY());
+                } else {
+                    mAnchors.append(mousePosMap);
+                }
+            } else if (e->buttons() & Qt::RightButton) {
+                if (anchorFound) {
+                    mAnchors.removeAt(anchorInd);
+                }
+            }*/
+        } else {
+            qDebug() << "Point: " << mRoutePointSelected;
+            if (e->buttons() & Qt::LeftButton) {
+                qDebug() << "Pressed left key";
+                if (routeFound) {
+                    qDebug() << "Found route";
+                    qDebug() << "Size: " << currentRoute->size();
+                    qDebug() << "Pos: " << mRoutePointSelected;
+                    (*currentRoute)[mRoutePointSelected].setXY(mousePosMap.getX(), mousePosMap.getY());
+                    qDebug() << "Set position";
+                } else {
+                    qDebug() << "Did not find route";
+                    if (currentRoute->size() < 2 ||
+                        currentRoute->last().getDistanceTo(mousePosMap) <
+                            currentRoute->first().getDistanceTo(mousePosMap)) {
+                        qDebug() << "Appending";
+                        currentRoute->append(mousePosMap);
+                        emit routePointAdded(mousePosMap);
+                    } else {
+                        qDebug() << "Prepending";
+                        currentRoute->prepend(mousePosMap);
+                    }
+                }
+            } else if (e->buttons() & Qt::RightButton) {
+                qDebug() << "Pressed right key";
+                if (routeFound) {
+                    currentRoute->removeAt(mRoutePointSelected );
+                } else {
+                    removeLastRoutePoint();
+                }
+            }
+        }
+        qDebug() << "Updating";
+        update();
+    } else if (ctrl_shift) {
+        if (e->buttons() & Qt::LeftButton) {
+            QPoint p = getMousePosRelative();
+            double iLlh[3], llh[3], xyz[3];
+            iLlh[0] = mRefLat;
+            iLlh[1] = mRefLon;
+            iLlh[2] = mRefHeight;
+            xyz[0] = p.x() / 1000.0;
+            xyz[1] = p.y() / 1000.0;
+            xyz[2] = 0.0;
+            utility::enuToLlh(iLlh, xyz, llh);
+            mRefLat = llh[0];
+            mRefLon = llh[1];
+            mRefHeight = 0.0;
+        }
+
+        update();
+    }
+}
+
+void MapWidget::mousePressEventPaths(QMouseEvent *e)
+{
+    // Implementation for paths
+    qDebug() << "Paths: Mouse pressed at" << e->pos();
 
     bool ctrl = e->modifiers() == Qt::ControlModifier;
     bool shift = e->modifiers() == Qt::ShiftModifier;
@@ -686,6 +912,7 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
         }
     }
 
+
     mousePosMap.setSpeed(mRoutePointSpeed);
     mousePosMap.setTime(mRoutePointTime);
     mousePosMap.setAttributes(mRoutePointAttributes);
@@ -694,12 +921,34 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
 
     double routeDist = 0.0;
     double anchorDist = 0.0;
-    int routeInd = getClosestPoint(mousePosMap, mRoutes[mRouteNow], routeDist);
+
     int anchorInd = getClosestPoint(mousePosMap, mAnchors, anchorDist);
-    bool routeFound = (routeDist * mScaleFactor * 1000.0) < 20 && routeDist >= 0.0;
-    bool anchorFound = (anchorDist * mScaleFactor * 1000.0) < 20 && anchorDist >= 0.0;
+    bool routeFound = false;
+    bool anchorFound = false;
+
+    MapRoute *currentRoute;
+    int mRoutePointSelected;
+    bool bHasCurrentRoute=false;
+
+    if (mPaths->size()>0)
+    {
+        qDebug() << "Existing route";
+        qDebug() << "Items: " << mPaths->size();
+        currentRoute=&(mPaths->getCurrent());
+        bHasCurrentRoute=true;
+        mRoutePointSelected = getClosestPoint(mousePosMap, currentRoute->mRoute, routeDist);
+        routeFound = (routeDist * mScaleFactor * 1000.0) < 20 && routeDist >= 0.0;
+        anchorFound = (anchorDist * mScaleFactor * 1000.0) < 20 && anchorDist >= 0.0;
+        qDebug() << "Distance: " << routeDist;
+    } else
+    {
+        qDebug() << "New route";
+        currentRoute=new MapRoute();
+    }
 
     if (ctrl) {
+        qDebug() << "Left" << (e->buttons() & Qt::LeftButton);
+        qDebug() << "Right" << (e->buttons() & Qt::RightButton);
         if (e->buttons() & Qt::LeftButton) {
             if (mSelectedCar >= 0) {
                 for (int i = 0;i < mCarInfo.size();i++) {
@@ -721,15 +970,17 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
                 }
             } else {
                 if (routeFound) {
-                    mRoutes[mRouteNow][routeInd].setSpeed(mRoutePointSpeed);
-                    mRoutes[mRouteNow][routeInd].setTime(mRoutePointTime);
-                    mRoutes[mRouteNow][routeInd].setAttributes(mRoutePointAttributes);
+                    (*currentRoute)[mRoutePointSelected].setSpeed(mRoutePointSpeed);
+                    (*currentRoute)[mRoutePointSelected].setTime(mRoutePointTime);
+                    (*currentRoute)[mRoutePointSelected].setAttributes(mRoutePointAttributes);
                 }
             }
         }
         update();
     } else if (shift) {
+//        qDebug() << "Shift";
         if (mAnchorMode) {
+//            qDebug() << "Shift anchor";
             if (e->buttons() & Qt::LeftButton) {
                 if (anchorFound) {
                     mAnchorSelected = anchorInd;
@@ -743,24 +994,39 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
                 }
             }
         } else {
+//            qDebug() << "Shift route";
             if (e->buttons() & Qt::LeftButton) {
+                qDebug() << "Shift left";
                 if (routeFound) {
-                    mRoutePointSelected = routeInd;
-                    mRoutes[mRouteNow][routeInd].setXY(mousePosMap.getX(), mousePosMap.getY());
+                    qDebug() << "Found route";
+                    qDebug() << "Size: " << currentRoute->size();
+                    qDebug() << "Pos: " << mRoutePointSelected;
+                    (*currentRoute)[mRoutePointSelected].setXY(mousePosMap.getX(), mousePosMap.getY());
+                    qDebug() << "Set position";
                 } else {
-                    if (mRoutes[mRouteNow].size() < 2 ||
-                            mRoutes[mRouteNow].last().getDistanceTo(mousePosMap) <
-                            mRoutes[mRouteNow].first().getDistanceTo(mousePosMap)) {
-                        mRoutes[mRouteNow].append(mousePosMap);
+                    if (currentRoute->size() < 2 ||
+                        currentRoute->last().getDistanceTo(mousePosMap) < currentRoute->first().getDistanceTo(mousePosMap))
+                    {
+                        qDebug() << "Shift left - Add start. Size: " << currentRoute->size();
+                        currentRoute->append(mousePosMap);
                         emit routePointAdded(mousePosMap);
                     } else {
-                        mRoutes[mRouteNow].prepend(mousePosMap);
+                        qDebug() << "Shift left - Add end";
+                        currentRoute->prepend(mousePosMap);
+                    }
+                    if (!bHasCurrentRoute)
+                    {
+                        mPaths->append(*currentRoute);
+                        mPaths->mRouteNow=mPaths->size()-1;
                     }
                 }
-            } else if (e->buttons() & Qt::RightButton) {
+            } else if (bHasCurrentRoute && (e->buttons() & Qt::RightButton)) {
+                qDebug() << "Shift right";
                 if (routeFound) {
-                    mRoutes[mRouteNow].removeAt(routeInd);
+                    qDebug() << "Route found";
+                    currentRoute->removeAt(mRoutePointSelected );
                 } else {
+                    qDebug() << "Route not found";
                     removeLastRoutePoint();
                 }
             }
@@ -781,8 +1047,20 @@ void MapWidget::mousePressEvent(QMouseEvent *e)
             mRefLon = llh[1];
             mRefHeight = 0.0;
         }
-
         update();
+    }
+    qDebug() << "Size (mPath): " << mPaths->size();
+    qDebug() << "Current item (mPath): " << mPaths->mRouteNow;
+    qDebug() << "Size (currentRoute): " << currentRoute->size();
+    qDebug() << "Current item (currentRoute): " << mRoutePointSelected;
+}
+
+void MapWidget::mousePressEvent(QMouseEvent *e)
+{
+    setFocus();
+
+    if (mouseEventHandler) {
+        mouseEventHandler(e);
     }
 }
 
@@ -875,7 +1153,8 @@ void MapWidget::wheelEvent(QWheelEvent *e)
             CarInfo &carInfo = mCarInfo[i];
             if (carInfo.getId() == mSelectedCar) {
                 LocPoint pos = carInfo.getLocation();
-                double angle = pos.getYaw() + (double)e->angleDelta().y() * 0.0005;
+                //                double angle = pos.getYaw() + (double)e->angleDelta().y() * 0.0005;
+                double angle = pos.getYaw() + (double)e->angleDelta().y() * 0.05;
                 normalizeAngleRad(angle);
                 pos.setYaw(angle);
                 carInfo.setLocation(pos);
@@ -925,55 +1204,54 @@ bool MapWidget::event(QEvent *event)
             return true;
         }
     } else if (event->type() == QEvent::KeyPress) {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
         // Generate scroll events from up and down arrow keys
         QKeyEvent *ke = static_cast<QKeyEvent*>(event);
         if (ke->key() == Qt::Key_Up) {
-            QWheelEvent we(QPointF(0, 0),                         // Position
-                           QPointF(0, 0),                         // Global position
-                           QPoint(0, 120),                        // Pixel delta
-                           QPoint(0, 120),                        // Angle delta
-                           Qt::NoButton,                          // No button pressed
-                           ke->modifiers(),                       // Keyboard modifiers
-                           Qt::ScrollUpdate,                      // Phase (ScrollUpdate is typical)
-                           false);                                // Inverted scrolling?
-            wheelEvent(&we);
-            return true;
-        } else if (ke->key() == Qt::Key_Down) {
-            QWheelEvent we(QPointF(0, 0),
-                           QPointF(0, 0),
-                           QPoint(0, -120),
-                           QPoint(0, -120),
-                           Qt::NoButton,
-                           ke->modifiers(),
-                           Qt::ScrollUpdate,
-                           false);
-            wheelEvent(&we);
-            return true;
-        }
-#else
-        // Generate scroll events from up and down arrow keys
-        QKeyEvent *ke = static_cast<QKeyEvent*>(event);
-        if (ke->key() == Qt::Key_Up) {
+            /*
             QWheelEvent we(QPointF(0, 0),
                            QPointF(0, 0),
                            QPoint(0, 0),
                            QPoint(0, 120),
                            0, Qt::Vertical, 0,
                            ke->modifiers());
+            */
+            // New code for Qt 6
+            QWheelEvent we(
+                QPointF(0, 0),          // Position
+                QPointF(0, 0),          // Global position
+                QPoint(0, 0),           // Pixel delta
+                QPoint(0, 120),         // Angle delta
+                0,                      // Buttons
+                ke->modifiers(),        // Keyboard modifiers
+                Qt::NoScrollPhase,      // Scroll phase
+                false,                  // Inverted
+                Qt::MouseEventNotSynthesized // Source
+                );
             wheelEvent(&we);
             return true;
         } else if (ke->key() == Qt::Key_Down) {
+            /*
             QWheelEvent we(QPointF(0, 0),
                            QPointF(0, 0),
                            QPoint(0, 0),
                            QPoint(0, -120),
                            0, Qt::Vertical, 0,
                            ke->modifiers());
+            */
+            QWheelEvent we(
+                QPointF(0, 0),          // Position
+                QPointF(0, 0),          // Global position
+                QPoint(0, 0),           // Pixel delta
+                QPoint(0,-120),         // Angle delta
+                0,                      // Buttons
+                ke->modifiers(),        // Keyboard modifiers
+                Qt::NoScrollPhase,      // Scroll phase
+                false,                  // Inverted
+                Qt::MouseEventNotSynthesized // Source
+                );
             wheelEvent(&we);
             return true;
         }
-#endif
     }
 
     return QWidget::event(event);
@@ -1022,7 +1300,6 @@ void MapWidget::removeMapModuleLast()
     }
 }
 
-/*
 double MapWidget::getCameraImageOpacity() const
 {
     return mCameraImageOpacity;
@@ -1054,7 +1331,6 @@ void MapWidget::setLastCameraImage(const QImage &lastCameraImage)
     }
 }
 
-*/
 bool MapWidget::getDrawRouteText() const
 {
     return mDrawRouteText;
@@ -1107,31 +1383,6 @@ void MapWidget::setRoutePointTime(const qint32 &routePointTime)
     mRoutePointTime = routePointTime;
 }
 
-int MapWidget::getRouteNow() const
-{
-    return mRouteNow;
-}
-
-void MapWidget::setRouteNow(int routeNow)
-{
-    mRouteNow = routeNow;
-    while (mRoutes.size() < (mRouteNow + 1)) {
-        QList<LocPoint> l;
-        mRoutes.append(l);
-    }
-
-    // Clean empty routes
-    while (mRouteNow < (mRoutes.size() - 1)) {
-        if (mRoutes.last().isEmpty()) {
-            mRoutes.removeLast();
-        } else {
-            break;
-        }
-    }
-
-    update();
-}
-
 int MapWidget::getInfoTraceNow() const
 {
     return mInfoTraceNow;
@@ -1151,65 +1402,6 @@ void MapWidget::setInfoTraceNow(int infoTraceNow)
     if (infoTraceOld != mInfoTraceNow) {
         emit infoTraceChanged(mInfoTraceNow);
     }
-}
-
-void MapWidget::printPdf(QString path, int width, int height)
-{
-    if (width == 0) {
-        width = this->width();
-    }
-
-    if (height == 0) {
-        height = this->height();
-    }
-
-    QPrinter printer(QPrinter::ScreenResolution);
-    printer.setOutputFileName(path);
-    printer.setOutputFormat(QPrinter::PdfFormat);
-    printer.setColorMode(QPrinter::Color);
-
-    printer.printEngine()->setProperty(QPrintEngine::PPK_Creator, "RControlStation");
-    printer.printEngine()->setProperty(QPrintEngine::PPK_DocumentName, "Map");
-
-    QPageLayout pageLayout;
-    pageLayout.setMode(QPageLayout::FullPageMode);
-    pageLayout.setOrientation(QPageLayout::Portrait);
-    pageLayout.setMargins(QMarginsF(0, 0, 0, 0));
-    pageLayout.setPageSize(QPageSize(QSize(width, height),
-                                     QPageSize::Point, QString(),
-                                     QPageSize::ExactMatch));
-    printer.setPageLayout(pageLayout);
-
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    // Get the paint rectangle, which represents the printable area of the page
-    QRectF pageRect = pageLayout.paintRectPixels(printer.resolution());
-
-    // Create a QPainter object to draw on the printer
-    QPainter painter(&printer);
-
-    // Call the paint method with the width and height of the page rectangle
-    paint(painter, pageRect.width(), pageRect.height(), true);
-
-#else
-    QPainter painter(&printer);
-    paint(painter, printer.pageRect().width(), printer.pageRect().height(), true);
-#endif
-}
-
-void MapWidget::printPng(QString path, int width, int height)
-{
-    if (width == 0) {
-        width = this->width();
-    }
-
-    if (height == 0) {
-        height = this->height();
-    }
-
-    QImage img(width, height, QImage::Format_ARGB32);
-    QPainter painter(&img);
-    paint(painter, width, height, true);
-    img.save(path, "PNG");
 }
 
 bool MapWidget::getDrawOsmStats() const
@@ -1321,8 +1513,10 @@ int MapWidget::drawInfoPoints(QPainter &painter, const QList<LocPoint> &pts,
     return drawn;
 }
 
-int MapWidget::getClosestPoint(LocPoint p, QList<LocPoint> points, double &dist)
+//int MapWidget::getClosestPoint(LocPoint p, MapRoute route, double &dist)
+int MapWidget::getClosestPoint(LocPoint p, QList<LocPoint> route, double &dist)
 {
+    QList<LocPoint> points=route;
     int closest = -1;
     dist = -1.0;
     for (int i = 0;i < points.size();i++) {
@@ -1433,9 +1627,10 @@ void MapWidget::setAnchorHeight(double height)
 void MapWidget::removeLastRoutePoint()
 {
     LocPoint pos;
-    if (mRoutes[mRouteNow].size() > 0) {
-        pos = mRoutes[mRouteNow].last();
-        mRoutes[mRouteNow].removeLast();
+    MapRoute &current=mPaths->getCurrent();
+    if (current.size() > 0) {
+        pos = current.last();
+        current.removeLast();
     }
     emit lastRoutePointRemoved(pos);
     update();
@@ -1443,12 +1638,12 @@ void MapWidget::removeLastRoutePoint()
 
 void MapWidget::zoomInOnRoute(int id, double margins, double wWidth, double wHeight)
 {
-    QList<LocPoint> route;
+    MapRoute route;
 
     if (id >= 0) {
-        route = getRoute(id);
+        route = getPath(id);
     } else {
-        for (auto r: mRoutes) {
+        for (auto r: mPaths->mCollection) {
             route.append(r);
         }
     }
@@ -1538,8 +1733,47 @@ void MapWidget::getEnuRef(double *llh)
     llh[2] = mRefHeight;
 }
 
+void MapWidget::setTrace(QVector<LocPoint> mTrace)
+{
+    mCarTrace=mTrace;
+    setLogStart(0);
+    setLogEnd(99);
+    bUpdateable=false;
+}
+
+void MapWidget::setLogStart(int iStart)
+{
+    iLogstart=(int)(iStart*mCarTrace.size()/99);
+    qDebug() << "istart: " << iStart;
+    update();
+};
+
+void MapWidget::setLogEnd(int iEnd)
+{
+    iLogend=(int)(mCarTrace.size()*iEnd/99);
+    qDebug() << "iend: " << iEnd;
+    update();
+};
+
+int MapWidget::Elements()
+{
+    return iLogend-iLogstart+1;
+}
+
+int MapWidget::firstElement()
+{
+    return iLogstart;
+}
+
+int MapWidget::lastElement()
+{
+    return iLogend-1;
+}
+
+
 void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality)
 {
+    //    qDebug() << "Start painting";
     if (highQuality) {
         painter.setRenderHint(QPainter::Antialiasing, true);
         painter.setRenderHint(QPainter::TextAntialiasing, true);
@@ -1566,7 +1800,7 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
         mYOffset *= scaleDiff;
     }
 
-    // Optionally follow a car or copter
+    // Optionally follow a car
     if (mFollowCar >= 0) {
         for (int i = 0;i < mCarInfo.size();i++) {
             CarInfo &carInfo = mCarInfo[i];
@@ -1595,12 +1829,6 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
     // Paint begins here
     painter.fillRect(0, 0, width, height, QBrush(Qt::transparent));
 
-    double angle, x, y;
-    QString txt;
-    QPointF pt_txt;
-    QRectF rect_txt;
-    QPen pen;
-    QFont font = this->font();
 
     // Map coordinate transforms
     QTransform drawTrans;
@@ -1615,6 +1843,7 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
     txtTrans.rotate(0);
 
     // Set font
+    QFont font = this->font();
     font.setPointSize(10);
     font.setFamily("Monospace");
     painter.setFont(font);
@@ -1629,35 +1858,6 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
     if (gridDiv) {
         stepGrid /= 2.0;
     }
-    const double zeroAxisWidth = 3;
-    const QColor zeroAxisColor = Qt::red;
-    const QColor firstAxisColor = Qt::gray;
-    const QColor secondAxisColor = Qt::blue;
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    QPalette palette = this->palette();
-    // Retrieve the foreground color using the QPalette::ColorRole enumeration
-    const QColor textColor = palette.color(QPalette::ColorRole::WindowText);
-#else
-    const QColor textColor = QPalette::Foreground;
-#endif
-
-    // Grid boundries in mm
-    const double xStart = -ceil(width / stepGrid / mScaleFactor) * stepGrid - ceil(mXOffset / stepGrid / mScaleFactor) * stepGrid;
-    const double xEnd = ceil(width / stepGrid / mScaleFactor) * stepGrid - floor(mXOffset / stepGrid / mScaleFactor) * stepGrid;
-    const double yStart = -ceil(height / stepGrid / mScaleFactor) * stepGrid - ceil(mYOffset / stepGrid / mScaleFactor) * stepGrid;
-    const double yEnd = ceil(height / stepGrid / mScaleFactor) * stepGrid - floor(mYOffset / stepGrid / mScaleFactor) * stepGrid;
-
-    // View center, width and height in m
-    const double cx = -mXOffset / mScaleFactor / 1000.0;
-    const double cy = -mYOffset / mScaleFactor / 1000.0;
-    const double view_w = width / mScaleFactor / 1000.0;
-    const double view_h = height / mScaleFactor / 1000.0;
-
-    // View boundries in mm
-    const double xStart2 = (cx - view_w / 2.0) * 1000.0;
-    const double yStart2 = (cy - view_h / 2.0) * 1000.0;
-    const double xEnd2 = (cx + view_w / 2.0) * 1000.0;
-    const double yEnd2 = (cy + view_h / 2.0) * 1000.0;
 
     // Draw perspective pixmaps first
     painter.setTransform(drawTrans);
@@ -1665,255 +1865,106 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
         mPerspectivePixmaps[i].drawUsingPainter(painter);
     }
 
+    // View center, width and height in m
+    const double cx = -mXOffset / mScaleFactor / 1000.0;
+    const double cy = -mYOffset / mScaleFactor / 1000.0;
+    const double view_w = width / mScaleFactor / 1000.0;
+    const double view_h = height / mScaleFactor / 1000.0;
+
     // Draw openstreetmap tiles
     if (mDrawOpenStreetmap) {
-        double i_llh[3];
-        i_llh[0] = mRefLat;
-        i_llh[1] = mRefLon;
-        i_llh[2] = mRefHeight;
-
-        mOsmZoomLevel = (int)round(log(mScaleFactor * mOsmRes * 100000000.0 *
-                                        cos(i_llh[0] * M_PI / 180.0)) / log(2.0));
-        if (mOsmZoomLevel > mOsmMaxZoomLevel) {
-            mOsmZoomLevel = mOsmMaxZoomLevel;
-        } else if (mOsmZoomLevel < 0) {
-            mOsmZoomLevel = 0;
-        }
-
-        int xt = OsmTile::long2tilex(i_llh[1], mOsmZoomLevel);
-        int yt = OsmTile::lat2tiley(i_llh[0], mOsmZoomLevel);
-
-        double llh_t[3];
-        llh_t[0] = OsmTile::tiley2lat(yt, mOsmZoomLevel);
-        llh_t[1] = OsmTile::tilex2long(xt, mOsmZoomLevel);
-        llh_t[2] = 0.0;
-
-        double xyz[3];
-        utility::llhToEnu(i_llh, llh_t, xyz);
-
-        // Calculate scale at ENU origin
-        double w = OsmTile::lat2width(i_llh[0], mOsmZoomLevel);
-
-        int t_ofs_x = (int)ceil(-(cx - view_w / 2.0) / w);
-        int t_ofs_y = (int)ceil((cy + view_h / 2.0) / w);
-
-        if (!highQuality) {
-            painter.setRenderHint(QPainter::SmoothPixmapTransform, mAntialiasOsm);
-        }
-
-        QTransform transOld = painter.transform();
-        QTransform trans = painter.transform();
-        trans.scale(1, -1);
-        painter.setTransform(trans);
-
-        for (int j = 0;j < 40;j++) {
-            for (int i = 0;i < 40;i++) {
-                int xt_i = xt + i - t_ofs_x;
-                int yt_i = yt + j - t_ofs_y;
-                double ts_x = xyz[0] + w * i - (double)t_ofs_x * w;
-                double ts_y = -xyz[1] + w * j - (double)t_ofs_y * w;
-
-                // We are outside the view
-                if (ts_x > (cx + view_w / 2.0)) {
-                    break;
-                } else if ((ts_y - w) > (-cy + view_h / 2.0)) {
-                    break;
-                }
-
-                int res;
-                OsmTile t = mOsm->getTile(mOsmZoomLevel, xt_i, yt_i, res);
-
-                if (w < 0.0) {
-                    w = t.getWidthTop();
-                }
-
-                painter.drawPixmap(ts_x * 1000.0, ts_y * 1000.0,
-                                   w * 1000.0, w * 1000.0, t.pixmap());
-
-                if (res == 0 && !mOsm->downloadQueueFull()) {
-                    mOsm->downloadTile(mOsmZoomLevel, xt_i, yt_i);
-                }
-            }
-        }
-
-        // Restore painter
-        painter.setTransform(transOld);
-
-        if (!highQuality) {
-            painter.setRenderHint(QPainter::SmoothPixmapTransform, mAntialiasDrawings);
-        }
+        paintTiles(painter,cx, cy, view_w, view_h, highQuality);
     }
+
+    const double zeroAxisWidth = 3;
+    const QColor zeroAxisColor = Qt::red;
+    const QColor firstAxisColor = Qt::gray;
+    const QColor secondAxisColor = Qt::blue;
+    QPalette palette; // Get the application palette or use a specific widget's palette
+    const QColor textColor = palette.color(QPalette::WindowText);
+
+    QString txt;
+    QPointF pt_txt;
+    QRectF rect_txt;
+    QPen pen;
 
     if (mDrawGrid) {
-        painter.setTransform(txtTrans);
-
-        // Draw Y-axis segments
-        for (double i = xStart;i < xEnd;i += stepGrid) {
-            if (fabs(i) < 1e-3) {
-                i = 0.0;
-            }
-
-            if ((int)(i / stepGrid) % 2) {
-                pen.setWidth(0);
-                pen.setColor(firstAxisColor);
-                painter.setPen(pen);
-            } else {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-                txt = QString("%1 m").arg(i / 1000.0, 0, 'f', 2);
-#else
-                txt.sprintf("%.2f m", i / 1000.0);
-#endif
-                pt_txt.setX(i);
-                pt_txt.setY(0);
-                pt_txt = drawTrans.map(pt_txt);
-                pt_txt.setX(pt_txt.x() - 5);
-                pt_txt.setY(height - 10);
-                painter.setPen(QPen(textColor));
-                painter.save();
-                painter.translate(pt_txt);
-                painter.rotate(-90);
-                painter.drawText(0, 0, txt);
-                painter.restore();
-
-                if (fabs(i) < 1e-3) {
-                    pen.setWidthF(zeroAxisWidth);
-                    pen.setColor(zeroAxisColor);
-                } else {
-                    pen.setWidth(0);
-                    pen.setColor(secondAxisColor);
-                }
-                painter.setPen(pen);
-            }
-
-            QPointF pt_start(i, yStart);
-            QPointF pt_end(i, yEnd);
-            pt_start = drawTrans.map(pt_start);
-            pt_end = drawTrans.map(pt_end);
-            painter.drawLine(pt_start, pt_end);
-        }
-
-        // Draw X-axis segments
-        for (double i = yStart;i < yEnd;i += stepGrid) {
-            if (fabs(i) < 1e-3) {
-                i = 0.0;
-            }
-
-            if ((int)(i / stepGrid) % 2) {
-                pen.setWidth(0);
-                pen.setColor(firstAxisColor);
-                painter.setPen(pen);
-            } else {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-                txt = QString("%1 m").arg(i / 1000.0, 0, 'f', 2);
-#else
-                txt.sprintf("%.2f m", i / 1000.0);
-#endif
-                pt_txt.setY(i);
-
-                pt_txt = drawTrans.map(pt_txt);
-                pt_txt.setX(10);
-                pt_txt.setY(pt_txt.y() - 5);
-                painter.setPen(QPen(textColor));
-                painter.drawText(pt_txt, txt);
-
-                if (fabs(i) < 1e-3) {
-                    pen.setWidthF(zeroAxisWidth);
-                    pen.setColor(zeroAxisColor);
-                } else {
-                    pen.setWidth(0);
-                    pen.setColor(secondAxisColor);
-                }
-                painter.setPen(pen);
-            }
-
-            QPointF pt_start(xStart, i);
-            QPointF pt_end(xEnd, i);
-            pt_start = drawTrans.map(pt_start);
-            pt_end = drawTrans.map(pt_end);
-            painter.drawLine(pt_start, pt_end);
-        }
+        paintGrid(painter,pen, drawTrans, txtTrans, width, height, stepGrid, txt, pt_txt, textColor, zeroAxisColor, firstAxisColor,secondAxisColor,zeroAxisWidth);
     }
+
+    // Draw routes
+    bool isSelected;
+    // Draw fields
+    for (int fn = 0;fn < mFields->size();fn++) {
+        isSelected= (mFields->mRouteNow == fn) && (focusBorder==true);
+        MapRoute &fieldNow = mFields->at(fn);
+        fieldNow.paintBorder(painter, pen, isSelected, mScaleFactor, drawTrans);
+    }
+
+    for (int rn = 0;rn < mPaths->size();rn++) {
+        MapRoute &routeNow = mPaths->at(rn);
+        isSelected= (mPaths->mRouteNow == rn);
+        routeNow.paintPath(this, painter, pen, isSelected, mScaleFactor, drawTrans, txt, pt_txt, rect_txt, txtTrans, highQuality);
+    }
+
+    //paintInfoTraces();
+    mVisibleInfoTracePoints.clear();
+
 
     // Draw info trace
     int info_segments = 0;
     int info_points = 0;
-    mVisibleInfoTracePoints.clear();
 
     for (int in = 0;in < mInfoTraces.size();in++) {
-        QList<LocPoint> &itNow = mInfoTraces[in];
-
-        if (mInfoTraceNow == in) {
-            pen.setColor(Qt::darkGreen);
-            painter.setBrush(Qt::green);
-        } else {
-            pen.setColor(Qt::darkGreen);
-            painter.setBrush(Qt::green);
-        }
-
-        pen.setWidthF(3.0);
-        painter.setPen(pen);
-        painter.setTransform(txtTrans);
-
-        const double info_min_dist = 0.02;
-
-        int last_visible = 0;
-        for (int i = 1;i < itNow.size();i++) {
-            double dist_view = itNow.at(i).getDistanceTo(itNow.at(last_visible)) * mScaleFactor;
-            if (dist_view < info_min_dist) {
-                continue;
-            }
-
-            bool draw = isPointWithinRect(itNow[last_visible].getPointMm(), xStart2, xEnd2, yStart2, yEnd2);
-
-            if (!draw) {
-                draw = isPointWithinRect(itNow[i].getPointMm(), xStart2, xEnd2, yStart2, yEnd2);
-            }
-
-            if (!draw) {
-                draw = isLineSegmentWithinRect(itNow[last_visible].getPointMm(),
-                                               itNow[i].getPointMm(),
-                                               xStart2, xEnd2, yStart2, yEnd2);
-            }
-
-            if (draw && itNow[i].getDrawLine()) {
-                QPointF p1 = drawTrans.map(itNow[last_visible].getPointMm());
-                QPointF p2 = drawTrans.map(itNow[i].getPointMm());
-
-                painter.drawLine(p1, p2);
-                info_segments++;
-            }
-
-            last_visible = i;
-        }
-
-        QList<LocPoint> pts_green;
-        QList<LocPoint> pts_red;
-        QList<LocPoint> pts_other;
-
-        for (int i = 0;i < itNow.size();i++) {
-            LocPoint ip = itNow[i];
-
-            if (mInfoTraceNow != in) {
-                ip.setColor(Qt::gray);
-            }
-
-            if (ip.getColor() == Qt::darkGreen || ip.getColor() == Qt::green) {
-                pts_green.append(ip);
-            } else if (ip.getColor() == Qt::darkRed || ip.getColor() == Qt::red) {
-                pts_red.append(ip);
-            } else {
-                pts_other.append(ip);
-            }
-        }
-
-        info_points += drawInfoPoints(painter, pts_green, drawTrans, txtTrans,
-                                      xStart2, xEnd2, yStart2, yEnd2, info_min_dist);
-        info_points += drawInfoPoints(painter, pts_other, drawTrans, txtTrans,
-                                      xStart2, xEnd2, yStart2, yEnd2, info_min_dist);
-        info_points += drawInfoPoints(painter, pts_red, drawTrans, txtTrans,
-                                      xStart2, xEnd2, yStart2, yEnd2, info_min_dist);
+        paintTrace(mInfoTraces[in],painter,pen,mInfoTraceNow == in,drawTrans, txtTrans,cx, cy, view_w, view_h,info_segments, info_points);
     }
 
+    paintClosestPoint(painter,pen,drawTrans, txtTrans, pt_txt,rect_txt );
+
+    //    qDebug() << "Middle painting";
+
+    paintCarTraces(painter,pen,drawTrans);
+
+    // Map module painting
+    painter.save();
+    for (MapModule *m: mMapModules) {
+        m->processPaint(painter, width, height, highQuality,
+                        drawTrans, txtTrans, mScaleFactor);
+    }
+    painter.restore();
+
+    // Draw cars
+    painter.setPen(QPen(textColor));
+    for(int i = 0;i < mCarInfo.size();i++) {
+        paintCar(mCarInfo[i],painter,pen, drawTrans, txtTrans,txt, pt_txt,textColor,rect_txt);
+    }
+
+    // Draw anchors
+    for (int i = 0;i < mAnchors.size();i++) {
+        paintAnchor(mAnchors[i],painter,pen, drawTrans, txtTrans,txt, pt_txt,textColor,rect_txt);
+    };
+
+    double start_txt = 30.0;
+
+    paintCamera(painter,txtTrans, width,start_txt);
+
+    const double txtOffset = 145.0;
+    const double txt_row_h = 20.0;
+
+    paintUnitZoomGeneralinfo(painter,font, txtTrans, width, stepGrid,txt,textColor,start_txt,txtOffset,txt_row_h, info_segments, info_points);
+
+    // Current route info
+    if (mPaths->size()>0)
+    {
+        mPaths->getCurrent().routeinfo(this, painter,start_txt,txtOffset,txt_row_h,width,txt);
+    };
+    painter.end();
+    //    qDebug() << "End painting";
+
+}
+
+void MapWidget::paintClosestPoint(QPainter &painter,QPen &pen,QTransform drawTrans, QTransform txtTrans, QPointF& pt_txt,QRectF &rect_txt )
+{
     // Draw point closest to mouse pointer
     if (mClosestInfo.getInfo().size() > 0) {
         QPointF p = mClosestInfo.getPointMm();
@@ -1936,365 +1987,84 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
         painter.drawText(rect_txt, Qt::AlignTop | Qt::AlignLeft, mClosestInfo.getInfo());
     }
 
-    // Draw trace for the selected car
-    pen.setWidthF(5.0 / mScaleFactor);
-    pen.setColor(Qt::red);
-    painter.setPen(pen);
-    painter.setTransform(drawTrans);
-    for (int i = 1;i < mCarTrace.size();i++) {
-        painter.drawLine(mCarTrace[i - 1].getX() * 1000.0, mCarTrace[i - 1].getY() * 1000.0,
-                mCarTrace[i].getX() * 1000.0, mCarTrace[i].getY() * 1000.0);
-    }
+}
 
-    // Draw GPS trace for the selected car
-    pen.setWidthF(2.5 / mScaleFactor);
-    pen.setColor(Qt::magenta);
-    painter.setPen(pen);
-    painter.setTransform(drawTrans);
-    for (int i = 1;i < mCarTraceGps.size();i++) {
-        painter.drawLine(mCarTraceGps[i - 1].getX() * 1000.0, mCarTraceGps[i - 1].getY() * 1000.0,
-                mCarTraceGps[i].getX() * 1000.0, mCarTraceGps[i].getY() * 1000.0);
-    }
-
-    // Draw UWB trace for the selected car
-    if (mDrawUwbTrace) {
-        pen.setWidthF(2.5 / mScaleFactor);
-        pen.setColor(Qt::green);
-        painter.setPen(pen);
-        painter.setTransform(drawTrans);
-        for (int i = 1;i < mCarTraceUwb.size();i++) {
-            painter.drawLine(mCarTraceUwb[i - 1].getX() * 1000.0, mCarTraceUwb[i - 1].getY() * 1000.0,
-                    mCarTraceUwb[i].getX() * 1000.0, mCarTraceUwb[i].getY() * 1000.0);
-        }
-    }
-
-    // Draw routes
-    for (int rn = 0;rn < mRoutes.size();rn++) {
-        QList<LocPoint> &routeNow = mRoutes[rn];
-
-        Qt::GlobalColor defaultDarkColor = Qt::darkGray;
-        Qt::GlobalColor defaultColor = Qt::gray;
-        if (mRouteNow == rn) {
-            defaultDarkColor = Qt::darkYellow;
-            defaultColor = Qt::yellow;
-        }
-
-        pen.setWidthF(5.0 / mScaleFactor);
-        painter.setTransform(drawTrans);
-
-        for (int i = 1;i < routeNow.size();i++) {
-            pen.setColor(defaultDarkColor);
-            painter.setBrush(defaultColor);
-            if (mRouteNow == rn && (routeNow[i - 1].getAttributes() & ATTR_HYDRAULIC_FRONT_DOWN) && (routeNow[i].getAttributes() & ATTR_HYDRAULIC_FRONT_DOWN)) {
-                pen.setColor(Qt::darkCyan);
-                painter.setBrush(Qt::cyan);
-            }
-            painter.setPen(pen);
-
-            painter.setOpacity(0.7);
-            painter.drawLine(routeNow[i - 1].getX() * 1000.0, routeNow[i - 1].getY() * 1000.0,
-                    routeNow[i].getX() * 1000.0, routeNow[i].getY() * 1000.0);
-            painter.setOpacity(1.0);
-        }
-
-        for (int i = 0;i < routeNow.size();i++) {
-            QPointF p = routeNow[i].getPointMm();
-            quint32 attr = routeNow.at(i).getAttributes();
-
-            painter.setTransform(drawTrans);
-
-            if (highQuality) {
-                if (mRouteNow == rn) {
-                    if ((attr & ATTR_POSITIONING_MASK) == 2) {
-                        pen.setColor(Qt::darkGreen);
-                        painter.setBrush(Qt::green);
-                    } else if ((attr & ATTR_HYDRAULIC_FRONT_DOWN) != 0) {
-                        pen.setColor(Qt::darkCyan);
-                        painter.setBrush(Qt::cyan);
-                    } else if ((attr & ATTR_HYDRAULIC_FRONT_UP) != 0) {
-                        pen.setColor(Qt::darkYellow);
-                        painter.setBrush(Qt::green);
-                    } else {
-                        pen.setColor(Qt::darkYellow);
-                        painter.setBrush(Qt::yellow);
-                    }
-                } else {
-                    pen.setColor(Qt::darkGray);
-                    painter.setBrush(Qt::gray);
-                }
-
-                pen.setWidthF(3.0 / mScaleFactor);
-                painter.setPen(pen);
-
-                painter.drawEllipse(p, 10.0 / mScaleFactor,
-                                    10.0 / mScaleFactor);
-            } else {
-                drawCircleFast(painter, p, 10.0 / mScaleFactor, mRouteNow == rn ?
-                                   ((attr & ATTR_POSITIONING_MASK) == 2 ? 2 : ((attr & ATTR_HYDRAULIC_FRONT_DOWN) != 0 ? 3 : ((attr & ATTR_HYDRAULIC_FRONT_UP) != 0 ? 4 : 0))) : 1);
-            }
-
-            // Draw highlight for first and last point in active route
-            if (mRouteNow == rn && (i == 0 || i == routeNow.size()-1)) {
-                QPointF ptmp;
-                ptmp.setX(p.x() - 7.0 / mScaleFactor);
-                ptmp.setY(p.y() + 7.0 / mScaleFactor);
-                if (i == 0) {
-                    pen.setColor(Qt::green);
-                    painter.setBrush(Qt::darkGreen);
-                } else {
-                    pen.setColor(Qt::red);
-                    painter.setBrush(Qt::darkRed);
-                }
-                pen.setWidthF(2.0 / mScaleFactor);
-                painter.setPen(pen);
-                painter.drawEllipse(ptmp, 5.0 / mScaleFactor,
-                                    5.0 / mScaleFactor);
-            }
-
-            // Draw text only for selected route
-            if (mRouteNow == rn && mDrawRouteText) {
-                QTime t = QTime::fromMSecsSinceStartOfDay(routeNow[i].getTime());
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-                txt = QString("P: %1 %2\n"
-                                      "%3 km/h\n"
-                                      "%4:%5:%6:%7\n"
-                                      "A: %8")
-                                  .arg(i)
-                                  .arg((i == 0) ? "- start" : ((i == routeNow.size() - 1) ? "- end" : ""))
-                                  .arg(routeNow[i].getSpeed() * 3.6, 0, 'f', 1) // Format speed with 1 decimal place
-                                  .arg(t.hour(), 2, 10, QChar('0'))             // Format hour with leading zeros
-                                  .arg(t.minute(), 2, 10, QChar('0'))           // Format minute with leading zeros
-                                  .arg(t.second(), 2, 10, QChar('0'))           // Format second with leading zeros
-                                  .arg(t.msec(), 3, 10, QChar('0'))              // Format millisecond with leading zeros
-                                  .arg(routeNow[i].getAttributes(), 8, 16, QChar('0')); // Format attributes as hex
-#else
-                txt.sprintf("P: %d %s\n"
-                            "%.1f km/h\n"
-                            "%02d:%02d:%02d:%03d\n"
-                            "A: %08X",
-                            i, ((i == 0) ? "- start" : ((i == routeNow.size()-1) ? "- end" : "")),
-                            routeNow[i].getSpeed() * 3.6,
-                            t.hour(), t.minute(), t.second(), t.msec(),
-                            routeNow[i].getAttributes());
-#endif
-                pt_txt.setX(p.x() + 10 / mScaleFactor);
-                pt_txt.setY(p.y());
-                painter.setTransform(txtTrans);
-                pt_txt = drawTrans.map(pt_txt);
-                pen.setColor(Qt::black);
-                painter.setPen(pen);
-                rect_txt.setCoords(pt_txt.x(), pt_txt.y() - 20,
-                                   pt_txt.x() + 200, pt_txt.y() + 60);
-                painter.drawText(rect_txt, txt);
-            } else {
-
-
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-                txt = QString("%d").arg(rn);
-#else
-                txt.sprintf("%d", rn);
-#endif
-
-                pt_txt.setX(p.x());
-                pt_txt.setY(p.y());
-                painter.setTransform(txtTrans);
-                pt_txt = drawTrans.map(pt_txt);
-                pen.setColor(Qt::black);
-                painter.setPen(pen);
-                rect_txt.setCoords(pt_txt.x() - 20, pt_txt.y() - 20,
-                                   pt_txt.x() + 20, pt_txt.y() + 20);
-                painter.drawText(rect_txt, Qt::AlignCenter, txt);
-            }
-        }
-    }
-
-    // Map module painting
-    painter.save();
-    for (MapModule *m: mMapModules) {
-        m->processPaint(painter, width, height, highQuality,
-                        drawTrans, txtTrans, mScaleFactor);
-    }
-    painter.restore();
-
-    // Draw cars
-    painter.setPen(QPen(textColor));
-    for(int i = 0;i < mCarInfo.size();i++) {
-        CarInfo &carInfo = mCarInfo[i];
-        LocPoint pos = carInfo.getLocation();
-        LocPoint pos_gps = carInfo.getLocationGps();
-
-        const double car_len = carInfo.getLength() * 1000.0;
-        const double car_w = carInfo.getWidth() * 1000.0;
-        const double car_corner = carInfo.getCornerRadius() * 1000.0;
-
-        x = pos.getX() * 1000.0;
-        y = pos.getY() * 1000.0;
-        double x_gps = pos_gps.getX() * 1000.0;
-        double y_gps = pos_gps.getY() * 1000.0;
-        angle = pos.getYaw() * 180.0 / M_PI;
-        painter.setTransform(drawTrans);
-
-        QColor col_sigma = Qt::red;
-        QColor col_wheels = Qt::black;
-        QColor col_bumper = Qt::green;
-        QColor col_hull = carInfo.getColor();
-        QColor col_center = Qt::blue;
-        QColor col_gps = Qt::magenta;
-        QColor col_ap = carInfo.getColor();
-
-        if (carInfo.getId() != mSelectedCar) {
-            col_wheels = Qt::darkGray;
-            col_bumper = Qt::lightGray;
-            col_ap = Qt::lightGray;
-        }
-
-        // Draw standard deviation
-        if (pos.getSigma() > 0.0) {
-            QColor col = col_sigma;
-            col.setAlphaF(0.2);
-            painter.setBrush(QBrush(col));
-            painter.drawEllipse(pos.getPointMm(), pos.getSigma() * 1000.0, pos.getSigma() * 1000.0);
-        }
-
-        // Draw car
-        painter.setBrush(QBrush(col_wheels));
-        painter.save();
-        painter.translate(x, y);
-        painter.rotate(-angle);
-        // Wheels
-        painter.drawRoundedRect(-car_len / 12.0,-(car_w / 2), car_len / 6.0, car_w, car_corner / 3, car_corner / 3);
-        painter.drawRoundedRect(car_len - car_len / 2.5,-(car_w / 2), car_len / 6.0, car_w, car_corner / 3, car_corner / 3);
-        // Front bumper
-        painter.setBrush(col_bumper);
-        painter.drawRoundedRect(-car_len / 6.0, -((car_w - car_len / 20.0) / 2.0), car_len, car_w - car_len / 20.0, car_corner, car_corner);
-        // Hull
-        painter.setBrush(col_hull);
-        painter.drawRoundedRect(-car_len / 6.0, -((car_w - car_len / 20.0) / 2.0), car_len - (car_len / 20.0), car_w - car_len / 20.0, car_corner, car_corner);
-        painter.restore();
-
-        // Center
-        painter.setBrush(col_center);
-        painter.drawEllipse(QPointF(x, y), car_w / 15.0, car_w / 15.0);
-
-        // GPS Location
-        painter.setBrush(col_gps);
-        painter.drawEllipse(QPointF(x_gps, y_gps), car_w / 15.0, car_w / 15.0);
-
-        // Autopilot state
-        LocPoint ap_goal = carInfo.getApGoal();
-        if (ap_goal.getRadius() > 0.0) {
-            pen.setColor(col_ap);
-            painter.setPen(pen);
-            QPointF pm = pos.getPointMm();
-            painter.setBrush(Qt::transparent);
-            painter.drawEllipse(pm, ap_goal.getRadius() * 1000.0, ap_goal.getRadius() * 1000.0);
-
-            QPointF p = ap_goal.getPointMm();
-            pen.setWidthF(3.0 / mScaleFactor);
-            painter.setBrush(col_gps);
-            painter.drawEllipse(p, 10 / mScaleFactor, 10 / mScaleFactor);
-        }
-
-        painter.setPen(QPen(textColor));
-
-        // Print data
-        QTime t = QTime::fromMSecsSinceStartOfDay(carInfo.getTime());
-        QString solStr;
-        if (!carInfo.getLocationGps().getInfo().isEmpty()) {
-            solStr = QString("Sol: %1\n").arg(carInfo.getLocationGps().getInfo());
-        }
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        txt = QString("%1\n"
-                              "%2\n"
-                              "(%3, %4, %5)\n"
-                              "%6:%7:%8:%9")
-                          .arg(carInfo.getName())
-                          .arg(solStr)
-                          .arg(pos.getX(), 0, 'f', 3)  // Format x with 3 decimal places
-                          .arg(pos.getY(), 0, 'f', 3)  // Format y with 3 decimal places
-                          .arg(angle, 0, 'f', 0)        // Format angle with 0 decimal places
-                          .arg(t.hour(), 2, 10, QChar('0'))    // Format hour with leading zeros
-                          .arg(t.minute(), 2, 10, QChar('0'))  // Format minute with leading zeros
-                          .arg(t.second(), 2, 10, QChar('0'))   // Format second with leading zeros
-                          .arg(t.msec(), 3, 10, QChar('0'));    // Format millisecond with leading zeros
-#else
-        txt.sprintf("%s\n"
-                    "%s"
-                    "(%.3f, %.3f, %.0f)\n"
-                    "%02d:%02d:%02d:%03d",
-                    carInfo.getName().toLocal8Bit().data(),
-                    solStr.toLocal8Bit().data(),
-                    pos.getX(), pos.getY(), angle,
-                    t.hour(), t.minute(), t.second(), t.msec());
-#endif
-        pt_txt.setX(x + 120 + (car_len - 190) * ((cos(pos.getYaw()) + 1) / 2));
-        pt_txt.setY(y);
-        painter.setTransform(txtTrans);
-        pt_txt = drawTrans.map(pt_txt);
-        rect_txt.setCoords(pt_txt.x(), pt_txt.y() - 20,
-                           pt_txt.x() + 400, pt_txt.y() + 100);
-        painter.drawText(rect_txt, txt);
-    }
-
+void MapWidget::paintUnitZoomGeneralinfo(QPainter &painter,QFont font, QTransform txtTrans, int width, double stepGrid,QString& txt, const QColor textColor,   double& start_txt,const double txtOffset,const double txt_row_h,    int &info_segments, int &info_points)
+{
+    painter.setTransform(txtTrans);
+    font.setPointSize(10);
+    painter.setFont(font);
     painter.setPen(QPen(textColor));
 
-    // Draw anchors
-    for (int i = 0;i < mAnchors.size();i++) {
-        LocPoint &anchor = mAnchors[i];
-        x = anchor.getX() * 1000.0;
-        y = anchor.getY() * 1000.0;
-        painter.setTransform(drawTrans);
-
-        // Draw anchor
-        painter.setBrush(QBrush(Qt::red));
-        painter.translate(x, y);
-
-        pt_txt.setX(x);
-        pt_txt.setY(y);
-        painter.setTransform(txtTrans);
-        pt_txt = drawTrans.map(pt_txt);
-
-        painter.drawRoundedRect(pt_txt.x() - 10,
-                                pt_txt.y() - 10,
-                                20, 20, 10, 10);
-
-        // Print data
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        txt = QString("Anchor %1\n"
-                              "Pos    : (%.3f, %.3f)\n"
-                              "Height : %.2f m")
-                          .arg(anchor.getId())
-                          .arg(anchor.getX(), 0, 'f', 3)  // Format x with 3 decimal places
-                          .arg(anchor.getY(), 0, 'f', 3)  // Format y with 3 decimal places
-                          .arg(anchor.getHeight(), 0, 'f', 2); // Format height with 2 decimal places
-
-#else
-        txt.sprintf("Anchor %d\n"
-                    "Pos    : (%.3f, %.3f)\n"
-                    "Height : %.2f m",
-                    anchor.getId(),
-                    anchor.getX(), anchor.getY(),
-                    anchor.getHeight());
-#endif
-        pt_txt.setX(x);
-        pt_txt.setY(y);
-        painter.setTransform(txtTrans);
-        pt_txt = drawTrans.map(pt_txt);
-        rect_txt.setCoords(pt_txt.x() + 15, pt_txt.y() - 20,
-                           pt_txt.x() + 500, pt_txt.y() + 500);
-        painter.drawText(rect_txt, txt);
+    // Draw units (m)
+    if (mDrawGrid) {
+        double res = stepGrid / 1000.0;
+        if (res >= 1000.0) {
+            txt.asprintf("Grid res: %.0f km", res / 1000.0);
+        } else if (res >= 1.0) {
+            txt.asprintf("Grid res: %.0f m", res);
+        } else {
+            txt.asprintf("Grid res: %.0f cm", res * 100.0);
+        }
+        painter.drawText(width - txtOffset, start_txt, txt);
+        start_txt += txt_row_h;
     }
 
-    double start_txt = 30.0;
-    const double txt_row_h = 20.0;
-    const double txtOffset = 145.0;
+    // Draw zoom level
+    txt.asprintf("Zoom: %.7f", mScaleFactor);
+    painter.drawText(width - txtOffset, start_txt, txt);
+    start_txt += txt_row_h;
 
+    // Draw OSM zoom level
+    if (mDrawOpenStreetmap) {
+        txt.asprintf("OSM zoom: %d", mOsmZoomLevel);
+        painter.drawText(width - txtOffset, start_txt, txt);
+        start_txt += txt_row_h;
+
+        if (mDrawOsmStats) {
+            txt=QString("DL Tiles: %1").arg(mOsm->getTilesDownloaded());
+            painter.drawText(width - txtOffset, start_txt, txt);
+            start_txt += txt_row_h;
+
+            txt=QString("HDD Tiles: %1").arg(mOsm->getHddTilesLoaded());
+            painter.drawText(width - txtOffset, start_txt, txt);
+            start_txt += txt_row_h;
+
+            txt=QString("RAM Tiles: %1").arg(mOsm->getRamTilesLoaded());
+            painter.drawText(width - txtOffset, start_txt, txt);
+            start_txt += txt_row_h;
+        }
+    }
+
+    if (mInteractionMode != InteractionModeDefault) {
+        txt=QString("IMode: %1").arg(mInteractionMode);
+        painter.drawText(width - txtOffset, start_txt, txt);
+        start_txt += txt_row_h;
+    }
+
+    // Some info
+    if (info_segments > 0) {
+        txt=QString("Info seg: %1").arg(info_segments);
+        painter.drawText(width - txtOffset, start_txt, txt);
+        start_txt += txt_row_h;
+    }
+
+    if (info_points > 0) {
+        txt=QString("Info pts: %1").arg(info_points);
+        painter.drawText(width - txtOffset, start_txt, txt);
+        start_txt += txt_row_h;
+    }
+
+}
+
+void MapWidget::paintCamera(QPainter &painter,QTransform txtTrans, int width,double& start_txt)
+{
     painter.setTransform(txtTrans);
 
     if (!mLastCameraImage.isNull() && mCameraImageWidth > 0.001) {
         double imgWidth = (double)width * mCameraImageWidth;
         double imgHeight = (double)mLastCameraImage.height() *
-                (imgWidth / (double)mLastCameraImage.width());
+                           (imgWidth / (double)mLastCameraImage.width());
 
         QRectF target(width - imgWidth, 0.0, imgWidth, imgHeight);
         QRectF source(0.0, 0.0, mLastCameraImage.width(), mLastCameraImage.height());
@@ -2306,190 +2076,1178 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
         painter.setOpacity(1.0);
     }
 
-    painter.setTransform(txtTrans);
-    font.setPointSize(10);
-    painter.setFont(font);
-    painter.setPen(QPen(textColor));
-
-    // Draw units (m)
-    if (mDrawGrid) {
-        double res = stepGrid / 1000.0;
-        if (res >= 1000.0) {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            txt = QString("Grid res: %1 km").arg(res / 1000.0, 0, 'f', 0);
-#else
-            txt.sprintf("Grid res: %.0f km", res / 1000.0);
-#endif
-        } else if (res >= 1.0) {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            txt = QString("Grid res: %1 m").arg(res / 1000.0, 0, 'f', 0);
-#else
-            txt.sprintf("Grid res: %.0f m", res);
-#endif
-
-        } else {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            txt = QString("Grid res: %1 km").arg(res*100, 0, 'f', 0);
-#else
-            txt.sprintf("Grid res: %.0f cm", res * 100.0);
-#endif
-
-        }
-        painter.drawText(width - txtOffset, start_txt, txt);
-        start_txt += txt_row_h;
-    }
-
-    // Draw zoom level
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    txt = QString("Zoom: %1").arg(mScaleFactor, 0, 'f', 7);
-#else
-    txt.sprintf("Zoom: %.7f", mScaleFactor);
-#endif
-    painter.drawText(width - txtOffset, start_txt, txt);
-    start_txt += txt_row_h;
-
-    // Draw OSM zoom level
-    if (mDrawOpenStreetmap) {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        txt = QString("OSM zoom: %1").arg(QString::number(mOsmZoomLevel));
-#else
-        txt.sprintf("OSM zoom: %d", mOsmZoomLevel);
-#endif
-        painter.drawText(width - txtOffset, start_txt, txt);
-        start_txt += txt_row_h;
-
-        if (mDrawOsmStats) {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            txt = QString("DL Tiles: %d").arg(mOsm->getTilesDownloaded());
-#else
-            txt.sprintf("DL Tiles: %d", mOsm->getTilesDownloaded());
-#endif
-            painter.drawText(width - txtOffset, start_txt, txt);
-            start_txt += txt_row_h;
-
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            txt = QString("HDD Tiles: %d").arg(mOsm->getHddTilesLoaded());
-#else
-            txt.sprintf("HDD Tiles: %d", mOsm->getHddTilesLoaded());
-#endif
-
-            painter.drawText(width - txtOffset, start_txt, txt);
-            start_txt += txt_row_h;
-
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            txt = QString("RAM Tiles: %d").arg(mOsm->getRamTilesLoaded());
-#else
-            txt.sprintf("RAM Tiles: %d", mOsm->getRamTilesLoaded());
-#endif
-
-            painter.drawText(width - txtOffset, start_txt, txt);
-            start_txt += txt_row_h;
-        }
-    }
-
-    if (mInteractionMode != InteractionModeDefault) {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        txt = QString("IMode: %d").arg(mInteractionMode);
-#else
-        txt.sprintf("IMode: %d", mInteractionMode);
-#endif
-
-        painter.drawText(width - txtOffset, start_txt, txt);
-        start_txt += txt_row_h;
-    }
-
-    // Some info
-    if (info_segments > 0) {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        txt = QString("Info seg: %d").arg(info_segments);
-#else
-        txt.sprintf("Info seg: %d", info_segments);
-#endif
-        painter.drawText(width - txtOffset, start_txt, txt);
-        start_txt += txt_row_h;
-    }
-
-    if (info_points > 0) {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        txt = QString("Info pts: %d").arg(info_points);
-#else
-        txt.sprintf("Info pts: %d", info_points);
-#endif
-        painter.drawText(width - txtOffset, start_txt, txt);
-        start_txt += txt_row_h;
-    }
-
-    // Route info
-    if (mRoutes.at(mRouteNow).size() > 0) {
-        LocPoint prev = mRoutes.at(mRouteNow).first();
-        double len = 0.0;
-        for (int i = 1;i < mRoutes.at(mRouteNow).size();i++) {
-            len += prev.getDistanceTo(mRoutes.at(mRouteNow).at(i));
-            prev = mRoutes.at(mRouteNow).at(i);
-        }
-
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        txt = QString("RP: %1").arg(QString::number(mRoutes.at(mRouteNow).size()));
-#else
-        txt.sprintf("RP: %d", mRoutes.at(mRouteNow).size());
-#endif
-
-        painter.drawText(width - txtOffset, start_txt, txt);
-        start_txt += txt_row_h;
-
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        txt = QString("RLen: %1 m").arg(len, 0, 'f', 2);
-#else
-        txt.sprintf("RLen: %.2f m", len);
-#endif
-        painter.drawText(width - txtOffset, start_txt, txt);
-        start_txt += txt_row_h;
-    }
-
-    painter.end();
 }
 
-void MapWidget::updateTraces()
+
+void MapWidget::paintTraceVechicle(QPainter &painter,QPen &pen, QTransform drawTrans,QVector<LocPoint> mTrace,double traceWidth,QColor traceColour)
 {
-    // Store trace for the selected car or copter
-    if (mTraceCar >= 0) {
-        for (int i = 0;i < mCarInfo.size();i++) {
-            CarInfo &carInfo = mCarInfo[i];
-            if (carInfo.getId() == mTraceCar) {
-                if (mCarTrace.isEmpty()) {
-                    mCarTrace.append(carInfo.getLocation());
-                }
-                if (mCarTrace.last().getDistanceTo(carInfo.getLocation()) > mTraceMinSpaceCar) {
-                    mCarTrace.append(carInfo.getLocation());
-                }
-                // GPS trace
-                if (mCarTraceGps.isEmpty()) {
-                    mCarTraceGps.append(carInfo.getLocationGps());
-                }
-                if (mCarTraceGps.last().getDistanceTo(carInfo.getLocationGps()) > mTraceMinSpaceGps) {
-                    mCarTraceGps.append(carInfo.getLocationGps());
-                }
-                // UWB trace
-                if (mCarTraceUwb.isEmpty()) {
-                    mCarTraceUwb.append(carInfo.getLocationUwb());
-                }
-                if (mCarTraceUwb.last().getDistanceTo(carInfo.getLocationUwb()) > mTraceMinSpaceCar) {
-                    mCarTraceUwb.append(carInfo.getLocationUwb());
-                }
+    // Draw trace for the selected car
+    pen.setWidthF(traceWidth);
+    pen.setColor(traceColour);
+    painter.setPen(pen);
+    painter.setTransform(drawTrans);
+    if (bUpdateable)
+    {
+        for (int i = 1;i < mTrace.size();i++) {
+            painter.drawLine(mTrace[i - 1].getX() * 1000.0, mTrace[i - 1].getY() * 1000.0,
+                             mTrace[i].getX() * 1000.0, mTrace[i].getY() * 1000.0);
+        }
+    } else
+    {
+        if(mTrace.size()>0)
+        {
+            for (int i = iLogstart+1;i < iLogend;i++) {
+                painter.drawLine(mTrace[i - 1].getX() * 1000.0, mTrace[i - 1].getY() * 1000.0,
+                                 mTrace[i].getX() * 1000.0, mTrace[i].getY() * 1000.0);
+            }
+        }
+    };
+}
+
+void MapWidget::paintCarTraces(QPainter &painter,QPen &pen, QTransform drawTrans)
+{
+    paintTraceVechicle(painter,pen, drawTrans,mCarTrace,5.0 / mScaleFactor,Qt::red);
+    paintTraceVechicle(painter,pen, drawTrans,mCarTraceGps,2.5 / mScaleFactor,Qt::magenta);
+
+    // Draw UWB trace for the selected car
+    if (mDrawUwbTrace) {
+        paintTraceVechicle(painter,pen, drawTrans,mCarTraceUwb ,2.5 / mScaleFactor,Qt::green);
+    }
+}
+
+void MapWidget::paintTrace(QList<LocPoint> &itNow,QPainter &painter,QPen &pen, bool isActive, QTransform drawTrans, QTransform txtTrans,const double cx, const double cy, const double view_w, const double view_h,int& info_segments, int& info_points)
+{
+    // View boundries in mm
+    const double xStart2 = (cx - view_w / 2.0) * 1000.0;
+    const double yStart2 = (cy - view_h / 2.0) * 1000.0;
+    const double xEnd2 = (cx + view_w / 2.0) * 1000.0;
+    const double yEnd2 = (cy + view_h / 2.0) * 1000.0;
+
+    if (isActive) {
+        pen.setColor(Qt::darkGreen);
+        painter.setBrush(Qt::green);
+    } else {
+        pen.setColor(Qt::darkGreen);
+        painter.setBrush(Qt::green);
+    }
+
+    pen.setWidthF(3.0);
+    painter.setPen(pen);
+    painter.setTransform(txtTrans);
+
+    const double info_min_dist = 0.02;
+
+    int last_visible = 0;
+    for (int i = 1;i < itNow.size();i++) {
+        double dist_view = itNow.at(i).getDistanceTo(itNow.at(last_visible)) * mScaleFactor;
+        if (dist_view < info_min_dist) {
+            continue;
+        }
+
+        bool draw = isPointWithinRect(itNow[last_visible].getPointMm(), xStart2, xEnd2, yStart2, yEnd2);
+
+        if (!draw) {
+            draw = isPointWithinRect(itNow[i].getPointMm(), xStart2, xEnd2, yStart2, yEnd2);
+        }
+
+        if (!draw) {
+            draw = isLineSegmentWithinRect(itNow[last_visible].getPointMm(),
+                                           itNow[i].getPointMm(),
+                                           xStart2, xEnd2, yStart2, yEnd2);
+        }
+
+        if (draw && itNow[i].getDrawLine()) {
+            QPointF p1 = drawTrans.map(itNow[last_visible].getPointMm());
+            QPointF p2 = drawTrans.map(itNow[i].getPointMm());
+
+            painter.drawLine(p1, p2);
+            info_segments++;
+        }
+
+        last_visible = i;
+    }
+
+    QList<LocPoint> pts_green;
+    QList<LocPoint> pts_red;
+    QList<LocPoint> pts_other;
+
+    for (int i = 0;i < itNow.size();i++) {
+        LocPoint ip = itNow[i];
+
+        if (!isActive) {
+            ip.setColor(Qt::gray);
+        }
+
+        if (ip.getColor() == Qt::darkGreen || ip.getColor() == Qt::green) {
+            pts_green.append(ip);
+        } else if (ip.getColor() == Qt::darkRed || ip.getColor() == Qt::red) {
+            pts_red.append(ip);
+        } else {
+            pts_other.append(ip);
+        }
+    }
+
+    info_points += drawInfoPoints(painter, pts_green, drawTrans, txtTrans,
+                                  xStart2, xEnd2, yStart2, yEnd2, info_min_dist);
+    info_points += drawInfoPoints(painter, pts_other, drawTrans, txtTrans,
+                                  xStart2, xEnd2, yStart2, yEnd2, info_min_dist);
+    info_points += drawInfoPoints(painter, pts_red, drawTrans, txtTrans,
+                                  xStart2, xEnd2, yStart2, yEnd2, info_min_dist);
+
+}
+
+void MapWidget::paintAnchor(LocPoint &anchor,QPainter &painter,QPen &pen, QTransform drawTrans, QTransform txtTrans,QString& txt, QPointF& pt_txt,const QColor &textColor,QRectF &rect_txt)
+{
+    double x = anchor.getX() * 1000.0;
+    double y = anchor.getY() * 1000.0;
+    painter.setTransform(drawTrans);
+
+    // Draw anchor
+    painter.setBrush(QBrush(Qt::red));
+    painter.translate(x, y);
+
+    pt_txt.setX(x);
+    pt_txt.setY(y);
+    painter.setTransform(txtTrans);
+    pt_txt = drawTrans.map(pt_txt);
+
+    painter.drawRoundedRect(pt_txt.x() - 10,
+                            pt_txt.y() - 10,
+                            20, 20, 10, 10);
+
+    // Print data
+    txt=QString("Anchor %d\n"
+                "Pos    : (%.3f, %.3f)\n"
+                "Height : %.2f m").
+                arg(anchor.getId(),3,'f').
+                arg(anchor.getX(), anchor.getY(),3,'f').
+                arg(anchor.getHeight(),2,'f');
+    pt_txt.setX(x);
+    pt_txt.setY(y);
+    painter.setTransform(txtTrans);
+    pt_txt = drawTrans.map(pt_txt);
+    rect_txt.setCoords(pt_txt.x() + 15, pt_txt.y() - 20,
+                       pt_txt.x() + 500, pt_txt.y() + 500);
+    painter.drawText(rect_txt, txt);
+}
+
+void MapWidget::paintCar(CarInfo &carInfo,QPainter &painter,QPen &pen, QTransform drawTrans, QTransform txtTrans,QString &txt, QPointF &pt_txt,const QColor &textColor,QRectF &rect_txt)
+{
+    LocPoint pos = carInfo.getLocation();
+    LocPoint pos_gps = carInfo.getLocationGps();
+
+    const double car_len = carInfo.getLength() * 1000.0;
+    const double car_w = carInfo.getWidth() * 1000.0;
+    const double car_corner = carInfo.getCornerRadius() * 1000.0;
+
+    double x = pos.getX() * 1000.0;
+    double y = pos.getY() * 1000.0;
+    double x_gps = pos_gps.getX() * 1000.0;
+    double y_gps = pos_gps.getY() * 1000.0;
+    double angle = pos.getYaw() * 180.0 / M_PI;
+    painter.setTransform(drawTrans);
+
+    QColor col_sigma = Qt::red;
+    QColor col_wheels = Qt::black;
+    QColor col_bumper = Qt::green;
+    QColor col_hull = carInfo.getColor();
+    QColor col_center = Qt::blue;
+    QColor col_gps = Qt::magenta;
+    QColor col_ap = carInfo.getColor();
+
+    if (carInfo.getId() != mSelectedCar) {
+        col_wheels = Qt::darkGray;
+        col_bumper = Qt::lightGray;
+        col_ap = Qt::lightGray;
+    }
+
+    // Draw standard deviation
+    if (pos.getSigma() > 0.0) {
+        QColor col = col_sigma;
+        col.setAlphaF(0.2);
+        painter.setBrush(QBrush(col));
+        painter.drawEllipse(pos.getPointMm(), pos.getSigma() * 1000.0, pos.getSigma() * 1000.0);
+    }
+
+    // Draw car
+    painter.setBrush(QBrush(col_wheels));
+    painter.save();
+    painter.translate(x, y);
+    painter.rotate(-angle);
+    // Wheels
+    painter.drawRoundedRect(-car_len / 12.0,-(car_w / 2), car_len / 6.0, car_w, car_corner / 3, car_corner / 3);
+    painter.drawRoundedRect(car_len - car_len / 2.5,-(car_w / 2), car_len / 6.0, car_w, car_corner / 3, car_corner / 3);
+    // Front bumper
+    painter.setBrush(col_bumper);
+    painter.drawRoundedRect(-car_len / 6.0, -((car_w - car_len / 20.0) / 2.0), car_len, car_w - car_len / 20.0, car_corner, car_corner);
+    // Hull
+    painter.setBrush(col_hull);
+    painter.drawRoundedRect(-car_len / 6.0, -((car_w - car_len / 20.0) / 2.0), car_len - (car_len / 20.0), car_w - car_len / 20.0, car_corner, car_corner);
+    painter.restore();
+
+    // Center
+    painter.setBrush(col_center);
+    painter.drawEllipse(QPointF(x, y), car_w / 15.0, car_w / 15.0);
+
+    // GPS Location
+    painter.setBrush(col_gps);
+    //        painter.drawEllipse(QPointF(x_gps, y_gps), car_w / 15.0, car_w / 15.0);
+    painter.drawEllipse(QPointF(x_gps, y_gps), car_w / 3.0, car_w / 3.0);
+
+    // Autopilot state
+    LocPoint ap_goal = carInfo.getApGoal();
+    if (ap_goal.getRadius() > 0.0) {
+        pen.setColor(col_ap);
+        painter.setPen(pen);
+        QPointF pm = pos.getPointMm();
+        painter.setBrush(Qt::transparent);
+        painter.drawEllipse(pm, ap_goal.getRadius() * 1000.0, ap_goal.getRadius() * 1000.0);
+
+        QPointF p = ap_goal.getPointMm();
+        pen.setWidthF(3.0 / mScaleFactor);
+        painter.setBrush(col_gps);
+        painter.drawEllipse(p, 10 / mScaleFactor, 10 / mScaleFactor);
+    }
+
+    painter.setPen(QPen(textColor));
+
+    // Print data
+    QTime t = QTime::fromMSecsSinceStartOfDay(carInfo.getTime());
+    QString solStr;
+    if (!carInfo.getLocationGps().getInfo().isEmpty()) {
+        solStr = QString("Sol: %1\n").arg(carInfo.getLocationGps().getInfo());
+    }
+    txt=QString("%s\n"
+                "%s"
+                "(%.3f, %.3f, %.0f)\n"
+                "%02d:%02d:%02d:%03d").
+                arg(carInfo.getName().toLocal8Bit().data()).
+                arg(solStr.toLocal8Bit().data()).
+                arg(pos.getX(),3,'f').
+                arg(pos.getY(),3,'f').
+                arg(angle,3,'f').
+                arg(t.hour(),2,'d').
+                arg(t.minute(),2,'d').
+                arg(t.second(),2,'d').
+                arg(t.msec(),3,'d');
+    pt_txt.setX(x + 120 + (car_len - 190) * ((cos(pos.getYaw()) + 1) / 2));
+    pt_txt.setY(y);
+    painter.setTransform(txtTrans);
+    pt_txt = drawTrans.map(pt_txt);
+    rect_txt.setCoords(pt_txt.x(), pt_txt.y() - 20,
+                       pt_txt.x() + 400, pt_txt.y() + 100);
+    painter.drawText(rect_txt, txt);
+
+}
+
+void MapWidget::paintGrid(QPainter &painter,QPen &pen, QTransform drawTrans, QTransform txtTrans, int width, int height, double stepGrid,QString txt, QPointF pt_txt,const QColor textColor, const QColor zeroAxisColor,const QColor firstAxisColor,const QColor secondAxisColor,const double zeroAxisWidth)
+{
+    // Grid boundries in mm
+    const double xStart = -ceil(width / stepGrid / mScaleFactor) * stepGrid - ceil(mXOffset / stepGrid / mScaleFactor) * stepGrid;
+    const double xEnd = ceil(width / stepGrid / mScaleFactor) * stepGrid - floor(mXOffset / stepGrid / mScaleFactor) * stepGrid;
+    const double yStart = -ceil(height / stepGrid / mScaleFactor) * stepGrid - ceil(mYOffset / stepGrid / mScaleFactor) * stepGrid;
+    const double yEnd = ceil(height / stepGrid / mScaleFactor) * stepGrid - floor(mYOffset / stepGrid / mScaleFactor) * stepGrid;
+
+    painter.setTransform(txtTrans);
+
+    // Draw Y-axis segments
+    for (double i = xStart;i < xEnd;i += stepGrid) {
+        if (fabs(i) < 1e-3) {
+            i = 0.0;
+        }
+
+        if ((int)(i / stepGrid) % 2) {
+            pen.setWidth(0);
+            pen.setColor(firstAxisColor);
+            painter.setPen(pen);
+        } else {
+            txt=QString("%1 m").arg(i / 1000.0,2,'f');
+
+            pt_txt.setX(i);
+            pt_txt.setY(0);
+            pt_txt = drawTrans.map(pt_txt);
+            pt_txt.setX(pt_txt.x() - 5);
+            pt_txt.setY(height - 10);
+            painter.setPen(QPen(textColor));
+            painter.save();
+            painter.translate(pt_txt);
+            painter.rotate(-90);
+            painter.drawText(0, 0, txt);
+            painter.restore();
+
+            if (fabs(i) < 1e-3) {
+                pen.setWidthF(zeroAxisWidth);
+                pen.setColor(zeroAxisColor);
+            } else {
+                pen.setWidth(0);
+                pen.setColor(secondAxisColor);
+            }
+            painter.setPen(pen);
+        }
+
+        QPointF pt_start(i, yStart);
+        QPointF pt_end(i, yEnd);
+        pt_start = drawTrans.map(pt_start);
+        pt_end = drawTrans.map(pt_end);
+        painter.drawLine(pt_start, pt_end);
+    }
+
+    // Draw X-axis segments
+    for (double i = yStart;i < yEnd;i += stepGrid) {
+        if (fabs(i) < 1e-3) {
+            i = 0.0;
+        }
+
+        if ((int)(i / stepGrid) % 2) {
+            pen.setWidth(0);
+            pen.setColor(firstAxisColor);
+            painter.setPen(pen);
+        } else {
+            txt=QString("%1 m").arg(i / 1000.0,2,'f');
+            pt_txt.setY(i);
+
+            pt_txt = drawTrans.map(pt_txt);
+            pt_txt.setX(10);
+            pt_txt.setY(pt_txt.y() - 5);
+            painter.setPen(QPen(textColor));
+            painter.drawText(pt_txt, txt);
+
+            if (fabs(i) < 1e-3) {
+                pen.setWidthF(zeroAxisWidth);
+                pen.setColor(zeroAxisColor);
+            } else {
+                pen.setWidth(0);
+                pen.setColor(secondAxisColor);
+            }
+            painter.setPen(pen);
+        }
+
+        QPointF pt_start(xStart, i);
+        QPointF pt_end(xEnd, i);
+        pt_start = drawTrans.map(pt_start);
+        pt_end = drawTrans.map(pt_end);
+        painter.drawLine(pt_start, pt_end);
+    }
+}
+
+void MapWidget::paintTiles(QPainter &painter,const double cx, const double cy, const double view_w, const double view_h, bool highQuality)
+{
+    double i_llh[3];
+    i_llh[0] = mRefLat;
+    i_llh[1] = mRefLon;
+    i_llh[2] = mRefHeight;
+
+    mOsmZoomLevel = (int)round(log(mScaleFactor * mOsmRes * 100000000.0 *
+                                    cos(i_llh[0] * M_PI / 180.0)) / log(2.0));
+    if (mOsmZoomLevel > mOsmMaxZoomLevel) {
+        mOsmZoomLevel = mOsmMaxZoomLevel;
+    } else if (mOsmZoomLevel < 0) {
+        mOsmZoomLevel = 0;
+    }
+
+    int xt = OsmTile::long2tilex(i_llh[1], mOsmZoomLevel);
+    int yt = OsmTile::lat2tiley(i_llh[0], mOsmZoomLevel);
+
+    double llh_t[3];
+    llh_t[0] = OsmTile::tiley2lat(yt, mOsmZoomLevel);
+    llh_t[1] = OsmTile::tilex2long(xt, mOsmZoomLevel);
+    llh_t[2] = 0.0;
+
+    double xyz[3];
+    utility::llhToEnu(i_llh, llh_t, xyz);
+
+    // Calculate scale at ENU origin
+    double w = OsmTile::lat2width(i_llh[0], mOsmZoomLevel);
+
+    int t_ofs_x = (int)ceil(-(cx - view_w / 2.0) / w);
+    int t_ofs_y = (int)ceil((cy + view_h / 2.0) / w);
+
+    if (!highQuality) {
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, mAntialiasOsm);
+    }
+
+    QTransform transOld = painter.transform();
+    QTransform trans = painter.transform();
+    trans.scale(1, -1);
+    painter.setTransform(trans);
+
+    for (int j = 0;j < 40;j++) {
+        for (int i = 0;i < 40;i++) {
+            int xt_i = xt + i - t_ofs_x;
+            int yt_i = yt + j - t_ofs_y;
+            double ts_x = xyz[0] + w * i - (double)t_ofs_x * w;
+            double ts_y = -xyz[1] + w * j - (double)t_ofs_y * w;
+
+            // We are outside the view
+            if (ts_x > (cx + view_w / 2.0)) {
+                break;
+            } else if ((ts_y - w) > (-cy + view_h / 2.0)) {
+                break;
+            }
+
+            int res;
+            OsmTile t = mOsm->getTile(mOsmZoomLevel, xt_i, yt_i, res);
+
+            if (w < 0.0) {
+                w = t.getWidthTop();
+            }
+
+            painter.drawPixmap(ts_x * 1000.0, ts_y * 1000.0,
+                               w * 1000.0, w * 1000.0, t.pixmap());
+
+            if (res == 0 && !mOsm->downloadQueueFull()) {
+                mOsm->downloadTile(mOsmZoomLevel, xt_i, yt_i);
             }
         }
     }
 
-    // Truncate traces
-    while (mCarTrace.size() > 5000) {
-        mCarTrace.removeFirst();
+    // Restore painter
+    painter.setTransform(transOld);
+
+    if (!highQuality) {
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, mAntialiasDrawings);
     }
 
-    while (mCarTraceGps.size() > 1800) {
-        mCarTraceGps.removeFirst();
+}
+
+bool MapWidget::loadXMLRoute(QXmlStreamReader* stream,bool isBorder)
+{
+    qDebug() << "loading route";
+    // Look for routes tag
+    bool routes_found = false;
+    while (stream->readNextStartElement()) {
+        if (stream->name() == "routes") {
+            routes_found = true;
+            break;
+        }
     }
 
-    while (mCarTraceUwb.size() > 5000) {
-        mCarTraceUwb.removeFirst();
+    if (routes_found) {
+        qDebug() << "found route";
+        QList<QPair<int, MapRoute > > routes;
+        QList<LocPoint> anchors;
+
+        while (stream->readNextStartElement()) {
+            QString name = stream->name().toString();
+
+            if (name == "route") {
+                int id = -1;
+                MapRoute route;
+
+                while (stream->readNextStartElement()) {
+                    QString name2 = stream->name().toString();
+
+                    if (name2 == "id") {
+                        id = stream->readElementText().toInt();
+                    } else if (name2 == "point") {
+                        LocPoint p;
+
+                        while (stream->readNextStartElement()) {
+                            QString name3 = stream->name().toString();
+
+                            if (name3 == "x") {
+                                p.setX(stream->readElementText().toDouble());
+                            } else if (name3 == "y") {
+                                p.setY(stream->readElementText().toDouble());
+                            } else if (name3 == "speed") {
+                                p.setSpeed(stream->readElementText().toDouble());
+                            } else if (name3 == "time") {
+                                p.setTime(stream->readElementText().toInt());
+                            } else if (name3 == "attributes") {
+                                p.setAttributes(stream->readElementText().toInt());
+                            } else {
+                                qWarning() << ": Unknown XML element :" << name2;
+                                stream->skipCurrentElement();
+                            }
+                        }
+
+                        route.append(p);
+                    } else {
+                        qWarning() << ": Unknown XML element :" << name2;
+                        stream->skipCurrentElement();
+                    }
+
+                    if (stream->hasError()) {
+                        qWarning() << " : XML ERROR :" << stream->errorString();
+                    }
+                }
+
+                routes.append(QPair<int, MapRoute >(id, route));
+            } else if (name == "anchors") {
+                while (stream->readNextStartElement()) {
+                    QString name2 = stream->name().toString();
+
+                    if (name2 == "anchor") {
+                        LocPoint p;
+
+                        while (stream->readNextStartElement()) {
+                            QString name3 = stream->name().toString();
+
+                            if (name3 == "x") {
+                                p.setX(stream->readElementText().toDouble());
+                            } else if (name3 == "y") {
+                                p.setY(stream->readElementText().toDouble());
+                            } else if (name3 == "height") {
+                                p.setHeight(stream->readElementText().toDouble());
+                            } else if (name3 == "id") {
+                                p.setId(stream->readElementText().toInt());
+                            } else {
+                                qWarning() << ": Unknown XML element :" << name2;
+                                stream->skipCurrentElement();
+                            }
+                        }
+
+                        anchors.append(p);
+                    } else {
+                        qWarning() << ": Unknown XML element :" << name2;
+                        stream->skipCurrentElement();
+                    }
+
+                    if (stream->hasError()) {
+                        qWarning() << " : XML ERROR :" << stream->errorString();
+                    }
+                }
+            }
+
+            if (stream->hasError()) {
+                qWarning() << "XML ERROR :" << stream->errorString();
+                qWarning() << stream->lineNumber() << stream->columnNumber();
+            }
+        }
+        for (QPair<int, MapRoute > r: routes) {
+            if (r.first >= 0) {
+                if (isBorder)
+                {
+                    int fieldLast = this->getFieldNow();
+                    this->setFieldNow(r.first);
+                    this->setField(r.second);
+                    this->setFieldNow(fieldLast);
+                } else
+                {
+                    int routeLast = this->getPathNow();
+                    this->setPathNow(r.first);
+                    this->setPath(r.second);
+                    this->setPathNow(routeLast);
+                }
+            } else {
+                if (isBorder)
+                {
+                    this->addField(r.second);
+                } else
+                {
+                    this->addPath(r.second);
+                }
+            }
+        }
+
+        for (LocPoint p: anchors) {
+            this->addAnchor(p);
+        }
+    }
+    return routes_found;
+
+}
+
+void MapWidget::saveXMLCurrentRoute(QXmlStreamWriter* stream)
+{
+//    stream->setCodec("UTF-8");
+    stream->setAutoFormatting(true);
+    stream->writeStartDocument();
+
+    stream->writeStartElement("routes");
+
+    MapRoute *currentRoute;
+    int mRoutePointSelected;
+    if (focusBorder)
+    {
+        currentRoute=&(mFields->getCurrent());
+        qDebug() << "Acting on border";
+        qDebug() << "Border size: " << currentRoute->size();
+    } else
+    {
+        currentRoute=&(mPaths->getCurrent());
+        qDebug() << "Acting on path";
+    }
+    saveXMLRoute(stream, *currentRoute,false, 0);
+
+    stream->writeEndDocument();
+}
+
+void MapWidget::saveXMLRoute(QXmlStreamWriter* stream, MapRoute route,bool withId, int i)
+{
+    stream->writeStartElement("route");
+
+    if (withId) {
+        stream->writeTextElement("id", QString::number(i));
+    }
+
+    for (const LocPoint p: route.mRoute) {
+        stream->writeStartElement("point");
+        stream->writeTextElement("x", QString::number(p.getX()));
+        stream->writeTextElement("y", QString::number(p.getY()));
+        stream->writeTextElement("speed", QString::number(p.getSpeed()));
+        stream->writeTextElement("time", QString::number(p.getTime()));
+        stream->writeTextElement("attributes", QString::number(p.getAttributes()));
+        stream->writeEndElement();
+    }
+    stream->writeEndElement();
+}
+
+
+void MapWidget::saveXMLRoutes(QXmlStreamWriter* stream, bool withId)
+{
+//    stream->setCodec("UTF-8");
+    stream->setAutoFormatting(true);
+    stream->writeStartDocument();
+
+    stream->writeStartElement("routes");
+
+    QList<LocPoint> anchors = this->getAnchors();
+    QList<MapRoute> routes;
+    if (focusBorder)
+    {
+        routes = this->getFields();
+    } else
+    {
+        routes = this->getPaths();
+    }
+    /*
+    if (!anchors.isEmpty()) {
+        stream->writeStartElement("anchors");
+        for (LocPoint p: anchors) {
+            stream->writeStartElement("anchor");
+            stream->writeTextElement("x", QString::number(p.getX()));
+            stream->writeTextElement("y", QString::number(p.getY()));
+            stream->writeTextElement("height", QString::number(p.getHeight()));
+            stream->writeTextElement("id", QString::number(p.getId()));
+            stream->writeEndElement();
+        }
+        stream->writeEndElement();
+    }
+*/
+    for (int i = 0;i < routes.size();i++) {
+        if (!routes.at(i).isEmpty()) {
+            saveXMLRoute(stream,routes.at(i),i,withId);
+        }
+    }
+    stream->writeEndDocument();
+}
+
+
+void MapWidget::updateTraces()
+{
+    if (bUpdateable)
+    {
+        // Store trace for the selected car
+        if (mTraceCar >= 0) {
+            CarInfo &carInfo = mCarInfo[0];
+            for (int i = 0;i < mCarInfo.size();i++) {
+                carInfo = mCarInfo[i];
+                if (carInfo.getId() == mTraceCar) {
+                    if (mCarTrace.isEmpty()) {
+                        mCarTrace.append(carInfo.getLocation());
+                    }
+                    if (mCarTrace.last().getDistanceTo(carInfo.getLocation()) > mTraceMinSpaceCar) {
+                        mCarTrace.append(carInfo.getLocation());
+                    }
+                    // GPS trace
+                    if (mCarTraceGps.isEmpty()) {
+                        mCarTraceGps.append(carInfo.getLocationGps());
+                    }
+                    if (mCarTraceGps.last().getDistanceTo(carInfo.getLocationGps()) > mTraceMinSpaceGps) {
+                        mCarTraceGps.append(carInfo.getLocationGps());
+                    }
+                    // UWB trace
+                    if (mCarTraceUwb.isEmpty()) {
+                        mCarTraceUwb.append(carInfo.getLocationUwb());
+                    }
+                    if (mCarTraceUwb.last().getDistanceTo(carInfo.getLocationUwb()) > mTraceMinSpaceCar) {
+                        mCarTraceUwb.append(carInfo.getLocationUwb());
+                    }
+                }
+            }
+            //            qDebug() << "---";
+            //            qDebug() << carInfo.getLocation().getX();
+            //            qDebug() << carInfo.getLocationGps().getX();
+            //            qDebug() << carInfo.getLocationUwb().getX();
+        }
+
+        // Truncate traces
+        while (mCarTrace.size() > 5000) {
+            mCarTrace.removeFirst();
+        }
+
+        while (mCarTraceGps.size() > 1800) {
+            mCarTraceGps.removeFirst();
+        }
+
+        while (mCarTraceUwb.size() > 5000) {
+            mCarTraceUwb.removeFirst();
+        }
     }
 }
+
+std::array<double, 4> MapWidget::findExtremeValuesFieldBorders()
+{
+    std::array<double, 4> extremes;
+    extremes[0]=9999999;
+    extremes[1]=9999999;
+    extremes[2]=-9999999;
+    extremes[3]=-9999999;
+
+    QList<LocPoint> allpoints;
+    /*    for (const MapRoute& route : mRoutes)
+    {
+        if (route.getIsBorder())
+        allpoints.append(route.mRoute);
+    }*/
+    for (const MapRoute& field : mFields->mCollection)
+    {
+        allpoints.append(field.mRoute);
+    }
+    for (const LocPoint& point : allpoints)
+    {
+        double x=point.getX();
+        double y=point.getY();
+
+        if (x<extremes[0]) extremes[0]=x;
+        if (x>extremes[2]) extremes[2]=x;
+        if (y<extremes[1]) extremes[1]=y;
+        if (y>extremes[3]) extremes[3]=y;
+
+    }
+    return extremes;
+}
+
+/*
+MapRoute::MapRoute(QList<LocPoint> route, QList<LocPoint> infotrace)
+{
+    mRoute=route;
+    mInfoTrace=infotrace;
+}
+*/
+
+MapRoute MapWidget::getCurrentPath()
+{
+    return mPaths->getCurrent();
+};
+
+
+int MapRoute::size()
+{
+    return mRoute.size();
+}
+
+void MapRoute::clear()
+{
+    mRoute.clear();
+}
+
+bool MapRoute::isEmpty() const
+{
+    return mRoute.isEmpty();
+}
+
+void MapRoute::append(LocPoint point)
+{
+    mRoute.append(point);
+}
+
+void MapRoute::append(const QList<LocPoint> &points)
+{
+    mRoute.append(points);
+}
+
+void MapRoute::append(const MapRoute &mr)
+{
+    mRoute.append(mr.mRoute);
+}
+
+LocPoint& MapRoute::first()
+{
+    return mRoute.first();
+}
+
+LocPoint& MapRoute::last()
+{
+    return mRoute.last();
+}
+
+void MapRoute::removeLast()
+{
+    mRoute.removeLast();
+}
+void MapRoute::prepend(const LocPoint &value)
+{
+    mRoute.prepend(value);
+}
+
+void MapRoute::removeAt(int i)
+{
+    mRoute.removeAt(i);
+}
+
+QList<LocPoint>::const_iterator MapRoute::begin() const
+{
+    return mRoute.begin();
+}
+
+QList<LocPoint>::const_iterator MapRoute::end() const
+{
+    return mRoute.end();
+}
+
+double MapRoute::getArea()
+{
+    int n = this->size();
+    double area = 0.0;
+
+    for (int i = 0; i < n; ++i) {
+        int j = (i + 1) % n;
+        area += mRoute[i].getX() * mRoute[j].getY();
+        area -= mRoute[i].getY() * mRoute[j].getX();
+    }
+    area = std::abs(area) * 0.5;
+    return area;
+}
+
+LocPoint &	MapRoute::operator[](int i)
+{
+    return mRoute[i];
+}
+
+void MapRoute::setIsBorder(bool border)
+{
+    isBorder=border;
+}
+
+bool MapRoute::getIsBorder() const
+{
+    return isBorder;
+}
+
+/*
+void MapRoute::paint(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawTrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool highQuality)
+{
+    if (isBorder)
+    {
+        paintBorder(painter, pen, isSelected, mScaleFactor, drawTrans);
+    } else
+    {
+        paintPath(mapWidget, painter, pen, isSelected, mScaleFactor, drawTrans, txt, pt_txt, rect_txt, txtTrans, highQuality);
+    }
+}
+*/
+
+void MapRoute::paintPath(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawTrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool highQuality)
+{
+    Qt::GlobalColor defaultDarkColor = Qt::darkGray;
+    Qt::GlobalColor defaultColor = Qt::gray;
+    if (isSelected) {
+        defaultDarkColor = Qt::darkYellow;
+        defaultColor = Qt::yellow;
+    }
+
+    pen.setWidthF(5.0 / mScaleFactor);
+    painter.setTransform(drawTrans);
+
+    int nPoints=this->size();
+    for (int i = 1;i < nPoints;i++) {
+        pen.setColor(defaultDarkColor);
+        painter.setBrush(defaultColor);
+        if (isSelected && (mRoute[i - 1].getAttributes() & ATTR_HYDRAULIC_FRONT_DOWN) && (mRoute[i].getAttributes() & ATTR_HYDRAULIC_FRONT_DOWN)) {
+            pen.setColor(Qt::darkCyan);
+            painter.setBrush(Qt::cyan);
+        }
+        painter.setPen(pen);
+
+        painter.setOpacity(0.7);
+        painter.drawLine(mRoute[i - 1].getX() * 1000.0, mRoute[i - 1].getY() * 1000.0,
+                         mRoute[i].getX() * 1000.0, mRoute[i].getY() * 1000.0);
+        painter.setOpacity(1.0);
+    }
+
+    for (int i = 0;i < nPoints;i++) {
+        QPointF p = mRoute[i].getPointMm();
+        quint32 attr = mRoute[i].getAttributes();
+
+        painter.setTransform(drawTrans);
+
+        if (highQuality) {
+            if (isSelected) {
+                if ((attr & ATTR_POSITIONING_MASK) == 2) {
+                    pen.setColor(Qt::darkGreen);
+                    painter.setBrush(Qt::green);
+                } else if ((attr & ATTR_HYDRAULIC_FRONT_DOWN) != 0) {
+                    pen.setColor(Qt::darkCyan);
+                    painter.setBrush(Qt::cyan);
+                } else if ((attr & ATTR_HYDRAULIC_FRONT_UP) != 0) {
+                    pen.setColor(Qt::darkYellow);
+                    painter.setBrush(Qt::green);
+                } else {
+                    pen.setColor(Qt::darkYellow);
+                    painter.setBrush(Qt::yellow);
+                }
+            } else {
+                pen.setColor(Qt::darkGray);
+                painter.setBrush(Qt::gray);
+            }
+
+            pen.setWidthF(3.0 / mScaleFactor);
+            painter.setPen(pen);
+
+            painter.drawEllipse(p, 10.0 / mScaleFactor,
+                                10.0 / mScaleFactor);
+        } else {
+            mapWidget->drawCircleFast(painter, p, 10.0 / mScaleFactor, isSelected ?
+                                                                           ((attr & ATTR_POSITIONING_MASK) == 2 ? 2 : ((attr & ATTR_HYDRAULIC_FRONT_DOWN) != 0 ? 3 : ((attr & ATTR_HYDRAULIC_FRONT_UP) != 0 ? 4 : 0))) : 1);
+        }
+
+        // Draw highlight for first and last point in active route
+        if (isSelected && (i == 0 || i == nPoints-1)) {
+            QPointF ptmp;
+            ptmp.setX(p.x() - 7.0 / mScaleFactor);
+            ptmp.setY(p.y() + 7.0 / mScaleFactor);
+            if (i == 0) {
+                pen.setColor(Qt::green);
+                painter.setBrush(Qt::darkGreen);
+            } else {
+                pen.setColor(Qt::red);
+                painter.setBrush(Qt::darkRed);
+            }
+            pen.setWidthF(2.0 / mScaleFactor);
+            painter.setPen(pen);
+            painter.drawEllipse(ptmp, 5.0 / mScaleFactor,
+                                5.0 / mScaleFactor);
+        }
+
+        // Draw text only for selected route
+        if (isSelected && mapWidget->mDrawRouteText) {
+            QTime t = QTime::fromMSecsSinceStartOfDay(mRoute[i].getTime());
+            txt=QString("P: %1 %2\n"
+                        "%3 km/h\n"
+                        "%4:%5:%6:%7\n"
+                        "A: %8").
+                        arg(i).
+                        arg(((i == 0) ? "- start" : ((i == nPoints-1) ? "- end" : ""))).
+                        arg(mRoute[i].getSpeed() * 3.6,1,'f').
+                        arg(t.hour(),2,'d').
+                        arg(t.minute(),2,'d').
+                        arg(t.second(),2,'d').
+                        arg(t.msec(),3,'d').
+                        arg(mRoute[i].getAttributes());
+
+            pt_txt.setX(p.x() + 10 / mScaleFactor);
+            pt_txt.setY(p.y());
+            painter.setTransform(txtTrans);
+            pt_txt = drawTrans.map(pt_txt);
+            pen.setColor(Qt::black);
+            painter.setPen(pen);
+            rect_txt.setCoords(pt_txt.x(), pt_txt.y() - 20,
+                               pt_txt.x() + 200, pt_txt.y() + 60);
+            painter.drawText(rect_txt, txt);
+        } else {
+            //           txt.sprintf("%d", rn);
+            pt_txt.setX(p.x());
+            pt_txt.setY(p.y());
+            painter.setTransform(txtTrans);
+            pt_txt = drawTrans.map(pt_txt);
+            pen.setColor(Qt::black);
+            painter.setPen(pen);
+            rect_txt.setCoords(pt_txt.x() - 20, pt_txt.y() - 20,
+                               pt_txt.x() + 20, pt_txt.y() + 20);
+            painter.drawText(rect_txt, Qt::AlignCenter, txt);
+        }
+    }
+
+}
+
+void MapRoute::paintBorder(QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawTrans)
+{
+    pen.setWidthF(5.0 / mScaleFactor);
+    painter.setTransform(drawTrans);
+
+    QPolygon polygon;
+    int nPoints=this->size();
+    //    for (int i = 1;i < nPoints;i++) {
+    for (int i = 0;i < nPoints;i++) {
+        double x=mRoute[i].getX() * 1000.0;
+        double y=mRoute[i].getY() * 1000.0;
+
+        polygon << QPoint(x, y);
+        QPointF p = mRoute[i].getPointMm();
+        painter.setPen(QPen(Qt::black, 3.0 / mScaleFactor)); // Set the pen color to blue and width to 2
+        painter.drawEllipse(p, 5.0 / mScaleFactor,
+                            5.0 / mScaleFactor);
+
+    }
+    // Set the brush color for filling the polygon
+    painter.setBrush(QBrush(Qt::yellow));
+    if (isSelected)
+    {
+        painter.setOpacity(1.0);
+    } else
+    {
+        painter.setOpacity(0.35);
+    }
+    // Set the pen color for drawing the border
+    painter.setPen(QPen(Qt::darkRed, 5.0 / mScaleFactor, Qt::DashDotLine, Qt::RoundCap)); // Set the pen color to blue and width to 2
+
+    // Draw and fill the polygon
+    painter.drawPolygon(polygon);
+}
+
+void MapRoute::routeinfo(MapWidget* mapWidget, QPainter &painter,double start_txt,const double txtOffset,const double txt_row_h, int width, QString txt)
+{
+    int nPoints=this->size();
+    if (nPoints > 0) {
+        LocPoint prev = this->first();
+        double len = 0.0;
+        for (int i = 1;i < nPoints;i++) {
+            len += prev.getDistanceTo(mRoute[i]);
+            prev = mRoute[i];
+        }
+
+        txt=QString("RP: %1").arg(nPoints);
+        painter.drawText(width - txtOffset, start_txt, txt);
+        start_txt += txt_row_h;
+
+        txt=QString("RLen: %1 m").arg(len,2,'f');
+        painter.drawText(width - txtOffset, start_txt, txt);
+        start_txt += txt_row_h;
+    }
+}
+
+MapRouteCollection::MapRouteCollection()
+{
+    mRouteNow = 0;
+}
+
+MapRoute MapRouteCollection::getRoute(int ind)
+{
+    if (ind < 0) {
+        return mCollection[mRouteNow];
+    } else {
+        if (mCollection.size() > ind) {
+            return mCollection[ind];
+        } else {
+            MapRoute tmp;
+            return tmp;
+        }
+    }
+}
+
+QList<MapRoute> MapRouteCollection::getRoutes()
+{
+    return mCollection;
+}
+
+void MapRouteCollection::setRoute(const MapRoute &route)
+{
+    mCollection[mRouteNow] = route;
+}
+
+
+void MapRouteCollection::addRoute(const MapRoute &route)
+{
+    while (!mCollection.isEmpty() &&
+           mCollection.last().isEmpty() &&
+           mRouteNow < mCollection.size()) {
+        mCollection.removeLast();
+    }
+    mCollection.append(route);
+}
+
+int MapRouteCollection::getRouteNum()
+{
+    return mCollection.size();
+}
+
+void MapRouteCollection::clearRoute()
+{
+    mCollection[mRouteNow].clear();
+}
+
+void MapRouteCollection::clearAllRoutes()
+{
+    for (int i = 0;i < mCollection.size();i++) {
+        mCollection[i].clear();
+    }
+    mCollection.clear();
+}
+
+void MapRouteCollection::setRouteNow(int routeNow)
+{
+    mRouteNow = routeNow;
+    while (mCollection.size() < (mRouteNow + 1)) {
+        MapRoute l;
+        mCollection.append(l);
+    }
+
+    // Clean empty routes
+    while (mRouteNow < (mCollection.size() - 1)) {
+        if (mCollection.last().isEmpty()) {
+            mCollection.removeLast();
+        } else {
+            break;
+        }
+    }
+}
+
+
+void MapRouteCollection::clear()
+{
+    mCollection.clear();
+}
+
+void MapRouteCollection::append(MapRoute &maproute)
+{
+    mCollection.append(maproute);
+}
+
+
+int MapRouteCollection::size()
+{
+    return mCollection.size();
+}
+
+MapRoute& MapRouteCollection::getCurrent()
+{
+    return mCollection[mRouteNow];
+}
+
+QList<MapRoute>::const_iterator MapRouteCollection::begin() const
+{
+    return mCollection.begin();
+}
+
+QList<MapRoute>::const_iterator MapRouteCollection::end() const
+{
+    return mCollection.end();
+}
+
+MapRoute& MapRouteCollection::at(int i)
+{
+    return mCollection[i];
+}
+
+MapRoute& MapRouteCollection::first()
+{
+    return mCollection.first();
+}
+
+MapRoute& MapRouteCollection::last()
+{
+    return mCollection.last();
+}
+
+void MapRouteCollection::prepend(const MapRoute &value)
+{
+    mCollection.prepend(value);
+}
+
+void MapRouteCollection::removeAt(int i)
+{
+    mCollection.removeAt(i);
+}
+
