@@ -41,6 +41,25 @@
 #define SERVO_RIGHT				2
 #define SPEED_M_S				0.6
 #endif
+
+
+#define SPEED_TIMEOUT_MS   200
+#define SPEED_BUFFER_LEN   6      // antal senaste mätningar att använda i medel
+#define MAX_FACTOR_CHANGE  2.0f   // tillåten förändring mellan mätningar (högsta/lägsta tid)
+#define MIN_FACTOR_CHANGE  0.5f   // lägsta tillåten förändring (för kort tid)
+
+static float time_buffer[SPEED_BUFFER_LEN];
+static int buf_index = 0;
+static int buf_count = 0; // hur många giltiga värden i bufferten
+static float last_valid_time = 0.0f;
+static float m_speed_filtered = 0.0f;
+
+#ifdef IS_MACTRAC
+		// Measure speed
+		const float wheel_diam = 0.65;
+		const float cnts_per_rev = 16.0;
+#endif
+
 #define TIMEOUT_SECONDS			2.0
 #define TIMEOUT_SECONDS_MOVE	10.0
 
@@ -53,6 +72,7 @@ static volatile HYDRAULIC_MOVE m_move_rear = HYDRAULIC_MOVE_STOP;
 static volatile HYDRAULIC_MOVE m_move_extra = HYDRAULIC_MOVE_STOP;
 static volatile float m_move_timeout_cnt = 0.0;
 static volatile float m_throttle_set = 0.0;
+
 
 //extern event_source_t emergency_event;
 extern int iDebug;
@@ -193,6 +213,50 @@ void hydraulic_move(HYDRAULIC_POS pos, HYDRAULIC_MOVE move) {
 	}
 }
 
+static void update_speed_buffer(float high_t, float low_t) {
+    float time_last = high_t + low_t;
+    if (time_last <= 0.0f) return;
+
+    // Dynamiska toleranser beroende på hastighet
+    float max_factor = 2.0f;
+    float min_factor = 0.5f;
+    if (m_speed_filtered < 0.5f) { // vid låg fart, tillåt större variation
+        max_factor = 4.0f;
+        min_factor = 0.25f;
+    }
+
+    // Kontrollera om värdet är rimligt jämfört med senaste giltiga
+    if (last_valid_time > 0.0f) {
+        float ratio = time_last / last_valid_time;
+        if ((m_speed_filtered > 0.0f) && (ratio > max_factor || ratio < min_factor)) {
+            return; // orimligt → ignorera
+        }
+    }
+
+    // Spara som senaste giltiga
+    last_valid_time = time_last;
+
+    // Lägg in i ringbuffert
+    time_buffer[buf_index] = time_last;
+    buf_index = (buf_index + 1) % SPEED_BUFFER_LEN;
+    if (buf_count < SPEED_BUFFER_LEN) buf_count++;
+
+    // Beräkna medelvärde
+    float sum_time = 0.0f;
+    for (int i = 0; i < buf_count; i++) {
+        sum_time += time_buffer[i];
+    }
+    float avg_time = sum_time / buf_count;
+
+    // Ny hastighet
+    float new_speed = SIGN(m_throttle_set) * (wheel_diam * M_PI) / (avg_time * cnts_per_rev);
+
+    // Lågpassfilter
+    const float alpha = 0.3f;
+    m_speed_filtered = m_speed_filtered * (1.0f - alpha) + new_speed * alpha;
+    m_speed_now = m_speed_filtered;
+};
+
 static THD_FUNCTION(hydro_thread, arg) {
 	(void)arg;
 
@@ -254,9 +318,6 @@ static THD_FUNCTION(hydro_thread, arg) {
 		}
 
 #ifdef IS_MACTRAC
-		// Measure speed
-		const float wheel_diam = 0.65;
-		const float cnts_per_rev = 16.0;
 
 		ADC_CNT_t cnt;
 #ifdef SERVO_READ
@@ -264,6 +325,8 @@ static THD_FUNCTION(hydro_thread, arg) {
 #else
 		cnt = *comm_can_io_board_adc0_cnt();
 #endif
+
+#ifdef PRE20250812
 		float time_last = fmaxf(cnt.high_time_current, cnt.high_time_last) +
 				fmaxf(cnt.low_time_current, cnt.low_time_last);
 		if (time_last>0)
@@ -273,16 +336,43 @@ static THD_FUNCTION(hydro_thread, arg) {
 		{
 			m_speed_now = 0;
 		}
+#endif
+#ifdef UPDATE20250812
+        // Timeout → nolla
+        if (chVTTimeElapsedSinceX(last_reading_time) > MS2ST(SPEED_TIMEOUT_MS)) {
+            buf_count = 0;
+            last_valid_time = 0.0f;
+            m_speed_now = 20.0f;
+            m_speed_filtered = 20.0f;
+        }
+
+        // Om ny puls från ISR
+        if (new_pulse) {
+            syssts_t sts = chSysGetStatusAndLockX();
+            float high_t = fmaxf(cnt.high_time_current, cnt.high_time_last);
+            float low_t  = fmaxf(cnt.low_time_current,  cnt.low_time_last);
+            new_pulse = false;
+            chSysRestoreStatusX(sts);
+
+            update_speed_buffer(high_t, low_t);
+        }
+        #endif
+
+
+
+
+        /*		if (iDebug==22)
+        		{
+        			commands_printf("time: %u",current_time);
+        		}*/
+/*
 #ifdef SERVO_READ
 		systime_t current_time = chVTGetSystemTimeX();
-/*		if (iDebug==22)
-		{
-			commands_printf("time: %u",current_time);
-		}*/
 	    if ((current_time - last_reading_time) > READING_TIMEOUT) {
 	        m_speed_now = 0; // Set speed to zero if no recent reading
 	    }
 #endif
+*/
 		// comm_can_io_board_lim_sw(2) - Upp bak
 		// comm_can_io_board_lim_sw(3) - Ner bak
 

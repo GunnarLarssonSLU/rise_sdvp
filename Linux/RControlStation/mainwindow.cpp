@@ -118,12 +118,33 @@ void deadband(double &value, double tres, double max) {
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     serialReader("/dev/arduino", 9600),
-    ui(new Ui::MainWindow)
+    ui(new Ui::MainWindow),
+    db(this)
 {
     ui->setupUi(this);
-    ui->mapLiveWidget->setMouseEventHandler([this](QMouseEvent *e) {
+    ui->mapLiveWidget->setMousePressEventHandler([this](QMouseEvent *e) {
         ui->mapLiveWidget->mousePressEventPaths(e);
     });
+    ui->mapLiveWidget->setMouseReleaseEventHandler([this](QMouseEvent *e) {
+        ui->mapLiveWidget->mouseReleaseEventPaths(e);
+    });
+    ui->mapLiveWidget->setWheelEventHandler([this](QWheelEvent *e) {
+        ui->mapLiveWidget->wheelEventPaths(e);
+    });
+
+    ui->mapWidgetFields->setMousePressEventHandler([this](QMouseEvent *e) {
+        ui->mapWidgetFields->mousePressEventFields(e);
+    });
+    ui->mapWidgetFields->setMouseReleaseEventHandler([this](QMouseEvent *e) {
+        ui->mapWidgetFields->mousePressEventFields(e);
+    });
+
+    ui->mapWidgetFields->setWheelEventHandler([this](QWheelEvent *e) {
+        ui->mapWidgetFields->wheelEventFields(e);
+    });
+
+    ui->mapWidgetFields->setMainWindow(this);
+    ui->mapWidgetFields->setBorderFocus(true);
     mVersion = "0.8";
     mSupportedFirmwares.append(qMakePair(12, 3));
     mSupportedFirmwares.append(qMakePair(20, 1));
@@ -153,7 +174,7 @@ MainWindow::MainWindow(QWidget *parent) :
 #endif
 
 
-    checkboxdelegate=new CheckBoxDelegate();
+    checkboxdelegate=new CheckBoxDelegate(ui->fieldTable);
 
     mPing = new Ping(this);
     mNmea = new NmeaServer(this);
@@ -256,13 +277,6 @@ MainWindow::MainWindow(QWidget *parent) :
                 "This program needs the SQLITE driver"
                 );
 
-    // Initialize the database:
-    QSqlError err = initDb();
-    if (err.type() != QSqlError::NoError) {
-            showError(err);
-            return;
-    }
-
     modelFarm=setupFarmTable(ui->farmTable,"locations");
     modelField=setupFieldTable(ui->fieldTable,"fields");
     modelPath=setupPathTable(ui->pathTable,"paths");
@@ -271,9 +285,40 @@ MainWindow::MainWindow(QWidget *parent) :
     QObject::connect(ui->farmTable->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onSelectedFarm);
     QObject::connect(ui->fieldTable->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onSelectedField);
 
+//    ui->fieldTable->installEventFilter(&filterFieldtable);
 
-    ui->farmTable->setFocus();
-    ui->farmTable->installEventFilter(this);
+    MapWidget *mapFields=ui->mapWidgetFields;
+
+    /*
+    QObject::connect(&filterFieldtable, &FocusEventFilter::focusGained, [mapFields]() {
+        qDebug() << "Focus gained Fields";
+    });
+*/
+    /* ui->pathTable->installEventFilter(&filterPathtable);
+
+  QObject::connect(&filterPathtable, &FocusEventFilter::focusGained, [mapFields]() {
+      mapFields->setBorderFocus(false);
+      mapFields->update();
+      qDebug() << "Focus gained Paths";
+  });
+*/
+    connect(ui->pushButton_farm, &QPushButton::released, this, &MainWindow::handleAddFarmButton);
+    connect(ui->pushButton_field, &QPushButton::released, this, &MainWindow::handleAddFieldButton);
+
+//    ui->farmTable->setFocus();
+    ui->farmTable->installEventFilter(this);    
+    ui->fieldTable->installEventFilter(this);
+
+    //    ui->farmTable->selectRow(0);
+
+    if (ui->fieldTable->model()->rowCount()>0)
+    {
+        ui->fieldTable->selectRow(0);
+    }
+    if (ui->pathTable->model()->rowCount()>0)
+    {
+        ui->pathTable->selectRow(0);
+    }
 
     qApp->installEventFilter(this);
 }
@@ -314,14 +359,63 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
             on_stopButton_clicked();
             return true;
         }
-    }
+        if (object == ui->farmTable)
+        {
+            qDebug() << "in farmtable";
+            switch (keyEvent->key())
+            {
+            case Qt::Key_Delete:
+                QModelIndexList selectedRows = ui->farmTable->selectionModel()->selectedRows();
+                QSqlTableModel* model = qobject_cast<QSqlTableModel*>(ui->farmTable->model());
+                for (const QModelIndex& index : selectedRows) {
+                    model->removeRow(index.row());
+                }
+                model->select();
+                return true; // Event is handled, don't propagate further
+            }
+        }
+        if (object == ui->fieldTable)
+        {
+            qDebug() << "in fieldtable";
+            QItemSelectionModel* selectionModel = ui->fieldTable->selectionModel();
+            QModelIndexList selection = selectionModel->selectedRows();
+            QSqlTableModel* model = qobject_cast<QSqlTableModel*>(ui->fieldTable->model());
+            switch (keyEvent->key())
+            {
+            case Qt::Key_Delete:
+                // Multiple rows can be selected
+                for(int i=0; i< selection.count(); i++)
+                {
+                    QModelIndex index = selection.at(i);
+                    qDebug() << index.row();
+                    QAbstractItemModel* connectedModel = ui->fieldTable->model();
+                    QString fieldid = connectedModel->data(connectedModel->index(index.row(), 0)).toString();
+                    db.deleteField(fieldid);
+                    //                     connectedModel->select();
+                }
+                if (model) {
+                    model->select();
+                };
+                return true;
+                break;
+            case Qt::Key_Return:
+                QByteArray byteArray;
+                QXmlStreamWriter stream(&byteArray);
+                ui->mapWidgetFields->saveXMLCurrentRoute(&stream);
+                QString xmlString = QString::fromUtf8(byteArray);
+                QModelIndexList selectedIndexes = selectionModel->selectedIndexes();
+                if (selectedIndexes.isEmpty()) {
+                    qDebug() << "No selection";
+                }
 
-    // Handle F10 here as it won't be detected from the camera window otherwise.
-    if (e->type() == QEvent::KeyPress) {
-        QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
-        if (keyEvent->key() == Qt::Key_F10) {
-            on_actionToggleCameraFullscreen_triggered();
-            return true;
+                int row = selectedIndexes.first().row();
+                qDebug() << "Selected Row: " << row;
+
+                // Retrieve the data of the selected row if needed
+                model->setData(model->index(row,4),xmlString);
+                ui->fieldTable->show();
+                return true;
+            }
         }
     }
 
@@ -367,46 +461,11 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
 
     return false;
 }
-/*
-void MainWindow::setupFarmTable(QTableView* uiFarmTable,QString sqlTablename)
+
+void MainWindow::updateFarms()
 {
-    // Create the data model:
-    modelFarm = new QSqlRelationalTableModel(uiFarmTable);
-    modelFarm->setEditStrategy(QSqlTableModel::OnFieldChange);
-    modelFarm->setTable(sqlTablename);
-
-    // Set the localized header captions:
-    modelFarm->setHeaderData(modelFarm->fieldIndex("name"), Qt::Horizontal, tr("Name"));
-    modelFarm->setHeaderData(modelFarm->fieldIndex("longitude"), Qt::Horizontal, tr("Longitude"));
-    modelFarm->setHeaderData(modelFarm->fieldIndex("latitude"), Qt::Horizontal, tr("Latitude"));
-    modelFarm->setHeaderData(modelFarm->fieldIndex("user"), Qt::Horizontal, tr("user"));
-    modelFarm->setHeaderData(modelFarm->fieldIndex("password"), Qt::Horizontal, tr("password"));
-    modelFarm->setHeaderData(modelFarm->fieldIndex("ip"), Qt::Horizontal, tr("ip"));
-    modelFarm->setHeaderData(modelFarm->fieldIndex("port"), Qt::Horizontal, tr("port"));
-    modelFarm->setHeaderData(modelFarm->fieldIndex("NTRIP"), Qt::Horizontal, tr("NTRIP"));
-
-    // Populate the model:
-    if (!modelFarm->select()) {
-        showError(modelFarm->lastError());
-        return;
-    }
-
-    // Set the model and hide the ID column:
-    uiFarmTable->setModel(modelFarm);
-    //ui.locationTable->setItemDelegate(new BookDelegate(ui.locationTable));
-    uiFarmTable->setColumnHidden(modelFarm->fieldIndex("id"), true);
-    uiFarmTable->setSelectionMode(QAbstractItemView::SingleSelection);
-    uiFarmTable->setCurrentIndex(modelFarm->index(0, 0));
-
-    QDataWidgetMapper *mapperFarm = new QDataWidgetMapper(this);
-    mapperFarm->setModel(modelFarm);
-
-    mapperFarm->addMapping(this->findChild<QDoubleSpinBox*>("refSendLatBox"), modelFarm->fieldIndex("latitude"));
-    mapperFarm->addMapping(this->findChild<QDoubleSpinBox*>("refSendLonBox"), modelFarm->fieldIndex("longitude"));
-
-    connect(uiFarmTable->selectionModel(),&QItemSelectionModel::currentRowChanged,mapperFarm,&QDataWidgetMapper::setCurrentModelIndex);
+    modelFarm->select();
 }
-*/
 
 QSqlRelationalTableModel* MainWindow::setupFarmTable(QTableView* uiFarmTable,QString sqlTablename)
 {
@@ -427,7 +486,7 @@ QSqlRelationalTableModel* MainWindow::setupFarmTable(QTableView* uiFarmTable,QSt
 
     // Populate the model:
     if (!model->select()) {
-        showError(model->lastError());
+        db.showError(model->lastError());
         return model;
     }
 
@@ -446,12 +505,14 @@ QSqlRelationalTableModel* MainWindow::setupFarmTable(QTableView* uiFarmTable,QSt
     uiFarmTable->setColumnHidden(model->fieldIndex("stream"), true);
     uiFarmTable->setColumnHidden(model->fieldIndex("autoconnect"), true);
     uiFarmTable->setSelectionMode(QAbstractItemView::SingleSelection);
+    uiFarmTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     uiFarmTable->setCurrentIndex(model->index(0, 0));
+    uiFarmTable->resizeColumnsToContents();
+    uiFarmTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
     QDataWidgetMapper *mapperFarm = new QDataWidgetMapper(this);
     mapperFarm->setModel(model);
-    mapperFarm->addMapping(this->findChild<QDoubleSpinBox*>("refSendLatBox"), model->fieldIndex("latitude"));
-    mapperFarm->addMapping(this->findChild<QDoubleSpinBox*>("refSendLonBox"), model->fieldIndex("longitude"));
+    mapperFarm->addMapping(this->findChild<QLineEdit*>("locationnameEdit"), model->fieldIndex("name"));
     connect(uiFarmTable->selectionModel(),&QItemSelectionModel::currentRowChanged,mapperFarm,&QDataWidgetMapper::setCurrentModelIndex);
     return model;
 }
@@ -481,14 +542,20 @@ QSqlRelationalTableModel* MainWindow::setupFieldTable(QTableView* uiFieldTable,Q
     uiFieldTable->setModel(model);
     uiFieldTable->setColumnHidden(model->fieldIndex("id"), true);
     uiFieldTable->setColumnHidden(model->fieldIndex("location"), true);
-//    uiFieldTable->setColumnHidden(model->fieldIndex("fenced"), true);
-//    uiFieldTable->setColumnHidden(model->fieldIndex("storedinfile"), true);
+
     uiFieldTable->setSelectionMode(QAbstractItemView::SingleSelection);
     uiFieldTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    uiFieldTable->setItemDelegateForColumn(2, checkboxdelegate);
+    uiFieldTable->setItemDelegateForColumn(1, checkboxdelegate);
     uiFieldTable->resizeColumnsToContents();
     uiFieldTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    uiFieldTable->horizontalHeader()->setVisible(false); // Hide vertical headers
+//    uiFieldTable->horizontalHeader()->setVisible(false); // Hide vertical headers
+
+    QDataWidgetMapper *mapperField = new QDataWidgetMapper(this);
+    mapperField->setModel(model);
+    mapperField->addMapping(this->findChild<QLineEdit*>("fieldnameEdit"), model->fieldIndex("name"));
+    mapperField->addMapping(this->findChild<QLineEdit*>("filenameEdit"), model->fieldIndex("storedinfile"));
+    connect(uiFieldTable->selectionModel(),&QItemSelectionModel::currentRowChanged,mapperField,&QDataWidgetMapper::setCurrentModelIndex);
+
     return model;
 }
 
@@ -510,7 +577,7 @@ QSqlRelationalTableModel* MainWindow::setupPathTable(QTableView* uiPathTable,QSt
 
     // Populate the model:
     if (!model->select()) {
-        showError(model->lastError());
+        db.showError(model->lastError());
         return model;
     }
 
@@ -530,7 +597,6 @@ QSqlRelationalTableModel* MainWindow::setupPathTable(QTableView* uiPathTable,QSt
 
 void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& previous)
 {
-    //           QMessageBox msg;
     int row = current.row();
     int id = modelFarm->data(modelFarm->index(row, 0)).toInt();
 
@@ -585,7 +651,6 @@ void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& p
     while (query.next()) {
         // Access data for each record
         QString xmlFile= query.value("storedinfile").toString();
-        qDebug() << xmlFile;
 
         QFile file(xmlFile);
         if (!file.exists()) {
@@ -599,12 +664,12 @@ void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& p
         }
 
         QXmlStreamReader xmlData(&file);
-//        qDebug() <<  "XML Data:" << xmlData.readAll(); // This will read the entire content of the XML file;
         ui->mapWidgetFields->loadXMLRoute(&xmlData,true);
     }
     //            if (ui->fieldTable->model()->rowCount()>0)
     if (ui->mapWidgetFields->getFieldNum()>0)
     {
+        qDebug() << "Skala:";
         std::array<double, 4> extremes_m=ui->mapWidgetFields->findExtremeValuesFieldBorders();
         double fieldareawidth_m=extremes_m[2]-extremes_m[0];
         double fieldareaheight_m=extremes_m[3]-extremes_m[1];
@@ -614,8 +679,7 @@ void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& p
         double scaley=0.5/(fieldareaheight_m);
         ui->mapWidgetFields->moveView(offsetx_m, offsety_m);
         ui->mapWidgetFields->setScaleFactor(std::min(scalex,scaley));
- //       ui->mapWidget->moveView(offsetx_m, offsety_m);
- //       ui->mapWidget->setScaleFactor(std::min(scalex,scaley));
+        qDebug() << std::min(scalex,scaley);
    //     //                ui->fieldTable->selectRow(0);
     } else
     {
@@ -623,10 +687,7 @@ void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& p
   //      ui->mapWidget->moveView(0, 0);
         // If no fields set a zoom matching a with of about 500 m -> scalefactor=0.5/500=0.001
         ui->mapWidgetFields->setScaleFactor(0.001);
-  //      ui->mapWidget->setScaleFactor(0.001);
     }
-    /*
-    */
 }
 
 void MainWindow::onSelectedField(const QModelIndex& current, const QModelIndex& previous)
@@ -1737,11 +1798,11 @@ void MainWindow::onGeneratePathButtonClicked()
 //    ui->mapLiveWidget->repaint();
 }
 
-void MainWindow::onLoadShapefile()
+bool MainWindow::onLoadShapefile()
 {
     // Create a file dialog
     QString fileName = QFileDialog::getOpenFileName(this,
-                                                    "Open File", "", "Shape Files (*.shp)(*.shp)");
+                                                    "Open File", "", "Shape Files [*.shp](*.shp)");
 
     // Check if a file was selected
     if (!fileName.isEmpty()) {
@@ -1749,12 +1810,10 @@ void MainWindow::onLoadShapefile()
         // Use the selected file path as needed
     }
 
-//    std::ofstream svg("map.svg");
-//    svg << "<svg xmlns='http://www.w3.org/2000/svg' width='800' height='800'>\n";
-
     QByteArray utf8Path = fileName.toUtf8();     // store the QByteArray
     const char* shapefile = utf8Path.constData(); // safe pointer
 
+    qDebug() << "loading shapefile";
 
     // 1️⃣ Register all OGR drivers
     GDALAllRegister();
@@ -1763,7 +1822,7 @@ void MainWindow::onLoadShapefile()
     GDALDataset *poDS = (GDALDataset*) GDALOpenEx(shapefile, GDAL_OF_VECTOR, NULL, NULL, NULL);
     if (poDS == nullptr) {
         std::cerr << "Failed to open shapefile: " << shapefile << std::endl;
-        return 1;
+        return false;
     }
 
     // 3️⃣ Get the first layer
@@ -1771,7 +1830,7 @@ void MainWindow::onLoadShapefile()
     if (poLayer == nullptr) {
         std::cerr << "Could not get layer from shapefile" << std::endl;
         GDALClose(poDS);
-        return 1;
+        return false;
     }
 
     double illh[3];
@@ -1791,22 +1850,16 @@ void MainWindow::onLoadShapefile()
                 // Outer ring (boundary)
                 OGRLinearRing* outer = poly->getExteriorRing();
 
-//                svg << "<polygon points='";
                 MapRoute MR;
                 if (outer) {
                     int nPoints = outer->getNumPoints();
-                    qDebug() << "Polygon " << i << " outer ring:";
                     for (int j = 0; j < nPoints; j++) {
-                        qDebug() << outer->getX(j) << ", " << outer->getY(j);
                         double llh[3];
                         double xyh[3];
                         llh[0]=outer->getY(j);
                         llh[1]=outer->getX(j);
                         llh[2]=0;
                         utility::llhToEnu(illh, llh, xyh);
-                        qDebug() << "llh: " <<  llh[0] << ", " << llh[1];
-                        qDebug() << "illh: " <<  illh[0] << ", " << illh[1];
-                        qDebug() << "xyz: " << xyh[0] << ", " << xyh[1];
                         LocPoint lp(xyh[0],xyh[1]);
                         MR.append(lp);
 
@@ -1833,7 +1886,29 @@ void MainWindow::onLoadShapefile()
 
     // 5️⃣ Close dataset
     GDALClose(poDS);
+
+    // Get the current date and time
+//    QDateTime currentDateTime = QDateTime::currentDateTime();
+
+    // Format the date and time as a string
+//    QString formattedDateTime = currentDateTime.toString("yyyyMMdd-hhmmss");
+
+//    QString storedfilename= "shapefileimport" + formattedDateTime;
+//    qDebug() << "file name" << storedfilename;
+
+    if (ui->mapWidgetFields->saveRoutes(ui->filenameEdit->text()))
+    {
+        showStatusInfo("Saved routes", true);
+    } else
+    {
+        showStatusInfo("Could not save routes", false);
+    };
+    qDebug() << "stored file";
+
+    addField();
+
 //    svg << "</svg>\n";
+    return true;
 };
 
 
@@ -1973,21 +2048,6 @@ void MainWindow::on_mapOsmServerHiResButton_toggled(bool checked)
 {
     if (checked) {
                 ui->mapLiveWidget->osmClient()->setTileServerUrl("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile");
-    	//        ui->mapWidget->osmClient()->setTileServerUrl("http://c.osm.rrze.fau.de/osmhd"); // Also https
-    }
-}
-
-void MainWindow::on_mapOsmServerVedderButton_toggled(bool checked)
-{
-    if (checked) {
-        ui->mapLiveWidget->osmClient()->setTileServerUrl("http://tiles.vedder.se/osm_tiles");
-    }
-}
-
-void MainWindow::on_mapOsmServerVedderHdButton_toggled(bool checked)
-{
-    if (checked) {
-        ui->mapLiveWidget->osmClient()->setTileServerUrl("http://tiles.vedder.se/osm_tiles_hd");
     }
 }
 
@@ -2381,96 +2441,14 @@ void MainWindow::saveRoutes(bool withId)
         filename.append(".xml");
     }
 
-    QFile file(filename);
-    if (!file.open(QIODevice::WriteOnly)) {
-        QMessageBox::critical(this, "Save Routes",
-                              "Could not open\n" + filename + "\nfor writing");
+    if (ui->mapLiveWidget->saveRoutes(filename))
+    {
+        showStatusInfo("Saved routes", true);
+    } else
+    {
         showStatusInfo("Could not save routes", false);
-        return;
-    }
-
-
-    QXmlStreamWriter stream(&file);
-    ui->mapLiveWidget->saveXMLRoutes(&stream,withId);
-    file.close();
-    showStatusInfo("Saved routes", true);
+    };
 }
-/*
-void MainWindow::saveRoutes(bool withId)
-{
-    QString filename = QFileDialog::getSaveFileName(this,
-                                                    tr("Save Routes"), "",
-                                                    tr("Xml files (*.xml)"));
-
-    // Cancel pressed
-    if (filename.isEmpty()) {
-        return;
-    }
-
-    if (!filename.toLower().endsWith(".xml")) {
-        filename.append(".xml");
-    }
-
-    QFile file(filename);
-    if (!file.open(QIODevice::WriteOnly)) {
-        QMessageBox::critical(this, "Save Routes",
-                              "Could not open\n" + filename + "\nfor writing");
-        showStatusInfo("Could not save routes", false);
-        return;
-    }
-
-
-    QXmlStreamWriter stream(&file);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    stream.setCodec("UTF-8");
-#endif
-    stream.setAutoFormatting(true);
-    stream.writeStartDocument();
-
-    stream.writeStartElement("routes");
-
-    QList<LocPoint> anchors = ui->mapLiveWidget->getAnchors();
-    QList<QList<LocPoint> > routes = ui->mapLiveWidget->getRoutes();
-
-    if (!anchors.isEmpty()) {
-        stream.writeStartElement("anchors");
-        for (LocPoint p: anchors) {
-            stream.writeStartElement("anchor");
-            stream.writeTextElement("x", QString::number(p.getX()));
-            stream.writeTextElement("y", QString::number(p.getY()));
-            stream.writeTextElement("height", QString::number(p.getHeight()));
-            stream.writeTextElement("id", QString::number(p.getId()));
-            stream.writeEndElement();
-        }
-        stream.writeEndElement();
-    }
-
-    for (int i = 0;i < routes.size();i++) {
-        if (!routes.at(i).isEmpty()) {
-            stream.writeStartElement("route");
-
-            if (withId) {
-                stream.writeTextElement("id", QString::number(i));
-            }
-
-            for (const LocPoint p: routes.at(i)) {
-                stream.writeStartElement("point");
-                stream.writeTextElement("x", QString::number(p.getX()));
-                stream.writeTextElement("y", QString::number(p.getY()));
-                stream.writeTextElement("speed", QString::number(p.getSpeed()));
-                stream.writeTextElement("time", QString::number(p.getTime()));
-                stream.writeTextElement("attributes", QString::number(p.getAttributes()));
-                stream.writeEndElement();
-            }
-            stream.writeEndElement();
-        }
-    }
-
-    stream.writeEndDocument();
-    file.close();
-    showStatusInfo("Saved routes", true);
-}
-*/
 
 void MainWindow::on_mapDrawRouteTextBox_toggled(bool checked)
 {
@@ -2741,20 +2719,75 @@ void MainWindow::handleAxisEvent(const SDL_ControllerAxisEvent& event) {
     }
 }
 
-void MainWindow::showError(const QSqlError &err)
+void MainWindow::handleAddFieldButton()
 {
-    QMessageBox::critical(this, "Unable to initialize Database",
-                          "Error initializing database: " + err.text());
+    addField();
+    //ui->fieldTable->update();
 }
 
-QSqlError initDb()
+void MainWindow::handleAddFarmButton()
 {
-    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
-    db.setDatabaseName("data.db");
-    if (!db.open())
-        return db.lastError();
-    return QSqlError();
+    //    QMessageBox msgBox;
+    //    msgBox.setText("Adding farm:" + ui->locationnameEdit->text());
+    //    msgBox.exec();
+    db.addFarm(ui->locationnameEdit->text());
+    QSqlTableModel *tableModel = qobject_cast<QSqlTableModel*>(ui->farmTable->model());
+    if (tableModel) {
+        tableModel->select(); // Re-fetch the data from the database to update the model
+    }
 }
 
+void MainWindow::addField()
+{
+    qDebug() << "in AddField";
+    int farmid=currentFarm();
+    if (farmid)
+    {
+        db.addField(ui->fieldnameEdit->text(),farmid,ui->filenameEdit->text());
+    } else {
+        QMessageBox msgBox;
+        msgBox.setText("No row selected!");
+        msgBox.exec();
+    };
+    modelField->refresh();
+    modelField->select();
+}
+
+int MainWindow::currentFarm()
+{
+    QModelIndexList selectedIndexes = ui->farmTable->selectionModel()->selectedIndexes();
+    if (!selectedIndexes.isEmpty()) {
+        int rowIndex = selectedIndexes.first().row();
+        return modelFarm->record(rowIndex).value("id").toInt(); // farm id
+    } else {
+        return -1;
+    };
+}
+
+void MainWindow::setCurrentFarm(int farm)
+{
+    selectRowByPrimaryKey(ui->farmTable, modelFarm, "id", farm);
+}
+
+void selectRowByPrimaryKey(QTableView* tableView, QSqlRelationalTableModel* model, const QString& primaryKeyColumnName, const QVariant& primaryKeyValue) {
+    qDebug() << "primaryKeyValue: " << primaryKeyValue;
+    // Find the column index for the primary key
+    int primaryKeyColumn = model->fieldIndex(primaryKeyColumnName);
+
+    // Iterate through the rows to find the target primary key
+    for (int row = 0; row < model->rowCount(); ++row) {
+        QModelIndex index = model->index(row, primaryKeyColumn);
+        QVariant currentPrimaryKeyValue = model->data(index);
+        qDebug() << "currentPrimaryKeyValue: " << currentPrimaryKeyValue;
+
+        if (currentPrimaryKeyValue == primaryKeyValue) {
+            // Select the row in the table view
+            QModelIndex rowIndex = model->index(row, 0);
+            tableView->setCurrentIndex(rowIndex);
+            tableView->scrollTo(rowIndex);
+            break;
+        }
+    }
+}
 
 #endif

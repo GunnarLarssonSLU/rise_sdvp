@@ -32,6 +32,8 @@
 // #include "io_board_adc.h"  // or wherever ADC_CNT_t is defined
 
 //extern ADC_CNT_t io_board_adc0_cnt;
+volatile bool new_pulse = false;
+
 
 #ifdef SERVO_READ
 //#include <time.h> // For time functions
@@ -256,26 +258,24 @@ CH_IRQ_HANDLER(STM32_TIM2_HANDLER) {
         uint16_t delta = capture - last_capture;
         last_capture = capture;
 
-		last_reading_time  = chVTGetSystemTimeX();;
+        last_reading_time = chVTGetSystemTimeX();
 
-
-		// lämpligen i ett ChibiOS-shell-kommando eller debugger-prompt
-
-        // Update high and low times using a state machine
         if (io_board_adc0_cnt.is_high) {
             io_board_adc0_cnt.high_time_last = io_board_adc0_cnt.high_time_current;
-            io_board_adc0_cnt.high_time_current = 0.000001*delta;
+            io_board_adc0_cnt.high_time_current = 0.000001f * delta;
         } else {
-
             io_board_adc0_cnt.low_time_last = io_board_adc0_cnt.low_time_current;
-            io_board_adc0_cnt.low_time_current = 0.000001*delta;
+            io_board_adc0_cnt.low_time_current = 0.000001f * delta;
         }
 
         io_board_adc0_cnt.toggle_high_cnt++;
-        io_board_adc0_cnt.is_high = !io_board_adc0_cnt.is_high; // Toggle state
+        io_board_adc0_cnt.is_high = !io_board_adc0_cnt.is_high;
 
-        TIM2->SR &= ~TIM_SR_CC3IF; // Clear interrupt flag
+        new_pulse = true;  // signalera till tråden
+
+        TIM2->SR &= ~TIM_SR_CC3IF;
     }
+
     CH_IRQ_EPILOGUE();
 }
 #endif
