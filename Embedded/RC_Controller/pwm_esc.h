@@ -27,14 +27,10 @@ void pwm_esc_init(void);
 void pwm_esc_set(uint8_t id, float pulse_width);
 void pwm_esc_set_all(float pulse_width);
 
-static void tacho_debug_thread(void *arg);
 void read_adc_test(void);
 
-/*
- * static void icuwidthcb(ICUDriver *icup, icucnt_t width);
-static void icuperiodcb(ICUDriver *icup, icucnt_t period);
-void tach_input_init(void);
-*/
+
+extern volatile bool new_pulse;
 
 
 #endif /* PWM_ESC_H_ */

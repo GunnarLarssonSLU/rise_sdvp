@@ -47,6 +47,7 @@
 
 //#define IS_DRANGEN
 #define IS_MACTRAC
+#define UPDATE20250812
 
 // MacTrac
 // Steering Center: 210

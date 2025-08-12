@@ -38,6 +38,9 @@
 #include "carinfo.h"
 #include "perspectivepixmap.h"
 #include "osmclient.h"
+#include "database.h"
+
+class MainWindow;
 
 class MapModule
 {
@@ -91,9 +94,16 @@ class MapWidget : public QWidget
     friend class MapRoute;
 public:
     using MouseEventHandler = std::function<void(QMouseEvent*)>;
-    void setMouseEventHandler(MouseEventHandler handler);
+    using WheelEventHandler = std::function<void(QWheelEvent*)>;
+    void setMousePressEventHandler(MouseEventHandler handler);
+    void setMouseReleaseEventHandler(MouseEventHandler handler);
+    void setWheelEventHandler(WheelEventHandler handler);
     void mousePressEventFields(QMouseEvent *e);
     void mousePressEventPaths(QMouseEvent *e);
+    void mouseReleaseEventFields(QMouseEvent *e);
+    void mouseReleaseEventPaths(QMouseEvent *e);
+    void wheelEventFields(QWheelEvent *e);
+    void wheelEventPaths(QWheelEvent *e);
 
     typedef enum {
         InteractionModeDefault,
@@ -126,6 +136,7 @@ public:
     void addRoutePoint(double px, double py, double speed = 0.0, qint32 time = 0);
 
     void setBorderFocus(bool focus);
+    bool saveRoutes(QString filename);
 
     MapRoute getPath(int ind = -1);
     QList<MapRoute> getPaths();
@@ -157,6 +168,7 @@ public:
     void addPerspectivePixmap(PerspectivePixmap map);
     void clearPerspectivePixmaps();
     QPoint getMousePosRelative();
+    QPoint getMousePosRelativeNew(QPoint EventPos);
     void setAntialiasDrawings(bool antialias);
     void setAntialiasOsm(bool antialias);
     bool getDrawOpenStreetmap() const;
@@ -207,14 +219,6 @@ public:
     bool getDrawUwbTrace() const;
     void setDrawUwbTrace(bool drawUwbTrace);
 
-    void setLastCameraImage(const QImage &lastCameraImage);
-
-    double getCameraImageWidth() const;
-    void setCameraImageWidth(double cameraImageWidth);
-
-    double getCameraImageOpacity() const;
-    void setCameraImageOpacity(double cameraImageOpacity);
-
     MapWidget::InteractionMode getInteractionMode() const;
     void setInteractionMode(const MapWidget::InteractionMode &controlMode);
 
@@ -227,7 +231,6 @@ public:
 
     bool loadXMLRoute(QXmlStreamReader* stream,bool isBorder);
     void saveXMLRoutes(QXmlStreamWriter* stream,bool withId);
-    void saveXMLRoute(QXmlStreamWriter* stream, MapRoute route,bool withId, int i);
     void saveXMLCurrentRoute(QXmlStreamWriter* stream);
 
     std::array<double, 4> findExtremeValuesFieldBorders();
@@ -236,6 +239,9 @@ public:
     int Elements();
     int firstElement();
     int lastElement();
+
+    void setMainWindow(MainWindow* _mw);
+    void setDb(database* _db);
 signals:
     void scaleChanged(double newScale);
     void offsetChanged(double newXOffset, double newYOffset);
@@ -261,7 +267,9 @@ protected:
     bool event(QEvent *event) override;
 
 private:
-    MouseEventHandler mouseEventHandler;
+    MouseEventHandler mousePressEventHandler;
+    MouseEventHandler mouseReleaseEventHandler;
+    WheelEventHandler wheelEventHandler;
 
     QList<CarInfo> mCarInfo;
     QVector<LocPoint> mCarTrace;
@@ -339,16 +347,16 @@ private:
     void paintAnchor(LocPoint &anchor,QPainter &painter,QPen &pen, QTransform drawTrans, QTransform txtTrans,QString &txt, QPointF &pt_txt,const QColor &textColor,QRectF &rect_txt);
     void paintTrace(QList<LocPoint> &itNow,QPainter &painter,QPen &pen, bool isActive, QTransform drawTrans, QTransform txtTrans,const double cx, const double cy, const double view_w, const double view_h,int& info_segments, int& info_points);
     void paintCarTraces(QPainter &painter,QPen &pen, QTransform drawTrans);
-    void paintCamera(QPainter &painter,QTransform txtTrans, int width,double &start_txt);
     void paintUnitZoomGeneralinfo(QPainter &painter,QFont font, QTransform txtTrans, int width, double stepGrid,QString& txt, const QColor textColor, double& start_txt,const double txtOffset,const double txt_row_h,    int& info_segments, int& info_points);
     void paintClosestPoint(QPainter &painter,QPen &pen,QTransform drawTrans, QTransform txtTrans, QPointF& pt_txt,QRectF &rect_txt );
     void paintTraceVechicle(QPainter &painter,QPen &pen, QTransform drawTrans,QVector<LocPoint> mTrace,double traceWidth,QColor traceColour);
 
-
-
     bool focusBorder;
     bool bUpdateable;
     int iLogstart,iLogend;
+    bool hasChanged;
+    MainWindow* mw;
+    database* db;
 };
 
 class MapRoute
@@ -373,6 +381,7 @@ public:
     QList<LocPoint> mRoute;
     QList<LocPoint> mInfoTrace;
 
+    void saveXMLRoute(QXmlStreamWriter* stream,bool withId, int i);
     double getArea();
 
     //    void paint(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawtrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool highQuality = false);

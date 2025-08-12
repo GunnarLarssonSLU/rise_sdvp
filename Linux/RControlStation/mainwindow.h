@@ -24,7 +24,6 @@
 #include <QSerialPort>
 #include <QLabel>
 #include <QTcpSocket>
-#include <QtSql>
 #include <QtWidgets>
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -47,6 +46,7 @@
 #include "arduinoreader.h"
 #include "routegenerator.h"
 #include "checkboxdelegate.h"
+#include "database.h"
 
 #ifdef HAS_LIME_SDR
 #include "gpssim.h"
@@ -64,6 +64,21 @@ namespace Ui {
 class MainWindow;
 }
 
+class CustomDelegate;
+/*
+class FocusEventFilter : public QObject
+{
+    Q_OBJECT
+
+signals:
+    void focusGained();
+    void focusLost();
+
+protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
+};
+
+*/
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -80,6 +95,11 @@ public:
     void setNetworkTcpEnabled(bool enabled, int port = -1);
     void setNetworkUdpEnabled(bool enabled, int port = -1);
     MapWidget *map();
+    void addField();
+    int currentFarm();
+    void setCurrentFarm(int farm);
+    void updateFarms();
+
 
 private slots:
     void serialDataAvailable();
@@ -104,6 +124,10 @@ private slots:
     void onSelectedFarm(const QModelIndex& current, const QModelIndex& previous);
     void onSelectedField(const QModelIndex& current, const QModelIndex& previous);
     void onSelectedFieldGeneral(QSqlRelationalTableModel *model,QSqlRelationalTableModel *modelPth,const QModelIndex& current, const QModelIndex& previous);
+
+
+    void handleAddFieldButton();
+    void handleAddFarmButton();
 
     void on_disconnectButton_clicked();
     void on_mapRemoveTraceButton_clicked();
@@ -139,8 +163,6 @@ private slots:
     void on_mapOsmClearCacheButton_clicked();
     void on_mapOsmServerOsmButton_toggled(bool checked);
     void on_mapOsmServerHiResButton_toggled(bool checked);
-    void on_mapOsmServerVedderButton_toggled(bool checked);
-    void on_mapOsmServerVedderHdButton_toggled(bool checked);
     void on_mapOsmMaxZoomBox_valueChanged(int arg1);
     void on_mapDrawGridBox_toggled(bool checked);
     void on_mapGetEnuButton_clicked();
@@ -178,8 +200,6 @@ private slots:
     void on_actionGPSSimulator_triggered();
     void on_mapDrawUwbTraceBox_toggled(bool checked);
     void on_actionToggleFullscreen_triggered();
-//    void on_mapCameraWidthBox_valueChanged(double arg1);
-//    void on_mapCameraOpacityBox_valueChanged(double arg1);
     void on_actionToggleCameraFullscreen_triggered();
     void on_tabWidget_currentChanged(int index);
     void on_routeZeroButton_clicked();
@@ -196,14 +216,13 @@ private slots:
     void on_AutopilotRestartPushButton_clicked();
     void on_AutopilotPausePushButton_clicked();
     void onGeneratePathButtonClicked();
-    void onLoadShapefile();
+    bool onLoadShapefile();
 
     QSqlRelationalTableModel* setupFarmTable(QTableView* uiFarmtable,QString SqlTableName);
     QSqlRelationalTableModel* setupFieldTable(QTableView* uiFieldtable,QString SqlTableName);
     QSqlRelationalTableModel* setupPathTable(QTableView* uiPathTable,QString sqlTablename);
 
 private:
-    void showError(const QSqlError &err);
     QSqlRelationalTableModel *modelFarm;
     QSqlRelationalTableModel *modelField;
     QSqlRelationalTableModel *modelPath;
@@ -235,6 +254,7 @@ private:
     QString mLastImgFileName;
     QList<QPair<int, int> > mSupportedFirmwares;
     ArduinoReader serialReader;
+    database db;
 
 #ifdef HAS_JOYSTICK_CHECK
     bool JSconnected();
@@ -252,15 +272,27 @@ private:
 
     void saveRoutes(bool withId);
 
+    CustomDelegate *statustocolourDelegate;
+
+//    FocusEventFilter filterFieldtable;
+//    FocusEventFilter filterPathtable;
+
 private slots:
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     void pollGamepad();
     void handleButtonEvent(const SDL_ControllerButtonEvent& event);
     void handleAxisEvent(const SDL_ControllerAxisEvent& event);
 #endif
+
 };
 
+class CustomDelegate : public QStyledItemDelegate {
+public:
+    explicit CustomDelegate(QObject *parent = nullptr);
 
-QSqlError initDb();
+    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+};
+
+void selectRowByPrimaryKey(QTableView* tableView, QSqlRelationalTableModel* model, const QString& primaryKeyColumnName, const QVariant& primaryKeyValue);
 
 #endif // MAINWINDOW_H

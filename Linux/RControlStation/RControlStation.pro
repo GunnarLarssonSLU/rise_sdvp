@@ -82,6 +82,7 @@ contains(DEFINES, HAS_ASSIMP) {
 SOURCES += main.cpp\
     arduinoreader.cpp \
     checkboxdelegate.cpp \
+    database.cpp \
         mainwindow.cpp \
     qcustomplot.cpp \
     packetinterface.cpp \
@@ -125,6 +126,7 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h \
     arduinoreader.h \
     checkboxdelegate.h \
+    database.h \
     qcustomplot.h \
     datatypes.h \
     packetinterface.h \
