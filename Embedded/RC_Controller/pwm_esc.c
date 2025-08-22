@@ -28,22 +28,46 @@
 #include "chtypes.h"
 #include "chsys.h"
 #include "chvt.h"
+#include <math.h>
 
 // #include "io_board_adc.h"  // or wherever ADC_CNT_t is defined
 
 //extern ADC_CNT_t io_board_adc0_cnt;
 volatile bool new_pulse = false;
 
+#ifdef IS_MACTRAC
+		// Measure speed
+		const float wheel_diam = 0.65;
+		const float cnts_per_rev = 16.0;
+#endif
+
 
 #ifdef SERVO_READ
 //#include <time.h> // For time functions
 #define TACHO_INPUT_PORT      GPIOA
 ADC_CNT_t io_board_adc0_cnt = {1};
-//static time_t last_reading_time = 0;
 systime_t last_reading_time = 0;
-static uint16_t last_capture = 2;
+static volatile uint32_t timer_overflow_count = 0; // antal overflow
+static volatile uint32_t last_capture = 0;         // 32-bitars senaste capture
 static systime_t last_tick = 0;
+//extern float time_last;
+float m_speed_pwm = 0;
+
+#define SPEED_BUFFER_LEN   6      // antal senaste mätningar att använda i medel
+#define MAX_FACTOR_CHANGE  2.0f   // tillåten förändring mellan mätningar (högsta/lägsta tid)
+#define MIN_FACTOR_CHANGE  0.5f   // lägsta tillåten förändring (för kort tid)
+
+static float time_buffer[SPEED_BUFFER_LEN];
+static int buf_index = 0;
+int buf_count = 0; // hur många giltiga värden i bufferten
+float last_valid_time = 0.0f;
+float m_speed_filtered = 0.0f;
+extern float m_throttle_set;
+
+
 #endif
+
+extern int iDebug;
 
 
 #ifdef PWMTEST
@@ -221,6 +245,57 @@ void pwm_esc_set(uint8_t channel, float pulse_width) {
 
 #ifdef SERVO_READ
 
+static void update_speed_buffer(float high_t, float low_t) {
+    float time_last = (high_t + low_t)/2;
+//    time_last = high_t + low_t;
+    if (time_last <= 0.0f) return;
+
+    // Dynamiska toleranser beroende på hastighet
+    float max_factor = 2.0f;
+    float min_factor = 0.5f;
+    if (m_speed_filtered < 0.5f) { // vid låg fart, tillåt större variation
+        max_factor = 4.0f;
+        min_factor = 0.25f;
+    }
+
+    // Kontrollera om värdet är rimligt jämfört med senaste giltiga
+    if (last_valid_time > 0.0f) {
+        float ratio = time_last / last_valid_time;
+        if ((m_speed_filtered > 0.0f) && (ratio > max_factor || ratio < min_factor)) {
+            return; // orimligt → ignorera
+        }
+    }
+
+    // Spara som senaste giltiga
+    last_valid_time = time_last;
+
+    // Lägg in i ringbuffert
+    time_buffer[buf_index] = time_last;
+    buf_index = (buf_index + 1) % SPEED_BUFFER_LEN;
+    if (buf_count < SPEED_BUFFER_LEN) buf_count++;
+
+    // Beräkna medelvärde
+    float sum_time = 0.0f;
+    for (int i = 0; i < buf_count; i++) {
+        sum_time += time_buffer[i];
+    }
+    float avg_time = sum_time / buf_count;
+
+    // Ny hastighet
+    float new_speed = SIGN(m_throttle_set) * (wheel_diam * M_PI) / (avg_time * cnts_per_rev);
+	if (iDebug==51)
+	{
+//		commands_printf("buf_count: %u\n",buf_count);
+//		commands_printf("avg_time: %f\n",avg_time);
+	}
+    // Lågpassfilter
+    const float alpha = 0.3f;
+    m_speed_filtered = m_speed_filtered * (1.0f - alpha) + new_speed * alpha;
+    m_speed_pwm = m_speed_filtered;
+//    m_speed_pwm = new_speed;
+};
+
+
 void tach_input_init(void) {
     // Enable TIM2 clock
     rccEnableTIM2(TRUE);
@@ -229,7 +304,7 @@ void tach_input_init(void) {
     palSetPadMode(TACHO_INPUT_PORT, 2, PAL_MODE_ALTERNATE(1));
 
     // Timer configuration
-    TIM2->PSC = 84 - 1;        // 84 MHz / 84 = 1 MHz → 1 µs per count
+    TIM2->PSC = 840 - 1;        // 84 MHz / 84 = 1 MHz → 1 µs per count
     TIM2->ARR = 0xFFFF;        // Max period
     TIM2->CCMR2 &= ~TIM_CCMR2_CC3S;
     TIM2->CCMR2 |= TIM_CCMR2_CC3S_0;  // CC3 input, map to TI3
@@ -250,22 +325,42 @@ void tach_input_init(void) {
 }
 
 
+
 CH_IRQ_HANDLER(STM32_TIM2_HANDLER) {
     CH_IRQ_PROLOGUE();
 
+    if (TIM2->SR & TIM_SR_UIF) {
+        TIM2->SR &= ~TIM_SR_UIF; // rensa flagga
+        timer_overflow_count++;
+    }
+
     if (TIM2->SR & TIM_SR_CC3IF) {
-        uint16_t capture = TIM2->CCR3;
-        uint16_t delta = capture - last_capture;
-        last_capture = capture;
+        uint16_t capture16 = TIM2->CCR3;
+        uint32_t capture32 = ((uint32_t)timer_overflow_count << 16) | capture16;
+
+        uint32_t delta = capture32 - last_capture;
+        last_capture = capture32;
 
         last_reading_time = chVTGetSystemTimeX();
 
         if (io_board_adc0_cnt.is_high) {
+			if (iDebug==50)
+			{
+				commands_printf("timer_overflow_count: %u\n",timer_overflow_count);
+				commands_printf("Time: %lu, %lu, H\n",capture32,delta);
+			}
+			update_speed_buffer(io_board_adc0_cnt.high_time_last, io_board_adc0_cnt.low_time_last);
             io_board_adc0_cnt.high_time_last = io_board_adc0_cnt.high_time_current;
-            io_board_adc0_cnt.high_time_current = 0.000001f * delta;
+            io_board_adc0_cnt.high_time_current = 0.00001f * delta;
         } else {
+    		if (iDebug==50)
+    		{
+				commands_printf("timer_overflow_count: %u\n",timer_overflow_count);
+    			commands_printf("Time: %lu, %lu, L\n",capture32,delta);
+    		}
+			update_speed_buffer(io_board_adc0_cnt.high_time_last, io_board_adc0_cnt.low_time_last);
             io_board_adc0_cnt.low_time_last = io_board_adc0_cnt.low_time_current;
-            io_board_adc0_cnt.low_time_current = 0.000001f * delta;
+            io_board_adc0_cnt.low_time_current = 0.00001f * delta;
         }
 
         io_board_adc0_cnt.toggle_high_cnt++;

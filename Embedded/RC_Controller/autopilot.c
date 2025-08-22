@@ -625,6 +625,11 @@ static THD_FUNCTION(ap_thread, arg) {
 			// Speed-dependent radius
 			if (m_en_dynamic_rad) {
 				m_rad_now = fabsf(main_config.ap_rad_time_ahead * pos_get_speed());
+				if ((iDebug==21))
+				{
+					commands_printf("main_config.ap_rad_time_ahead: %f",main_config.ap_rad_time_ahead);
+					commands_printf("main_config.ap_rad_time_ahead: %f",m_rad_now);
+				}
 				if (m_rad_now < main_config.ap_base_rad) {
 					m_rad_now = main_config.ap_base_rad;
 				}
@@ -671,6 +676,10 @@ static THD_FUNCTION(ap_thread, arg) {
 			ROUTE_POINT *closest2_speed = &m_route[1];
 
 			ROUTE_POINT *closest_to_vehicle = &m_route[0];
+			if ((iDebug==23))
+			{
+				commands_printf("closest_to_vehicle, x: %f, y: %f",closest_to_vehicle->px,closest_to_vehicle->py);
+			}
 
 			for (int i = start;i < end;i++) {
 				int ind = i; // First point index for this iteration

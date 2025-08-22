@@ -219,8 +219,14 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 	conf->ap_base_rad = 4.0;
 	conf->ap_repeat_routes = false;
 
+	conf->vehicle.vesc_p_gain = 6.0;
+	conf->vehicle.vesc_i_gain = 1.0;
+	conf->vehicle.vesc_d_gain = 0.5;
+	conf->vehicle.yaw_use_odometry = true;
+	conf->vehicle.TURN RADIUS
+
 	conf->gps_ant_x = 1.25;
-	conf->gps_ant_y = -0.3;
+	conf->gps_ant_y = 0.3;
 
 	conf->log_en = true;
 	conf->log_mode_ext = LOG_EXT_ETHERNET;

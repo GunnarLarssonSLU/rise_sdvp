@@ -185,7 +185,7 @@ void PacketInterface::processData(QByteArray &data)
 
 void PacketInterface::processPacket(const unsigned char *data, int len)
 {
-    qDebug() << "in processPacket";
+//    qDebug() << "in processPacket";
     QByteArray pkt = QByteArray((const char*)data, len);
 
     unsigned char id = data[0];
@@ -195,11 +195,11 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     CMD_PACKET cmd = (CMD_PACKET)(quint8)data[0];
     data++;
     len--;
-    qDebug() << "command:" << cmd;
+//    qDebug() << "command:" << cmd;
 
     emit packetReceived(id, cmd, pkt);
 
-    qDebug() << "ready to switch";
+//    qDebug() << "ready to switch";
 
     switch (cmd) {
     case CMD_PRINTF: {
