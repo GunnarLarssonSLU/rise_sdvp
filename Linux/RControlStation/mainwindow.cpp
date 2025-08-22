@@ -244,12 +244,13 @@ MainWindow::MainWindow(QWidget *parent) :
             qWarning() << "TCP Error:" << msg << ", ip: " << ip;
             QString all=msg  + ", ip: " + ip;
             QMessageBox::warning(this, "TCP Error", all);
+            /*
             for (int i = 0; i < ui->carsWidget->count(); ++i) {
                 if (ui->carsWidget->tabText(i) == ip) {
                     ui->carsWidget->removeTab(i);
                     break; // Exit the loop once the tab is found and removed
                 }
-            }
+            }*/
         }
     });
     QObject::connect(&serialReader, &ArduinoReader::signalLost, [this]() {

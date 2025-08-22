@@ -2414,10 +2414,10 @@ void MapWidget::paintCar(CarInfo &carInfo,QPainter &painter,QPen &pen, QTransfor
     if (!carInfo.getLocationGps().getInfo().isEmpty()) {
         solStr = QString("Sol: %1\n").arg(carInfo.getLocationGps().getInfo());
     }
-    txt=QString("%s\n"
-                "%s"
-                "(%.3f, %.3f, %.0f)\n"
-                "%02d:%02d:%02d:%03d").
+    txt=QString("%1\n"
+                "%2"
+                "(%3, %4, %5)\n"
+                "%6:%7:%8:%9").
                 arg(carInfo.getName().toLocal8Bit().data()).
                 arg(solStr.toLocal8Bit().data()).
                 arg(pos.getX(),3,'f').

@@ -478,8 +478,8 @@ bool pos_input_nmea(const char *data) {
 	}
 
 	// Only use valid fixes
-//	if (gga.fix_type == 1 || gga.fix_type == 2 || gga.fix_type == 4 || gga.fix_type == 5) {
-	if (1) {
+	if (gga.fix_type == 1 || gga.fix_type == 2 || gga.fix_type == 4 || gga.fix_type == 5) {
+//	if (1) {
 		// Convert llh to ecef
 		double sinp = sin(gga.lat * D_PI / D(180.0));
 		double cosp = cos(gga.lat * D_PI / D(180.0));

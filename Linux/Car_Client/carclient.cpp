@@ -1222,12 +1222,13 @@ bool CarClient::waitProcess(QProcess &process, int timeoutMs)
     return !killed;
 }
 
-void CarClient::startStr2Str(double lat,double lon ) {
+void CarClient::startStr2Str(double lat,double lon )
+{
+/*
     qDebug() << "Lat: " << lat << ", Lon: " << lon;
     QString strLat=QString("%1").arg(lat, 0, 'f', 14);
     QString strLon=QString("%1").arg(lon, 0, 'f', 14);
-//    QString exec="str2str -in ntrip://"+mUsr+":"+mPwd+"@nrtk-swepos.lm.se:80/RTCM3_GNSS -p "+strLat+" "+strLon+" 17 -n 1 -out serial://rtk:115200:8:n:1 -msg ""1005,1074,1084,1094,1230""";
-    QString exec="str2str -in ntrip://"+mUsr+":"+mPwd+"@nrtk-swepos.lm.se:80/RTCM3_GNSS -p "+strLat+" "+strLon+" 17 -n 5 -out serial://rtk:115200:8:r:1 -msg ""1005,1074""";
+        QString exec="str2str -in ntrip://"+mUsr+":"+mPwd+"@nrtk-swepos.lm.se:80/RTCM3_GNSS -p "+strLat+" "+strLon+" 17 -n 5 -out serial://rtk:115200:8:r:1 -msg ""1005,1074""";
     qDebug() << exec;
 
     QStringList args;
@@ -1244,22 +1245,16 @@ void CarClient::startStr2Str(double lat,double lon ) {
     s2sProcess.setArguments(args);
     s2sProcess.start();
 
-//    s2sProcess.start(exec);
     if (!s2sProcess.waitForStarted()) {
         qCritical() << "Failed to start str2str.";
     } else {
         qDebug() << "Started str2str with PID:" << s2sProcess.processId();
     }
-
-//    str2strProcess = std::make_shared<sjs::process>(exec);
-//    if (!str2strProcess->running()) {
-//        std::cerr << "Failed to start str2str." << std::endl;
-//    } else {
-//        std::cout << "Started str2str with PID: " << str2strProcess->id() << std::endl;
-//    }
+    */
 }
 
 void CarClient::stopStr2Str() {
+    /*
     if (s2sProcess.state() == QProcess::Running) {
         s2sProcess.terminate();
         s2sProcess.waitForFinished();
@@ -1267,13 +1262,5 @@ void CarClient::stopStr2Str() {
     } else {
         qCritical() << "No running instance of str2str to stop.";
     }
-
-//    if (str2strProcess && str2strProcess->running()) {
-//        str2strProcess->terminate(); // Terminate the process
-//        std::cout << "Stopped str2str with PID: " << str2strProcess->id() << std::endl;
-//        str2strProcess.reset(); // Reset the shared pointer
-//    } else {
-//        std::cerr << "No running instance of str2str to stop." << std::endl;
-//    }
-
+*/
 }
