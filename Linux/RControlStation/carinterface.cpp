@@ -580,34 +580,6 @@ void CarInterface::loadMagCal()
     ui->confCommonWidget->setMagCompCenter(ui->magCal->getCenter());
 }
 
-void CarInterface::cameraImageReceived(quint8 id, QImage image, int bytes)
-{
-    if (id == mId || id == 255) {
-        mImageByteCnt += bytes;
-        mImageCnt++;
-
-        mPacketInterface->sendCameraFrameAck(mId);
-
-        mImageFpsFilter -= 0.1 * (mImageFpsFilter - 1000.0 / (double)mImageTimer.restart());
-
-        ui->camInfoLabel->setText(QString("Total RX: %1 MB | Last RX: %2 KB | "
-                                          "IMG CNT: %3 | FPS: %4").
-                                  arg((double)mImageByteCnt / 1024.0 / 1024.0, 0, 'f', 1).
-                                  arg(bytes / 1024).
-                                  arg(mImageCnt).arg(mImageFpsFilter, 0, 'f', 1));
-
-        if (mFullscreenImage) {
-            mFullscreenImage->setPixmap(QPixmap::fromImage(image));
-        } else {
-            ui->camWidget->setPixmap(QPixmap::fromImage(image));
-
-/*            if (mMap && ui->camShowMapBox->isChecked()) {
-                mMap->setLastCameraImage(image);
-            }*/
-        }
-    }
-}
-
 void CarInterface::on_terminalSendButton_clicked()
 {
     emit terminalCmd(mId, ui->terminalEdit->text());

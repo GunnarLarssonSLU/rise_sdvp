@@ -400,8 +400,9 @@ static THD_FUNCTION(cancom_process_thread, arg) {
 #ifndef ANALOG_ANGLE
 					case CAN_IO_PACKET_AS5047_ANGLE:
 						ind = 0;
-						//	commands_printf("CAN_IO_PACKET_AS5047_ANGLE\n");
+						commands_printf("CAN_IO_PACKET_AS5047_ANGLE\n");
 						io_board_as5047_angle = buffer_get_float32(rxmsg.data8, 1e3, &ind);
+						commands_printf("Angle: %f\n",io_board_as5047_angle);
 						break;
 #endif
 					case CAN_IO_PACKET_LIM_SW:
@@ -437,6 +438,19 @@ static THD_FUNCTION(cancom_process_thread, arg) {
 				if (rxmsg.SID == CAN_ANGLE) {
 					ftr2_activated = true;
 					can_ftr2_angle = (((rxmsg.data8[1] << 8) | rxmsg.data8[0]) / 10);
+//					can_ftr2_angle=can_ftr2_angle-6.0;
+//					can_ftr2_angle=can_ftr2_angle+2.0;
+//					can_ftr2_angle=can_ftr2_angle+2.5; // vänster
+//					can_ftr2_angle=can_ftr2_angle+3.0; // vänster
+//					can_ftr2_angle=can_ftr2_angle+2.0;// vänster
+//					can_ftr2_angle=can_ftr2_angle+1.0;// vänster mer
+//					can_ftr2_angle=can_ftr2_angle+4.0; // vänster
+//					can_ftr2_angle=can_ftr2_angle+10.0; // vänster
+//					can_ftr2_angle=can_ftr2_angle-5.0; // vänster
+//					can_ftr2_angle=can_ftr2_angle-20.0; // höger
+//					can_ftr2_angle=can_ftr2_angle+2.0; vänster
+//					can_ftr2_angle=can_ftr2_angle+1.6; höger
+					can_ftr2_angle=can_ftr2_angle+1.7;
 					if (iDebug==15)
 					{
 						commands_printf("Addio A: %d\n",(rxmsg.data8[1] << 8));

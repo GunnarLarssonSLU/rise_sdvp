@@ -212,12 +212,19 @@ static THD_FUNCTION(servo_thread, arg) {
 
 #ifdef SERVO_VESC_HYDRAULIC
 		if (m_not_ok_cnt < 100) {
-			
 			float output_scaled = SERVO_VESC_INVERTED ? output : -output;
 			output_scaled *= 0.75;
 			m_out_last = (output_scaled + 1.0) / 2.0;
 			//servo_output=m_out_last;
 			#ifdef ADDIO
+			if (iDebug==28)
+			{
+				commands_printf("m_out_last: %f\n",  m_out_last);
+			}
+			if (iDebug==29)
+			{
+				commands_printf("m_out_last: %f\n",  m_out_last);
+			}
 			comm_can_addio_set_valve_duty(m_out_last);
 			#elif defined(IO_BOARD)
 			comm_can_io_board_set_pwm_duty(0, m_out_last);

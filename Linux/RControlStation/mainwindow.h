@@ -217,6 +217,7 @@ private slots:
     void on_AutopilotPausePushButton_clicked();
     void onGeneratePathButtonClicked();
     bool onLoadShapefile();
+    bool onLoadLogfile();
 
     QSqlRelationalTableModel* setupFarmTable(QTableView* uiFarmtable,QString SqlTableName);
     QSqlRelationalTableModel* setupFieldTable(QTableView* uiFieldtable,QString SqlTableName);

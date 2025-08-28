@@ -22,6 +22,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QTextStream>
+#include <QDateTime>
 
 NmeaWidget::NmeaWidget(QWidget *parent) :
     QWidget(parent),
@@ -32,6 +33,13 @@ NmeaWidget::NmeaWidget(QWidget *parent) :
 
     mNmeaForwardServer = new TcpBroadcast(this);
     mFixType = "Unknown";
+
+    // Get current date and time
+    QDateTime now = QDateTime::currentDateTime();
+
+    // Format as a valid filename (e.g., "2025-08-22_14-30-45")
+    QString filename = now.toString("yyyy-MM-dd_hh-mm-ss") + ".txt";
+    ui->nmeaLogEdit->setText(filename);
 }
 
 NmeaWidget::~NmeaWidget()

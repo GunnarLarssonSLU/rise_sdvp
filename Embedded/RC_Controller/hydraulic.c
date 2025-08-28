@@ -58,7 +58,6 @@ static volatile HYDRAULIC_MOVE m_move_extra = HYDRAULIC_MOVE_STOP;
 static volatile float m_move_timeout_cnt = 0.0;
 volatile float m_throttle_set = 0.0;
 
-
 //extern event_source_t emergency_event;
 extern int iDebug;
 

@@ -2333,9 +2333,9 @@ void MapWidget::paintCar(CarInfo &carInfo,QPainter &painter,QPen &pen, QTransfor
     LocPoint pos = carInfo.getLocation();
     LocPoint pos_gps = carInfo.getLocationGps();
 
-    const double car_len = carInfo.getLength() * 1000.0;
-    const double car_w = carInfo.getWidth() * 1000.0;
-    const double car_corner = carInfo.getCornerRadius() * 1000.0;
+    const double car_len = carInfo.getLength() * 1000.0 * 5;
+    const double car_w = carInfo.getWidth() * 1000.0 * 5;
+    const double car_corner = carInfo.getCornerRadius() * 1000.0 * 5;
 
     double x = pos.getX() * 1000.0;
     double y = pos.getY() * 1000.0;

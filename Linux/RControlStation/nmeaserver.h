@@ -23,6 +23,15 @@
 #include <QTcpSocket>
 #include <QFile>
 #include "tcpbroadcast.h"
+#include <QXmlStreamReader>
+#include <QXmlStreamWriter>
+#include <QTextStream>
+#include <cmath>
+#include <iostream>
+#include <sstream>
+#include <fstream>
+
+using namespace std;
 
 class NmeaServer : public QObject
 {
@@ -63,6 +72,10 @@ public:
     void disconnectClientTcp();
 
     static int decodeNmeaGGA(QByteArray data, nmea_gga_info_t &gga);
+
+    static void latLongToMeters(double nmea_time, double lat, double lon, double refLat, double refLon, double &x, double &y, double &speed);
+    static bool parseNMEA(const string &nmea, double &lat, double &lon, double &nmea_time);
+    static bool nmeatoXML(double refLat,double refLon,const string &filename);
 
 signals:
     void clientGgaRx(int fields, NmeaServer::nmea_gga_info_t gga);

@@ -52,7 +52,7 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>207</width>
+           <width>187</width>
            <height>71</height>
           </rect>
          </property>
@@ -500,7 +500,7 @@
        <enum>QTabWidget::TabPosition::North</enum>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -1174,8 +1174,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>239</width>
-                     <height>748</height>
+                     <width>216</width>
+                     <height>747</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_23">
@@ -1790,7 +1790,7 @@
                      <x>0</x>
                      <y>0</y>
                      <width>196</width>
-                     <height>433</height>
+                     <height>431</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -2084,8 +2084,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>244</width>
-                     <height>776</height>
+                     <width>204</width>
+                     <height>774</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_15">
@@ -3541,10 +3541,17 @@
        </attribute>
        <layout class="QHBoxLayout" name="hBoxLayoutMain" stretch="2,1">
         <item>
-         <layout class="QVBoxLayout" name="vBoxDisplay" stretch="1,1">
+         <layout class="QVBoxLayout" name="vBoxDisplay" stretch="0,1,1">
           <property name="sizeConstraint">
            <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
           </property>
+          <item>
+           <widget class="QPushButton" name="pushButtonLoadLogFile">
+            <property name="text">
+             <string>Load Log File</string>
+            </property>
+           </widget>
+          </item>
           <item>
            <widget class="QChartView" name="Graph" native="true">
             <property name="sizePolicy">

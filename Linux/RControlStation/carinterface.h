@@ -88,8 +88,6 @@ private slots:
     void nmeaReceived(quint8 id, QByteArray nmea_msg);
     void configurationReceived(quint8 id, MAIN_CONFIG config);
     void loadMagCal();
-    void cameraImageReceived(quint8 id, QImage image, int bytes);
-
     void on_terminalSendButton_clicked();
     void on_terminalSendVescButton_clicked();
     void on_terminalClearButton_clicked();
