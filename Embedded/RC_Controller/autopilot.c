@@ -426,17 +426,15 @@ void autopilot_set_motor_speed(float speed) {
 		float rpm_l = (speed - diff_speed_half) / (main_config.vehicle.gear_ratio
 				* (2.0 / main_config.vehicle.motor_poles) * (1.0 / 60.0)
 				* main_config.vehicle.wheel_diam * M_PI);
-		commands_printf("In Set Motor Speed. Has Diff Steering\n");
 		comm_can_lock_vesc();
 		comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
 //			bldc_interface_set_rpm((int)rpm_l);
 		comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
-		commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_RIGHT,(float)rpm_r);
 		bldc_interface_set_rpm((int)rpm_r);
 		comm_can_unlock_vesc();
 #else
 #if HAS_HYDRAULIC_DRIVE
-		commands_printf("In Set Motor Speed. Has Hydraulic Drive\n");
+		// MacTrac uses this
 		hydraulic_set_speed(speed);
 #else
 		float rpm = speed / (main_config.vehicle.gear_ratio
@@ -446,14 +444,10 @@ void autopilot_set_motor_speed(float speed) {
 		comm_can_lock_vesc();
 		#ifdef IS_DRANGEN
 //				comm_can_lock_vesc();
-
-//				commands_printf("In Set Motor Speed. Is Drangen. No Hydraulic Drive\n");
 				comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
 				bldc_interface_set_rpm((int)(rpm*200));
-//				commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_LEFT,(float)rpm*200);
 				comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
 				bldc_interface_set_rpm((int)(rpm*200));
-//				commands_printf("Motor %d: Rpm: %f.\n", DIFF_THROTTLE_VESC_RIGHT,(float)rpm*200);
 //				comm_can_unlock_vesc();
 			#else
 				comm_can_set_vesc_id(VESC_ID); //ÄNDRA HÄR
@@ -553,10 +547,6 @@ static THD_FUNCTION(ap_thread, arg) {
             // Set positioning according to attributes
 			switch (attributes_now & ATTR_POSITIONING_MASK) {
 			case ATTR_POSITIONING_DEFAULT:
-				if ((iDebug==21))
-				{
-					commands_printf("autopilot calls pos_get_pos");
-				}
 				pos_get_pos(&pos_now);
 				break;
 
@@ -625,11 +615,6 @@ static THD_FUNCTION(ap_thread, arg) {
 			// Speed-dependent radius
 			if (m_en_dynamic_rad) {
 				m_rad_now = fabsf(main_config.ap_rad_time_ahead * pos_get_speed());
-				if ((iDebug==21))
-				{
-					commands_printf("main_config.ap_rad_time_ahead: %f",main_config.ap_rad_time_ahead);
-					commands_printf("main_config.ap_rad_time_ahead: %f",m_rad_now);
-				}
 				if (m_rad_now < main_config.ap_base_rad) {
 					m_rad_now = main_config.ap_base_rad;
 				}
@@ -885,20 +870,17 @@ static THD_FUNCTION(ap_thread, arg) {
 				float steering_angle = 0.0;
 				float circle_radius = 1000.0;
 
+				steering_angle_to_point(pos_now.px, pos_now.py, -pos_now.yaw * M_PI / 180.0, rp_now.px,
+						rp_now.py, &steering_angle, &distance, &circle_radius);
+/*
 				if ((iDebug==21))
 				{
 					commands_printf("steering_angle_to_point");
-					commands_printf("pos_now.px: %f",(double) pos_now.px);
-					commands_printf("pos_now.py: %f",(double) pos_now.py);
-					commands_printf("-pos_now.yaw * M_PI / 180.0: %f",(double) -pos_now.yaw * M_PI / 180.0);
-					commands_printf("rp_now.px: %f",(double) rp_now.px);
-					commands_printf("rp_now.py: %f",(double) rp_now.py);
+					commands_printf("-pos_now.yaw (degrees): %f",(double) (-pos_now.yaw * M_PI / 180.0));
 					commands_printf("steering_angle: %f",(double) steering_angle);
 					commands_printf("distance: %f",(double) distance);
 					commands_printf("circle_radius: %f",(double) circle_radius);
-				}
-				steering_angle_to_point(pos_now.px, pos_now.py, -pos_now.yaw * M_PI / 180.0, rp_now.px,
-						rp_now.py, &steering_angle, &distance, &circle_radius);
+				}*/
 
 #if !HAS_DIFF_STEERING
 				// Scale maximum steering by speed
@@ -955,10 +937,6 @@ static THD_FUNCTION(ap_thread, arg) {
 					const float dist_tot = utils_rp_distance(&rp_now, closest1_speed) + utils_rp_distance(&rp_now, closest2_speed);
 					speed = utils_map(dist_prev, 0.0, dist_tot, closest1_speed->speed, closest2_speed->speed);
 				}
-				if ((iDebug==22))
-				{
-					commands_printf("speed: %f",(double) speed);
-				}
 
 				if (m_is_speed_override) {
 					speed = m_override_speed;
@@ -967,7 +945,6 @@ static THD_FUNCTION(ap_thread, arg) {
 				utils_truncate_number_abs(&speed, main_config.ap_max_speed);
 
 				#if HAS_DIFF_STEERING
-					commands_printf("Diff steering!\n");
 					autopilot_set_turn_rad(circle_radius);
 				#else
 					#ifdef IS_DRANGEN
@@ -977,9 +954,8 @@ static THD_FUNCTION(ap_thread, arg) {
 
 					#endif
 					#ifdef IS_MACTRAC
-						if (iDebug==22)
+						if (iDebug==21)
 						{
-//							commands_printf("Is a MacTrac!\n");
 							commands_printf("Servo pos in autopilot:%f\n",servo_pos);
 						}
 						servo_simple_set_pos_ramp(servo_pos, false); //GL - Fixa här!!
@@ -1026,7 +1002,8 @@ static void steering_angle_to_point(
 	}
 
 	float R = -(dx * dx + dy * dy) / (2.0 * dy);
-//	commands_printf("R (1): %f\n", R);
+	commands_printf("gamma: %f\n", gamma);
+	commands_printf("R (1): %f\n", R);
 
 	/*
 	 * Add correction if the arc is much longer than the total distance.
@@ -1038,7 +1015,8 @@ static void steering_angle_to_point(
 	}
 
 	R /= angle_correction;
-//	commands_printf("R (2): %f\n", R);
+	commands_printf("angle_correction: %f\n", angle_correction);
+	commands_printf("R (2): %f\n", R);
 
 	*circle_radius = R;
 	*steering_angle = atanf(main_config.vehicle.axis_distance / R);
@@ -1046,8 +1024,8 @@ static void steering_angle_to_point(
 	if (iDebug==23)
 	{
 	commands_printf("current x: %f, y: %f, angle: %f\n",current_x, current_y, current_angle);
-	commands_printf("goal x: %f, y: %f, angle: %f\n",goal_x, goal_y, steering_angle);
-	commands_printf("Dist: %f, circle radius: %f\n",distance, circle_radius);
+	commands_printf("goal x: %f, y: %f, angle: %f\n",goal_x, goal_y, *steering_angle);
+	commands_printf("Dist: %f, circle radius: %f\n",*distance, *circle_radius);
 	}
 }
 

@@ -229,6 +229,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->buttonGenerate, &QPushButton::clicked, this, &MainWindow::onGeneratePathButtonClicked);
     // Connect the button's clicked signal to a lambda that opens a file dialog
     connect(ui->pushButton_load_shapefile, &QPushButton::clicked, this, &MainWindow::onLoadShapefile);
+    connect(ui->pushButtonLoadLogFile, &QPushButton::clicked, this, &MainWindow::onLoadLogfile);
 
     connect(ui->actionAboutQt, SIGNAL(triggered(bool)),
             qApp, SLOT(aboutQt()));
@@ -1909,6 +1910,33 @@ bool MainWindow::onLoadShapefile()
     addField();
 
 //    svg << "</svg>\n";
+    return true;
+};
+
+
+bool MainWindow::onLoadLogfile()
+{
+    // Create a file dialog
+    QString fileName = QFileDialog::getOpenFileName(this,
+                                                    "Open File", "", "Shape Files [*.csv](*.csv)");
+
+    // Check if a file was selected
+    if (!fileName.isEmpty()) {
+        qDebug() << "Selected file:" << fileName;
+        // Use the selected file path as needed
+    }
+
+    QByteArray utf8Path = fileName.toUtf8();     // store the QByteArray
+    const char* logfile = utf8Path.constData(); // safe pointer
+    const string &nmea = utf8Path.constData(); // safe pointer
+
+//    NmeaServer::parseNMEA(nmea, double &lat, double &lon, double &nmea_time);
+
+    /*
+    NmeaServer::latLongToMeters(double nmea_time, double lat, double lon, double refLat, double refLon, double &x, double &y, double &speed);
+    NmeaServer::nmeatoXML(double refLat,double refLon,const string &filename);
+    */
+    //    svg << "</svg>\n";
     return true;
 };
 

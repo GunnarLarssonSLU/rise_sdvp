@@ -604,3 +604,120 @@ void NmeaServer::tcpInputError(QAbstractSocket::SocketError socketError)
 
     mTcpClient->close();
 }
+
+// Function to convert latitude and longitude to meters relative to a reference point
+void NmeaServer::latLongToMeters(double nmea_time, double lat, double lon, double refLat, double refLon, double &x, double &y, double &speed)
+{
+    const double earthRadius = 6371000; // Earth's radius in meters
+    const double pi = 3.14159265358979323846;
+
+    // Convert latitude and longitude from degrees to radians
+    lat = lat * pi / 180.0;
+    lon = lon * pi / 180.0;
+    refLat = refLat * pi / 180.0;
+    refLon = refLon * pi / 180.0;
+
+    // Calculate differences
+    double dLat = lat - refLat;
+    double dLon = lon - refLon;
+
+    // Calculate distances in meters
+    x = earthRadius * dLon * cos(refLat);
+    y = earthRadius * dLat;
+    speed = sqrt(x*x+y+y)/nmea_time;
+}
+
+// Function to parse NMEA GGA sentence
+//const string &nmea
+bool NmeaServer::parseNMEA(const string &nmea, double &lat, double &lon, double &nmea_time)
+{
+    if (nmea.find("GGA") == string::npos)
+    {
+        return false;
+    }
+
+    istringstream iss(nmea);
+    string token;
+    vector<string> tokens;
+
+    while (getline(iss, token, ','))
+    {
+        tokens.push_back(token);
+    }
+
+    if (tokens.size() < 6)
+    {
+        return false;
+    }
+
+    try
+    {
+        nmea_time = stod(tokens[1]);
+        lat = stod(tokens[2]);
+        lon = stod(tokens[4]);
+    }
+    catch (...)
+    {
+        return false;
+    }
+
+    // Convert latitude and longitude to decimal degrees
+    lat = floor(lat / 100) + (lat - floor(lat / 100) * 100) / 60;
+    lon = floor(lon / 100) + (lon - floor(lon / 100) * 100) / 60;
+
+    // Determine the sign based on the hemisphere
+    if (tokens[3] == "S")
+        lat = -lat;
+    if (tokens[5] == "W")
+        lon = -lon;
+
+    return true;
+}
+
+bool NmeaServer::nmeatoXML(double refLat,double refLon,const string &filename)
+{
+    // Open the file containing NMEA sentences
+    ifstream nmeaFile(filename);
+    if (!nmeaFile.is_open())
+    {
+        cerr << "Error opening NMEA file." << endl;
+        return 1;
+    }
+
+    QXmlStreamWriter xmlWriter;
+    xmlWriter.setAutoFormatting(true);
+    xmlWriter.writeStartDocument();
+    xmlWriter.writeStartElement("Routes");
+    xmlWriter.writeStartElement("Route");
+
+
+    string sentence;
+    while (getline(nmeaFile, sentence))
+    {
+        //    for (const auto &sentence : nmeaSentences)
+        //    {
+        double lat, lon,nmea_time;
+        if (parseNMEA(sentence, lat, lon, nmea_time))
+        {
+            double x, y, speed;
+            latLongToMeters(nmea_time, lat, lon, refLat, refLon, x, y, speed);
+
+            xmlWriter.writeStartElement("Point");
+
+            xmlWriter.writeTextElement("x", QString::number(x));
+            xmlWriter.writeTextElement("y", QString::number(y));
+            xmlWriter.writeTextElement("speed", QString::number(speed));
+
+            xmlWriter.writeEndElement(); // Point
+        }
+    }
+
+    xmlWriter.writeEndElement(); // Route
+    xmlWriter.writeEndElement(); // Routes
+    xmlWriter.writeEndDocument();
+
+    nmeaFile.close();
+
+    cout << "XML file created successfully." << endl;
+    return 0;
+}
