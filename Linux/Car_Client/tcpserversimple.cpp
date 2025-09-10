@@ -43,7 +43,7 @@ bool TcpServerSimple::startServer(int port, QHostAddress addr)
 
 void TcpServerSimple::stopServer()
 {
-	qDebug() << "in TcpServerSimple::stoptServer";
+//	qDebug() << "in TcpServerSimple::stoptServer";
     mTcpServer->close();
 
     if (mTcpSocket) {
@@ -56,7 +56,7 @@ void TcpServerSimple::stopServer()
 
 bool TcpServerSimple::sendData(const QByteArray &data)
 {
-    qDebug() << "in TcpServerSimple::sendData: " << data;
+//    qDebug() << "in TcpServerSimple::sendData: " << data;
     bool res = false;
 
     if (mTcpSocket) {
@@ -74,7 +74,7 @@ void TcpServerSimple::sendMessageToRos2(const QByteArray& data)
     socket.connectToServer("carclient_ros2_channel");
 
     if (!socket.waitForConnected(3000)) {
-        qDebug() << "Failed to connect to ROS2 channel";
+//        qDebug() << "Failed to connect to ROS2 channel";
         return;
     }
     qDebug() << "in TcpServerSimple::sendMessageToRos2: " << data;
@@ -124,15 +124,15 @@ void TcpServerSimple::tcpInputDisconnected()
 
 void TcpServerSimple::tcpInputDataAvailable()
 {
-	qDebug() << "in TcpServerSimple::tcpInputDataAvailable";
+//	qDebug() << "in TcpServerSimple::tcpInputDataAvailable";
     QByteArray data = mTcpSocket->readAll();
     emit dataRx(data);
 
     if (mUsePacket) {
-        qDebug() << "use Packet";
+//        qDebug() << "use Packet";
         mPacket->processData(data);
     } else {
-    	qDebug() << "do not use Packet";
+//    	qDebug() << "do not use Packet";
     }
 }
 

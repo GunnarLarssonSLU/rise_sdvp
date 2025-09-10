@@ -216,6 +216,9 @@ typedef enum {
 	CMD_IO_BOARD_SET_PWM_DUTY,		// 86
 	CMD_IO_BOARD_SET_VALVE,			// 87
 	CMD_HYDRAULIC_MOVE,				// 88
+    CMD_HEARTBEAT,					// 89
+    CMD_SET_AP_MODE,				// 90
+	CMD_KB_SET_ACTIVE, 				// 91
 
 	CMD_GET_ANGLE = 100,
 
@@ -285,8 +288,8 @@ typedef struct {
     float sensorinterval;
     float degreeinterval;
     float sensorcentre;
+    float deadband;
 } MAIN_CONFIG_VEHICLE;
-
 
 
 typedef struct {

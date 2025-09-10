@@ -98,7 +98,6 @@ signals:
     void rebootSystemReceived(quint8 id, bool powerOff);
     void routePartReceived(quint8 id, int len, const QList<LocPoint> &route);
     void logEthernetReceived(quint8 id, QByteArray data);
-    void cameraImageReceived(quint8 id, QImage image, int rxBytes);
     
 public slots:
     void timerSlot();
@@ -122,9 +121,6 @@ public slots:
     void setMsToday(quint8 id, qint32 time);
     void mrRcControl(quint8 id, double throttle, double roll, double pitch, double yaw);
     void mrOverridePower(quint8 id, double fl_f, double bl_l, double fr_r, double br_b);
-    void startCameraStream(quint8 id, int camera, int quality,
-                           int width, int height, int fps, int skip);
-    void sendCameraFrameAck(quint8 id);
 
 private:
     unsigned short crc16(const unsigned char *buf, unsigned int len);

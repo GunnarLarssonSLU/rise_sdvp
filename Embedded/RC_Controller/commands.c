@@ -66,8 +66,23 @@ static void rtcm_base_rx(rtcm_ref_sta_pos_t *pos);
 static rtcm3_state m_rtcm_state;
 uint16_t last_sensorvalue;
 float debugvalue;
+float debugvalue2;
+float debugvalue3;
+float debugvalue4;
+float debugvalue5;
+float debugvalue6;
+float debugvalue7;
+float debugvalue8;
+float debugvalue9;
+float debugvalue10;
+float debugvalue11;
+float debugvalue12;
+float debugvalue13;
+float debugvalue14;
+float debugvalue15;
 float angle;
 static bool arduino_connected = false;
+bool m_kb_active;
 
 extern float io_board_as5047_angle;
 extern float servo_output;
@@ -95,9 +110,21 @@ void commands_init(void) {
 	(void)stop_forward;
 #endif
 
-	last_sensorvalue=7;
-	debugvalue=0.5;
+	last_sensorvalue=0;
+	debugvalue=0.0;
+	debugvalue2=0.0;
+	debugvalue3=0.0;
+	debugvalue4=0.0;
+	debugvalue5=0.0;
+	debugvalue6=0.0;
+	debugvalue7=0.0;
+	debugvalue8=0.0;
+	debugvalue9=0.0;
+	debugvalue10=0.0;
+	debugvalue11=0.0;
+	debugvalue12=0.0;
 	m_init_done = true;
+	m_kb_active=false;
 }
 
 /**
@@ -192,8 +219,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 		case CMD_GETANGLE:
 			uint16_t sensorvalue=data[0]*256+data[1];
 //			uint16_t sensorvalue=data[1]*256+data[0];
-			last_sensorvalue=sensorvalue;
-
             angle=(sensorvalue-main_config.vehicle.sensorcentre)*(main_config.vehicle.degreeinterval/main_config.vehicle.sensorinterval);
             //GUNNAR CHECK
             comm_can_io_board_as5047_setangle(angle);
@@ -354,6 +379,16 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			m_send_buffer[send_index++] = packet_id;
 			commands_send_packet(m_send_buffer, send_index);
 		} break;
+		case CMD_KB_SET_ACTIVE: {
+			m_kb_active=data[1];
+
+			// Send ack
+			int32_t send_index = 0;
+			m_send_buffer[send_index++] = id_ret;
+			m_send_buffer[send_index++] = packet_id;
+			commands_send_packet(m_send_buffer, send_index);
+		} break;
+
 
 		case CMD_AP_REPLACE_ROUTE: {
 			timeout_reset();
@@ -583,13 +618,14 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			main_config.vehicle.sensorcentre = buffer_get_float32_auto(data, &ind);
 			main_config.vehicle.sensorinterval = buffer_get_float32_auto(data, &ind);
 			main_config.vehicle.degreeinterval = buffer_get_float32_auto(data, &ind);
-
+			float deadband= buffer_get_float32_auto(data, &ind);
+			commands_printf("setting deadband: %f",deadband);
+			main_config.vehicle.deadband =deadband;
+			commands_printf("setting deadband (in struct 1): %f",main_config.vehicle.deadband);
 
 #if MAIN_MODE == MAIN_MODE_vehicle
 			motor_sim_set_running(main_config.vehicle.simulate_motor);
 #endif
-
-
 			conf_general_store_main_config(&main_config);
 			// Doing this while driving will get wrong as there is so much accelerometer noise then.
 			//pos_reset_attitude();
@@ -598,6 +634,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			int32_t send_index = 0;
 			m_send_buffer[send_index++] = id_ret;
 			m_send_buffer[send_index++] = packet_id;
+			commands_printf("setting deadband (in struct 2): %f",main_config.vehicle.deadband);
 			commands_send_packet(m_send_buffer, send_index);
 		} break;
 
@@ -686,7 +723,8 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.sensorcentre, &send_index);
 		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.sensorinterval, &send_index);
 		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.degreeinterval, &send_index);
-
+		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.deadband, &send_index);
+		    commands_printf("read deadband: %f",main_cfg_tmp.vehicle.deadband);
 			commands_send_packet(m_send_buffer, send_index);
 		} break;
 
@@ -834,6 +872,20 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			buffer_append_float32(m_send_buffer, servo_output, 1e4, &send_index); // 115
 			buffer_append_uint16(m_send_buffer, last_sensorvalue, &send_index); // 119
 			buffer_append_float32(m_send_buffer, debugvalue, 1e4, &send_index); // 121
+			buffer_append_float32(m_send_buffer, debugvalue2, 1e4, &send_index); // 125
+			buffer_append_float32(m_send_buffer, debugvalue3, 1e4, &send_index); // 129
+			buffer_append_float32(m_send_buffer, debugvalue4, 1e4, &send_index); // 133
+			buffer_append_float32(m_send_buffer, debugvalue5, 1e4, &send_index); // 137
+			buffer_append_float32(m_send_buffer, debugvalue6, 1e4, &send_index); // 141
+			buffer_append_float32(m_send_buffer, debugvalue7, 1e4, &send_index); // 145
+			buffer_append_float32(m_send_buffer, debugvalue8, 1e4, &send_index); // 149
+			buffer_append_float32(m_send_buffer, debugvalue9, 1e4, &send_index); // 153
+			buffer_append_float32(m_send_buffer, debugvalue10, 1e4, &send_index); // 157
+			buffer_append_float32(m_send_buffer, debugvalue11, 1e4, &send_index); // 161
+			buffer_append_float32(m_send_buffer, debugvalue12, 1e4, &send_index); // 165
+			buffer_append_float32(m_send_buffer, debugvalue13, 1e4, &send_index); // 169
+			buffer_append_float32(m_send_buffer, debugvalue14, 1e4, &send_index); // 173
+			buffer_append_float32(m_send_buffer, debugvalue15, 1e4, &send_index); // 177
 			commands_send_packet(m_send_buffer, send_index);
 		} break;
 
@@ -862,8 +914,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			// steering *= autopilot_get_steering_scale();
 
 			autopilot_set_active(false);
-
-			debugvalue=10.0*mode+0.2;
 
 			switch (mode) {
 			case RC_MODE_CURRENT:
@@ -905,16 +955,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 						#if HAS_HYDRAULIC_DRIVE
 							//KAN VARA HÄR
 							hydraulic_set_speed(throttle / 10);
-/*						#else
-							comm_can_lock_vesc();
-							comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
-							bldc_interface_set_duty_cycle(throttle);
-							comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
-							bldc_interface_set_duty_cycle(throttle);
-							comm_can_set_vesc_id(DIFF_STEERING);
-							bldc_interface_set_duty_cycle(steering*VOLTAGEFRACTION);
-							comm_can_unlock_vesc();
-*/						#endif
+						#endif
 					#endif
 				}
 				break;

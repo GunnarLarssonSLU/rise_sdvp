@@ -31,14 +31,14 @@
 #include "hydraulic.h"
 #include "pos_uwb.h"
 #include "attributes_masks.h"
-
+//#include "servo_vesc.h"
 // Defines
 #define AP_HZ						100 // Hz
 
 // Private variables
 static THD_WORKING_AREA(ap_thread_wa, 2048);
 __attribute__((section(".ram4"))) static ROUTE_POINT m_route[AP_ROUTE_SIZE];
-static bool m_is_active;
+bool m_is_active;
 static bool m_is_route_started;
 static int m_point_last; // Pointing behind last point on the route
 static int m_point_now; // The first point in the currently considered part of the route
@@ -64,6 +64,14 @@ static float m_turn_rad_now;
 #endif
 
 extern int iDebug;
+extern float debugvalue6;
+extern float debugvalue7;
+extern float debugvalue8;
+extern float debugvalue9;
+extern float debugvalue10;
+extern float debugvalue11;
+extern float debugvalue12;
+//extern float i_term;
 
 // Private functions
 static THD_FUNCTION(ap_thread, arg);
@@ -352,6 +360,7 @@ void reset_state(void) {
 	m_sync_rx = false;
 	m_route_left = 0;
 	m_route_end = false;
+//	i_term=0;
 	memset(&m_rp_now, 0, sizeof(ROUTE_POINT));
 }
 
@@ -543,7 +552,6 @@ static THD_FUNCTION(ap_thread, arg) {
 		if (len >= 2) {
 			POS_STATE pos_now;
 
-
             // Set positioning according to attributes
 			switch (attributes_now & ATTR_POSITIONING_MASK) {
 			case ATTR_POSITIONING_DEFAULT:
@@ -661,10 +669,10 @@ static THD_FUNCTION(ap_thread, arg) {
 			ROUTE_POINT *closest2_speed = &m_route[1];
 
 			ROUTE_POINT *closest_to_vehicle = &m_route[0];
-			if ((iDebug==23))
+/*			if ((iDebug==23))
 			{
 				commands_printf("closest_to_vehicle, x: %f, y: %f",closest_to_vehicle->px,closest_to_vehicle->py);
-			}
+			}*/
 
 			for (int i = start;i < end;i++) {
 				int ind = i; // First point index for this iteration
@@ -692,11 +700,6 @@ static THD_FUNCTION(ap_thread, arg) {
 					}
 				}
 
-
-				if ((iDebug==21))
-				{
-					commands_printf("Finding closest point to vehicle");
-				}
 				// Find closest point to vehicle
 				if (utils_rp_distance(&vehicle_pos, &m_route[ind]) <
 						utils_rp_distance(&vehicle_pos, closest_to_vehicle)) {
@@ -870,8 +873,13 @@ static THD_FUNCTION(ap_thread, arg) {
 				float steering_angle = 0.0;
 				float circle_radius = 1000.0;
 
+				debugvalue8=-pos_now.yaw * M_PI / 180.0;
+
 				steering_angle_to_point(pos_now.px, pos_now.py, -pos_now.yaw * M_PI / 180.0, rp_now.px,
 						rp_now.py, &steering_angle, &distance, &circle_radius);
+				debugvalue7=distance;
+				debugvalue11=pos_now.px;
+				debugvalue12=pos_now.py;
 /*
 				if ((iDebug==21))
 				{
@@ -896,6 +904,8 @@ static THD_FUNCTION(ap_thread, arg) {
 						/ ((2.0 * main_config.vehicle.steering_max_angle_rad)
 								/ main_config.vehicle.steering_range)
 								+ main_config.vehicle.steering_center;
+				debugvalue9=steering_angle;
+				debugvalue10=servo_pos;
 #endif
 
 				float speed = 0.0;
@@ -954,11 +964,8 @@ static THD_FUNCTION(ap_thread, arg) {
 
 					#endif
 					#ifdef IS_MACTRAC
-						if (iDebug==21)
-						{
-							commands_printf("Servo pos in autopilot:%f\n",servo_pos);
-						}
-						servo_simple_set_pos_ramp(servo_pos, false); //GL - Fixa här!!
+						//servo_simple_set_pos_ramp(servo_pos, false); //GL - Fixa här!!
+						servo_simple_set_pos_ramp(servo_pos, true); //GL - Bättre?
 					#endif
 				#endif
 				autopilot_set_motor_speed(speed);
@@ -1002,8 +1009,6 @@ static void steering_angle_to_point(
 	}
 
 	float R = -(dx * dx + dy * dy) / (2.0 * dy);
-	commands_printf("gamma: %f\n", gamma);
-	commands_printf("R (1): %f\n", R);
 
 	/*
 	 * Add correction if the arc is much longer than the total distance.
@@ -1015,18 +1020,18 @@ static void steering_angle_to_point(
 	}
 
 	R /= angle_correction;
-	commands_printf("angle_correction: %f\n", angle_correction);
-	commands_printf("R (2): %f\n", R);
+//	commands_printf("angle_correction: %f\n", angle_correction);
+	//	commands_printf("R (2): %f\n", R);
 
 	*circle_radius = R;
 	*steering_angle = atanf(main_config.vehicle.axis_distance / R);
-
-	if (iDebug==23)
+/*
+	if (iDebug==71)
 	{
 	commands_printf("current x: %f, y: %f, angle: %f\n",current_x, current_y, current_angle);
 	commands_printf("goal x: %f, y: %f, angle: %f\n",goal_x, goal_y, *steering_angle);
 	commands_printf("Dist: %f, circle radius: %f\n",*distance, *circle_radius);
-	}
+	}*/
 }
 
 static bool add_point(ROUTE_POINT *p, bool first) {

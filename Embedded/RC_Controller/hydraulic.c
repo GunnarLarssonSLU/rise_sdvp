@@ -273,21 +273,11 @@ static THD_FUNCTION(hydro_thread, arg) {
 		cnt = *comm_can_io_board_adc0_cnt();
 #endif
 
-#ifdef PRE20250812
-		float time_last = fmaxf(cnt.high_time_current, cnt.high_time_last) +
-				fmaxf(cnt.low_time_current, cnt.low_time_last);
-		if (time_last>0)
-		{
-			m_speed_now = SIGN(m_throttle_set) * (wheel_diam * M_PI) / (time_last * cnts_per_rev);
-		} else
-		{
-			m_speed_now = 0;
-		}
-#endif
 #ifdef UPDATE20250812
         // Timeout → nolla
         if (chVTTimeElapsedSinceX(last_reading_time) > MS2ST(SPEED_TIMEOUT_MS)) {
             buf_count = 0;
+//            commands_printf("time thing: %f",last_reading_time );
             last_valid_time = 0.0f;
             m_speed_now = 0.0f;
             m_speed_filtered = 0.0f;
@@ -296,16 +286,9 @@ static THD_FUNCTION(hydro_thread, arg) {
         // Om ny puls från ISR
         if (new_pulse) {
             syssts_t sts = chSysGetStatusAndLockX();
-/*			commands_printf("cnt.high_time_current: %f",cnt.high_time_current);
-			commands_printf("cnt.high_time_last: %f",cnt.high_time_last);
-			commands_printf("cnt.low_time_current: %f",cnt.low_time_current);
-			commands_printf("cnt.low_time_last: %f",cnt.low_time_last);*/
-//            float high_t = fmaxf(cnt.high_time_current, cnt.high_time_last);
-//            float low_t  = fmaxf(cnt.low_time_current,  cnt.low_time_last);
             new_pulse = false;
             chSysRestoreStatusX(sts);
 
-//            update_speed_buffer(high_t, low_t);
             m_speed_now=m_speed_pwm;
         }
         #endif
@@ -314,16 +297,6 @@ static THD_FUNCTION(hydro_thread, arg) {
         		{
         			commands_printf("time: %u",current_time);
         		}*/
-/*
-#ifdef SERVO_READ
-		systime_t current_time = chVTGetSystemTimeX();
-	    if ((current_time - last_reading_time) > READING_TIMEOUT) {
-	        m_speed_now = 0; // Set speed to zero if no recent reading
-	    }
-#endif
-*/
-		// comm_can_io_board_lim_sw(2) - Upp bak
-		// comm_can_io_board_lim_sw(3) - Ner bak
 
 		// Control hydraulic actuators
 		#ifdef ADDIO

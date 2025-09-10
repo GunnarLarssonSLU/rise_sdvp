@@ -210,6 +210,24 @@ void CarInterface::setStateData(CAR_STATE data)
     ui->batteryBar->setValue((int)battp);
     ui->batteryBar->setFormat(battTxt);
 
+
+    ui->label00->setText("Debug 2:");
+    ui->label10->setText("Debug 3:");
+    ui->label20->setText("Debug 4:");
+    ui->label30->setText("Debug 5:");
+
+    ui->label01->setText(QString::number(data.debugvalue2));
+    ui->label11->setText(QString::number(data.debugvalue3));
+    ui->label21->setText(QString::number(data.debugvalue4));
+    ui->label31->setText(QString::number(data.debugvalue5));
+//    ui->label31->setText(QString::number(data.debugvalue6));
+//    ui->label31->setText(QString::number(data.debugvalue7));
+//    ui->label31->setText(QString::number(data.debugvalue8));
+//    ui->label31->setText(QString::number(data.debugvalue9));
+//    ui->label31->setText(QString::number(data.debugvalue10));
+
+
+
     // Orientation
 //    setOrientation(data.roll, data.pitch, data.yaw);
 
@@ -336,16 +354,6 @@ void CarInterface::setPacketInterface(PacketInterface *packetInterface)
             this, SLOT(nmeaReceived(quint8,QByteArray)));
     connect(mPacketInterface, SIGNAL(configurationReceived(quint8,MAIN_CONFIG)),
             this, SLOT(configurationReceived(quint8,MAIN_CONFIG)));
-/*    connect(mPacketInterface, SIGNAL(plotInitReceived(quint8,QString,QString)),
-            this, SLOT(plotInitReceived(quint8,QString,QString)));
-    connect(mPacketInterface, SIGNAL(plotDataReceived(quint8,double,double)),
-            SLOT(plotDataReceived(quint8,double,double)));
-    connect(mPacketInterface, SIGNAL(plotAddGraphReceived(quint8,QString)),
-            this, SLOT(plotAddGraphReceived(quint8,QString)));
-    connect(mPacketInterface, SIGNAL(plotSetGraphReceived(quint8,int)),
-            this, SLOT(plotSetGraphReceived(quint8,int)));*/
-    connect(mPacketInterface, SIGNAL(cameraImageReceived(quint8,QImage,int)),
-            this, SLOT(cameraImageReceived(quint8,QImage,int)));
     connect(this, SIGNAL(ioBoardSetPwm(quint8,quint8,double)),
             mPacketInterface, SLOT(ioBoardSetPwmDuty(quint8,quint8,double)));
 }
@@ -373,6 +381,7 @@ void CarInterface::emergencyStop()
         // Send the AP stop command even if the autopilot was not active in the UI.
         if (mPacketInterface) {
             mPacketInterface->setApActive(mId, false, resetApOnEmergencyStop);
+            mPacketInterface->setKbActive(mId, false);
         }
     }
 
@@ -383,12 +392,18 @@ void CarInterface::setCtrlAp()
 {
     ui->keyboardControlBox->setChecked(false);
     ui->autopilotBox->setChecked(true);
+    if (mPacketInterface) {
+        mPacketInterface->setKbActive(mId, false);
+    }
 }
 
 void CarInterface::setCtrlKb()
 {
     ui->autopilotBox->setChecked(false);
     ui->keyboardControlBox->setChecked(true);
+    if (mPacketInterface) {
+        mPacketInterface->setKbActive(mId, true);
+    }
 }
 
 bool CarInterface::getCtrlKb()
@@ -732,7 +747,8 @@ void CarInterface::getConfGui(MAIN_CONFIG &conf)
     conf.car.degreeinterval = ui->confDegreeIntervalBox->value();
 
     conf.car.steering_max_angle_rad = atan(ui->confAxisDistanceBox->value() / ui->confTurnRadBox->value());
-
+    conf.car.deadband=ui->confDeadBandBox->value();
+    qDebug() << "Deadband: " << ui->confDeadBandBox->value();
     ui->confCommonWidget->getConfGui(conf);
 }
 
@@ -758,6 +774,7 @@ void CarInterface::setConfGui(MAIN_CONFIG &conf)
     ui->confSensorCentreBox->setValue(conf.car.sensorcentre);
     ui->confSensorIntervalBox->setValue(conf.car.sensorinterval);
     ui->confDegreeIntervalBox->setValue(conf.car.degreeinterval);
+    ui->confDeadBandBox->setValue(conf.car.deadband);
 
     ui->confTurnRadBox->setValue(conf.car.axis_distance / tan(conf.car.steering_max_angle_rad));
 
@@ -814,43 +831,6 @@ void CarInterface::on_shutdownPiButton_clicked()
     }
 }
 
-/*
-void CarInterface::on_camStartButton_clicked()
-{
-    mImageByteCnt = 0;
-    mImageCnt = 0;
-    mImageTimer.restart();
-
-    if (mPacketInterface) {
-        ui->pollBox->setChecked(false);
-        ui->keyboardControlBox->setChecked(false);
-        mPacketInterface->startCameraStream(mId, ui->camCamBox->value(),
-                                            ui->camQualityBox->value(),
-                                            ui->camWidthBox->value(),
-                                            ui->camHeightBox->value(),
-                                            ui->camFpsBox->value(),
-                                            ui->camSkipBox->value());
-    }
-}
-
-
-void CarInterface::on_camStopButton_clicked()
-{
-    mPacketInterface->startCameraStream(mId, -1, 0, 0, 0, 0, 0);
-    ui->camWidget->setPixmap(QPixmap());
-
-    if (mMap) {
-        mMap->setLastCameraImage(QImage());
-    }
-}
-
-void CarInterface::on_camShowMapBox_toggled(bool checked)
-{
-    if (mMap && !checked) {
-        mMap->setLastCameraImage(QImage());
-    }
-}
-*/
 void CarInterface::on_ubxVersionButton_clicked()
 {
     emit terminalCmd(uint8_t(mId), "ubx_poll UBX_MON_VER");

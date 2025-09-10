@@ -326,6 +326,7 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         conf.car.sensorcentre = utility::buffer_get_double32_auto(data, &ind);
         conf.car.sensorinterval = utility::buffer_get_double32_auto(data, &ind);
         conf.car.degreeinterval = utility::buffer_get_double32_auto(data, &ind);
+        conf.car.deadband = utility::buffer_get_double32_auto(data, &ind);
 
         // Multirotor settings
         conf.mr.vel_decay_e = utility::buffer_get_double32_auto(data, &ind);
@@ -407,10 +408,6 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     case CMD_LOG_ETHERNET: {
         QByteArray tmpArray((char*)data, len);
         emit logEthernetReceived(id, tmpArray);
-    } break;
-
-    case CMD_CAMERA_IMAGE: {
-        emit cameraImageReceived(id, QImage::fromData(data, len), len);
     } break;
 
         // Car commands
@@ -511,7 +508,7 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     default:
         break;
     }
-    qDebug() << "out processPacket";
+//    qDebug() << "out processPacket";
 }
 
 void PacketInterface::timerSlot()
@@ -790,6 +787,18 @@ bool PacketInterface::setApActive(quint8 id, bool active, bool resetState, int r
     return sendPacketAck(mSendBuffer, send_index, retries);
 }
 
+
+bool PacketInterface::setKbActive(quint8 id, bool active, bool resetState, int retries)
+{
+    qint32 send_index = 0;
+    mSendBuffer[send_index++] = id;
+    mSendBuffer[send_index++] = CMD_KB_SET_ACTIVE;
+    mSendBuffer[send_index++] = active ? 1 : 0;
+    mSendBuffer[send_index++] = resetState ? 1 : 0;
+
+    return sendPacketAck(mSendBuffer, send_index, retries);
+}
+
 bool PacketInterface::setConfiguration(quint8 id, MAIN_CONFIG &conf, int retries)
 {
     qint32 send_index = 0;
@@ -864,6 +873,8 @@ bool PacketInterface::setConfiguration(quint8 id, MAIN_CONFIG &conf, int retries
     utility::buffer_append_double32_auto(mSendBuffer, conf.car.sensorcentre, &send_index);
     utility::buffer_append_double32_auto(mSendBuffer, conf.car.sensorinterval, &send_index);
     utility::buffer_append_double32_auto(mSendBuffer, conf.car.degreeinterval, &send_index);
+
+    utility::buffer_append_double32_auto(mSendBuffer, conf.car.deadband, &send_index);
 
     // Multirotor settings
     utility::buffer_append_double32_auto(mSendBuffer, conf.mr.vel_decay_e, &send_index);
@@ -1353,30 +1364,6 @@ void PacketInterface::mrOverridePower(quint8 id, double fl_f, double bl_l, doubl
     utility::buffer_append_double32_auto(mSendBuffer, fr_r, &send_index);
     utility::buffer_append_double32_auto(mSendBuffer, br_b, &send_index);
     sendPacket(mSendBuffer, send_index);
-}
-
-void PacketInterface::startCameraStream(quint8 id, int camera, int quality,
-                                        int width, int height, int fps, int skip)
-{
-    qint32 send_index = 0;
-    mSendBuffer[send_index++] = id;
-    mSendBuffer[send_index++] = CMD_CAMERA_STREAM_START;
-    utility::buffer_append_int16(mSendBuffer, camera, &send_index);
-    utility::buffer_append_int16(mSendBuffer, quality, &send_index);
-    utility::buffer_append_int16(mSendBuffer, width, &send_index);
-    utility::buffer_append_int16(mSendBuffer, height, &send_index);
-    utility::buffer_append_int16(mSendBuffer, fps, &send_index);
-    utility::buffer_append_int16(mSendBuffer, skip, &send_index);
-    sendPacket(mSendBuffer, send_index);
-}
-
-void PacketInterface::sendCameraFrameAck(quint8 id)
-{
-    QByteArray packet;
-    packet.clear();
-    packet.append(id);
-    packet.append((char)CMD_CAMERA_FRAME_ACK);
-    sendPacket(packet);
 }
 
 void PacketInterface::setApMode(quint8 id, AP_MODE mode)

@@ -802,7 +802,7 @@ void MapWidget::mousePressEventFields(QMouseEvent *e)
 
     if (ctrl) {
         if (e->buttons() & Qt::RightButton) {
-            const double illh[3];
+            double illh[3];
             double llh[3];
             double xyz_[3];
 

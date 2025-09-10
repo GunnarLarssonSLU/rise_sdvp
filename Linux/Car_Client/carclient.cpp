@@ -739,9 +739,9 @@ void CarClient::packetDataToSend(QByteArray &data)
     // This is a packet from RControlStation going to the car.
     // Inspect data and possibly process it here.
 #ifdef JETSON____
-   qDebug() << "in CarClient::packetDataToSend. Data: " << data;
+  // qDebug() << "in CarClient::packetDataToSend. Data: " << data;
 #else
-    qDebug() << "in CarClient::packetDataToSend. Data: " << data << Qt::flush;
+  //  qDebug() << "in CarClient::packetDataToSend. Data: " << data << Qt::flush;
 #endif
     bool packetConsumed = false;
 
@@ -753,17 +753,17 @@ void CarClient::packetDataToSend(QByteArray &data)
     vb.chop(3);
 
     (void)id;
-    qDebug() << "in CarClient::packetDataToSend.... Id: " << id << ", mCarId: " << mCarId << ", cmd: " << cmd;
+  //  qDebug() << "in CarClient::packetDataToSend.... Id: " << id << ", mCarId: " << mCarId << ", cmd: " << cmd;
 
 //    if (id == mCarId || id == 255) {
     if (id == mCarId || mCarId == 255) {
         if (cmd == CMD_CAMERA_STREAM_START) {
         } else if (cmd == CMD_TERMINAL_CMD) {
             QString str(vb);
-            qDebug() << "to terminal:" << str;
+ //           qDebug() << "to terminal:" << str;
 
             if (str == "help") {
-                qDebug() << "Read HELP";
+//                qDebug() << "Read HELP";
                 printTerminal("lsusb\n"
                               "  Print information about connected usbs.");
                 printTerminal("list_ttys\n"
@@ -819,8 +819,8 @@ void CarClient::packetDataToSend(QByteArray &data)
 
     if (!packetConsumed) {
         if (mSerialPort->isOpen()) {
-            qDebug() << "Packet sent (port open)";
-            qDebug() << static_cast<int>(data[2]) << ":" << static_cast<int>(data[3]) << ":" << static_cast<int>(data[4]);
+//            qDebug() << "Packet sent (port open)";
+//            qDebug() << static_cast<int>(data[2]) << ":" << static_cast<int>(data[3]) << ":" << static_cast<int>(data[4]);
             mSerialPort->writeData(data);
         } else
         {
@@ -1027,8 +1027,8 @@ void CarClient::rxRawx(ubx_rxm_rawx rawx)
 
 void CarClient::tcpRx(QByteArray &data)
 {
-    qDebug() << "In CarClient::tcpRx";
-    qDebug() << "data: " << data;
+//    qDebug() << "In CarClient::tcpRx";
+//    qDebug() << "data: " << data;
     mPacketInterface->sendPacket(data);
 }
 
@@ -1224,7 +1224,6 @@ bool CarClient::waitProcess(QProcess &process, int timeoutMs)
 
 void CarClient::startStr2Str(double lat,double lon )
 {
-/*
     qDebug() << "Lat: " << lat << ", Lon: " << lon;
     QString strLat=QString("%1").arg(lat, 0, 'f', 14);
     QString strLon=QString("%1").arg(lon, 0, 'f', 14);
@@ -1250,11 +1249,9 @@ void CarClient::startStr2Str(double lat,double lon )
     } else {
         qDebug() << "Started str2str with PID:" << s2sProcess.processId();
     }
-    */
 }
 
 void CarClient::stopStr2Str() {
-    /*
     if (s2sProcess.state() == QProcess::Running) {
         s2sProcess.terminate();
         s2sProcess.waitForFinished();
@@ -1262,5 +1259,4 @@ void CarClient::stopStr2Str() {
     } else {
         qCritical() << "No running instance of str2str to stop.";
     }
-*/
 }

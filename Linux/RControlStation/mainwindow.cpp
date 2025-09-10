@@ -163,7 +163,7 @@ MainWindow::MainWindow(QWidget *parent) :
     mThrottle = 0.0;
     mSteering = 0.0;
 
-    static MainWindow *mThis=this;          // Just to be able to get the lambdas to work
+//    static MainWindow *mThis=this;          // Just to be able to get the lambdas to work
 #ifdef HAS_JOYSTICK
     // Connect joystick by default
     bool connectJs = connectJoystick();
@@ -657,12 +657,12 @@ void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& p
         QFile file(xmlFile);
         if (!file.exists()) {
             qDebug() << "File does not exist:" << xmlFile;
-            return false;
+            return;
         }
 
         if (!file.open(QIODevice::ReadOnly)) {
             qDebug() << "Could not open file for reading:" << xmlFile;
-            return false;
+            return;
         }
 
         QXmlStreamReader xmlData(&file);
@@ -800,7 +800,7 @@ bool MainWindow::connectJoystick()
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     if (SDL_Init(SDL_INIT_GAMECONTROLLER) != 0) {
         qDebug() << "SDL_Init Error:" << SDL_GetError();
-        return;
+        return false;
     }
 
     if (SDL_NumJoysticks() < 1) {
@@ -863,8 +863,6 @@ bool MainWindow::connectJoystick()
         qDebug() << "Button R2: " << value;
         mThis->jsButtonChanged(7, value>0);
     });
-
-
 
     {
         QGamepad js;
@@ -1786,12 +1784,12 @@ void MainWindow::onGeneratePathButtonClicked()
     QFile file(filePath);
     if (!file.exists()) {
         qDebug() << "File does not exist:" << filePath;
-        return false;
+        return;
     }
 
     if (!file.open(QIODevice::ReadOnly)) {
         qDebug() << "Could not open file for reading:" << filePath;
-        return false;
+        return;
     }
 
     QXmlStreamReader xmlData(&file);

@@ -62,7 +62,7 @@
 #define HYDRAULIC_HAS_SPEED_SENSOR
 #define SERVO_VESC_ID				0
 #define SERVO_VESC_INVERTED			0
-#define SERVO_VESC_DEADBAND_COMP    0.2
+//#define SERVO_VESC_DEADBAND_COMP    0.2
 #define IS_F9_BOARD					1
 #define ADDIO
 #define CAN_ADDIO					1
@@ -78,8 +78,11 @@
 #define SERVO_VESC_ID				0
 #define VESC_ID				0
 #define VOLTAGEFRACTION 1
-#define SERVO_VESC_S1				178.0 // Left
-#define SERVO_VESC_S2				240.0 // Right
+#define SERVO_VESC_S1				180.7 // Left
+#define SERVO_VESC_S2				237.7 // Right
+//#define SERVO_VESC_S1				172.7 // Left
+//#define SERVO_VESC_S2				230.7 // Right
+
 //#define SERVO_VESC_S1				-20.0 // Left
 //#define SERVO_VESC_S2				40.0 // Right
 #define USE_ADCONV_FOR_VIN

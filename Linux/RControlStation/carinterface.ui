@@ -30,7 +30,7 @@
        <property name="tabsClosable">
         <bool>false</bool>
        </property>
-       <widget class="QWidget" name="orientationTab">
+       <widget class="QWidget" name="vehicleStateTab">
         <attribute name="icon">
          <iconset resource="resources.qrc">
           <normaloff>:/models/Icons/Orthogonal View-96.png</normaloff>:/models/Icons/Orthogonal View-96.png</iconset>
@@ -41,9 +41,9 @@
         <attribute name="toolTip">
          <string>Orientation</string>
         </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_15">
+        <layout class="QHBoxLayout" name="horizontalLayout">
          <item>
-          <layout class="QVBoxLayout" name="orientationLayout">
+          <layout class="QVBoxLayout" name="vehicleStateLeftLayout">
            <item>
             <spacer name="orientationSpacer">
              <property name="orientation">
@@ -117,6 +117,79 @@
               <string>Speed: %v km/h</string>
              </property>
             </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QGridLayout" name="gridLayout">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label00">
+             <property name="text">
+              <string>Row 0, Col 0</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLabel" name="label01">
+             <property name="text">
+              <string>Row 0, Col 1</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label10">
+             <property name="text">
+              <string>Row 1, Col 0</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLabel" name="label11">
+             <property name="text">
+              <string>Row 1, Col 1</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label20">
+             <property name="text">
+              <string>Row 2, Col 0</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QLabel" name="label21">
+             <property name="text">
+              <string>Row 2, Col 1</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label30">
+             <property name="text">
+              <string>Row 3, Col 0</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QLabel" name="label31">
+             <property name="text">
+              <string>Row 3, Col 1</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0" colspan="2">
+            <spacer name="gridBottomSpacer">
+             <property name="orientation">
+              <enum>Qt::Orientation::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
+              </size>
+             </property>
+            </spacer>
            </item>
           </layout>
          </item>
@@ -588,41 +661,10 @@
             <property name="spacing">
              <number>3</number>
             </property>
-            <item row="1" column="0">
-             <widget class="QDoubleSpinBox" name="confTurnRadBox">
-              <property name="prefix">
-               <string>Turn Radius: </string>
-              </property>
-              <property name="suffix">
-               <string> m</string>
-              </property>
-              <property name="decimals">
-               <number>3</number>
-              </property>
-              <property name="maximum">
-               <double>1000.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.100000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="QDoubleSpinBox" name="confWheelDiamBox">
-              <property name="prefix">
-               <string>Wheel Diameter: </string>
-              </property>
-              <property name="suffix">
-               <string> m</string>
-              </property>
-              <property name="decimals">
-               <number>3</number>
-              </property>
-              <property name="maximum">
-               <double>1000.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.100000000000000</double>
+            <item row="6" column="2">
+             <widget class="QCheckBox" name="confUseUwbPosBox">
+              <property name="text">
+               <string>Use UWB Position</string>
               </property>
              </widget>
             </item>
@@ -645,69 +687,6 @@
               </property>
              </widget>
             </item>
-            <item row="7" column="0">
-             <widget class="QCheckBox" name="confMiscDisableMotorBox">
-              <property name="text">
-               <string>Disable Motor</string>
-              </property>
-             </widget>
-            </item>
-            <item row="7" column="1">
-             <widget class="QCheckBox" name="confMiscSimulateMotorBox">
-              <property name="text">
-               <string>Simulate Motor</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="2">
-             <widget class="QDoubleSpinBox" name="confServoDGainBox">
-              <property name="prefix">
-               <string>Servo D Gain:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="0">
-             <widget class="QDoubleSpinBox" name="confServoCenterBox">
-              <property name="prefix">
-               <string>Servo Center: </string>
-              </property>
-              <property name="decimals">
-               <number>3</number>
-              </property>
-              <property name="maximum">
-               <double>1.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.010000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item row="6" column="0" colspan="2">
-             <widget class="QCheckBox" name="confOdometryYawBox">
-              <property name="text">
-               <string>Use Odometry for YAW correction</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="0">
-             <widget class="QDoubleSpinBox" name="confGearRatioBox">
-              <property name="prefix">
-               <string>Gear Ratio: </string>
-              </property>
-              <property name="decimals">
-               <number>3</number>
-              </property>
-              <property name="minimum">
-               <double>-1000.000000000000000</double>
-              </property>
-              <property name="maximum">
-               <double>1000.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.100000000000000</double>
-              </property>
-             </widget>
-            </item>
             <item row="7" column="2">
              <widget class="QCheckBox" name="confClampImuYawBox">
               <property name="toolTip">
@@ -718,55 +697,10 @@
               </property>
              </widget>
             </item>
-            <item row="1" column="1">
-             <widget class="QDoubleSpinBox" name="confSteeringRampBox">
-              <property name="prefix">
-               <string>Steering Ramp: </string>
-              </property>
-              <property name="decimals">
-               <number>3</number>
-              </property>
-              <property name="maximum">
-               <double>1000.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.100000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item row="4" column="2">
-             <widget class="QDoubleSpinBox" name="confDegreeIntervalBox">
-              <property name="prefix">
-               <string>Interval degrees: </string>
-              </property>
-              <property name="suffix">
-               <string>°</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="0">
-             <widget class="QDoubleSpinBox" name="confServoPGainBox">
-              <property name="prefix">
-               <string>Servo P Gain:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="2">
-             <widget class="QDoubleSpinBox" name="confAxisDistanceBox">
-              <property name="prefix">
-               <string>Axis Distance: </string>
-              </property>
-              <property name="suffix">
-               <string> m</string>
-              </property>
-              <property name="decimals">
-               <number>3</number>
-              </property>
-              <property name="maximum">
-               <double>1000.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.100000000000000</double>
+            <item row="7" column="0">
+             <widget class="QCheckBox" name="confMiscDisableMotorBox">
+              <property name="text">
+               <string>Disable Motor</string>
               </property>
              </widget>
             </item>
@@ -789,36 +723,33 @@
               </property>
              </widget>
             </item>
-            <item row="3" column="1">
-             <widget class="QDoubleSpinBox" name="confServoIGainBox">
-              <property name="prefix">
-               <string>Servo I Gain:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="6" column="2">
-             <widget class="QCheckBox" name="confUseUwbPosBox">
+            <item row="7" column="1">
+             <widget class="QCheckBox" name="confMiscSimulateMotorBox">
               <property name="text">
-               <string>Use UWB Position</string>
+               <string>Simulate Motor</string>
               </property>
              </widget>
             </item>
-            <item row="2" column="1">
-             <widget class="QDoubleSpinBox" name="confServoRangeBox">
+            <item row="3" column="2">
+             <widget class="QDoubleSpinBox" name="confServoDGainBox">
               <property name="prefix">
-               <string>Servo Range: </string>
+               <string>Servo D Gain:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QDoubleSpinBox" name="confSteeringRampBox">
+              <property name="prefix">
+               <string>Steering Ramp: </string>
               </property>
               <property name="decimals">
                <number>3</number>
               </property>
-              <property name="minimum">
-               <double>-1.000000000000000</double>
-              </property>
               <property name="maximum">
-               <double>1.000000000000000</double>
+               <double>1000.000000000000000</double>
               </property>
               <property name="singleStep">
-               <double>0.010000000000000</double>
+               <double>0.100000000000000</double>
               </property>
              </widget>
             </item>
@@ -841,6 +772,148 @@
               </property>
              </widget>
             </item>
+            <item row="0" column="1">
+             <widget class="QDoubleSpinBox" name="confWheelDiamBox">
+              <property name="prefix">
+               <string>Wheel Diameter: </string>
+              </property>
+              <property name="suffix">
+               <string> m</string>
+              </property>
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="maximum">
+               <double>1000.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="0" colspan="2">
+             <widget class="QCheckBox" name="confOdometryYawBox">
+              <property name="text">
+               <string>Use Odometry for YAW correction</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="2">
+             <widget class="QDoubleSpinBox" name="confDegreeIntervalBox">
+              <property name="prefix">
+               <string>Interval degrees: </string>
+              </property>
+              <property name="suffix">
+               <string>°</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QDoubleSpinBox" name="confServoRangeBox">
+              <property name="prefix">
+               <string>Servo Range: </string>
+              </property>
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="minimum">
+               <double>-1.000000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>1.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.010000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QDoubleSpinBox" name="confTurnRadBox">
+              <property name="prefix">
+               <string>Turn Radius: </string>
+              </property>
+              <property name="suffix">
+               <string> m</string>
+              </property>
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="maximum">
+               <double>1000.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QDoubleSpinBox" name="confGearRatioBox">
+              <property name="prefix">
+               <string>Gear Ratio: </string>
+              </property>
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="minimum">
+               <double>-1000.000000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>1000.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="2">
+             <widget class="QDoubleSpinBox" name="confAxisDistanceBox">
+              <property name="prefix">
+               <string>Axis Distance: </string>
+              </property>
+              <property name="suffix">
+               <string> m</string>
+              </property>
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="maximum">
+               <double>1000.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QDoubleSpinBox" name="confServoCenterBox">
+              <property name="prefix">
+               <string>Servo Center: </string>
+              </property>
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="maximum">
+               <double>1.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.010000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QDoubleSpinBox" name="confServoIGainBox">
+              <property name="prefix">
+               <string>Servo I Gain:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QDoubleSpinBox" name="confServoPGainBox">
+              <property name="prefix">
+               <string>Servo P Gain:</string>
+              </property>
+             </widget>
+            </item>
             <item row="4" column="1">
              <widget class="QDoubleSpinBox" name="confSensorIntervalBox">
               <property name="prefix">
@@ -857,6 +930,13 @@
               </property>
               <property name="maximum">
                <double>1024.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="0">
+             <widget class="QDoubleSpinBox" name="confDeadBandBox">
+              <property name="prefix">
+               <string>Dead band: </string>
               </property>
              </widget>
             </item>

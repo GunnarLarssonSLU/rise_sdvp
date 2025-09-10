@@ -175,7 +175,7 @@ void Packet::processData(QByteArray data)
                 if (crc16((const unsigned char*)mRxBuffer.data(), mPayloadLength) ==
                         ((unsigned short)mCrcHigh << 8 | (unsigned short)mCrcLow)) {
                     // Packet received!
-                    qDebug() << "Packet received! (packet::processData)";
+//                    qDebug() << "Packet received! (packet::processData)";
                     emit packetReceived(mRxBuffer);
                 }
             }

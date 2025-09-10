@@ -293,7 +293,7 @@ int main(int argc, char *argv[])
     }
 
     std::unique_ptr<QCoreApplication> a;
-    QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+//    QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
     if (noGui) {
         a.reset(new QCoreApplication(argc, argv));
     } else {
@@ -350,10 +350,6 @@ int main(int argc, char *argv[])
                 } else {
                     qCritical() << "Could not load routes from" << plotRoutesFile;
                 }
-            }
-
-            for (auto c: carsToAdd) {
- //               w->addCar(c.id, c.pollData);
             }
 
             if (!jsStr.isEmpty()) {

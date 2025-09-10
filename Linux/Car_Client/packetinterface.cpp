@@ -249,9 +249,8 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
 
     case CMD_SEND_NMEA_RADIO: {
         QByteArray tmpArray((char*)data, len);
-        qDebug() << "NMEA radio len: " << len;
-//        QString string = QString::fromUtf8(tmpArray);
-        qDebug() << "NMEA radio data: " << QString(tmpArray);
+//        qDebug() << "NMEA radio len: " << len;
+//        qDebug() << "NMEA radio data: " << QString(tmpArray);
         emit nmeaRadioReceived(id, tmpArray);
     } break;
 
@@ -321,6 +320,7 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         conf.car.steering_range = utility::buffer_get_double32_auto(data, &ind);
         conf.car.steering_ramp_time = utility::buffer_get_double32_auto(data, &ind);
         conf.car.axis_distance = utility::buffer_get_double32_auto(data, &ind);
+//        conf.car.deadband = utility::buffer_get_double32_auto(data, &ind);
 
         emit configurationReceived(id, conf);
     } break;
@@ -349,10 +349,6 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         emit logEthernetReceived(id, tmpArray);
     } break;
 
-    case CMD_CAMERA_IMAGE: {
-        emit cameraImageReceived(id, QImage::fromData(data, len), len);
-    } break;
-
         // Car commands
     case CMD_GET_STATE: {
         CAR_STATE state;
@@ -362,7 +358,7 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
             break;
         }
 
-        qDebug() << "CMD_GET_STATE";
+//        qDebug() << "CMD_GET_STATE";
         state.fw_major = data[ind++];
         state.fw_minor = data[ind++];
         state.roll = utility::buffer_get_double32(data, 1e6, &ind);
@@ -396,6 +392,22 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         state.servo_output = utility::buffer_get_double32(data, 1e4, &ind);
         state.sensor_value = utility::buffer_get_uint16(data, &ind);
         state.debug_value = utility::buffer_get_double32(data, 1e4, &ind);
+        state.debug_value2 = utility::buffer_get_double32(data, 1e4, &ind);
+        state.debug_value3 = utility::buffer_get_double32(data, 1e4, &ind);
+        state.debug_value4 = utility::buffer_get_double32(data, 1e4, &ind);
+        state.debug_value5 = utility::buffer_get_double32(data, 1e4, &ind);
+        state.debug_value6 = utility::buffer_get_double32(data, 1e4, &ind);
+        state.debug_value7 = utility::buffer_get_double32(data, 1e4, &ind);
+        state.debug_value8 = utility::buffer_get_double32(data, 1e4, &ind);
+        state.debug_value9 = utility::buffer_get_double32(data, 1e4, &ind);
+        state.debug_value10 = utility::buffer_get_double32(data, 1e4, &ind);
+        state.debug_value11 = utility::buffer_get_double32(data, 1e4, &ind);
+        state.debug_value12 = utility::buffer_get_double32(data, 1e4, &ind);
+        state.debug_value13 = utility::buffer_get_double32(data, 1e4, &ind);
+        state.debug_value14 = utility::buffer_get_double32(data, 1e4, &ind);
+        state.debug_value15 = utility::buffer_get_double32(data, 1e4, &ind);
+        qDebug() << "Servo output: " << state.servo_output << ", Debug value: " << state.debug_value << "::" << state.debug_value2 << "::" << state.debug_value3 << "::" << state.debug_value4 << "::" << state.debug_value5  << "::" << state.debug_value6  << "::" << state.debug_value7  << "::" << state.debug_value8  << "::" << state.debug_value9  << "::" << state.debug_value10   << "::" << state.debug_value11  << "::" << state.debug_value12   << "::" << state.debug_value13  << "::" << state.debug_value14  << "::" << state.debug_value15;
+//        qDebug() << "Sensor value: " << state.sensor_value;
         emit stateReceived(id, state);
     } break;
 
@@ -494,7 +506,7 @@ unsigned short PacketInterface::crc16(const unsigned char *buf, unsigned int len
 bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_packet)
 {
     unsigned int ind = 0;
-    qDebug() << "in packetinterface::sendPacket";
+//    qDebug() << "in packetinterface::sendPacket";
 
     // If the IP is valid, send the packet over UDP
     if (QString::compare(mHostAddress.toString(), "0.0.0.0") != 0) {
@@ -502,7 +514,7 @@ bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_pac
         ind += len_packet;
 
         QByteArray toSend = QByteArray::fromRawData((const char*)mSendBufferAck, ind);
-        qDebug() << "ok and about to write";
+//        qDebug() << "ok and about to write";
 
         mUdpSocket->writeDatagram(toSend, mHostAddress, mUdpPort);
         //ros2 ...
@@ -617,7 +629,7 @@ bool PacketInterface::sendPacketAck(const unsigned char *data, unsigned int len_
 
 bool PacketInterface::waitSignal(QObject *sender, const char *signal, int timeoutMs)
 {
-    qDebug() << "in packetinterface::waitSignal";
+//    qDebug() << "in packetinterface::waitSignal";
 
     QEventLoop loop;
     QTimer timeoutTimer;
@@ -1234,29 +1246,4 @@ void PacketInterface::mrOverridePower(quint8 id, double fl_f, double bl_l, doubl
     utility::buffer_append_double32_auto(mSendBuffer, fr_r, &send_index);
     utility::buffer_append_double32_auto(mSendBuffer, br_b, &send_index);
     sendPacket(mSendBuffer, send_index);
-}
-
-void PacketInterface::startCameraStream(quint8 id, int camera, int quality,
-                                        int width, int height, int fps, int skip)
-{
-    qWarning() << "In PacketInterface::startCameraStream";
-    qint32 send_index = 0;
-    mSendBuffer[send_index++] = id;
-    mSendBuffer[send_index++] = CMD_CAMERA_STREAM_START;
-    utility::buffer_append_int16(mSendBuffer, camera, &send_index);
-    utility::buffer_append_int16(mSendBuffer, quality, &send_index);
-    utility::buffer_append_int16(mSendBuffer, width, &send_index);
-    utility::buffer_append_int16(mSendBuffer, height, &send_index);
-    utility::buffer_append_int16(mSendBuffer, fps, &send_index);
-    utility::buffer_append_int16(mSendBuffer, skip, &send_index);
-    sendPacket(mSendBuffer, send_index);
-}
-
-void PacketInterface::sendCameraFrameAck(quint8 id)
-{
-    QByteArray packet;
-    packet.clear();
-    packet.append(id);
-    packet.append((char)CMD_CAMERA_FRAME_ACK);
-    sendPacket(packet);
 }

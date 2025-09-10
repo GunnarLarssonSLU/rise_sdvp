@@ -158,13 +158,13 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 	conf->vehicle.axis_distance = 0.475;
 
 	conf->vehicle.vesc_p_gain = 6.0;
-	conf->vehicle.vesc_i_gain = 1.0;
-	conf->vehicle.vesc_d_gain = 0.5;
+	conf->vehicle.vesc_i_gain = 0.0;
+	conf->vehicle.vesc_d_gain = 0.0;
 
 	conf->vehicle.sensorinterval = 160;
 	conf->vehicle.degreeinterval = 68;
 	conf->vehicle.sensorcentre = 580;
-
+	conf->vehicle.deadband = 0.05;
 
 	/*
 	// Custom parameters based on ID
@@ -196,7 +196,7 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 //	conf->vehicle.axis_distance = 1.0;
 		//conf->vehicle.steering_center = 0;
 //		conf->vehicle.steering_range = 0;
-		conf->vehicle.axis_distance = 1.45;
+	conf->vehicle.axis_distance = 1.45;
 	conf->vehicle.steering_max_angle_rad = atanf(conf->vehicle.axis_distance / 1.5);
 	conf->vehicle.steering_max_angle_rad =
 	conf->vehicle.wheel_diam = 0.47;
@@ -212,17 +212,19 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 #ifdef IS_MACTRAC
 	conf->vehicle.steering_center = 0.5;
 	conf->vehicle.steering_range = -1.0;
+//	conf->vehicle.steering_range = 1.0;
 	conf->vehicle.axis_distance = 1.7;
 	conf->vehicle.wheel_diam = 0.66;
 	float turn_radius=6.0;
 	conf->vehicle.steering_max_angle_rad = atanf(conf->vehicle.axis_distance / turn_radius);
+	conf->vehicle.steering_max_angle_rad = 0.99;
 	conf->gps_corr_gain_yaw = 2.0;
 	conf->ap_base_rad = 4.0;
 	conf->ap_repeat_routes = false;
 
-	conf->vehicle.vesc_p_gain = 6.0;
-	conf->vehicle.vesc_i_gain = 1.0;
-	conf->vehicle.vesc_d_gain = 0.5;
+	conf->vehicle.vesc_p_gain = 6.0; // 3.0
+	conf->vehicle.vesc_i_gain = 1.0; // 0.5
+	conf->vehicle.vesc_d_gain = 0.5; // 0.0
 	conf->vehicle.yaw_use_odometry = true;
 //	conf->vehicle.TURN RADIUS              UPPDATERA HÄR
 
