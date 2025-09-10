@@ -100,7 +100,7 @@ static void correct_pos_gps(POS_STATE *pos);
 static void ubx_rx_rawx(ubx_rxm_rawx *rawx);
 
 int iDebug;
-
+extern float debugvalue6;
 
 #if MAIN_MODE == MAIN_MODE_VEHICLE
 static void mc_values_received(mc_values *val);
@@ -108,10 +108,6 @@ static void vehicle_update_pos(float distance, float turn_rad_rear, float angle_
 #endif
 
 void pos_init(void) {
-	if(iDebug==10)
-	{
-		commands_printf("Initializing Pos.\n");
-	}
 	ahrs_init_attitude_info(&m_att);		// Sets initial ahrs values to zero
 	m_attitude_init_done = false;			// Attitude not initiated yet
 	memset(&m_pos, 0, sizeof(m_pos));		// Set vehicle position to 0s
@@ -294,20 +290,11 @@ void pos_get_imu(float *accel, float *gyro, float *mag) {
 		accel[1] = m_accel[1];
 		accel[2] = m_accel[2];
 	}
-	if(iDebug==3) {
-	commands_printf("accel 0: %f\n", (double) m_accel[0]);
-	commands_printf("accel 1: %f\n", (double) m_accel[1]);
-	commands_printf("accel 2: %f\n", (double) m_accel[2]);
-	};
-
 
 	if (gyro) {
 		gyro[0] = m_gyro[0];
 		gyro[1] = m_gyro[1];
 		gyro[2] = m_gyro[2];
-//		commands_printf("gyro 0: %f\n", m_gyro[0]);
-//		commands_printf("gyro 1: %f\n", m_gyro[1]);
-//		commands_printf("gyro 2: %f\n", m_gyro[2]);
 	}
 
 	if (mag) {
@@ -315,11 +302,6 @@ void pos_get_imu(float *accel, float *gyro, float *mag) {
 		mag[1] = m_mag_raw[1];
 		mag[2] = m_mag_raw[2];
 	}
-	if(iDebug==3) {
-	commands_printf("mag 0: %f\n", (double) m_mag_raw[0]);
-	commands_printf("mag 1: %f\n", (double) m_mag_raw[1]);
-	commands_printf("mag 2: %f\n", (double) m_mag_raw[2]);
-	};
 }
 
 void pos_get_quaternions(float *q) {
@@ -387,16 +369,6 @@ void pos_set_enu_ref(double lat, double lon, double height) {
 	m_gps.iy = y;
 	m_gps.iz = z;
 
-	if(iDebug==1) {
-		commands_printf(":::Pos Set Enu Ref:::\n");
-		commands_printf("x: %f\n", m_gps.ix);
-		commands_printf("y: %f\n", m_gps.iy);
-		commands_printf("z: %f\n", m_gps.iz);
-		commands_printf("lat: %f\n", lat);
-		commands_printf("lon: %f\n", lon);
-		commands_printf("height: %f\n", height);
-	}
-
 	float so = sinf((float)lon * M_PI / 180.0);
 	float co = cosf((float)lon * M_PI / 180.0);
 	float sa = sinf((float)lat * M_PI / 180.0);
@@ -447,10 +419,6 @@ void pos_set_ms_today(int32_t ms) {
 }
 
 bool pos_input_nmea(const char *data) {
-	if(iDebug==1) {
-		commands_printf(":::Input:::\n");
-		commands_printf("data: %s\n", data);
-	};
 
 	nmea_gga_info_t gga;
 	static nmea_gsv_info_t gpgsv;
@@ -478,8 +446,8 @@ bool pos_input_nmea(const char *data) {
 	}
 
 	// Only use valid fixes
-	if (gga.fix_type == 1 || gga.fix_type == 2 || gga.fix_type == 4 || gga.fix_type == 5) {
-//	if (1) {
+//	if (gga.fix_type == 1 || gga.fix_type == 2 || gga.fix_type == 4 || gga.fix_type == 5) {
+	if (1) {
 		// Convert llh to ecef
 		double sinp = sin(gga.lat * D_PI / D(180.0));
 		double cosp = cos(gga.lat * D_PI / D(180.0));
@@ -500,22 +468,12 @@ bool pos_input_nmea(const char *data) {
 		m_gps.x = (v + gga.height) * cosp * cosl;
 		m_gps.y = (v + gga.height) * cosp * sinl;
 		m_gps.z = (v * (D(1.0) - e2) + gga.height) * sinp;
-/*
-		if(iDebug==1) {
-			commands_printf("::::::::::::::::::::Local init done: %d\n", m_gps.local_init_done);
-			commands_printf("Lat.: %f\n", m_gps.lat);
-			commands_printf("Lon.: %f\n", m_gps.lon);
-			commands_printf("x: %f\n", m_gps.x);
-			commands_printf("y: %f\n", m_gps.y);
-			commands_printf("z: %f\n", m_gps.z);
-		};*/
+
 		// Continue if ENU frame is initialized
 		if (m_gps.local_init_done) {
 			float dx = (float)(m_gps.x - m_gps.ix);
 			float dy = (float)(m_gps.y - m_gps.iy);
 			float dz = (float)(m_gps.z - m_gps.iz);
-			if(iDebug==1) {
-			};
 
 			m_gps.lx = m_gps.r1c1 * dx + m_gps.r1c2 * dy + m_gps.r1c3 * dz;
 			m_gps.ly = m_gps.r2c1 * dx + m_gps.r2c2 * dy + m_gps.r2c3 * dz;
@@ -528,15 +486,6 @@ bool pos_input_nmea(const char *data) {
 			const float c_yaw = cosf(-m_pos.yaw * M_PI / 180.0);
 			px -= c_yaw * main_config.gps_ant_x - s_yaw * main_config.gps_ant_y;
 			py -= s_yaw * main_config.gps_ant_x + c_yaw * main_config.gps_ant_y;
-/*			if(iDebug==1) {
-				commands_printf("In pos_input_nmea:::\n");
-				commands_printf("dx: %f\n", (double) dx);
-				commands_printf("dy: %f\n", (double) dy);
-				commands_printf("dz: %f\n", (double) dz);
-				commands_printf("px: %f\n", (double) px);
-				commands_printf("py: %f\n", (double) py);
-			};
-*/
 			chMtxLock(&m_mutex_pos);
 
 			// Save last gps position
@@ -552,25 +501,9 @@ bool pos_input_nmea(const char *data) {
 			m_pos.gps_ms = m_gps.ms;
 			m_pos.gps_fix_type = m_gps.fix_type;
 
-			if(iDebug==1)
-			{
-					commands_printf("In pos_input_nmea, later:::\n", (double)dx);
-					commands_printf("px gps: %f\n", (double)m_pos.px_gps);
-					commands_printf("py gps: %f\n", (double)m_pos.py_gps);
-					commands_printf("px: %f\n", (double)m_pos.px);
-					commands_printf("py: %f\n", (double)m_pos.py);
-			};
-
 //////
 			// Correct position
 			// Optionally require RTK and good ublox quality indication.
-			if(iDebug==9)
-			{
-				commands_printf("gps_comp: %d\n", main_config.gps_comp);
-				commands_printf("gps_req_rtk: %d\n", main_config.gps_req_rtk);
-				commands_printf("gps_use_ubx_info: %d\n", main_config.gps_use_ubx_info);
-				commands_printf("m_ubx_pos_valid: %d\n", m_ubx_pos_valid);
-			}
 /*
 			if (main_config.gps_comp &&
 					(!main_config.gps_req_rtk || (gga.fix_type == 4 || gga.fix_type == 5)) &&
@@ -1141,6 +1074,8 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 				commands_printf("yaw ( %.5f )\n", (double) yaw);
 			}
 		}
+
+	debugvalue6=yaw;
 
 //	yaw+=m_yaw_bias;
 	// Apply tilt compensation for magnetometer values and calculate magnetic

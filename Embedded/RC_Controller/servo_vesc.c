@@ -54,8 +54,19 @@ static int m_not_ok_cnt = 0;
 static float m_out_last = 0.0;
 
 float servo_output;
+extern float debugvalue;
+extern float debugvalue2;
+extern float debugvalue3;
+extern float debugvalue4;
+extern float debugvalue5;
+extern float debugvalue13;
+extern float debugvalue14;
+extern float debugvalue15;
 extern int iDebug;
-
+extern bool m_is_active;
+extern bool m_kb_active;
+//extern MAIN_CONFIG main_config;
+float i_term;
 
 // Threads
 static THD_WORKING_AREA(servo_thread_wa, 1024);
@@ -77,6 +88,8 @@ void servo_vesc_init(void) {
 			"Print the state of the VESC servo for 30 seconds",
 			"",
 			terminal_state);
+
+	i_term=0.0;
 
 	//FTR2 angle init
 	// comm_can_ftr2_angle_init();
@@ -106,7 +119,7 @@ static THD_FUNCTION(servo_thread, arg) {
 	chRegSetThreadName("Servo VESC");
 
 	// Control loop state
-	float i_term = 0.0;
+	i_term = 0.0;
 	float prev_error = 0.0;
 	float dt_int = 0.0;
 	float d_filter = 0.0;
@@ -114,6 +127,15 @@ static THD_FUNCTION(servo_thread, arg) {
 	chThdSleepMilliseconds(5000);
 
 	for(;;) {
+
+//if (m_is_active || m_kb_active)
+if (1)
+{
+
+	if (!m_is_active)
+	{
+		i_term=0;
+	}
 		// Map s1 to 0.0 and s2 to 1.0
 #ifdef SERVO_VESC_HYDRAULIC
 //		commands_printf("SERVO_VESC_HYDRAULIC %d\n",SERVO_VESC_ID);
@@ -121,13 +143,13 @@ static THD_FUNCTION(servo_thread, arg) {
 
 		(void)as5047_read;
 	#ifdef ADDIO
+//		float pos_addio = comm_can_ftr2_angle() - (8.0);
 		float pos_addio = comm_can_ftr2_angle();
-		bool ok = pos_addio != m_pos_now_raw;
+		debugvalue= pos_addio;
+
+//		bool ok = pos_addio != m_pos_now_raw;
+		bool ok = true;
 		m_pos_now_raw = pos_addio;
-		if (iDebug==15)
-		{
-			commands_printf("Addio angle: %f\n",pos_addio);
-		}
 	#elif defined(IO_BOARD)
 		float pos_io_board = comm_can_io_board_as5047_angle();
 
@@ -154,17 +176,17 @@ static THD_FUNCTION(servo_thread, arg) {
 		float end = SERVO_VESC_S2 - SERVO_VESC_S1;
 		utils_norm_angle_360(&end);
 		m_pos_now = utils_map(pos, 0.0, end, 0.0, 1.0);
-
 		// Run PID-controller on the output
 		float error = m_pos_set - m_pos_now;
-
-		if (iDebug==28)
+		debugvalue13=m_pos_set;
+		debugvalue14=m_pos_now;
+		debugvalue15=error;
+		if (iDebug==81)
 		{
-			commands_printf("Vinkel i servo_vesc (m_pos_now): %f\n",  m_pos_now);
-			commands_printf("m_pos_set: %f\n",  m_pos_set);
-			commands_printf("error: %f\n",  error);
+			commands_printf("m_pos_set: %f",m_pos_set);
+			commands_printf("m_pos_now: %f",m_pos_now);
+			commands_printf("error: %f",error);
 		}
-
 		float dt = 0.01;
 		float p_term = error * main_config.vehicle.vesc_p_gain;
 		i_term += error * (main_config.vehicle.vesc_i_gain * dt);
@@ -178,7 +200,7 @@ static THD_FUNCTION(servo_thread, arg) {
 		if (error == prev_error) {
 			d_term = 0.0;
 		} else {
-			d_term = (error - prev_error) * (main_config.vehicle.vesc_i_gain / dt_int);
+			d_term = (error - prev_error) * (main_config.vehicle.vesc_d_gain / dt_int);
 			dt_int = 0.0;
 		}
 
@@ -195,8 +217,16 @@ static THD_FUNCTION(servo_thread, arg) {
 
 		// Calculate output
 		float output = p_term + i_term + d_term;
-		output += SIGN(output) * SERVO_VESC_DEADBAND_COMP;
-
+		if (iDebug==80)
+		{
+			commands_printf("i gain: %f",main_config.vehicle.vesc_i_gain);
+			commands_printf("Deadband: %f",main_config.vehicle.deadband);
+		}
+		output += SIGN(output) * main_config.vehicle.deadband;
+		debugvalue2=p_term;
+		debugvalue3=i_term;
+		debugvalue4=d_term;
+		debugvalue5=SIGN(output) * main_config.vehicle.deadband;
 		utils_truncate_number(&output, -1.0, 1.0);
 
 		if (ok) {
@@ -217,20 +247,11 @@ static THD_FUNCTION(servo_thread, arg) {
 			m_out_last = (output_scaled + 1.0) / 2.0;
 			//servo_output=m_out_last;
 			#ifdef ADDIO
-			if (iDebug==28)
-			{
-				commands_printf("m_out_last: %f\n",  m_out_last);
-			}
-			if (iDebug==29)
-			{
-				commands_printf("m_out_last: %f\n",  m_out_last);
-			}
 			comm_can_addio_set_valve_duty(m_out_last);
 			#elif defined(IO_BOARD)
 			comm_can_io_board_set_pwm_duty(0, m_out_last);
 			#endif
 		} else {
-			//servo_output=0.5;
 			#ifdef ADDIO
 			comm_can_addio_set_valve_duty(0.5);
 			#elif defined(IO_BOARD)
@@ -247,7 +268,10 @@ static THD_FUNCTION(servo_thread, arg) {
 //			bldc_interface_set_current(0.1);
 		}
 #endif
-
+} else
+{
+	i_term=0;
+}
 		chThdSleepMilliseconds(10);
 	}
 }
@@ -261,8 +285,6 @@ static void terminal_state(int argc, const char **argv) {
 				(double)m_pos_now_raw, (double)m_pos_now, m_not_ok_cnt, (double)m_out_last);
 		chThdSleepMilliseconds(100);
 	}
-
-//	commands_printf(" ");
 }
 
 // AS5047

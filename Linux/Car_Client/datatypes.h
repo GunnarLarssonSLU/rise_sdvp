@@ -128,6 +128,20 @@ public:
     double servo_output;
     uint16_t sensor_value;
     double debug_value;
+    double debug_value2;
+    double debug_value3;
+    double debug_value4;
+    double debug_value5;
+    double debug_value6;
+    double debug_value7;
+    double debug_value8;
+    double debug_value9;
+    double debug_value10;
+    double debug_value11;
+    double debug_value12;
+    double debug_value13;
+    double debug_value14;
+    double debug_value15;
 
     QList<double> accelList() {
         QList<double> a;
@@ -201,6 +215,7 @@ typedef struct {
     float steering_range;
     float steering_ramp_time; // Ramp time constant for the steering servo in seconds
     float axis_distance;
+//    float deadband;
 } MAIN_CONFIG_CAR;
 
 typedef struct {

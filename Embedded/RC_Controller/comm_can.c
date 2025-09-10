@@ -60,6 +60,7 @@ static thread_t *process_tp;
 static int vesc_id = VESC_ID;
 
 int iEid;
+extern float servo_output;
 
 // IO Board
 static float io_board_adc_voltages[8] = {0};
@@ -242,27 +243,6 @@ static THD_FUNCTION(cancom_process_thread, arg) {
 
 		while (rx_frame_read != rx_frame_write) {
 			CANRxFrame rxmsg = rx_frames[rx_frame_read++];
-//			if ((rxmsg.EID > 0) && (rxmsg.EID!=211) && (rxmsg.EID!=212) && (rxmsg.EID!=213) && (rxmsg.EID!=214) && (rxmsg.EID!=415)  && (rxmsg.EID!=415)   && (rxmsg.EID!=416) && (rxmsg.EID!=672) && (rxmsg.EID!=1824)) {
-
-				if ((iDebug==20) && (rxmsg.EID==iEid))
-				{
-				commands_printf("EID: %u\n",rxmsg.EID);
-				commands_printf("SID: %u\n",rxmsg.SID);
-				commands_printf("IDE: %u\n",rxmsg.IDE);
-				commands_printf("DLC: %u\n",rxmsg.DLC);
-				commands_printf("TIME_u: %u\n",rxmsg.TIME);
-				commands_printf("TIME_i: %i\n",rxmsg.TIME);
-				commands_printf("TIME_f: %f\n",rxmsg.TIME);
-				for (int ii=0;ii<rxmsg.DLC;ii++)
-				{
-					commands_printf("data[%i]: %i\n",ii,rxmsg.data8[ii]);
-				}
-//				CAN_PACKET_ID cmd = rxmsg.EID >> 8;
-//				commands_printf("cmd: %u\n",cmd);
-//				commands_printf("cmd: %u\n",rxmsg.EID & 255);
-//				find_ones_positions(rxmsg.EID);
-	//			};
-			}
 			if (rxmsg.IDE == CAN_IDE_EXT) {
 				// Process extended IDs (VESC Communication)
 				uint8_t id = rxmsg.EID & 0xFF;
@@ -400,9 +380,7 @@ static THD_FUNCTION(cancom_process_thread, arg) {
 #ifndef ANALOG_ANGLE
 					case CAN_IO_PACKET_AS5047_ANGLE:
 						ind = 0;
-						commands_printf("CAN_IO_PACKET_AS5047_ANGLE\n");
 						io_board_as5047_angle = buffer_get_float32(rxmsg.data8, 1e3, &ind);
-						commands_printf("Angle: %f\n",io_board_as5047_angle);
 						break;
 #endif
 					case CAN_IO_PACKET_LIM_SW:
@@ -437,27 +415,9 @@ static THD_FUNCTION(cancom_process_thread, arg) {
 #if CAN_ADDIO
 				if (rxmsg.SID == CAN_ANGLE) {
 					ftr2_activated = true;
-					can_ftr2_angle = (((rxmsg.data8[1] << 8) | rxmsg.data8[0]) / 10);
-//					can_ftr2_angle=can_ftr2_angle-6.0;
-//					can_ftr2_angle=can_ftr2_angle+2.0;
-//					can_ftr2_angle=can_ftr2_angle+2.5; // vänster
-//					can_ftr2_angle=can_ftr2_angle+3.0; // vänster
-//					can_ftr2_angle=can_ftr2_angle+2.0;// vänster
-//					can_ftr2_angle=can_ftr2_angle+1.0;// vänster mer
-//					can_ftr2_angle=can_ftr2_angle+4.0; // vänster
-//					can_ftr2_angle=can_ftr2_angle+10.0; // vänster
-//					can_ftr2_angle=can_ftr2_angle-5.0; // vänster
-//					can_ftr2_angle=can_ftr2_angle-20.0; // höger
+					can_ftr2_angle = (((rxmsg.data8[1] << 8) | rxmsg.data8[0]) / 10) + 1.7;
 //					can_ftr2_angle=can_ftr2_angle+2.0; vänster
 //					can_ftr2_angle=can_ftr2_angle+1.6; höger
-					can_ftr2_angle=can_ftr2_angle+1.7;
-					if (iDebug==15)
-					{
-						commands_printf("Addio A: %d\n",(rxmsg.data8[1] << 8));
-						commands_printf("Addio B: %d\n",rxmsg.data8[0]);
-					}
-
-					//can_ftr2_angle = (((rxmsg.data8[1] << 8) | rxmsg.data8[0]) / 10)*0.00017836-192752.4;
 					//rough conversion to angles based on test with the MacTrac
 				}
 				if ((rxmsg.SID & 0x700) == CAN_MASK_PVG32 && rxmsg.SID != 0x71F) {
@@ -799,6 +759,8 @@ static void prop_valve_nmt_sm(uint8_t node_id, uint8_t state){
 }
 
 void comm_can_addio_set_valve_duty(float duty) {
+	servo_output=duty;
+
 	uint8_t packet[8] = {0};
 	int32_t ind = 8;
 

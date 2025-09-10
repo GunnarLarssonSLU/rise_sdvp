@@ -99,6 +99,17 @@ struct CAR_STATE {
     Q_PROPERTY(double servo_output MEMBER servo_output)
     Q_PROPERTY(uint16_t sensor_value MEMBER sensor_value)
     Q_PROPERTY(double debugvalue MEMBER debugvalue)
+    Q_PROPERTY(double debugvalue2 MEMBER debugvalue2)
+    Q_PROPERTY(double debugvalue3 MEMBER debugvalue3)
+    Q_PROPERTY(double debugvalue4 MEMBER debugvalue4)
+    Q_PROPERTY(double debugvalue5 MEMBER debugvalue5)
+    Q_PROPERTY(double debugvalue6 MEMBER debugvalue6)
+    Q_PROPERTY(double debugvalue7 MEMBER debugvalue7)
+    Q_PROPERTY(double debugvalue8 MEMBER debugvalue8)
+    Q_PROPERTY(double debugvalue9 MEMBER debugvalue9)
+    Q_PROPERTY(double debugvalue10 MEMBER debugvalue10)
+    Q_PROPERTY(double debugvalue11 MEMBER debugvalue11)
+    Q_PROPERTY(double debugvalue12 MEMBER debugvalue12)
 
 public:
     uint8_t fw_major;
@@ -128,6 +139,17 @@ public:
     double servo_output;
     uint16_t sensor_value;
     double debugvalue;
+    double debugvalue2;
+    double debugvalue3;
+    double debugvalue4;
+    double debugvalue5;
+    double debugvalue6;
+    double debugvalue7;
+    double debugvalue8;
+    double debugvalue9;
+    double debugvalue10;
+    double debugvalue11;
+    double debugvalue12;
 
     QList<double> accelList() {
         QList<double> a;
@@ -207,6 +229,7 @@ typedef struct {
     float sensorcentre;
     float sensorinterval;
     float degreeinterval;
+    float deadband;
 } MAIN_CONFIG_CAR;
 
 typedef struct {
@@ -377,6 +400,7 @@ typedef enum {
     CMD_HYDRAULIC_MOVE,
     CMD_HEARTBEAT,
     CMD_SET_AP_MODE,
+    CMD_KB_SET_ACTIVE,
 
     // Car commands
     CMD_GET_STATE = 120,

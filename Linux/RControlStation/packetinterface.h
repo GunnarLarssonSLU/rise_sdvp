@@ -49,6 +49,7 @@ public:
     bool removeLastRoutePoint(quint8 id, int retries = 10);
     bool clearRoute(quint8 id, int retries = 10);
     bool setApActive(quint8 id, bool active, bool resetState = false, int retries = 10);
+    bool setKbActive(quint8 id, bool active, bool resetState = false, int retries = 10);
     bool resetApState(quint8 id, int retries = 10);
     bool setConfiguration(quint8 id, MAIN_CONFIG &conf, int retries = 10);
     bool setPosAck(quint8 id, double x, double y, double angle, int retries = 10);
@@ -91,15 +92,10 @@ signals:
     void configurationReceived(quint8 id, MAIN_CONFIG conf);
     void enuRefReceived(quint8 id, double lat, double lon, double height);
     void logLineUsbReceived(quint8 id, QString str);
- //   void plotInitReceived(quint8 id, QString xLabel, QString yLabel);
- //   void plotDataReceived(quint8 id, double x, double y);
- //   void plotAddGraphReceived(quint8 id, QString name);
- //   void plotSetGraphReceived(quint8 id, int graph);
     void systemTimeReceived(quint8 id, qint32 sec, qint32 usec);
     void rebootSystemReceived(quint8 id, bool powerOff);
     void routePartReceived(quint8 id, int len, const QList<LocPoint> &route);
     void logEthernetReceived(quint8 id, QByteArray data);
-    void cameraImageReceived(quint8 id, QImage image, int rxBytes);
     
 public slots:
     void timerSlot();
@@ -127,9 +123,6 @@ public slots:
     void setMsToday(quint8 id, qint32 time);
     void mrRcControl(quint8 id, double throttle, double roll, double pitch, double yaw);
     void mrOverridePower(quint8 id, double fl_f, double bl_l, double fr_r, double br_b);
-    void startCameraStream(quint8 id, int camera, int quality,
-                           int width, int height, int fps, int skip);
-    void sendCameraFrameAck(quint8 id);
     void ioBoardSetPwmDuty(quint8 id, quint8 board, double duty);
     void ioBoardSetValve(quint8 id, quint8 board, quint8 valve, bool set);
     void hydraulicMove(quint8 id, HYDRAULIC_POS pos, HYDRAULIC_MOVE move);
