@@ -184,7 +184,10 @@ void hydraulic_set_throttle_raw(float throttle) {
 
 void hydraulic_move(HYDRAULIC_POS pos, HYDRAULIC_MOVE move) {
 	m_move_timeout_cnt = 0;
-
+	if (iDebug==77)
+	{
+		commands_printf("in hydraulic move!");
+	}
 	switch (pos) {
 		case HYDRAULIC_POS_FRONT:
 			m_move_front = move;
@@ -293,10 +296,6 @@ static THD_FUNCTION(hydro_thread, arg) {
         }
         #endif
 
-        /*		if (iDebug==22)
-        		{
-        			commands_printf("time: %u",current_time);
-        		}*/
 
 		// Control hydraulic actuators
 		#ifdef ADDIO
@@ -336,6 +335,12 @@ static THD_FUNCTION(hydro_thread, arg) {
 */
 
 		if (move_last_front != m_move_front) {
+			if (iDebug==77)
+			{
+				commands_printf("fronten andras!!");
+				commands_printf("bef: %u",move_last_front);
+				commands_printf("aft: %u",m_move_front);
+			}
 			move_last_front = m_move_front;
 			#ifdef CAN_ADDIO
 			comm_can_addio_set_valve(0, move_last_front == HYDRAULIC_MOVE_UP);

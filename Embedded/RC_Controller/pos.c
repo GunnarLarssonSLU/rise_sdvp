@@ -512,9 +512,6 @@ bool pos_input_nmea(const char *data) {
 
 				/*				if (1) {*/
 
-				if(iDebug==4) {
-				commands_printf("Compensation!x");
-				}
 				m_pos.gps_last_corr_diff = sqrtf(SQ(m_pos.px - m_pos.px_gps) +
 						SQ(m_pos.py - m_pos.py_gps));
 
@@ -941,16 +938,6 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 
 			angle_diff = (distance * 2.0) / (turn_rad_rear + turn_rad_front);
 		}
-		if (iDebug==25)
-			{
-				if (iCounterShow==10)
-				{
-					commands_printf("speed in mpu9150_read:\n", (double) speed);
-					commands_printf("steering_angle in mpu9150_read:\n", (double) steering_angle);
-					commands_printf("angle_diff in mpu9150_read:\n", (double) angle_diff);
-				}
-			}
-
 		vehicle_update_pos(distance, turn_rad_rear, angle_diff, speed);
 #endif
 	}
@@ -1067,14 +1054,6 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 	float pitch = ahrs_get_pitch((ATTITUDE_INFO*)&m_att);
 	float yaw = ahrs_get_yaw((ATTITUDE_INFO*)&m_att);
 
-	if (iDebug==6)
-		{
-			if (iCounterShow==10)
-			{
-				commands_printf("yaw ( %.5f )\n", (double) yaw);
-			}
-		}
-
 	debugvalue6=yaw;
 
 //	yaw+=m_yaw_bias;
@@ -1111,39 +1090,22 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 		float yaw_imu_diff = utils_angle_difference_rad(yaw, yaw_imu_last);
 		yaw_imu_last = yaw;
 		yaw_now += yaw_imu_diff;
-		if (iDebug==6)
-		{
-			commands_printf("yaw now(1): %f",(double) yaw_now);
-		}
 
 		float diff = utils_angle_difference_rad(yaw_mag, yaw_now);
 		yaw_now += SIGN(diff) * main_config.yaw_mag_gain * M_PI / 180.0 * dt;
 		utils_norm_angle_rad(&yaw_now);
-		if (iDebug==6)
-		{
-			commands_printf("yaw now(3): %f",(double) yaw_now);
-		}
 
 		m_pos.yaw_imu = yaw_now * 180.0 / M_PI;
 	} else {
 		m_pos.yaw_imu = yaw * 180.0 / M_PI;
 	}
 	utils_norm_angle(&m_pos.yaw_imu);
-	if ((iDebug==28))
-	{
-		commands_printf("yaw now(B): %f",(double) m_pos.yaw_imu);
-	}
 	m_pos.yaw_rate = -m_gyro[2] * 180.0 / M_PI ;
 	if ((iDebug==8))
 	{
 		iCounter=(iCounter+1);
 		iCounterShow=(iCounterShow+1) % 50;
 		yawdrifttotal+=m_pos.yaw_rate;
-		if (iCounterShow==10) {
-			commands_printf("yaw_rate ( %.5f )\n", (double) m_pos.yaw_rate);
-			commands_printf("yawdrifttotal ( %.5f )\n", (double) yawdrifttotal);
-			commands_printf("yawdrift rate ( %.5f )\n", (double) yawdrifttotal/iCounter);
-		}
 	}
 
 	// Correct yaw
@@ -1151,20 +1113,11 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 	{
 		if (!m_yaw_imu_clamp_set) {
 			m_yaw_imu_clamp = m_pos.yaw_imu - m_imu_yaw_offset;
-			if ((iDebug==6))
-			{
-			commands_printf("m_imu_yaw_offset ( %.5f )\n", (double) m_imu_yaw_offset);
-			commands_printf("m_pos.yaw_imu ( %.5f )\n", (double) m_pos.yaw_imu);
-			}
 			m_yaw_imu_clamp_set = true;
 		}
 
 		if (main_config.vehicle.clamp_imu_yaw_stationary && fabsf(m_pos.speed) < 0.05) {
 			m_imu_yaw_offset = m_pos.yaw_imu - m_yaw_imu_clamp;
-			if ((iDebug==16))
-			{
-			commands_printf("m_pos.yaw ( %.5f )\n", (double) m_pos.yaw_imu);
-			}
 		} else {
 			m_yaw_imu_clamp = m_pos.yaw_imu - m_imu_yaw_offset;
 		}
@@ -1394,12 +1347,6 @@ static void correct_pos_gps(POS_STATE *pos)
 	pos->gps_ang_corr_x_last_gps = pos->px_gps;
 	pos->gps_ang_corr_y_last_gps = pos->py_gps;
 	pos->gps_ang_corr_last_gps_ms = pos->gps_ms;
-
-	if(iDebug==4)
-	{
-		commands_printf("Leaving correct_pos_gps!\n");
-	}
-
 }
 
 static void ubx_rx_rawx(ubx_rxm_rawx *rawx) {
@@ -1448,10 +1395,6 @@ static void mc_values_received(mc_values *val) {
     // Calculate time_last from the tachometer readings
     float time_last = fmaxf(io_board_adc0_cnt.high_time_current, io_board_adc0_cnt.high_time_last) +
                       fmaxf(io_board_adc0_cnt.low_time_current, io_board_adc0_cnt.low_time_last);
-    if(iDebug==9)
-    {
-        command_printf('time_last: %f', time_last );
-    }
 
     // Calculate RPM based on time_last
     float rpm = 0;
@@ -1472,10 +1415,6 @@ static void mc_values_received(mc_values *val) {
     // Calculate distance based on RPM and vehicle properties
     float distance = (rpm * main_config.vehicle.gear_ratio * (2.0 / main_config.vehicle.motor_poles) * (1.0 / 60.0) * main_config.vehicle.wheel_diam * M_PI) * (time_last - last_tacho_time) * 1e-6;
     last_tacho_time = time_last;
-    if(iDebug==9)
-    {
-        command_printf('distance: %f', distance );
-    }
 
 #else
     // Old implementation
@@ -1553,11 +1492,6 @@ static void mc_values_received(mc_values *val) {
 static void vehicle_update_pos(float distance, float turn_rad_rear, float angle_diff, float speed)
 {
 	chMtxLock(&m_mutex_pos);
-	if(iDebug==4)
-	{
-		commands_printf("In vehicle update pos - in:\n");
-		commands_printf("dist: %f, turn_rad_rear: %f, angle_diff: %f, speed: %f\n", (double) distance, (double) turn_rad_rear,(double) angle_diff,(double) speed);
-	}
 	if (fabsf(distance) > 2) { distance=0; };
 
 	if (fabsf(distance) > 1e-6) {
@@ -1579,10 +1513,6 @@ static void vehicle_update_pos(float distance, float turn_rad_rear, float angle_
 		}
 	}
 	m_pos.speed = speed;
-	if(iDebug==4)
-	{
-		commands_printf("In vehicle update pos - out:\n");
-	}
 
 	pos_uwb_update_dr(m_pos.yaw_imu, m_pos.yaw, distance, turn_rad_rear, m_pos.speed);
 	save_pos_history();
