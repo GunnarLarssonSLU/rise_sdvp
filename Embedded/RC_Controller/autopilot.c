@@ -574,13 +574,26 @@ static THD_FUNCTION(ap_thread, arg) {
 #if HAS_HYDRAULIC_DRIVE
             // Hydraulic move according to attributes
             // NOTE: currently, only one valve can be actuated at a time using attributes
+			if (iDebug==76)
+			{
+				commands_printf("Attribute: %ui",attributes_now);
+			}
+
             switch (attributes_now & ATTR_HYDRAULIC_MASK) {
             case ATTR_HYDRAULIC_FRONT_UP:
+    			if (iDebug==77)
+    			{
+    				commands_printf("Front up");
+    			}
                 hydraulic_move(HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_UP);
                 hydraulic_move(HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_STOP);
                 hydraulic_move(HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_STOP);
                 break;
             case ATTR_HYDRAULIC_FRONT_DOWN:
+    			if (iDebug==77)
+    			{
+    				commands_printf("Front down");
+    			}
                 hydraulic_move(HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_DOWN);
                 hydraulic_move(HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_STOP);
                 hydraulic_move(HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_STOP);
@@ -880,15 +893,6 @@ static THD_FUNCTION(ap_thread, arg) {
 				debugvalue7=distance;
 				debugvalue11=pos_now.px;
 				debugvalue12=pos_now.py;
-/*
-				if ((iDebug==21))
-				{
-					commands_printf("steering_angle_to_point");
-					commands_printf("-pos_now.yaw (degrees): %f",(double) (-pos_now.yaw * M_PI / 180.0));
-					commands_printf("steering_angle: %f",(double) steering_angle);
-					commands_printf("distance: %f",(double) distance);
-					commands_printf("circle_radius: %f",(double) circle_radius);
-				}*/
 
 #if !HAS_DIFF_STEERING
 				// Scale maximum steering by speed
@@ -1025,13 +1029,6 @@ static void steering_angle_to_point(
 
 	*circle_radius = R;
 	*steering_angle = atanf(main_config.vehicle.axis_distance / R);
-/*
-	if (iDebug==71)
-	{
-	commands_printf("current x: %f, y: %f, angle: %f\n",current_x, current_y, current_angle);
-	commands_printf("goal x: %f, y: %f, angle: %f\n",goal_x, goal_y, *steering_angle);
-	commands_printf("Dist: %f, circle radius: %f\n",*distance, *circle_radius);
-	}*/
 }
 
 static bool add_point(ROUTE_POINT *p, bool first) {

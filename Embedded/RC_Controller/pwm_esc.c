@@ -283,11 +283,6 @@ static void update_speed_buffer(float high_t, float low_t) {
 
     // Ny hastighet
     float new_speed = SIGN(m_throttle_set) * (wheel_diam * M_PI) / (avg_time * cnts_per_rev);
-	if (iDebug==51)
-	{
-//		commands_printf("buf_count: %u\n",buf_count);
-//		commands_printf("avg_time: %f\n",avg_time);
-	}
     // Lågpassfilter
     const float alpha = 0.3f;
     m_speed_filtered = m_speed_filtered * (1.0f - alpha) + new_speed * alpha;

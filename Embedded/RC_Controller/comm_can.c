@@ -415,7 +415,8 @@ static THD_FUNCTION(cancom_process_thread, arg) {
 #if CAN_ADDIO
 				if (rxmsg.SID == CAN_ANGLE) {
 					ftr2_activated = true;
-					can_ftr2_angle = (((rxmsg.data8[1] << 8) | rxmsg.data8[0]) / 10) + 1.7;
+//					can_ftr2_angle = (((rxmsg.data8[1] << 8) | rxmsg.data8[0]) / 10) + 1.7;
+					can_ftr2_angle = (((rxmsg.data8[1] << 8) | rxmsg.data8[0]) / 10) + 1.0;
 //					can_ftr2_angle=can_ftr2_angle+2.0; vänster
 //					can_ftr2_angle=can_ftr2_angle+1.6; höger
 					//rough conversion to angles based on test with the MacTrac
@@ -671,6 +672,10 @@ float comm_can_ftr2_angle(void) {
 }
 
 void comm_can_addio_set_valve(int valve, bool set){
+	if (iDebug==77)
+	{
+	commands_printf("I comm_can_addio_set_valve. Valve: %i, set: %ui",valve, set);
+	}
 	uint8_t packet[2] = {0};
 	int32_t ind = 2;
 
