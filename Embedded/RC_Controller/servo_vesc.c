@@ -91,9 +91,6 @@ void servo_vesc_init(void) {
 
 	i_term=0.0;
 
-	//FTR2 angle init
-	// comm_can_ftr2_angle_init();
-
 }
 
 void servo_vesc_set_pos(float pos) {

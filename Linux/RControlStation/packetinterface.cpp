@@ -505,6 +505,8 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         break;
     case CMD_HEARTBEAT:
     // ToDo: Set action if heartbeat is missing for more than 1 sec
+        qDebug() << "Heartbeat";
+        break;
     default:
         break;
     }

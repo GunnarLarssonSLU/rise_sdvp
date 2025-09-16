@@ -22,6 +22,7 @@
 #include "pwm_esc.h"
 #include "utils.h"
 #include "comm_can.h"
+#include "watchdog.h"
 #include <math.h>
 #ifdef SERVO_READ
 #define READING_TIMEOUT 1000
@@ -136,6 +137,11 @@ float hydraulic_get_distance(bool reset) {
  * Speed in m/s
  */
 void hydraulic_set_speed(float speed) {
+    // Exit if no heartbeat
+    if (system_state != SYSTEM_STATE_OPERATIONAL) {
+        return;
+    }
+
 	m_timeout_cnt = 0.0;
 
 	if (fabsf(speed) < 0.01) {
@@ -280,7 +286,6 @@ static THD_FUNCTION(hydro_thread, arg) {
         // Timeout → nolla
         if (chVTTimeElapsedSinceX(last_reading_time) > MS2ST(SPEED_TIMEOUT_MS)) {
             buf_count = 0;
-//            commands_printf("time thing: %f",last_reading_time );
             last_valid_time = 0.0f;
             m_speed_now = 0.0f;
             m_speed_filtered = 0.0f;
@@ -325,22 +330,7 @@ static THD_FUNCTION(hydro_thread, arg) {
 		}
 		#endif
 
-/*
-		// var x1 och x2 istf 0 och 1
-		if (comm_can_io_board_lim_sw(0) && m_move_rear == HYDRAULIC_MOVE_DOWN) {
-			m_move_rear = HYDRAULIC_MOVE_STOP;
-		} else if (comm_can_io_board_lim_sw(1) && m_move_rear == HYDRAULIC_MOVE_UP) {
-			m_move_rear = HYDRAULIC_MOVE_STOP;
-		}
-*/
-
 		if (move_last_front != m_move_front) {
-			if (iDebug==77)
-			{
-				commands_printf("fronten andras!!");
-				commands_printf("bef: %u",move_last_front);
-				commands_printf("aft: %u",m_move_front);
-			}
 			move_last_front = m_move_front;
 			#ifdef CAN_ADDIO
 			comm_can_addio_set_valve(0, move_last_front == HYDRAULIC_MOVE_UP);

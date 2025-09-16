@@ -1052,6 +1052,11 @@ void MainWindow::timerSlot()
     } else {
         ui->mapLiveWidget->setTraceCar(-1);
     }
+    if (ui->mapShowTextBox->isChecked()) {
+        ui->mapLiveWidget->setDrawRouteText(true);
+    } else {
+        ui->mapLiveWidget->setDrawRouteText(false);
+    }
     ui->mapLiveWidget->setSelectedCar(ui->mapCarBox->value());
 
     // Joystick connected
@@ -1763,6 +1768,9 @@ void MainWindow::on_mapOsmResSlider_valueChanged(int value)
 
 void MainWindow::onGeneratePathButtonClicked()
 {
+    double fieldLength_m = ui->fieldLengthMLineEdit->text().toDouble(); // Assuming input1 is the object name of a QLineEdit
+    double fieldWidth_m = ui->fieldWidthMLineEdit->text().toDouble(); // Assuming input1 is the object name of a QLineEdit
+
     double implementLength_m = ui->implementLengthLineEdit->text().toDouble(); // Assuming input1 is the object name of a QLineEdit
     double implementWidth_m = ui->implementWidthLineEdit->text().toDouble(); // Assuming input1 is the object name of a QLineEdit
 
@@ -1773,29 +1781,50 @@ void MainWindow::onGeneratePathButtonClicked()
     double distancebetweenplots_nondrivingdirection_m = ui->distanceBetweenPlotsMNddLineEdit->text().toDouble();
 
 
-    MapRoute activeRoute=ui->mapLiveWidget->getCurrentPath();
-    LocPoint p1=activeRoute[0];
-    LocPoint p2=activeRoute[1];
+    qDebug() << ui->mapLiveWidget->getPathNum();
+//    qDebug() << ui->mapLiveWidget->getCurrentPath().size();
+    if (ui->mapLiveWidget->getPathNum()>0)
+    {
+        MapRoute activeRoute=ui->mapLiveWidget->getCurrentPath();
+        LocPoint p1,p2;
+        if (ui->inveseDirectionCheckBox->isChecked())
+        {
+            p1=activeRoute[1];
+            p2=activeRoute[0];
+        } else
+        {
+            p1=activeRoute[0];
+            p2=activeRoute[1];
+        }
+        RouteGenerator rg(fieldLength_m,fieldWidth_m,implementLength_m,implementWidth_m,plots_DrivingDirection,plots_NonDrivingDirection,distancebetweenplots_drivingdirection_m,distancebetweenplots_nondrivingdirection_m,p1,p2);
+        rg.generateXmlFile();
 
-    RouteGenerator rg(implementLength_m,implementWidth_m,plots_DrivingDirection,plots_NonDrivingDirection,distancebetweenplots_drivingdirection_m,distancebetweenplots_nondrivingdirection_m,p1,p2);
-    rg.generateXmlFile();
+        QString filePath="output.xml";
+        QFile file(filePath);
+        if (!file.exists()) {
+            qDebug() << "File does not exist:" << filePath;
+            return;
+        }
 
-    QString filePath="output.xml";
-    QFile file(filePath);
-    if (!file.exists()) {
-        qDebug() << "File does not exist:" << filePath;
-        return;
+        if (!file.open(QIODevice::ReadOnly)) {
+            qDebug() << "Could not open file for reading:" << filePath;
+            return;
+        }
+
+        QXmlStreamReader xmlData(&file);
+    //    QXmlStreamReader xmlData(filePath);
+        ui->mapLiveWidget->loadXMLRoute(&xmlData,false);
+        int newPath=ui->mapLiveWidget->getPathNow()+1;
+        ui->mapRouteBox->setValue(newPath);
+    //    ui->mapLiveWidget->setPathNow(newPath);
+
+    //    ui->mapLiveWidget->repaint();
+    } else
+    {
+        QMessageBox msgBox;
+        msgBox.setText("You need to add a main line");
+        msgBox.exec();
     }
-
-    if (!file.open(QIODevice::ReadOnly)) {
-        qDebug() << "Could not open file for reading:" << filePath;
-        return;
-    }
-
-    QXmlStreamReader xmlData(&file);
-//    QXmlStreamReader xmlData(filePath);
-    ui->mapLiveWidget->loadXMLRoute(&xmlData,false);
-//    ui->mapLiveWidget->repaint();
 }
 
 bool MainWindow::onLoadShapefile()
