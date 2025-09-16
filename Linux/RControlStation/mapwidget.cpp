@@ -1950,7 +1950,6 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
     // Paint begins here
     painter.fillRect(0, 0, width, height, QBrush(Qt::transparent));
 
-
     // Map coordinate transforms
     QTransform drawTrans;
     drawTrans.translate(width / 2 + mXOffset, height / 2 - mYOffset);
@@ -2751,7 +2750,6 @@ bool MapWidget::loadXMLRoute(QXmlStreamReader* stream,bool isBorder)
         }
     }
     return routes_found;
-
 }
 
 void MapWidget::saveXMLCurrentRoute(QXmlStreamWriter* stream)
@@ -3065,32 +3063,38 @@ void MapRoute::paint(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool is
 }
 */
 
+void MapRoute::paintPoint(int i, bool isSelected, QPainter &painter, QPen &pen, Qt::GlobalColor defaultDarkColor, Qt::GlobalColor defaultColor)
+{
+    pen.setColor(defaultDarkColor);
+    painter.setBrush(defaultColor);
+    if (isSelected && (mRoute[i - 1].getAttributes() & ATTR_HYDRAULIC_FRONT_DOWN) && (mRoute[i].getAttributes() & ATTR_HYDRAULIC_FRONT_DOWN)) {
+        pen.setColor(Qt::darkCyan);
+        painter.setBrush(Qt::cyan);
+    }
+    painter.setPen(pen);
+
+    painter.setOpacity(0.7);
+    painter.drawLine(mRoute[i - 1].getX() * 1000.0, mRoute[i - 1].getY() * 1000.0,
+                     mRoute[i].getX() * 1000.0, mRoute[i].getY() * 1000.0);
+    painter.setOpacity(1.0);
+}
+
 void MapRoute::paintPath(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawTrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool highQuality)
 {
     Qt::GlobalColor defaultDarkColor = Qt::darkGray;
     Qt::GlobalColor defaultColor = Qt::gray;
+    Qt::GlobalColor sowingColor = Qt::red;
+    bool showSowing=false;
     if (isSelected) {
         defaultDarkColor = Qt::darkYellow;
         defaultColor = Qt::yellow;
     }
-
     pen.setWidthF(5.0 / mScaleFactor);
     painter.setTransform(drawTrans);
 
     int nPoints=this->size();
     for (int i = 1;i < nPoints;i++) {
-        pen.setColor(defaultDarkColor);
-        painter.setBrush(defaultColor);
-        if (isSelected && (mRoute[i - 1].getAttributes() & ATTR_HYDRAULIC_FRONT_DOWN) && (mRoute[i].getAttributes() & ATTR_HYDRAULIC_FRONT_DOWN)) {
-            pen.setColor(Qt::darkCyan);
-            painter.setBrush(Qt::cyan);
-        }
-        painter.setPen(pen);
-
-        painter.setOpacity(0.7);
-        painter.drawLine(mRoute[i - 1].getX() * 1000.0, mRoute[i - 1].getY() * 1000.0,
-                         mRoute[i].getX() * 1000.0, mRoute[i].getY() * 1000.0);
-        painter.setOpacity(1.0);
+        paintPoint(i,isSelected,painter,pen,defaultDarkColor,defaultColor);
     }
 
     for (int i = 0;i < nPoints;i++) {
@@ -3107,6 +3111,7 @@ void MapRoute::paintPath(MapWidget* mapWidget, QPainter &painter, QPen &pen, boo
                 } else if ((attr & ATTR_HYDRAULIC_FRONT_DOWN) != 0) {
                     pen.setColor(Qt::darkCyan);
                     painter.setBrush(Qt::cyan);
+                    showSowing=true;
                 } else if ((attr & ATTR_HYDRAULIC_FRONT_UP) != 0) {
                     pen.setColor(Qt::darkYellow);
                     painter.setBrush(Qt::green);
@@ -3156,7 +3161,7 @@ void MapRoute::paintPath(MapWidget* mapWidget, QPainter &painter, QPen &pen, boo
                         "A: %8").
                         arg(i).
                         arg(((i == 0) ? "- start" : ((i == nPoints-1) ? "- end" : ""))).
-                        arg(mRoute[i].getSpeed() * 3.6,1,'f').
+                        arg(mRoute[i].getSpeed() * 3.6,1,'f',1).
                         arg(t.hour(),2,'d').
                         arg(t.minute(),2,'d').
                         arg(t.second(),2,'d').

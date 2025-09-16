@@ -339,20 +339,10 @@ CH_IRQ_HANDLER(STM32_TIM2_HANDLER) {
         last_reading_time = chVTGetSystemTimeX();
 
         if (io_board_adc0_cnt.is_high) {
-			if (iDebug==50)
-			{
-				commands_printf("timer_overflow_count: %u\n",timer_overflow_count);
-				commands_printf("Time: %lu, %lu, H\n",capture32,delta);
-			}
 			update_speed_buffer(io_board_adc0_cnt.high_time_last, io_board_adc0_cnt.low_time_last);
             io_board_adc0_cnt.high_time_last = io_board_adc0_cnt.high_time_current;
             io_board_adc0_cnt.high_time_current = 0.00001f * delta;
         } else {
-    		if (iDebug==50)
-    		{
-				commands_printf("timer_overflow_count: %u\n",timer_overflow_count);
-    			commands_printf("Time: %lu, %lu, L\n",capture32,delta);
-    		}
 			update_speed_buffer(io_board_adc0_cnt.high_time_last, io_board_adc0_cnt.low_time_last);
             io_board_adc0_cnt.low_time_last = io_board_adc0_cnt.low_time_current;
             io_board_adc0_cnt.low_time_current = 0.00001f * delta;

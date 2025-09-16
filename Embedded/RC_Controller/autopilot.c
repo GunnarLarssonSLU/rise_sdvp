@@ -968,7 +968,6 @@ static THD_FUNCTION(ap_thread, arg) {
 
 					#endif
 					#ifdef IS_MACTRAC
-						//servo_simple_set_pos_ramp(servo_pos, false); //GL - Fixa här!!
 						servo_simple_set_pos_ramp(servo_pos, true); //GL - Bättre?
 					#endif
 				#endif

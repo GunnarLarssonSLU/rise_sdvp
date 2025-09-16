@@ -52,7 +52,7 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>187</width>
+           <width>207</width>
            <height>71</height>
           </rect>
          </property>
@@ -758,6 +758,13 @@
                    </property>
                   </widget>
                  </item>
+                 <item>
+                  <widget class="QCheckBox" name="mapShowTextBox">
+                   <property name="text">
+                    <string>Show Text</string>
+                   </property>
+                  </widget>
+                 </item>
                 </layout>
                </item>
               </layout>
@@ -1174,8 +1181,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>216</width>
-                     <height>747</height>
+                     <width>239</width>
+                     <height>749</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_23">
@@ -1790,7 +1797,7 @@
                      <x>0</x>
                      <y>0</y>
                      <width>196</width>
-                     <height>431</height>
+                     <height>433</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -2084,8 +2091,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>204</width>
-                     <height>774</height>
+                     <width>244</width>
+                     <height>776</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_15">
@@ -3061,14 +3068,14 @@
                <layout class="QVBoxLayout" name="verticalLayout">
                 <item>
                  <layout class="QFormLayout" name="formLayout">
-                  <item row="0" column="0">
+                  <item row="2" column="0">
                    <widget class="QLabel" name="implementWidthLabel">
                     <property name="text">
                      <string>Implement Width (m)</string>
                     </property>
                    </widget>
                   </item>
-                  <item row="0" column="1">
+                  <item row="2" column="1">
                    <widget class="QLineEdit" name="implementWidthLineEdit">
                     <property name="locale">
                      <locale language="English" country="UnitedKingdom"/>
@@ -3084,72 +3091,72 @@
                     </property>
                    </widget>
                   </item>
-                  <item row="1" column="0">
+                  <item row="3" column="0">
                    <widget class="QLabel" name="implementLengthLabel">
                     <property name="text">
                      <string>Implement Length (m)</string>
                     </property>
                    </widget>
                   </item>
-                  <item row="1" column="1">
+                  <item row="3" column="1">
                    <widget class="QLineEdit" name="implementLengthLineEdit">
                     <property name="text">
-                     <string>4</string>
+                     <string>3.4</string>
                     </property>
                     <property name="alignment">
                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                     </property>
                    </widget>
                   </item>
-                  <item row="2" column="0">
+                  <item row="4" column="0">
                    <widget class="QLabel" name="plotsInDrivingDirectionLabel">
                     <property name="text">
                      <string>Plots (in driving direction, dd)</string>
                     </property>
                    </widget>
                   </item>
-                  <item row="2" column="1">
+                  <item row="4" column="1">
                    <widget class="QLineEdit" name="plotsInDrivingDirectionLineEdit">
                     <property name="text">
-                     <string>1</string>
+                     <string>8</string>
                     </property>
                     <property name="alignment">
                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                     </property>
                    </widget>
                   </item>
-                  <item row="3" column="0">
+                  <item row="5" column="0">
                    <widget class="QLabel" name="plotsInNonDrivingDirectionLabel">
                     <property name="text">
                      <string>Plots (in non-driving direction, ndd)</string>
                     </property>
                    </widget>
                   </item>
-                  <item row="3" column="1">
+                  <item row="5" column="1">
                    <widget class="QLineEdit" name="plotsInNonDrivingDirectionLineEdit">
                     <property name="text">
-                     <string>1</string>
+                     <string>5</string>
                     </property>
                     <property name="alignment">
                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                     </property>
                    </widget>
                   </item>
-                  <item row="99" column="0" colspan="2">
+                  <item row="101" column="0" colspan="2">
                    <widget class="QPushButton" name="buttonGenerate">
                     <property name="text">
                      <string>Generate</string>
                     </property>
                    </widget>
                   </item>
-                  <item row="4" column="0">
+                  <item row="6" column="0">
                    <widget class="QLabel" name="distanceBetweenPlotsMDdLabel">
                     <property name="text">
                      <string>Distance between plots (m), dd</string>
                     </property>
                    </widget>
                   </item>
-                  <item row="4" column="1">
+                  <item row="6" column="1">
                    <widget class="QLineEdit" name="distanceBetweenPlotsMDdLineEdit">
                     <property name="text">
                      <string>12</string>
@@ -3159,14 +3166,14 @@
                     </property>
                    </widget>
                   </item>
-                  <item row="5" column="0">
+                  <item row="7" column="0">
                    <widget class="QLabel" name="distanceBetweenPlotsMNddLabel">
                     <property name="text">
                      <string>Distance between plots (m), ndd</string>
                     </property>
                    </widget>
                   </item>
-                  <item row="5" column="1">
+                  <item row="7" column="1">
                    <widget class="QLineEdit" name="distanceBetweenPlotsMNddLineEdit">
                     <property name="text">
                      <string>9</string>
@@ -3175,6 +3182,50 @@
                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                     </property>
                    </widget>
+                  </item>
+                  <item row="1" column="0">
+                   <widget class="QLabel" name="fieldWidthMLabel">
+                    <property name="text">
+                     <string>Plot Width (m)</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="1">
+                   <widget class="QLineEdit" name="fieldWidthMLineEdit">
+                    <property name="text">
+                     <string>12</string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="0" column="0">
+                   <widget class="QLabel" name="fieldLengthMLabel">
+                    <property name="text">
+                     <string>Plot Length (m)</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="0" column="1">
+                   <widget class="QLineEdit" name="fieldLengthMLineEdit">
+                    <property name="text">
+                     <string>12</string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="8" column="0">
+                   <widget class="QLabel" name="inveseDirectionLabel">
+                    <property name="text">
+                     <string>Invese direction</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="8" column="1">
+                   <widget class="QCheckBox" name="inveseDirectionCheckBox"/>
                   </item>
                  </layout>
                 </item>

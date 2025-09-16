@@ -39,7 +39,7 @@
 #include "fi.h"
 #include "comm_can.h"
 #include "hydraulic.h"
-
+#include "watchdog.h"
 
 #include <math.h>
 #include <string.h>
@@ -206,6 +206,10 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 		// ==================== Vehicle commands ==================== //
 #if MAIN_MODE_IS_VEHICLE
 
+
+		case CMD_HEARTBEAT:
+            chEvtBroadcast(&heartbeat_event); // Signal heartbeat
+	        break;
 		case CMD_ARDUINO_STATUS   :
 			if (data[0])
 			{
