@@ -50,14 +50,6 @@ CarInterface::CarInterface(QWidget *parent) :
 {
     ui->setupUi(this);
 
-#ifdef HAS_OPENGL
-    /*
-    mOrientationWidget = new OrientationWidget(this);
-    ui->orientationLayout->removeItem(ui->orientationSpacer);
-    ui->orientationLayout->insertWidget(0, mOrientationWidget, 1);
-    */
-#endif
-
     memset(&mLastCarState, 0, sizeof(CAR_STATE));
 
     mMap = 0;
@@ -85,6 +77,9 @@ CarInterface::CarInterface(QWidget *parent) :
             this, SLOT(tcpRx(QByteArray&)));
     connect(ui->confCommonWidget, SIGNAL(loadMagCal()),
             this, SLOT(loadMagCal()));
+
+    connect(ui->restartCarClientButton, &QPushButton::clicked,
+            this, &CarInterface::onRestartServiceButtonClicked);
 
     mTcpServer->setUsePacket(true);
 }
@@ -896,4 +891,43 @@ bool CarInterface::getResetApOnEmergencyStop() const
 void CarInterface::setResetApOnEmergencyStop(bool value)
 {
     resetApOnEmergencyStop = value;
+}
+
+void CarInterface::onRestartServiceButtonClicked() {
+    // Prompt for SSH password
+    bool ok;
+    QString password = QInputDialog::getText(
+        this,
+        "SSH Password",
+        "Enter the SSH password for nvidia@192.168.200.7:",
+        QLineEdit::Password,
+        "",
+        &ok
+        );
+
+    if (!ok || password.isEmpty()) {
+        QMessageBox::warning(this, "Error", "Password is required.");
+        return;
+    }
+
+    // Prepare the SSH command with password (using `sshpass` for automation)
+    QString sshCommand = QString("sshpass -p '%1' ssh nvidia@192.168.200.7").arg(password);
+    QString stopCommand = "sudo systemctl stop car_client.service";
+    QString startCommand = "sudo systemctl start car_client.service";
+
+    // Execute the commands sequentially
+    QProcess process;
+    process.start(sshCommand + " '" + stopCommand + "'");
+    if (!process.waitForFinished()) {
+        QMessageBox::critical(this, "Error", "Failed to stop service: " + process.errorString());
+        return;
+    }
+
+    process.start(sshCommand + " '" + startCommand + "'");
+    if (!process.waitForFinished()) {
+        QMessageBox::critical(this, "Error", "Failed to start service: " + process.errorString());
+        return;
+    }
+
+    QMessageBox::information(this, "Success", "Service restarted successfully!");
 }

@@ -25,7 +25,7 @@
         <enum>QTabWidget::TabShape::Triangular</enum>
        </property>
        <property name="currentIndex">
-        <number>6</number>
+        <number>5</number>
        </property>
        <property name="tabsClosable">
         <bool>false</bool>
@@ -1180,6 +1180,13 @@
        <property name="icon">
         <iconset resource="resources.qrc">
          <normaloff>:/models/Icons/Shutdown-96.png</normaloff>:/models/Icons/Shutdown-96.png</iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="restartCarClientButton">
+       <property name="text">
+        <string>Restart Car Client</string>
        </property>
       </widget>
      </item>

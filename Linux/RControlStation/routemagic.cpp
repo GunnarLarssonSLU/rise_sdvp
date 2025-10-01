@@ -1844,11 +1844,11 @@ int RouteMagic::loadRoutes(QString filename, MapWidget *map) {
                 map->addPath(r.second);
             }
         }
-
+/*
         for (LocPoint p: anchors) {
             map->addAnchor(p);
         }
-
+*/
         file.close();
     } else {
         res = -2;

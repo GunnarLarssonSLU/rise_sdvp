@@ -115,6 +115,7 @@ private slots:
     void on_uwbRebootButton_clicked();
     void on_uwbListAnchorsButton_clicked();
     void on_ioBoardPwmSlider_valueChanged(int value);
+    void onRestartServiceButtonClicked();
 
 private:
 

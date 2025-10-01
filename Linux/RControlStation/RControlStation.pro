@@ -84,6 +84,8 @@ SOURCES += main.cpp\
     checkboxdelegate.cpp \
     database.cpp \
         mainwindow.cpp \
+    maproute.cpp \
+    maproutecollection.cpp \
     qcustomplot.cpp \
     packetinterface.cpp \
     utility.cpp \
@@ -127,6 +129,8 @@ HEADERS  += mainwindow.h \
     arduinoreader.h \
     checkboxdelegate.h \
     database.h \
+    maproute.h \
+    maproutecollection.h \
     qcustomplot.h \
     datatypes.h \
     packetinterface.h \

@@ -99,7 +99,9 @@ public:
     int currentFarm();
     void setCurrentFarm(int farm);
     void updateFarms();
+    QLabel* getLogLabel();
 
+public slots:
 
 private slots:
     void serialDataAvailable();
@@ -124,6 +126,7 @@ private slots:
     void onSelectedFarm(const QModelIndex& current, const QModelIndex& previous);
     void onSelectedField(const QModelIndex& current, const QModelIndex& previous);
     void onSelectedFieldGeneral(QSqlRelationalTableModel *model,QSqlRelationalTableModel *modelPth,const QModelIndex& current, const QModelIndex& previous);
+    void on_listLogFilesView_clicked(const QModelIndex& index);
 
 
     void handleAddFieldButton();
@@ -191,11 +194,6 @@ private slots:
     void on_actionTestIntersection_triggered();
     void on_actionSaveSelectedRouteAsDriveFile_triggered();
     void on_actionLoadDriveFile_triggered();
-    void on_modeRouteButton_toggled(bool checked);
-    void on_uploadAnchorButton_clicked();
-    void on_anchorIdBox_valueChanged(int arg1);
-    void on_anchorHeightBox_valueChanged(double arg1);
-    void on_removeAnchorsButton_clicked();
     void on_mapDrawRouteTextBox_toggled(bool checked);
     void on_actionGPSSimulator_triggered();
     void on_mapDrawUwbTraceBox_toggled(bool checked);
@@ -216,6 +214,7 @@ private slots:
     void on_AutopilotRestartPushButton_clicked();
     void on_AutopilotPausePushButton_clicked();
     void onGeneratePathButtonClicked();
+    void onGenerateLineButtonClicked();
     bool onLoadShapefile();
     bool onLoadLogfile();
 
@@ -228,6 +227,8 @@ private:
     QSqlRelationalTableModel *modelField;
     QSqlRelationalTableModel *modelPath;
     CheckBoxDelegate* checkboxdelegate;
+    QStringListModel* fileModel;  // Model to hold filenames
+    QStringList fileList;         // Underlying data
 
     Ui::MainWindow *ui;
     QTimer *mTimer;
@@ -295,5 +296,7 @@ public:
 };
 
 void selectRowByPrimaryKey(QTableView* tableView, QSqlRelationalTableModel* model, const QString& primaryKeyColumnName, const QVariant& primaryKeyValue);
+MainWindow* findMainWindow();
+
 
 #endif // MAINWINDOW_H

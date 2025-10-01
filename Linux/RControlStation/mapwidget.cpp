@@ -25,10 +25,8 @@
 #include "mapwidget.h"
 #include "qmessagebox.h"
 #include "utility.h"
-#include "attributes_masks.h"
 #include "routemagic.h"
 #include "mainwindow.h"
-
 
 namespace
 {
@@ -153,8 +151,8 @@ MapWidget::MapWidget(QWidget *parent) : QWidget(parent)
     mRoutePointSpeed = 1.0;
     mRoutePointTime = 0.0;
     mRoutePointAttributes = 0;
-    mAnchorId = 0;
-    mAnchorHeight = 1.0;
+//    mAnchorId = 0;
+//    mAnchorHeight = 1.0;
     mAntialiasDrawings = false;
     mAntialiasOsm = true;
     mInfoTraceTextZoom = 0.5;
@@ -169,11 +167,10 @@ MapWidget::MapWidget(QWidget *parent) : QWidget(parent)
     mDrawUwbTrace = false;
     mCameraImageWidth = 0.46;
     mCameraImageOpacity = 0.8;
-    mInteractionMode = InteractionModeDefault;
     hasChanged=false;
 
     bUpdateable=true;
-
+    bAnalysisActive=false;
     mOsm = new OsmClient(this);
     mDrawOpenStreetmap = true;
     mOsmZoomLevel = 14;
@@ -207,64 +204,9 @@ MapWidget::MapWidget(QWidget *parent) : QWidget(parent)
 
     setMouseTracking(true);
 
-    // Pre-render some things for speed
-    for (int i = 0;i < 5;i++) {
-        QPixmap pix(24, 24);
-        pix.fill(Qt::transparent);
-        QPainter p(&pix);
-
-        QPen pen;
-        pen.setWidth(4);
-
-        switch (i) {
-        case 0: {
-            // Circle
-            pen.setColor(Qt::darkYellow);
-            p.setBrush(Qt::yellow);
-            p.setPen(pen);
-            p.drawEllipse(2, 2, 20, 20);
-        } break;
-
-        case 1: {
-            // Inactive circle
-            pen.setColor(Qt::darkGray);
-            p.setBrush(Qt::gray);
-            p.setPen(pen);
-            p.drawEllipse(2, 2, 20, 20);
-        } break;
-
-        case 2: {
-            // UWB circle
-            pen.setColor(Qt::darkGreen);
-            p.setBrush(Qt::green);
-            p.setPen(pen);
-            p.drawEllipse(2, 2, 20, 20);
-        } break;
-
-        case 3: {
-            // Hydraulic front down circle
-            pen.setColor(Qt::darkCyan);
-            p.setBrush(Qt::cyan);
-            p.setPen(pen);
-            p.drawEllipse(2, 2, 20, 20);
-        } break;
-
-        case 4: {
-            // Hydraulic front up circle
-            pen.setColor(Qt::darkYellow);
-            p.setBrush(Qt::green);
-            p.setPen(pen);
-            p.drawEllipse(2, 2, 20, 20);
-        } break;
-
-        }
-
-        mPixmaps.append(pix);
-    }
-
     grabGesture(Qt::PinchGesture);
     // Install the event filter on itself
-//    this->installEventFilter(this);
+//    MapRoute::initPixmaps();
 }
 
 CarInfo *MapWidget::getCarInfo(int car)
@@ -315,49 +257,6 @@ bool MapWidget::removeCar(int carId)
 void MapWidget::clearCars()
 {
     mCarInfo.clear();
-}
-
-LocPoint *MapWidget::getAnchor(int id)
-{
-    for (int i = 0;i < mAnchors.size();i++) {
-        if (mAnchors[i].getId() == id) {
-            return &mAnchors[i];
-        }
-    }
-
-    return 0;
-}
-
-void MapWidget::addAnchor(const LocPoint &anchor)
-{
-    mAnchors.append(anchor);
-    update();
-}
-
-bool MapWidget::removeAnchor(int id)
-{
-    bool found = false;
-
-    QMutableListIterator<LocPoint> i(mAnchors);
-    while (i.hasNext()) {
-        if (i.next().getId() == id) {
-            i.remove();
-            found = true;
-        }
-    }
-
-    return found;
-}
-
-void MapWidget::clearAnchors()
-{
-    mAnchors.clear();
-    update();
-}
-
-QList<LocPoint> MapWidget::getAnchors()
-{
-    return mAnchors;
 }
 
 void MapWidget::setScaleFactor(double scale)
@@ -419,23 +318,23 @@ void MapWidget::addRoutePoint(double px, double py, double speed, qint32 time)
     update();
 }
 
-MapRoute MapWidget::getPath(int ind)
+MapRoute& MapWidget::getPath(int ind)
 {
     return mPaths->getRoute(ind);
 }
 
-MapRoute MapWidget::getField(int ind)
+MapRoute& MapWidget::getField(int ind)
 {
     return mFields->getRoute(ind);
 }
 
 
-QList<MapRoute> MapWidget::getPaths()
+QList<MapRoute>& MapWidget::getPaths()
 {
     return mPaths->getRoutes();
 }
 
-QList<MapRoute> MapWidget::getFields()
+QList<MapRoute>& MapWidget::getFields()
 {
     return mFields->getRoutes();
 }
@@ -461,7 +360,15 @@ void MapWidget::addPath(const MapRoute &path)
 
 void MapWidget::addField(const MapRoute &field)
 {
+    qDebug() << "---function addField---";
+    int s1=mFields->size();
+    qDebug() << "Number of fields:" << s1;
+    qDebug() << "Add field!";
+    qDebug() << "Field size: " << field.size();
     mFields->addRoute(field);
+    int s2=mFields->size();
+    qDebug() << "Number of fields:" << s2;
+    qDebug() << "Size of this field: " << mFields->at(s2-1).size();
     update();
 }
 
@@ -649,20 +556,6 @@ void MapWidget::mouseMoveEvent(QMouseEvent *e)
     bool shift = e->modifiers() == Qt::ShiftModifier;
     bool ctrl_shift = e->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier);
 
-    if (mInteractionMode == InteractionModeCtrlDown) {
-        ctrl = true;
-        shift = false;
-        ctrl_shift = false;
-    } else if (mInteractionMode == InteractionModeShiftDown) {
-        ctrl = false;
-        shift = true;
-        ctrl_shift = false;
-    } else if (mInteractionMode == InteractionModeCtrlShiftDown) {
-        ctrl = false;
-        shift = false;
-        ctrl_shift = true;
-    }
-
     QPoint mousePosWidget = this->mapFromGlobal(QCursor::pos());
     LocPoint mousePosMap;
     QPoint p = getMousePosRelative();
@@ -704,20 +597,108 @@ void MapWidget::mouseMoveEvent(QMouseEvent *e)
     }
 
     if (mRoutePointSelected >= 0) {
-        //       MapRoute *current=mPaths->getCurrent();
-        //       *current[mRoutePointSelected].setXY(mousePosMap.getX(), mousePosMap.getY());
         mPaths->getCurrent()[mRoutePointSelected].setXY(mousePosMap.getX(), mousePosMap.getY());
         update();
     }
-
+/*
     if (mAnchorSelected >= 0) {
         mAnchors[mAnchorSelected].setXY(mousePosMap.getX(), mousePosMap.getY());
         update();
     }
-
+*/
     updateClosestInfoPoint();
 }
 
+void MapWidget::setFarm(double px,double py)
+{
+    double illh[3];
+    double llh[3];
+    double xyz_[3];
+
+    getEnuRef(illh);
+    xyz_[0] = px;
+    xyz_[1] = py;
+    xyz_[2] = 0;
+    const double xyz[3]={xyz_[0], xyz_[1], xyz_[2]};
+    utility::enuToLlh(illh, xyz, llh);
+    qDebug() << "Move centre to: " << llh[0] << ", " << llh[1] << ", " << llh[2];
+    int iFarm=mw->currentFarm();
+    db->updateFarmLocation(mw->currentFarm(), llh[0], llh[1]);
+    mw->updateFarms();
+    qDebug() << "farm: " << iFarm;
+    mw->setCurrentFarm(iFarm);
+}
+
+bool MapWidget::getCurrentRoute(MapRouteCollection* mRoutes, int& routeindex, int& mRoutePointSelected, LocPoint mousePosMap,double maxSnapDistance)
+{
+    if (mRoutes->size() > 0) {
+        double routeDist = 999999999999.9; // i.e. a high number
+        double routeDistTmp =0.0; // or any number
+        for (int i=0;i<mRoutes->size();i++)
+        {
+            int mRoutePointSelectedTmp = getClosestPoint(mousePosMap, mRoutes->at(i).mRoute, routeDistTmp);  // Use . instead of ->
+            if (routeDistTmp<routeDist)
+            {
+                routeindex=i;
+                routeDist=routeDistTmp;
+                mRoutePointSelected=mRoutePointSelectedTmp;
+            }
+        }
+        return (routeDist * mScaleFactor * 1000.0) < maxSnapDistance; // Found route?
+    } else {
+        return false;
+    }
+}
+
+void MapWidget::changeField(QMouseEvent *e,LocPoint mousePosMap)
+{
+    int selectedroute=0,mRoutePointSelected=0;
+    if (getCurrentRoute(mFields,selectedroute, mRoutePointSelected,mousePosMap,20.0))
+    {
+        qDebug() << "selectedroute: " << selectedroute;
+        qDebug() << "mRoutePointSelected: " << mRoutePointSelected;
+        MapRoute& currentRoute=mFields->at(selectedroute);
+        qDebug() << "close";
+        if (e->buttons() & Qt::LeftButton) {
+            qDebug() << "A";
+            qDebug() << "mFields->at(selectedroute).size(): " << mFields->at(selectedroute).size();
+            qDebug() << "mRoutePointSelected: " << mRoutePointSelected;
+            currentRoute.at(mRoutePointSelected).setXY(mousePosMap.getX(), mousePosMap.getY());
+            qDebug() << "B";
+            hasChanged=true;
+        }  else if (e->buttons() & Qt::RightButton) {
+            qDebug() << "Pressed right key";
+            qDebug() << mRoutePointSelected;
+            currentRoute.removeAt(mRoutePointSelected );
+        }
+    } else
+    {
+        qDebug() << "not close";
+        MapRoute& currentRoute=mFields->at(getFieldNow());
+        if (e->buttons() & Qt::LeftButton) {
+            currentRoute.insert(mRoutePointSelected,mousePosMap);
+        }  else if (e->buttons() & Qt::RightButton) {
+            qDebug() << "Pressed right key";
+            qDebug() << mRoutePointSelected;
+            removeLastRoutePoint();
+        }
+    }
+
+    /*
+        if (e->buttons() & Qt::LeftButton) {
+        } else if (e->buttons() & Qt::RightButton) {
+            qDebug() << "Pressed right key";
+            qDebug() << mRoutePointSelected;
+            if (routeFound) {
+                currentRoute->removeAt(mRoutePointSelected );
+            } else {
+                removeLastRoutePoint();
+            }
+        }
+        qDebug() << "Updating";*/
+    update();
+
+}
 void MapWidget::mousePressEventFields(QMouseEvent *e)
 {
     setFocus();
@@ -725,20 +706,6 @@ void MapWidget::mousePressEventFields(QMouseEvent *e)
     bool ctrl = e->modifiers() == Qt::ControlModifier;
     bool shift = e->modifiers() == Qt::ShiftModifier;
     bool ctrl_shift = e->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier);
-
-    if (mInteractionMode == InteractionModeCtrlDown) {
-        ctrl = true;
-        shift = false;
-        ctrl_shift = false;
-    } else if (mInteractionMode == InteractionModeShiftDown) {
-        ctrl = false;
-        shift = true;
-        ctrl_shift = false;
-    } else if (mInteractionMode == InteractionModeCtrlShiftDown) {
-        ctrl = false;
-        shift = false;
-        ctrl_shift = true;
-    }
 
     QPoint mp = e->pos();
     QPoint p = getMousePosRelativeNew(e->pos());
@@ -749,7 +716,6 @@ void MapWidget::mousePressEventFields(QMouseEvent *e)
     {
         if (RouteMagic::isPointWithin(px, py, getField(i).mRoute))
         {
-            qDebug() << "Clicked:" << i;
             setFieldNow(i);
             emit mouseClickedInField(i+1);
         };
@@ -769,117 +735,17 @@ void MapWidget::mousePressEventFields(QMouseEvent *e)
             return;
         }
     }
-
-    mousePosMap.setSpeed(mRoutePointSpeed);
-    mousePosMap.setTime(mRoutePointTime);
-    mousePosMap.setAttributes(mRoutePointAttributes);
-    mousePosMap.setId(mAnchorId);
-    mousePosMap.setHeight(mAnchorHeight);
-
-    double routeDist = 0.0;
-    double anchorDist = 0.0;
-
-    int anchorInd = getClosestPoint(mousePosMap, mAnchors, anchorDist);
-    bool routeFound = false;
-    bool anchorFound = false;
-
-    MapRoute *currentRoute;
-    int mRoutePointSelected;
-    bool bHasCurrentRoute=false;
-    if (mFields->size()>0)
-    {
-        qDebug() << "Items: " << mFields->size();
-        currentRoute=&(mFields->getCurrent());
-        bHasCurrentRoute=true;
-        routeFound = (routeDist * mScaleFactor * 1000.0) < 20 && routeDist >= 0.0;
-        anchorFound = (anchorDist * mScaleFactor * 1000.0) < 20 && anchorDist >= 0.0;
-        mRoutePointSelected = getClosestPoint(mousePosMap, currentRoute->mRoute, routeDist);
-    } else
-    {
-        currentRoute=new MapRoute();
-    }
-    //    if (bHasCurrentRoute)
+    mousePosMap.setSpeed(0);
+    mousePosMap.setTime(0);
+    mousePosMap.setAttributes(0);
 
     if (ctrl) {
         if (e->buttons() & Qt::RightButton) {
-            double illh[3];
-            double llh[3];
-            double xyz_[3];
-
-            getEnuRef(illh);
-            xyz_[0] = px;
-            xyz_[1] = py;
-            xyz_[2] = 0;
-            const double xyz[3]={xyz_[0], xyz_[1], xyz_[2]};
-            utility::enuToLlh(illh, xyz, llh);
-            qDebug() << "Move centre to: " << llh[0] << ", " << llh[1] << ", " << llh[2];
-            int iFarm=mw->currentFarm();
-            db->updateFarmLocation(mw->currentFarm(), llh[0], llh[1]);
-            mw->updateFarms();
-            qDebug() << "farm: " << iFarm;
-            mw->setCurrentFarm(iFarm);
+            setFarm(px,py);
             };
-        /* else if (e->buttons() & Qt::LeftButton) {
-            if (mAnchorMode) {
-                if (anchorFound) {
-                    mAnchors[anchorInd].setId(mAnchorId);
-                    mAnchors[anchorInd].setHeight(mAnchorHeight);
-                }
-            } else {
-                if (routeFound && (!focusBorder) && bHasCurrentRoute) {
-                    (*currentRoute)[mRoutePointSelected].setSpeed(mRoutePointSpeed);
-                    (*currentRoute)[mRoutePointSelected].setTime(mRoutePointTime);
-                    (*currentRoute)[mRoutePointSelected].setAttributes(mRoutePointAttributes);
-                }
-            }
-        }
-        update();
-*/
     } else if (shift) {
         qDebug() << "Shift clicked!";
-        if (mAnchorMode) {
-            /*
-            if (e->buttons() & Qt::LeftButton) {
-                if (anchorFound) {
-                    mAnchorSelected = anchorInd;
-                    mAnchors[anchorInd].setXY(mousePosMap.getX(), mousePosMap.getY());
-                } else {
-                    mAnchors.append(mousePosMap);
-                }
-            } else if (e->buttons() & Qt::RightButton) {
-                if (anchorFound) {
-                    mAnchors.removeAt(anchorInd);
-                }
-            }*/
-        } else {
-            if (e->buttons() & Qt::LeftButton) {
-                if (routeFound) {
-                    (*currentRoute)[mRoutePointSelected].setXY(mousePosMap.getX(), mousePosMap.getY());
-                    hasChanged=true;
-                } else {
-                    if (currentRoute->size() < 2 ||
-                        currentRoute->last().getDistanceTo(mousePosMap) <
-                            currentRoute->first().getDistanceTo(mousePosMap)) {
-                        currentRoute->append(mousePosMap);
-                        hasChanged=true;
-                        emit routePointAdded(mousePosMap);
-                    } else {
-                        currentRoute->prepend(mousePosMap);
-                        hasChanged=true;
-                    }
-                }
-            } else if (e->buttons() & Qt::RightButton) {
-                qDebug() << "Pressed right key";
-                qDebug() << mRoutePointSelected;
-                if (routeFound) {
-                    currentRoute->removeAt(mRoutePointSelected );
-                } else {
-                    removeLastRoutePoint();
-                }
-            }
-        }
-        qDebug() << "Updating";
-        update();
+        changeField(e,mousePosMap);
     } else if (ctrl_shift) {
         if (e->buttons() & Qt::LeftButton) {
             QPoint p = getMousePosRelative();
@@ -899,6 +765,68 @@ void MapWidget::mousePressEventFields(QMouseEvent *e)
     }
 }
 
+void MapWidget::mousePressEventAnalysis(QMouseEvent *e)
+{
+    setFocus();
+
+    bool ctrl = e->modifiers() == Qt::ControlModifier;
+    bool shift = e->modifiers() == Qt::ShiftModifier;
+    bool ctrl_shift = e->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier);
+
+    QPoint mp = e->pos();
+    QPoint p = getMousePosRelativeNew(e->pos());
+    double px=p.x()/1000.0;
+    double py=p.y()/1000.0;
+
+
+    LocPoint mousePosMap;
+    mousePosMap.setXY(px, py);
+    QPoint mousePosWidget = this->mapFromGlobal(QCursor::pos());
+
+    for (MapModule *m: mMapModules) {
+        if (m->processMouse(true, false, false, false,
+                            mousePosWidget, mousePosMap, 0.0,
+                            ctrl, shift, ctrl_shift,
+                            e->buttons() & Qt::LeftButton,
+                            e->buttons() & Qt::RightButton,
+                            mScaleFactor)) {
+            return;
+        }
+    }
+    mousePosMap.setSpeed(mRoutePointSpeed);
+    mousePosMap.setTime(mRoutePointTime);
+    mousePosMap.setAttributes(mRoutePointAttributes);
+
+    int selectedroute=0,mRoutePointSelected=0;
+    if (ctrl) {
+    } else if (shift) {
+    } else if (ctrl_shift) {
+    } else {
+        if (e->buttons() & Qt::LeftButton) {
+            if (getCurrentRoute(mPaths,selectedroute, mRoutePointSelected,mousePosMap,20.0))
+            {
+                mPaths->at(selectedroute).iAnalysisStart=mRoutePointSelected;
+                mPaths->at(selectedroute).updateAnalysis();
+            }
+        }
+        if (e->buttons() & Qt::RightButton) {
+            if (getCurrentRoute(mPaths,selectedroute, mRoutePointSelected,mousePosMap,20.0))
+            {
+                mPaths->at(selectedroute).iAnalysisEnd=mRoutePointSelected;
+                mPaths->at(selectedroute).updateAnalysis();
+            }
+        }
+    }
+}
+
+
+void MapWidget::setAnalysisActive(bool state)
+{
+    bAnalysisActive=state;
+
+}
+
+
 void MapWidget::mousePressEventPaths(QMouseEvent *e)
 {
     // Implementation for paths
@@ -907,20 +835,6 @@ void MapWidget::mousePressEventPaths(QMouseEvent *e)
     bool ctrl = e->modifiers() == Qt::ControlModifier;
     bool shift = e->modifiers() == Qt::ShiftModifier;
     bool ctrl_shift = e->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier);
-
-    if (mInteractionMode == InteractionModeCtrlDown) {
-        ctrl = true;
-        shift = false;
-        ctrl_shift = false;
-    } else if (mInteractionMode == InteractionModeShiftDown) {
-        ctrl = false;
-        shift = true;
-        ctrl_shift = false;
-    } else if (mInteractionMode == InteractionModeCtrlShiftDown) {
-        ctrl = false;
-        shift = false;
-        ctrl_shift = true;
-    }
 
     QPoint mousePosWidget = this->mapFromGlobal(QCursor::pos());
     LocPoint mousePosMap;
@@ -938,17 +852,16 @@ void MapWidget::mousePressEventPaths(QMouseEvent *e)
         }
     }
 
-
     mousePosMap.setSpeed(mRoutePointSpeed);
     mousePosMap.setTime(mRoutePointTime);
     mousePosMap.setAttributes(mRoutePointAttributes);
-    mousePosMap.setId(mAnchorId);
-    mousePosMap.setHeight(mAnchorHeight);
+//    mousePosMap.setId(mAnchorId);
+//    mousePosMap.setHeight(mAnchorHeight);
 
     double routeDist = 0.0;
     double anchorDist = 0.0;
 
-    int anchorInd = getClosestPoint(mousePosMap, mAnchors, anchorDist);
+//    int anchorInd = getClosestPoint(mousePosMap, mAnchors, anchorDist);
     bool routeFound = false;
     bool anchorFound = false;
 
@@ -989,12 +902,7 @@ void MapWidget::mousePressEventPaths(QMouseEvent *e)
                 }
             }
         } else if (e->buttons() & Qt::RightButton) {
-            if (mAnchorMode) {
-                if (anchorFound) {
-                    mAnchors[anchorInd].setId(mAnchorId);
-                    mAnchors[anchorInd].setHeight(mAnchorHeight);
-                }
-            } else {
+            if (mAnchorMode) {} else {
                 if (routeFound) {
                     (*currentRoute)[mRoutePointSelected].setSpeed(mRoutePointSpeed);
                     (*currentRoute)[mRoutePointSelected].setTime(mRoutePointTime);
@@ -1004,22 +912,7 @@ void MapWidget::mousePressEventPaths(QMouseEvent *e)
         }
         update();
     } else if (shift) {
-//        qDebug() << "Shift";
-        if (mAnchorMode) {
-//            qDebug() << "Shift anchor";
-            if (e->buttons() & Qt::LeftButton) {
-                if (anchorFound) {
-                    mAnchorSelected = anchorInd;
-                    mAnchors[anchorInd].setXY(mousePosMap.getX(), mousePosMap.getY());
-                } else {
-                    mAnchors.append(mousePosMap);
-                }
-            } else if (e->buttons() & Qt::RightButton) {
-                if (anchorFound) {
-                    mAnchors.removeAt(anchorInd);
-                }
-            }
-        } else {
+        if (mAnchorMode) {} else {
 //            qDebug() << "Shift route";
             if (e->buttons() & Qt::LeftButton) {
                 qDebug() << "Shift left";
@@ -1114,20 +1007,6 @@ void MapWidget::mouseReleaseEventFields(QMouseEvent *e)
     bool shift = e->modifiers() == Qt::ShiftModifier;
     bool ctrl_shift = e->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier);
 
-    if (mInteractionMode == InteractionModeCtrlDown) {
-        ctrl = true;
-        shift = false;
-        ctrl_shift = false;
-    } else if (mInteractionMode == InteractionModeShiftDown) {
-        ctrl = false;
-        shift = true;
-        ctrl_shift = false;
-    } else if (mInteractionMode == InteractionModeCtrlShiftDown) {
-        ctrl = false;
-        shift = false;
-        ctrl_shift = true;
-    }
-
     QPoint mousePosWidget = this->mapFromGlobal(QCursor::pos());
     LocPoint mousePosMap;
     QPoint p = getMousePosRelative();
@@ -1157,20 +1036,6 @@ void MapWidget::mouseReleaseEventPaths(QMouseEvent *e)
     bool ctrl = e->modifiers() == Qt::ControlModifier;
     bool shift = e->modifiers() == Qt::ShiftModifier;
     bool ctrl_shift = e->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier);
-
-    if (mInteractionMode == InteractionModeCtrlDown) {
-        ctrl = true;
-        shift = false;
-        ctrl_shift = false;
-    } else if (mInteractionMode == InteractionModeShiftDown) {
-        ctrl = false;
-        shift = true;
-        ctrl_shift = false;
-    } else if (mInteractionMode == InteractionModeCtrlShiftDown) {
-        ctrl = false;
-        shift = false;
-        ctrl_shift = true;
-    }
 
     QPoint mousePosWidget = this->mapFromGlobal(QCursor::pos());
     LocPoint mousePosMap;
@@ -1202,20 +1067,6 @@ void MapWidget::wheelEventPaths(QWheelEvent *e)
     bool shift = e->modifiers() == Qt::ShiftModifier;
     bool ctrl_shift = e->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier);
 
-    if (mInteractionMode == InteractionModeCtrlDown) {
-        ctrl = true;
-        shift = false;
-        ctrl_shift = false;
-    } else if (mInteractionMode == InteractionModeShiftDown) {
-        ctrl = false;
-        shift = true;
-        ctrl_shift = false;
-    } else if (mInteractionMode == InteractionModeCtrlShiftDown) {
-        ctrl = false;
-        shift = false;
-        ctrl_shift = true;
-    }
-
     QPoint mousePosWidget = this->mapFromGlobal(QCursor::pos());
     LocPoint mousePosMap;
     QPoint p = getMousePosRelative();
@@ -1230,10 +1081,6 @@ void MapWidget::wheelEventPaths(QWheelEvent *e)
                             mScaleFactor)) {
             return;
         }
-    }
-
-    if (mInteractionMode == InteractionModeCtrlDown) {
-        ctrl = true;
     }
 
     if (ctrl && mSelectedCar >= 0) {
@@ -1280,20 +1127,6 @@ void MapWidget::wheelEventFields(QWheelEvent *e)
     bool shift = e->modifiers() == Qt::ShiftModifier;
     bool ctrl_shift = e->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier);
 
-    if (mInteractionMode == InteractionModeCtrlDown) {
-        ctrl = true;
-        shift = false;
-        ctrl_shift = false;
-    } else if (mInteractionMode == InteractionModeShiftDown) {
-        ctrl = false;
-        shift = true;
-        ctrl_shift = false;
-    } else if (mInteractionMode == InteractionModeCtrlShiftDown) {
-        ctrl = false;
-        shift = false;
-        ctrl_shift = true;
-    }
-
     QPoint mousePosWidget = this->mapFromGlobal(QCursor::pos());
     LocPoint mousePosMap;
     QPoint p = getMousePosRelative();
@@ -1308,10 +1141,6 @@ void MapWidget::wheelEventFields(QWheelEvent *e)
                             mScaleFactor)) {
             return;
         }
-    }
-
-    if (mInteractionMode == InteractionModeCtrlDown) {
-        ctrl = true;
     }
 
     if (ctrl && mSelectedCar >= 0) {} else {
@@ -1417,17 +1246,6 @@ quint32 MapWidget::getRoutePointAttributes() const
 void MapWidget::setRoutePointAttributes(const quint32 &routePointAttributes)
 {
     mRoutePointAttributes = routePointAttributes;
-}
-
-MapWidget::InteractionMode MapWidget::getInteractionMode() const
-{
-    return mInteractionMode;
-}
-
-void MapWidget::setInteractionMode(const MapWidget::InteractionMode &controlMode)
-{
-    mInteractionMode = controlMode;
-    update();
 }
 
 void MapWidget::addMapModule(MapModule *m)
@@ -1651,12 +1469,6 @@ int MapWidget::getClosestPoint(LocPoint p, QList<LocPoint> route, double &dist)
     return closest;
 }
 
-void MapWidget::drawCircleFast(QPainter &painter, QPointF center, double radius, int type)
-{
-    painter.drawPixmap(center.x() - radius, center.y() - radius,
-                       2.0 * radius, 2.0 * radius, mPixmaps.at(type));
-}
-
 int MapWidget::getOsmZoomLevel() const
 {
     return mOsmZoomLevel;
@@ -1725,6 +1537,7 @@ int MapWidget::setNextEmptyOrCreateNewInfoTrace()
     return next;
 }
 
+/*
 void MapWidget::setAnchorMode(bool anchorMode)
 {
     mAnchorMode = anchorMode;
@@ -1744,7 +1557,7 @@ void MapWidget::setAnchorHeight(double height)
 {
     mAnchorHeight = height;
 }
-
+*/
 void MapWidget::removeLastRoutePoint()
 {
     LocPoint pos;
@@ -2024,7 +1837,7 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
     for (int rn = 0;rn < mPaths->size();rn++) {
         MapRoute &routeNow = mPaths->at(rn);
         isSelected= (mPaths->mRouteNow == rn);
-        routeNow.paintPath(this, painter, pen, isSelected, mScaleFactor, drawTrans, txt, pt_txt, rect_txt, txtTrans, highQuality);
+        routeNow.paintPath(painter, pen, isSelected, mScaleFactor, drawTrans, txt, pt_txt, rect_txt, txtTrans,  mDrawRouteText, highQuality);
     }
 
     //paintInfoTraces();
@@ -2059,11 +1872,6 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
         paintCar(mCarInfo[i],painter,pen, drawTrans, txtTrans,txt, pt_txt,textColor,rect_txt);
     }
 
-    // Draw anchors
-    for (int i = 0;i < mAnchors.size();i++) {
-        paintAnchor(mAnchors[i],painter,pen, drawTrans, txtTrans,txt, pt_txt,textColor,rect_txt);
-    };
-
     double start_txt = 30.0;
 
     const double txtOffset = 145.0;
@@ -2074,11 +1882,10 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
     // Current route info
     if (mPaths->size()>0)
     {
-        mPaths->getCurrent().routeinfo(this, painter,start_txt,txtOffset,txt_row_h,width,txt);
+        mPaths->getCurrent().routeinfo(painter,start_txt,txtOffset,txt_row_h,width,txt);
     };
     painter.end();
     //    qDebug() << "End painting";
-
 }
 
 void MapWidget::paintClosestPoint(QPainter &painter,QPen &pen,QTransform drawTrans, QTransform txtTrans, QPointF& pt_txt,QRectF &rect_txt )
@@ -2630,7 +2437,6 @@ bool MapWidget::loadXMLRoute(QXmlStreamReader* stream,bool isBorder)
     if (routes_found) {
 //        qDebug() << "found route";
         QList<QPair<int, MapRoute > > routes;
-        QList<LocPoint> anchors;
 
         while (stream->readNextStartElement()) {
             QString name = stream->name().toString();
@@ -2638,10 +2444,8 @@ bool MapWidget::loadXMLRoute(QXmlStreamReader* stream,bool isBorder)
             if (name == "route") {
                 int id = -1;
                 MapRoute route;
-
                 while (stream->readNextStartElement()) {
                     QString name2 = stream->name().toString();
-
                     if (name2 == "id") {
                         id = stream->readElementText().toInt();
                     } else if (name2 == "point") {
@@ -2676,9 +2480,16 @@ bool MapWidget::loadXMLRoute(QXmlStreamReader* stream,bool isBorder)
                         qWarning() << " : XML ERROR :" << stream->errorString();
                     }
                 }
+                qDebug() << "AAAAA";
+                MapRoute routeCopy = route; // Does copying work? WORKS
+                qDebug() << "BBBBB";
+                routes.append(QPair<int, MapRoute >(id, route)); // DOES NOT WORK
 
-                routes.append(QPair<int, MapRoute >(id, route));
+//               unusedroutes.append(QPair<int, MapRoute >(id, route)); DOES NOT WORK
+//                routes.append(QPair<int, MapRoute >(id, routeCopy)); // DOES NOT WORK
+                qDebug() << "CCC";
             } else if (name == "anchors") {
+                qDebug() << "QQQQ";
                 while (stream->readNextStartElement()) {
                     QString name2 = stream->name().toString();
 
@@ -2702,7 +2513,7 @@ bool MapWidget::loadXMLRoute(QXmlStreamReader* stream,bool isBorder)
                             }
                         }
 
-                        anchors.append(p);
+//                        anchors.append(p);
                     } else {
                         qWarning() << ": Unknown XML element :" << name2;
                         stream->skipCurrentElement();
@@ -2713,7 +2524,6 @@ bool MapWidget::loadXMLRoute(QXmlStreamReader* stream,bool isBorder)
                     }
                 }
             }
-
             if (stream->hasError()) {
                 qWarning() << "XML ERROR :" << stream->errorString();
                 qWarning() << stream->lineNumber() << stream->columnNumber();
@@ -2743,10 +2553,6 @@ bool MapWidget::loadXMLRoute(QXmlStreamReader* stream,bool isBorder)
                     this->addPath(r.second);
                 }
             }
-        }
-
-        for (LocPoint p: anchors) {
-            this->addAnchor(p);
         }
     }
     return routes_found;
@@ -2840,7 +2646,7 @@ void MapWidget::saveXMLRoutes(QXmlStreamWriter* stream, bool withId)
 
     stream->writeStartElement("routes");
 
-    QList<LocPoint> anchors = this->getAnchors();
+//    QList<LocPoint> anchors = this->getAnchors();
     QList<MapRoute> routes;
     if (focusBorder)
     {
@@ -2925,10 +2731,23 @@ std::array<double, 4> MapWidget::findExtremeValuesFieldBorders()
         if (route.getIsBorder())
         allpoints.append(route.mRoute);
     }*/
+
+    /*
     for (const MapRoute& field : mFields->mCollection)
     {
         allpoints.append(field.mRoute);
+    }*/
+
+    for (const MapRoute& field : mFields->mCollection) {
+        qDebug() << "Field mRoute size:" << field.mRoute.size();
+        for (const LocPoint& point : field.mRoute) {
+            qDebug() << "LocPoint: mX=" << point.getX() << ", mY=" << point.getY() << ", mInfo=" << point.getInfo();
+        }
+        qDebug() << "Before appending, size: "  << field.mRoute.size();
+        allpoints.append(field.mRoute.begin(), field.mRoute.end());
+        qDebug() << "After appending, size: "  << field.mRoute.size();
     }
+
     for (const LocPoint& point : allpoints)
     {
         double x=point.getX();
@@ -2951,434 +2770,10 @@ MapRoute::MapRoute(QList<LocPoint> route, QList<LocPoint> infotrace)
 }
 */
 
-MapRoute MapWidget::getCurrentPath()
+MapRoute& MapWidget::getCurrentPath()
 {
     return mPaths->getCurrent();
 };
 
 
-int MapRoute::size()
-{
-    return mRoute.size();
-}
-
-void MapRoute::clear()
-{
-    mRoute.clear();
-}
-
-bool MapRoute::isEmpty() const
-{
-    return mRoute.isEmpty();
-}
-
-void MapRoute::append(LocPoint point)
-{
-    mRoute.append(point);
-}
-
-void MapRoute::append(const QList<LocPoint> &points)
-{
-    mRoute.append(points);
-}
-
-void MapRoute::append(const MapRoute &mr)
-{
-    mRoute.append(mr.mRoute);
-}
-
-LocPoint& MapRoute::first()
-{
-    return mRoute.first();
-}
-
-LocPoint& MapRoute::last()
-{
-    return mRoute.last();
-}
-
-void MapRoute::removeLast()
-{
-    mRoute.removeLast();
-}
-void MapRoute::prepend(const LocPoint &value)
-{
-    mRoute.prepend(value);
-}
-
-void MapRoute::removeAt(int i)
-{
-    mRoute.removeAt(i);
-}
-
-QList<LocPoint>::const_iterator MapRoute::begin() const
-{
-    return mRoute.begin();
-}
-
-QList<LocPoint>::const_iterator MapRoute::end() const
-{
-    return mRoute.end();
-}
-
-double MapRoute::getArea()
-{
-    int n = this->size();
-    double area = 0.0;
-
-    for (int i = 0; i < n; ++i) {
-        int j = (i + 1) % n;
-        area += mRoute[i].getX() * mRoute[j].getY();
-        area -= mRoute[i].getY() * mRoute[j].getX();
-    }
-    area = std::abs(area) * 0.5;
-    return area;
-}
-
-LocPoint &	MapRoute::operator[](int i)
-{
-    return mRoute[i];
-}
-
-void MapRoute::setIsBorder(bool border)
-{
-    isBorder=border;
-}
-
-bool MapRoute::getIsBorder() const
-{
-    return isBorder;
-}
-
-/*
-void MapRoute::paint(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawTrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool highQuality)
-{
-    if (isBorder)
-    {
-        paintBorder(painter, pen, isSelected, mScaleFactor, drawTrans);
-    } else
-    {
-        paintPath(mapWidget, painter, pen, isSelected, mScaleFactor, drawTrans, txt, pt_txt, rect_txt, txtTrans, highQuality);
-    }
-}
-*/
-
-void MapRoute::paintPoint(int i, bool isSelected, QPainter &painter, QPen &pen, Qt::GlobalColor defaultDarkColor, Qt::GlobalColor defaultColor)
-{
-    pen.setColor(defaultDarkColor);
-    painter.setBrush(defaultColor);
-    if (isSelected && (mRoute[i - 1].getAttributes() & ATTR_HYDRAULIC_FRONT_DOWN) && (mRoute[i].getAttributes() & ATTR_HYDRAULIC_FRONT_DOWN)) {
-        pen.setColor(Qt::darkCyan);
-        painter.setBrush(Qt::cyan);
-    }
-    painter.setPen(pen);
-
-    painter.setOpacity(0.7);
-    painter.drawLine(mRoute[i - 1].getX() * 1000.0, mRoute[i - 1].getY() * 1000.0,
-                     mRoute[i].getX() * 1000.0, mRoute[i].getY() * 1000.0);
-    painter.setOpacity(1.0);
-}
-
-void MapRoute::paintPath(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawTrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool highQuality)
-{
-    Qt::GlobalColor defaultDarkColor = Qt::darkGray;
-    Qt::GlobalColor defaultColor = Qt::gray;
-    Qt::GlobalColor sowingColor = Qt::red;
-    bool showSowing=false;
-    if (isSelected) {
-        defaultDarkColor = Qt::darkYellow;
-        defaultColor = Qt::yellow;
-    }
-    pen.setWidthF(5.0 / mScaleFactor);
-    painter.setTransform(drawTrans);
-
-    int nPoints=this->size();
-    for (int i = 1;i < nPoints;i++) {
-        paintPoint(i,isSelected,painter,pen,defaultDarkColor,defaultColor);
-    }
-
-    for (int i = 0;i < nPoints;i++) {
-        QPointF p = mRoute[i].getPointMm();
-        quint32 attr = mRoute[i].getAttributes();
-
-        painter.setTransform(drawTrans);
-
-        if (highQuality) {
-            if (isSelected) {
-                if ((attr & ATTR_POSITIONING_MASK) == 2) {
-                    pen.setColor(Qt::darkGreen);
-                    painter.setBrush(Qt::green);
-                } else if ((attr & ATTR_HYDRAULIC_FRONT_DOWN) != 0) {
-                    pen.setColor(Qt::darkCyan);
-                    painter.setBrush(Qt::cyan);
-                    showSowing=true;
-                } else if ((attr & ATTR_HYDRAULIC_FRONT_UP) != 0) {
-                    pen.setColor(Qt::darkYellow);
-                    painter.setBrush(Qt::green);
-                } else {
-                    pen.setColor(Qt::darkYellow);
-                    painter.setBrush(Qt::yellow);
-                }
-            } else {
-                pen.setColor(Qt::darkGray);
-                painter.setBrush(Qt::gray);
-            }
-
-            pen.setWidthF(3.0 / mScaleFactor);
-            painter.setPen(pen);
-
-            painter.drawEllipse(p, 10.0 / mScaleFactor,
-                                10.0 / mScaleFactor);
-        } else {
-            mapWidget->drawCircleFast(painter, p, 10.0 / mScaleFactor, isSelected ?
-                                                                           ((attr & ATTR_POSITIONING_MASK) == 2 ? 2 : ((attr & ATTR_HYDRAULIC_FRONT_DOWN) != 0 ? 3 : ((attr & ATTR_HYDRAULIC_FRONT_UP) != 0 ? 4 : 0))) : 1);
-        }
-
-        // Draw highlight for first and last point in active route
-        if (isSelected && (i == 0 || i == nPoints-1)) {
-            QPointF ptmp;
-            ptmp.setX(p.x() - 7.0 / mScaleFactor);
-            ptmp.setY(p.y() + 7.0 / mScaleFactor);
-            if (i == 0) {
-                pen.setColor(Qt::green);
-                painter.setBrush(Qt::darkGreen);
-            } else {
-                pen.setColor(Qt::red);
-                painter.setBrush(Qt::darkRed);
-            }
-            pen.setWidthF(2.0 / mScaleFactor);
-            painter.setPen(pen);
-            painter.drawEllipse(ptmp, 5.0 / mScaleFactor,
-                                5.0 / mScaleFactor);
-        }
-
-        // Draw text only for selected route
-        if (isSelected && mapWidget->mDrawRouteText) {
-            QTime t = QTime::fromMSecsSinceStartOfDay(mRoute[i].getTime());
-            txt=QString("P: %1 %2\n"
-                        "%3 km/h\n"
-                        "%4:%5:%6:%7\n"
-                        "A: %8").
-                        arg(i).
-                        arg(((i == 0) ? "- start" : ((i == nPoints-1) ? "- end" : ""))).
-                        arg(mRoute[i].getSpeed() * 3.6,1,'f',1).
-                        arg(t.hour(),2,'d').
-                        arg(t.minute(),2,'d').
-                        arg(t.second(),2,'d').
-                        arg(t.msec(),3,'d').
-                        arg(mRoute[i].getAttributes());
-
-            pt_txt.setX(p.x() + 10 / mScaleFactor);
-            pt_txt.setY(p.y());
-            painter.setTransform(txtTrans);
-            pt_txt = drawTrans.map(pt_txt);
-            pen.setColor(Qt::black);
-            painter.setPen(pen);
-            rect_txt.setCoords(pt_txt.x(), pt_txt.y() - 20,
-                               pt_txt.x() + 200, pt_txt.y() + 60);
-            painter.drawText(rect_txt, txt);
-        } else {
-            //           txt.sprintf("%d", rn);
-            pt_txt.setX(p.x());
-            pt_txt.setY(p.y());
-            painter.setTransform(txtTrans);
-            pt_txt = drawTrans.map(pt_txt);
-            pen.setColor(Qt::black);
-            painter.setPen(pen);
-            rect_txt.setCoords(pt_txt.x() - 20, pt_txt.y() - 20,
-                               pt_txt.x() + 20, pt_txt.y() + 20);
-            painter.drawText(rect_txt, Qt::AlignCenter, txt);
-        }
-    }
-
-}
-
-void MapRoute::paintBorder(QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawTrans)
-{
-    pen.setWidthF(5.0 / mScaleFactor);
-    painter.setTransform(drawTrans);
-
-    QPolygon polygon;
-    int nPoints=this->size();
-    //    for (int i = 1;i < nPoints;i++) {
-    for (int i = 0;i < nPoints;i++) {
-        double x=mRoute[i].getX() * 1000.0;
-        double y=mRoute[i].getY() * 1000.0;
-
-        polygon << QPoint(x, y);
-        QPointF p = mRoute[i].getPointMm();
-        painter.setPen(QPen(Qt::black, 3.0 / mScaleFactor)); // Set the pen color to blue and width to 2
-        painter.drawEllipse(p, 5.0 / mScaleFactor,
-                            5.0 / mScaleFactor);
-
-    }
-    // Set the brush color for filling the polygon
-    painter.setBrush(QBrush(Qt::yellow));
-    if (isSelected)
-    {
-        painter.setOpacity(1.0);
-    } else
-    {
-        painter.setOpacity(0.35);
-    }
-    // Set the pen color for drawing the border
-    painter.setPen(QPen(Qt::darkRed, 5.0 / mScaleFactor, Qt::DashDotLine, Qt::RoundCap)); // Set the pen color to blue and width to 2
-
-    // Draw and fill the polygon
-    painter.drawPolygon(polygon);
-}
-
-void MapRoute::routeinfo(MapWidget* mapWidget, QPainter &painter,double start_txt,const double txtOffset,const double txt_row_h, int width, QString txt)
-{
-    int nPoints=this->size();
-    if (nPoints > 0) {
-        LocPoint prev = this->first();
-        double len = 0.0;
-        for (int i = 1;i < nPoints;i++) {
-            len += prev.getDistanceTo(mRoute[i]);
-            prev = mRoute[i];
-        }
-
-        txt=QString("RP: %1").arg(nPoints);
-        painter.drawText(width - txtOffset, start_txt, txt);
-        start_txt += txt_row_h;
-
-        txt=QString("RLen: %1 m").arg(len,2,'f');
-        painter.drawText(width - txtOffset, start_txt, txt);
-        start_txt += txt_row_h;
-    }
-}
-
-MapRouteCollection::MapRouteCollection()
-{
-    mRouteNow = 0;
-}
-
-MapRoute MapRouteCollection::getRoute(int ind)
-{
-    if (ind < 0) {
-        return mCollection[mRouteNow];
-    } else {
-        if (mCollection.size() > ind) {
-            return mCollection[ind];
-        } else {
-            MapRoute tmp;
-            return tmp;
-        }
-    }
-}
-
-QList<MapRoute> MapRouteCollection::getRoutes()
-{
-    return mCollection;
-}
-
-void MapRouteCollection::setRoute(const MapRoute &route)
-{
-    mCollection[mRouteNow] = route;
-}
-
-
-void MapRouteCollection::addRoute(const MapRoute &route)
-{
-    while (!mCollection.isEmpty() &&
-           mCollection.last().isEmpty() &&
-           mRouteNow < mCollection.size()) {
-        mCollection.removeLast();
-    }
-    mCollection.append(route);
-}
-
-int MapRouteCollection::getRouteNum()
-{
-    return mCollection.size();
-}
-
-void MapRouteCollection::clearRoute()
-{
-    mCollection[mRouteNow].clear();
-}
-
-void MapRouteCollection::clearAllRoutes()
-{
-    for (int i = 0;i < mCollection.size();i++) {
-        mCollection[i].clear();
-    }
-    mCollection.clear();
-}
-
-void MapRouteCollection::setRouteNow(int routeNow)
-{
-    mRouteNow = routeNow;
-    while (mCollection.size() < (mRouteNow + 1)) {
-        MapRoute l;
-        mCollection.append(l);
-    }
-
-    // Clean empty routes
-    while (mRouteNow < (mCollection.size() - 1)) {
-        if (mCollection.last().isEmpty()) {
-            mCollection.removeLast();
-        } else {
-            break;
-        }
-    }
-}
-
-
-void MapRouteCollection::clear()
-{
-    mCollection.clear();
-}
-
-void MapRouteCollection::append(MapRoute &maproute)
-{
-    mCollection.append(maproute);
-}
-
-
-int MapRouteCollection::size()
-{
-    return mCollection.size();
-}
-
-MapRoute& MapRouteCollection::getCurrent()
-{
-    return mCollection[mRouteNow];
-}
-
-QList<MapRoute>::const_iterator MapRouteCollection::begin() const
-{
-    return mCollection.begin();
-}
-
-QList<MapRoute>::const_iterator MapRouteCollection::end() const
-{
-    return mCollection.end();
-}
-
-MapRoute& MapRouteCollection::at(int i)
-{
-    return mCollection[i];
-}
-
-MapRoute& MapRouteCollection::first()
-{
-    return mCollection.first();
-}
-
-MapRoute& MapRouteCollection::last()
-{
-    return mCollection.last();
-}
-
-void MapRouteCollection::prepend(const MapRoute &value)
-{
-    mCollection.prepend(value);
-}
-
-void MapRouteCollection::removeAt(int i)
-{
-    mCollection.removeAt(i);
-}
 

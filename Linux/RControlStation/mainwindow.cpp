@@ -143,8 +143,24 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->mapWidgetFields->wheelEventFields(e);
     });
 
+    ui->mapWidgetAnalysis->setMousePressEventHandler([this](QMouseEvent *e) {
+        ui->mapWidgetAnalysis->mousePressEventAnalysis(e);
+    });
+    ui->mapWidgetAnalysis->setMouseReleaseEventHandler([this](QMouseEvent *e) {
+        ui->mapWidgetAnalysis->mousePressEventFields(e);
+    });
+
+    ui->mapWidgetAnalysis->setWheelEventHandler([this](QWheelEvent *e) {
+        ui->mapWidgetAnalysis->wheelEventFields(e);
+    });
+
     ui->mapWidgetFields->setMainWindow(this);
     ui->mapWidgetFields->setBorderFocus(true);
+    ui->mapWidgetAnalysis->setAnalysisActive(true);
+
+    fileModel = new QStringListModel(this);
+    ui->listLogfilesView->setModel(fileModel);  // Link the model to the view
+
     mVersion = "0.8";
     mSupportedFirmwares.append(qMakePair(12, 3));
     mSupportedFirmwares.append(qMakePair(20, 1));
@@ -172,7 +188,6 @@ MainWindow::MainWindow(QWidget *parent) :
         on_jsConnectButton_clicked();
     }
 #endif
-
 
     checkboxdelegate=new CheckBoxDelegate(ui->fieldTable);
 
@@ -227,9 +242,11 @@ MainWindow::MainWindow(QWidget *parent) :
             this, SLOT(infoTraceChanged(int)));
 
     connect(ui->buttonGenerate, &QPushButton::clicked, this, &MainWindow::onGeneratePathButtonClicked);
+    connect(ui->buttonGenerateLine, &QPushButton::clicked, this, &MainWindow::onGenerateLineButtonClicked);
     // Connect the button's clicked signal to a lambda that opens a file dialog
     connect(ui->pushButton_load_shapefile, &QPushButton::clicked, this, &MainWindow::onLoadShapefile);
     connect(ui->pushButtonLoadLogFile, &QPushButton::clicked, this, &MainWindow::onLoadLogfile);
+    connect(ui->listLogfilesView, &QListView::clicked, this, &MainWindow::on_listLogFilesView_clicked);
 
     connect(ui->actionAboutQt, SIGNAL(triggered(bool)),
             qApp, SLOT(aboutQt()));
@@ -610,9 +627,7 @@ void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& p
     mPacketInterface->sendSetUserCmd(ui->mapCarBox->value(),usr);
     mPacketInterface->sendSetPwdCmd(ui->mapCarBox->value(),pwd);
 
-    qDebug() << "Vehicle: " << ui->mapCarBox->value();
-    qDebug() << "User: " << usr;
-    qDebug() << "Pwd: " << pwd;
+//    qDebug() << "Vehicle: " << ui->mapCarBox->value();
 
     double llh[3];
     llh[0]=lat.toDouble();
@@ -620,6 +635,7 @@ void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& p
     llh[2]=0;
     ui->mapLiveWidget->setEnuRef(llh[0],llh[1],0);
     ui->mapWidgetFields->setEnuRef(llh[0],llh[1],0);
+    ui->mapWidgetAnalysis->setEnuRef(llh[0],llh[1],0);
 
     qDebug() << "lat: " << llh[0];
     qDebug() << "lon: " << llh[1];
@@ -629,11 +645,13 @@ void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& p
 
     ui->mapWidgetFields->clearAllFields();
     ui->mapWidgetFields->clearAllPaths();
+    qDebug() << "Fields (onSelectedFarm 1): " << ui->mapWidgetFields->mFields->size();
     // Get the selected value from the first table view
     QVariant selectedValue = id;
 
     // Construct a new query based on the selected value
     QString filter = QString("location = %1").arg(id);
+
 
     // Set the new query for the QSqlRelationalTableModel
     modelField->setFilter(filter);
@@ -665,9 +683,13 @@ void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& p
             return;
         }
 
+        qDebug() << "name: " << xmlFile;
+        qDebug() << "Fields (onSelectedFarm 2): " << ui->mapWidgetFields->mFields->size();
         QXmlStreamReader xmlData(&file);
         ui->mapWidgetFields->loadXMLRoute(&xmlData,true);
+        qDebug() << "Fields (onSelectedFarm 3): " << ui->mapWidgetFields->mFields->size();
     }
+    qDebug() << "AC";
     //            if (ui->fieldTable->model()->rowCount()>0)
     if (ui->mapWidgetFields->getFieldNum()>0)
     {
@@ -679,6 +701,7 @@ void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& p
         double offsety_m=(extremes_m[3]+extremes_m[1])/2;
         double scalex=0.5/(fieldareawidth_m);
         double scaley=0.5/(fieldareaheight_m);
+        qDebug() << "AD";
         ui->mapWidgetFields->moveView(offsetx_m, offsety_m);
         ui->mapWidgetFields->setScaleFactor(std::min(scalex,scaley));
         qDebug() << std::min(scalex,scaley);
@@ -707,10 +730,6 @@ void MainWindow::onSelectedFieldGeneral(QSqlRelationalTableModel *model,QSqlRela
 
     ui->mapWidgetFields->setFieldNow(row);
 
-    //MapWidget *mapFields=;
-    //    QComboBox *selectedRoute=ui->mapRouteBox;
-    QSpinBox *selectedRoute=ui->mapRouteBox;
-
     QLabel *areaLabel=ui->label_area_ha;
     MapRoute border=activeMap->getField();
     double area=border.getArea();
@@ -726,6 +745,7 @@ void MainWindow::onSelectedFieldGeneral(QSqlRelationalTableModel *model,QSqlRela
     modelPth->select();
 
     // Clear the existing items in the combobox
+    QSpinBox *selectedRoute=ui->mapRouteBox;
     selectedRoute->clear();
 
     // Iterate through the rows in the model and add items to the combobox
@@ -760,8 +780,6 @@ void MainWindow::onSelectedFieldGeneral(QSqlRelationalTableModel *model,QSqlRela
 
         QXmlStreamReader xmlData(xmlFile);
         ui->mapLiveWidget->loadXMLRoute(&xmlData,false); // Drive-widget
-        //           msg.setText("Looping!");
-        //           msg.exec();
     }
     qDebug() << "G";
     activeMap->setBorderFocus(true);
@@ -1592,66 +1610,73 @@ void MainWindow::on_mapUploadRouteButton_clicked()
         return;
     }
 
-    MapRoute route = ui->mapLiveWidget->getPath();
-    int len = route.size();
-    int car = ui->mapCarBox->value();
-    bool ok = true;
+    try {
+        MapRoute route = ui->mapLiveWidget->getPath();
+        int len = route.size();
+        int car = ui->mapCarBox->value();
+        bool ok = true;
 
-    if (len <= 0) {
-        QMessageBox::warning(this, "Upload route",
-                             "No route on map.");
-        return;
-    }
-
-    ui->mapUploadRouteButton->setEnabled(false);
-
-    // Stop car
-    for (int i = 0;i < mCars.size();i++) {
-        if (mCars[i]->getId() == car) {
-            ok = mCars[i]->setAp(false);
-            break;
+        if (len <= 0) {
+            QMessageBox::warning(this, "Upload route",
+                                 "No route on map.");
+            return;
         }
-    }
 
-    // Clear previous route
-    if (ok) {
-        ok = mPacketInterface->clearRoute(car);
-    }
+        ui->mapUploadRouteButton->setEnabled(false);
 
-    QElapsedTimer timer;
-    timer.start();
-
-    if (ok) {
-        int ind = 0;
-        for (ind = 0;ind < len;ind += 5) {
-            QList<LocPoint> tmpList;
-            for (int j = ind;j < (ind + 5);j++) {
-                if (j < len) {
-                    tmpList.append(route[j]);
-                }
-            }
-
-            ok = mPacketInterface->setRoutePoints(car, tmpList);
-
-            if (!ok) {
+        // Stop car
+        for (int i = 0;i < mCars.size();i++) {
+            if (mCars[i]->getId() == car) {
+                ok = mCars[i]->setAp(false);
                 break;
             }
+        }
 
-            if (timer.elapsed() >= 20) {
-                timer.restart();
-                ui->mapUploadRouteProgressBar->setValue((100 * (ind + 5)) / len);
+        // Clear previous route
+        if (ok) {
+            ok = mPacketInterface->clearRoute(car);
+        }
+
+        QElapsedTimer timer;
+        timer.start();
+
+        if (ok) {
+            int ind = 0;
+            for (ind = 0;ind < len;ind += 5) {
+                QList<LocPoint> tmpList;
+                for (int j = ind;j < (ind + 5);j++) {
+                    if (j < len) {
+                        tmpList.append(route[j]);
+                    }
+                }
+
+                ok = mPacketInterface->setRoutePoints(car, tmpList);
+
+                if (!ok) {
+                    break;
+                }
+
+                if (timer.elapsed() >= 20) {
+                    timer.restart();
+                    ui->mapUploadRouteProgressBar->setValue((100 * (ind + 5)) / len);
+                }
             }
         }
+
+        if (!ok) {
+            QMessageBox::warning(this, "Upload route",
+                                 "No response when uploading route.");
+        } else {
+            ui->mapUploadRouteProgressBar->setValue(100);
+        }
+
+        ui->mapUploadRouteButton->setEnabled(true);
+
+
+    } catch (...) {
+        qDebug() << "Could not get route!";
     }
 
-    if (!ok) {
-        QMessageBox::warning(this, "Upload route",
-                             "No response when uploading route.");
-    } else {
-        ui->mapUploadRouteProgressBar->setValue(100);
-    }
-
-    ui->mapUploadRouteButton->setEnabled(true);
 }
 
 void MainWindow::on_mapGetRouteButton_clicked()
@@ -1766,6 +1791,57 @@ void MainWindow::on_mapOsmResSlider_valueChanged(int value)
     ui->mapLiveWidget->setOsmRes((double)value / 100.0);
 }
 
+void MainWindow::onGenerateLineButtonClicked()
+{
+    int p1=ui->point1LineEdit->text().toInt();
+    int p2=ui->point2LineEdit->text().toInt();
+
+    qDebug() << "p1: " << p1;
+    qDebug() << "p2: " << p2;
+
+    int iField=ui->mapWidgetFields->getFieldNow();
+    qDebug() << "field: " << iField;
+    MapRoute CurField=ui->mapWidgetFields->getField(iField);
+
+    qDebug() << "Size: " << CurField.size();
+    LocPoint first=CurField.at(p1);
+    LocPoint second=CurField.at(p2);
+
+    qDebug() << "first, x: " << first.getX() << ", y: " << first.getY();
+    qDebug() << "second, x: " << second.getX() << ", y: " << second.getY();
+
+    MapRoute *currentRoute;
+    bool bHasCurrentRoute=false;
+
+    if (ui->mapLiveWidget->mPaths->size()>0)
+    {
+        qDebug() << "Existing route";
+        currentRoute=&(ui->mapLiveWidget->mPaths->getCurrent());
+        bHasCurrentRoute=true;
+    } else
+    {
+        qDebug() << "New route";
+        currentRoute=new MapRoute();
+    }
+    qDebug() << "Before append";
+    currentRoute->append(first);
+    qDebug() << "After append";
+    emit routePointAdded(first);
+    currentRoute->prepend(second);
+    qDebug() << "After prepend";
+    emit routePointAdded(second);
+    qDebug() << "ok";
+    if (!bHasCurrentRoute)
+    {
+        ui->mapLiveWidget->mPaths->append(*currentRoute);
+        ui->mapLiveWidget->mPaths->mRouteNow=ui->mapLiveWidget->mPaths->size()-1;
+    }
+    qDebug() << "added path";
+
+
+//    ui->mapLiveWidget->addRoutePoint(first.getX(), first.getY());
+//    ui->mapLiveWidget->addRoutePoint(second.getX(), second.getY());
+}
 void MainWindow::onGeneratePathButtonClicked()
 {
     double fieldLength_m = ui->fieldLengthMLineEdit->text().toDouble(); // Assuming input1 is the object name of a QLineEdit
@@ -1781,8 +1857,6 @@ void MainWindow::onGeneratePathButtonClicked()
     double distancebetweenplots_nondrivingdirection_m = ui->distanceBetweenPlotsMNddLineEdit->text().toDouble();
 
 
-    qDebug() << ui->mapLiveWidget->getPathNum();
-//    qDebug() << ui->mapLiveWidget->getCurrentPath().size();
     if (ui->mapLiveWidget->getPathNum()>0)
     {
         MapRoute activeRoute=ui->mapLiveWidget->getCurrentPath();
@@ -1812,13 +1886,11 @@ void MainWindow::onGeneratePathButtonClicked()
         }
 
         QXmlStreamReader xmlData(&file);
-    //    QXmlStreamReader xmlData(filePath);
         ui->mapLiveWidget->loadXMLRoute(&xmlData,false);
         int newPath=ui->mapLiveWidget->getPathNow()+1;
         ui->mapRouteBox->setValue(newPath);
     //    ui->mapLiveWidget->setPathNow(newPath);
 
-    //    ui->mapLiveWidget->repaint();
     } else
     {
         QMessageBox msgBox;
@@ -1954,19 +2026,37 @@ bool MainWindow::onLoadLogfile()
     }
 
     QByteArray utf8Path = fileName.toUtf8();     // store the QByteArray
-    const char* logfile = utf8Path.constData(); // safe pointer
-    const string &nmea = utf8Path.constData(); // safe pointer
+    const string &nmeafilename = utf8Path.constData(); // safe pointer
 
-//    NmeaServer::parseNMEA(nmea, double &lat, double &lon, double &nmea_time);
+    double refs[3]={0.0,0.0,0.0};
+    ui->mapWidgetAnalysis->getEnuRef(refs);
+    QByteArray xmlData;
+    if (NmeaServer::toXML(refs[0],refs[1],nmeafilename, &xmlData)) {
+        QXmlStreamReader xmlReader(xmlData);
+        ui->mapWidgetAnalysis->loadXMLRoute(&xmlReader, false);
+        // Add to listview
+        fileList.append(QString::fromStdString(nmeafilename));
+        fileModel->setStringList(fileList);  // Update the model
+    } else
+    {
+        QMessageBox msgBox;
+        msgBox.setText("The file does not store nmea data in the right format!");
+        msgBox.exec();
+    }
 
-    /*
-    NmeaServer::latLongToMeters(double nmea_time, double lat, double lon, double refLat, double refLon, double &x, double &y, double &speed);
-    NmeaServer::nmeatoXML(double refLat,double refLon,const string &filename);
-    */
-    //    svg << "</svg>\n";
     return true;
 };
 
+
+void MainWindow::on_listLogFilesView_clicked(const QModelIndex& index) {
+    if (index.isValid()) {
+        QString filename = fileModel->data(index, Qt::DisplayRole).toString();
+        qDebug() << "Selected file:" << filename;
+        int row = index.row();  // 0-based row index
+        qDebug() << "Clicked row:" << row;
+         ui->mapWidgetAnalysis->setPathNow(row);
+    }
+}
 
 void MainWindow::on_mapChooseNmeaButton_clicked()
 {
@@ -2418,6 +2508,7 @@ void MainWindow::on_actionLoadDriveFile_triggered()
     }
 }
 
+/*
 void MainWindow::on_modeRouteButton_toggled(bool checked)
 {
     ui->mapLiveWidget->setAnchorMode(!checked);
@@ -2481,7 +2572,7 @@ void MainWindow::on_removeAnchorsButton_clicked()
 {
     ui->mapLiveWidget->clearAnchors();
 }
-
+*/
 void MainWindow::saveRoutes(bool withId)
 {
     QString filename = QFileDialog::getSaveFileName(this,
@@ -2775,6 +2866,8 @@ void MainWindow::handleAxisEvent(const SDL_ControllerAxisEvent& event) {
     }
 }
 
+#endif
+
 void MainWindow::handleAddFieldButton()
 {
     addField();
@@ -2825,6 +2918,12 @@ void MainWindow::setCurrentFarm(int farm)
     selectRowByPrimaryKey(ui->farmTable, modelFarm, "id", farm);
 }
 
+QLabel* MainWindow::getLogLabel()
+{
+    return ui->textAnalysis;
+}
+
+
 void selectRowByPrimaryKey(QTableView* tableView, QSqlRelationalTableModel* model, const QString& primaryKeyColumnName, const QVariant& primaryKeyValue) {
     qDebug() << "primaryKeyValue: " << primaryKeyValue;
     // Find the column index for the primary key
@@ -2846,4 +2945,14 @@ void selectRowByPrimaryKey(QTableView* tableView, QSqlRelationalTableModel* mode
     }
 }
 
-#endif
+MainWindow* findMainWindow() {
+    // Iterate through all top-level widgets
+    for (QWidget *widget : qApp->topLevelWidgets()) {
+        // Try to cast the widget to MainWindow
+        MainWindow *mainWindow = qobject_cast<MainWindow*>(widget);
+        if (mainWindow) {
+            return mainWindow; // Return the first MainWindow found
+        }
+    }
+    return nullptr; // Return nullptr if no MainWindow is found
+}

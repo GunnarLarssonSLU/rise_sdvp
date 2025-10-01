@@ -21,8 +21,9 @@
 #include <ctime>
 #include <cstring>
 #include <locale.h>
+#include <QBuffer>
 #include <QMessageBox>
-
+#include <optional>
 namespace
 {
 #define NMEA_SUFFIX_LEN 6
@@ -674,40 +675,37 @@ bool NmeaServer::parseNMEA(const string &nmea, double &lat, double &lon, double 
     return true;
 }
 
-bool NmeaServer::nmeatoXML(double refLat,double refLon,const string &filename)
+bool NmeaServer::toXML(double refLat, double refLon, const std::string& filename, QByteArray* outXmlData)
 {
     // Open the file containing NMEA sentences
     ifstream nmeaFile(filename);
-    if (!nmeaFile.is_open())
-    {
-        cerr << "Error opening NMEA file." << endl;
-        return 1;
+    if (!nmeaFile.is_open()) {
+        std::cerr << "Error opening NMEA file: " << filename << std::endl;
+        return false;
     }
-
-    QXmlStreamWriter xmlWriter;
+    QBuffer xmlBuffer(outXmlData);
+    xmlBuffer.open(QIODevice::ReadWrite);
+    QXmlStreamWriter xmlWriter(&xmlBuffer);
     xmlWriter.setAutoFormatting(true);
     xmlWriter.writeStartDocument();
-    xmlWriter.writeStartElement("Routes");
-    xmlWriter.writeStartElement("Route");
-
+    xmlWriter.writeStartElement("routes");
+    xmlWriter.writeStartElement("route");
 
     string sentence;
     while (getline(nmeaFile, sentence))
     {
-        //    for (const auto &sentence : nmeaSentences)
-        //    {
         double lat, lon,nmea_time;
         if (parseNMEA(sentence, lat, lon, nmea_time))
         {
             double x, y, speed;
             latLongToMeters(nmea_time, lat, lon, refLat, refLon, x, y, speed);
 
-            xmlWriter.writeStartElement("Point");
+            xmlWriter.writeStartElement("point");
 
             xmlWriter.writeTextElement("x", QString::number(x));
             xmlWriter.writeTextElement("y", QString::number(y));
+            xmlWriter.writeTextElement("time", QString::number(nmea_time));
             xmlWriter.writeTextElement("speed", QString::number(speed));
-
             xmlWriter.writeEndElement(); // Point
         }
     }
@@ -717,7 +715,8 @@ bool NmeaServer::nmeatoXML(double refLat,double refLon,const string &filename)
     xmlWriter.writeEndDocument();
 
     nmeaFile.close();
+//    xmlBuffer.seek(0); // Rewind to read from start
 
     cout << "XML file created successfully." << endl;
-    return 0;
+    return true;
 }

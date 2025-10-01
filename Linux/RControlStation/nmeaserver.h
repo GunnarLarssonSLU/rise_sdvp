@@ -75,8 +75,7 @@ public:
 
     static void latLongToMeters(double nmea_time, double lat, double lon, double refLat, double refLon, double &x, double &y, double &speed);
     static bool parseNMEA(const string &nmea, double &lat, double &lon, double &nmea_time);
-    static bool nmeatoXML(double refLat,double refLon,const string &filename);
-
+    static bool toXML(double refLat, double refLon, const std::string& filename, QByteArray* outXmlData);
 signals:
     void clientGgaRx(int fields, NmeaServer::nmea_gga_info_t gga);
 

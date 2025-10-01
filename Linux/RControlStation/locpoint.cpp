@@ -18,19 +18,48 @@
 #include "locpoint.h"
 #include <cmath>
 
+
 LocPoint::LocPoint(double x, double y, double height, double roll, double pitch, double yaw, double speed,
                    double radius, double sigma, QColor color, qint32 time, int id, bool drawLine, quint32 attributes) :
-    mX(x), mY(y), mHeight(height), mRoll(roll), mPitch(pitch), mYaw(yaw), mSpeed(speed),
-    mRadius(radius), mSigma(sigma), mColor(color), mTime(time), mId(id), mDrawLine(drawLine),
+    mX(x),
+    mY(y),
+    mHeight(height),
+    mRoll(roll),
+    mPitch(pitch),
+    mYaw(yaw),
+    mSpeed(speed),
+    mRadius(radius),
+    mSigma(sigma),
+    mInfo(""),  // Initialize mInfo to an empty QString
+    mColor(color),
+    mTime(time),
+    mId(id),
+    mDrawLine(drawLine),
     mAttributes(attributes)
 {
-
 }
+
 
 LocPoint::LocPoint(const LocPoint &point)
+    : mX(point.mX),
+    mY(point.mY),
+    mHeight(point.mHeight),
+    mRoll(point.mRoll),
+    mPitch(point.mPitch),
+    mYaw(point.mYaw),
+    mSpeed(point.mSpeed),
+    mRadius(point.mRadius),
+    mSigma(point.mSigma),
+    mInfo(point.mInfo),  // QString is implicitly shared, so this is safe
+    mColor(point.mColor), // QColor is safe to copy
+    mTime(point.mTime),
+    mId(point.mId),
+    mDrawLine(point.mDrawLine),
+    mAttributes(point.mAttributes)
 {
-    *this = point;
+    // No need for additional logic; all members are initialized directly
 }
+
 
 double LocPoint::getX() const
 {
