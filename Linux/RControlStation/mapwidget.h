@@ -39,6 +39,7 @@
 #include "perspectivepixmap.h"
 #include "osmclient.h"
 #include "database.h"
+#include "maproutecollection.h"
 
 class MainWindow;
 
@@ -54,38 +55,7 @@ public:
 };
 
 class MapRoute;
-
-class MapRouteCollection
-{
-public:
-    MapRouteCollection();
-    MapRoute getRoute(int ind = -1);
-    QList<MapRoute> getRoutes();
-    void setRoute(const MapRoute &route);
-    void addRoute(const MapRoute &route);
-    int getRouteNow() const;
-    void setRouteNow(int routeNow);
-    int getRouteNum();
-    void clearRoute();
-    void clearAllRoutes();
-    int mRouteNow;
-
-    void clear();
-    void append(MapRoute &maproute);
-    int size();
-    MapRoute& getCurrent();
-    QList<MapRoute>::const_iterator begin() const;
-    QList<MapRoute>::const_iterator end() const;
-    MapRoute&	first();
-    MapRoute&	last();
-    void 	prepend(const MapRoute &value);
-    void 	removeAt(int i);
-
-    MapRoute& at(int i);
-    QList<MapRoute> mCollection;
-private:
-
-};
+class MapRouteCollection;
 
 class MapWidget : public QWidget
 {
@@ -100,6 +70,7 @@ public:
     void setWheelEventHandler(WheelEventHandler handler);
     void mousePressEventFields(QMouseEvent *e);
     void mousePressEventPaths(QMouseEvent *e);
+    void mousePressEventAnalysis(QMouseEvent *e);
     void mouseReleaseEventFields(QMouseEvent *e);
     void mouseReleaseEventPaths(QMouseEvent *e);
     void wheelEventFields(QWheelEvent *e);
@@ -121,11 +92,6 @@ public:
     void addCar(const CarInfo &car);
     bool removeCar(int carId);
     void clearCars();
-    LocPoint* getAnchor(int id);
-    void addAnchor(const LocPoint &anchor);
-    bool removeAnchor(int id);
-    void clearAnchors();
-    QList<LocPoint> getAnchors();
     void setScaleFactor(double scale);
     double getScaleFactor();
     void setRotation(double rotation);
@@ -138,8 +104,8 @@ public:
     void setBorderFocus(bool focus);
     bool saveRoutes(QString filename);
 
-    MapRoute getPath(int ind = -1);
-    QList<MapRoute> getPaths();
+    MapRoute& getPath(int ind = -1);
+    QList<MapRoute>& getPaths();
     void setPath(const MapRoute &route);
     void addPath(const MapRoute &route);
     int getPathNow() const;
@@ -148,9 +114,9 @@ public:
     void clearPath();
     void clearAllPaths();
 
-    MapRoute getCurrentPath();
-    MapRoute getField(int ind = -1);
-    QList<MapRoute> getFields();
+    MapRoute& getCurrentPath();
+    MapRoute& getField(int ind = -1);
+    QList<MapRoute>& getFields();
     void setField(const MapRoute &field);
     void addField(const MapRoute &field);
     int getFieldNow() const;
@@ -183,10 +149,6 @@ public:
     int getInfoTraceNum();
     int getInfoPointsInTrace(int trace);
     int setNextEmptyOrCreateNewInfoTrace();
-    void setAnchorMode(bool anchorMode);
-    bool getAnchorMode();
-    void setAnchorId(int id);
-    void setAnchorHeight(double height);
     void removeLastRoutePoint();
     void zoomInOnRoute(int id, double margins, double wWidth = -1, double wHeight = -1);
 
@@ -242,6 +204,7 @@ public:
 
     void setMainWindow(MainWindow* _mw);
     void setDb(database* _db);
+    void setAnalysisActive(bool state);
 signals:
     void scaleChanged(double newScale);
     void offsetChanged(double newXOffset, double newYOffset);
@@ -251,7 +214,6 @@ signals:
     void infoTraceChanged(int traceNow);
 
     void mouseClickedInField(const int field);
-
 
 private slots:
     void tileReady(OsmTile tile);
@@ -266,6 +228,10 @@ protected:
     void wheelEvent(QWheelEvent *e) override;
     bool event(QEvent *event) override;
 
+public:
+    MapRouteCollection* mFields;
+    MapRouteCollection* mPaths;
+
 private:
     MouseEventHandler mousePressEventHandler;
     MouseEventHandler mouseReleaseEventHandler;
@@ -277,9 +243,6 @@ private:
     QVector<LocPoint> mCarTraceUwb;
     QVector<LocPoint> mLoadedTrace;
 
-    QList<LocPoint> mAnchors;
-    MapRouteCollection* mFields;
-    MapRouteCollection* mPaths;
     QList<QList<LocPoint>> mInfoTraces;
     //    QList<MapRoute> mInfoTraces;
     QList<LocPoint> mVisibleInfoTracePoints;
@@ -287,8 +250,6 @@ private:
     double mRoutePointSpeed;
     qint32 mRoutePointTime;
     quint32 mRoutePointAttributes;
-    qint32 mAnchorId;
-    double mAnchorHeight;
     double mScaleFactor;
     double mRotation;
     double mXOffset;
@@ -319,7 +280,6 @@ private:
     int mInfoTraceNow;
     double mTraceMinSpaceCar;
     double mTraceMinSpaceGps;
-    QList<QPixmap> mPixmaps;
     bool mAnchorMode;
     bool mDrawRouteText;
     bool mDrawUwbTrace;
@@ -337,7 +297,6 @@ private:
                        double min_dist);
     int getClosestPoint(LocPoint p, QList<LocPoint> route, double &dist);
 //    int getClosestPoint(LocPoint p, MapRoute route, double &dist);
-    void drawCircleFast(QPainter &painter, QPointF center, double radius, int type = 0);
 
     void paint(QPainter &painter, int width, int height, bool highQuality = false);
     void updateTraces();
@@ -351,51 +310,17 @@ private:
     void paintClosestPoint(QPainter &painter,QPen &pen,QTransform drawTrans, QTransform txtTrans, QPointF& pt_txt,QRectF &rect_txt );
     void paintTraceVechicle(QPainter &painter,QPen &pen, QTransform drawTrans,QVector<LocPoint> mTrace,double traceWidth,QColor traceColour);
 
+    void setFarm(double px,double py);
+    bool getCurrentRoute(MapRouteCollection* mRoutes, int& routeindex, int& mRoutePointSelected, LocPoint mousePosMap,double maxSnapDistance);
+    void changeField(QMouseEvent *e,LocPoint mousePosMap);
+    void updateAnalysis(bool state);
+    int iLogstart,iLogend;
     bool focusBorder;
     bool bUpdateable;
-    int iLogstart,iLogend;
     bool hasChanged;
     MainWindow* mw;
     database* db;
-};
-
-class MapRoute
-{
-
-public:
-    //    MapRoute(QList<LocPoint> route, QList<LocPoint> infotrace);
-    void append(LocPoint point);
-    void append(const QList<LocPoint> &points);
-    void append(const MapRoute &mr);
-    int size();
-    bool isEmpty() const;
-    void clear();
-    QList<LocPoint>::const_iterator begin() const;
-    QList<LocPoint>::const_iterator end() const;
-    LocPoint&	first();
-    LocPoint&	last();
-    void 	prepend(const LocPoint &value);
-    void 	removeAt(int i);
-    void 	removeLast();
-    LocPoint &	operator[](int i);
-    QList<LocPoint> mRoute;
-    QList<LocPoint> mInfoTrace;
-
-    void saveXMLRoute(QXmlStreamWriter* stream,bool withId, int i);
-    double getArea();
-
-    //    void paint(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawtrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool highQuality = false);
-    void paintPath(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawtrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool highQuality = false);
-    void paintBorder(QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawtrans);
-    void paintPoint(int i, bool isSelected, QPainter &painter, QPen &pen, Qt::GlobalColor defaultDarkColor, Qt::GlobalColor defaultColor);
-
-    void routeinfo(MapWidget* mapWidget, QPainter &painter,double start_txt,const double txtOffset,const double txt_row_h, int width, QString txt);
-    void setIsBorder(bool border);
-    bool getIsBorder() const;
-
-private:
-    bool isBorder;
-
+    bool bAnalysisActive;
 };
 
 #endif // MAPWIDGET_H

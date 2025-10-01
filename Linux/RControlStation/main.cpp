@@ -47,8 +47,17 @@ int main(int argc, char *argv[])
 {
     QStringList args;
     for (int i = 0; i < argc; i++)
-        args.append(argv[i]);
-
+    {
+        QString arg = argv[i];
+        if (arg.startsWith("-qmljsdebugger") ||
+            arg.startsWith("-qmljs") ||
+            arg.startsWith("-gdb") ||
+            arg.startsWith("-qml")) {
+            continue;
+        }
+        args.append(arg);
+//        args.append(argv[i]);
+    }
     typedef enum {
         RUN_DEFAULT_GUI = 0,
         RUN_BASESTATION
@@ -305,8 +314,6 @@ int main(int argc, char *argv[])
     }
 
     // Settings
-    a->setOrganizationName("RISE");
-    a->setOrganizationDomain("ri.se");
     a->setApplicationName("RControlStation");
 
 
