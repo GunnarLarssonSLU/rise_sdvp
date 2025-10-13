@@ -201,7 +201,7 @@
 #define SERVO_OUT_PULSE_MAX_US		2000
 
 // Autopilot settings
-#define AP_ROUTE_SIZE				1000
+#define AP_ROUTE_SIZE				2000
 
 // Board-dependent settings
 #if IS_F9_BOARD

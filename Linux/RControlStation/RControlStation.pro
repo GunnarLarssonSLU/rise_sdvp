@@ -88,6 +88,7 @@ SOURCES += main.cpp\
     maproutecollection.cpp \
     qcustomplot.cpp \
     packetinterface.cpp \
+    shapefile.cpp \
     utility.cpp \
     mapwidget.cpp \
     carinfo.cpp \
@@ -134,6 +135,7 @@ HEADERS  += mainwindow.h \
     qcustomplot.h \
     datatypes.h \
     packetinterface.h \
+    shapefile.h \
     utility.h \
     mapwidget.h \
     carinfo.h \

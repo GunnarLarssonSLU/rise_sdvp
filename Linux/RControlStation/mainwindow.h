@@ -34,7 +34,6 @@
 #endif
 
 #include "carinterface.h"
-//#include "copterinterface.h"
 #include "packetinterface.h"
 #include "ping.h"
 #include "nmeaserver.h"
@@ -215,7 +214,9 @@ private slots:
     void on_AutopilotPausePushButton_clicked();
     void onGeneratePathButtonClicked();
     void onGenerateLineButtonClicked();
+    void onTransformButtonClicked();
     bool onLoadShapefile();
+    bool onShowShapefile();
     bool onLoadLogfile();
 
     QSqlRelationalTableModel* setupFarmTable(QTableView* uiFarmtable,QString SqlTableName);
@@ -294,6 +295,57 @@ public:
 
     void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
 };
+
+#include <QDoubleValidator>
+
+class PrecisionDelegate : public QStyledItemDelegate {
+    Q_OBJECT
+public:
+    explicit PrecisionDelegate(int column, int decimals = 10, QObject *parent = nullptr)
+        : QStyledItemDelegate(parent), m_column(column), m_decimals(decimals) {}
+    // Display high-precision numbers as text
+    QString displayText(const QVariant &value, const QLocale &locale) const override {
+        if (value.canConvert<double>())
+            return locale.toString(value.toDouble(), 'f', m_decimals);
+        return QStyledItemDelegate::displayText(value, locale);
+    }
+
+    // Use a QLineEdit for editing (not a spinbox)
+    QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &,
+                          const QModelIndex &index) const override {
+        if (index.column() == m_column) {
+            QLineEdit *editor = new QLineEdit(parent);
+            auto *validator = new QDoubleValidator(editor);
+            validator->setNotation(QDoubleValidator::StandardNotation);
+            validator->setDecimals(m_decimals);
+            editor->setValidator(validator);
+            editor->setAlignment(Qt::AlignRight);
+            editor->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+            return editor;
+        }
+        return QStyledItemDelegate::createEditor(parent, {}, index);
+    }
+
+    // Convert text back to double
+    void setModelData(QWidget *editor, QAbstractItemModel *model,
+                      const QModelIndex &index) const override {
+        if (index.column() == m_column) {
+            auto *line = qobject_cast<QLineEdit *>(editor);
+            if (!line)
+                return;
+            bool ok;
+            double d = line->text().toDouble(&ok);
+            if (ok)
+                model->setData(index, d, Qt::EditRole);
+            return;
+        }
+        QStyledItemDelegate::setModelData(editor, model, index);
+    }
+private:
+    int m_column;
+    int m_decimals;
+};
+
 
 void selectRowByPrimaryKey(QTableView* tableView, QSqlRelationalTableModel* model, const QString& primaryKeyColumnName, const QVariant& primaryKeyValue);
 MainWindow* findMainWindow();

@@ -2480,16 +2480,12 @@ bool MapWidget::loadXMLRoute(QXmlStreamReader* stream,bool isBorder)
                         qWarning() << " : XML ERROR :" << stream->errorString();
                     }
                 }
-                qDebug() << "AAAAA";
                 MapRoute routeCopy = route; // Does copying work? WORKS
-                qDebug() << "BBBBB";
                 routes.append(QPair<int, MapRoute >(id, route)); // DOES NOT WORK
 
 //               unusedroutes.append(QPair<int, MapRoute >(id, route)); DOES NOT WORK
 //                routes.append(QPair<int, MapRoute >(id, routeCopy)); // DOES NOT WORK
-                qDebug() << "CCC";
             } else if (name == "anchors") {
-                qDebug() << "QQQQ";
                 while (stream->readNextStartElement()) {
                     QString name2 = stream->name().toString();
 

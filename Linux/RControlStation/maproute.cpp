@@ -9,7 +9,7 @@ MapRoute::MapRoute()
     mRoute(),    // Initialize empty QList<LocPoint>
     mInfoTrace() // Initialize empty QList<LocPoint>
 {
-    qDebug() << "MapRoute default constructor called";
+ //   qDebug() << "MapRoute default constructor called";
 }
 
 MapRoute::MapRoute(const MapRoute &other)
@@ -19,11 +19,11 @@ MapRoute::MapRoute(const MapRoute &other)
     mRoute(other.mRoute),          // Copy the QList<LocPoint>
     mInfoTrace(other.mInfoTrace)  // Copy the QList<LocPoint>
 {
-    qDebug() << "MapRoute copy constructor called";
+  //  qDebug() << "MapRoute copy constructor called";
 }
 
 MapRoute::~MapRoute() {
-    qDebug() << "MapRoute destructor called";
+  //  qDebug() << "MapRoute destructor called";
 }
 
 // Copy assignment operator
@@ -35,7 +35,7 @@ MapRoute &MapRoute::operator=(const MapRoute &other) {
         mRoute = other.mRoute;          // Copy the QList<LocPoint>
         mInfoTrace = other.mInfoTrace;  // Copy the QList<LocPoint>
     }
-    qDebug() << "MapRoute copy assignment called";
+    // qDebug() << "MapRoute copy assignment called";
     return *this;
 }
 
@@ -46,7 +46,7 @@ MapRoute::MapRoute(MapRoute &&other) noexcept
     mRoute(std::move(other.mRoute)),          // Move the QList<LocPoint>
     mInfoTrace(std::move(other.mInfoTrace))  // Move the QList<LocPoint>
 {
-    qDebug() << "MapRoute move constructor called";
+    // qDebug() << "MapRoute move constructor called";
 }
 
 // Move assignment operator (C++11+)
@@ -447,9 +447,7 @@ void MapRoute::drawCircleFast(QPainter &painter, QPointF center, double radius, 
 QList<QPixmap> MapRoute::mPixmaps;
 
 const QList<QPixmap>& MapRoute::getPixmaps() {
-    qDebug() << "Getting mPixmaps";
     if (mPixmaps.isEmpty()) {
-        qDebug() << "Was empty!";
         initPixmaps();
     }
     return mPixmaps;
@@ -504,4 +502,15 @@ void MapRoute::initPixmaps() {
 void MapRoute::insert(int i,LocPoint &value)
 {
     mRoute.insert(i,value);
+}
+
+void MapRoute::transform(double moveX,double moveY,double rotate)
+{
+    //no rotation yet
+
+    int nPoints=this->size();
+    for (int i = 0;i < nPoints;i++) {
+        mRoute[i].setX(mRoute[i].getX()+moveX);
+        mRoute[i].setY(mRoute[i].getY()+moveY);
+    }
 }

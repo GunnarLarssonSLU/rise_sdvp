@@ -63,6 +63,7 @@ public:
     void setAnalysisFocus();
     void updateAnalysis();
     void drawCircleFast(QPainter &painter, QPointF center, double radius, int type = 0);
+    void transform(double moveX,double moveY,double rotate);
 
 private:
     bool isBorder;
