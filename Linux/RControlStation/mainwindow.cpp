@@ -34,7 +34,6 @@
 #include <QtCharts>
 #include <QtWidgets>
 #include <QDir>
-#include <ogrsf_frmts.h>
 #include <iostream>
 #include <fstream>
 
@@ -45,7 +44,6 @@
 #include <QListView>
 #include <QStringListModel>
 
-
 #include "utility.h"
 #include "routemagic.h"
 #include "wireguard.h"
@@ -53,6 +51,7 @@
 #include "datatypes.h"
 #include "arduinoreader.h"
 #include "checkboxdelegate.h"
+#include "shapefile.h"
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     #include <SDL2/SDL.h>
@@ -243,9 +242,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(ui->buttonGenerate, &QPushButton::clicked, this, &MainWindow::onGeneratePathButtonClicked);
     connect(ui->buttonGenerateLine, &QPushButton::clicked, this, &MainWindow::onGenerateLineButtonClicked);
+    connect(ui->buttonShowShapefile, &QPushButton::clicked, this, &MainWindow::onShowShapefile);
     // Connect the button's clicked signal to a lambda that opens a file dialog
     connect(ui->pushButton_load_shapefile, &QPushButton::clicked, this, &MainWindow::onLoadShapefile);
     connect(ui->pushButtonLoadLogFile, &QPushButton::clicked, this, &MainWindow::onLoadLogfile);
+    connect(ui->buttonTransform, &QPushButton::clicked, this, &MainWindow::onTransformButtonClicked);
     connect(ui->listLogfilesView, &QListView::clicked, this, &MainWindow::on_listLogFilesView_clicked);
 
     connect(ui->actionAboutQt, SIGNAL(triggered(bool)),
@@ -503,6 +504,7 @@ QSqlRelationalTableModel* MainWindow::setupFarmTable(QTableView* uiFarmTable,QSt
     model->setHeaderData(model->fieldIndex("user"), Qt::Horizontal, tr("user"));
     model->setHeaderData(model->fieldIndex("password"), Qt::Horizontal, tr("password"));
 
+
     // Populate the model:
     if (!model->select()) {
         db.showError(model->lastError());
@@ -513,7 +515,6 @@ QSqlRelationalTableModel* MainWindow::setupFarmTable(QTableView* uiFarmTable,QSt
     uiFarmTable->setModel(model);
     //ui.locationTable->setItemDelegate(new BookDelegate(ui.locationTable));
     uiFarmTable->setColumnHidden(model->fieldIndex("id"), true);
-
 //    uiFarmTable->setColumnHidden(model->fieldIndex("longitude"), true);
 //    uiFarmTable->setColumnHidden(model->fieldIndex("latitude"), true);
     uiFarmTable->setColumnHidden(model->fieldIndex("ip"), true);
@@ -528,6 +529,8 @@ QSqlRelationalTableModel* MainWindow::setupFarmTable(QTableView* uiFarmTable,QSt
     uiFarmTable->setCurrentIndex(model->index(0, 0));
     uiFarmTable->resizeColumnsToContents();
     uiFarmTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    uiFarmTable->setItemDelegateForColumn(2, new PrecisionDelegate(2, 14, uiFarmTable));
+    uiFarmTable->setItemDelegateForColumn(3, new PrecisionDelegate(3, 14, uiFarmTable));
 
     QDataWidgetMapper *mapperFarm = new QDataWidgetMapper(this);
     mapperFarm->setModel(model);
@@ -1856,12 +1859,16 @@ void MainWindow::onGeneratePathButtonClicked()
     double distancebetweenplots_drivingdirection_m = ui->distanceBetweenPlotsMDdLineEdit->text().toDouble();
     double distancebetweenplots_nondrivingdirection_m = ui->distanceBetweenPlotsMNddLineEdit->text().toDouble();
 
+    double speed_m__s = ui->hastighetkmhLineEdit->text().toDouble();
+
+    double turnDiameterX_m = ui->turnRadiusMDdLineEdit->text().toDouble();
+    int turnSteps = ui->turnStepsLineEdit->text().toInt();
 
     if (ui->mapLiveWidget->getPathNum()>0)
     {
         MapRoute activeRoute=ui->mapLiveWidget->getCurrentPath();
         LocPoint p1,p2;
-        if (ui->inveseDirectionCheckBox->isChecked())
+        if (ui->switchStartpointCheckBox->isChecked())
         {
             p1=activeRoute[1];
             p2=activeRoute[0];
@@ -1870,7 +1877,8 @@ void MainWindow::onGeneratePathButtonClicked()
             p1=activeRoute[0];
             p2=activeRoute[1];
         }
-        RouteGenerator rg(fieldLength_m,fieldWidth_m,implementLength_m,implementWidth_m,plots_DrivingDirection,plots_NonDrivingDirection,distancebetweenplots_drivingdirection_m,distancebetweenplots_nondrivingdirection_m,p1,p2);
+
+        RouteGenerator rg(fieldLength_m,fieldWidth_m,implementLength_m,implementWidth_m,plots_DrivingDirection,plots_NonDrivingDirection,distancebetweenplots_drivingdirection_m,distancebetweenplots_nondrivingdirection_m,p1,p2,speed_m__s,turnDiameterX_m, turnSteps,ui->flipSideCheckBox->isChecked());
         rg.generateXmlFile();
 
         QString filePath="output.xml";
@@ -1899,119 +1907,65 @@ void MainWindow::onGeneratePathButtonClicked()
     }
 }
 
+void MainWindow::onTransformButtonClicked()
+{
+    double moveX_m = ui->moveXMLineEdit->text().toDouble(); // Assuming input1 is the object name of a QLineEdit
+    double moveY_m = ui->moveYMLineEdit->text().toDouble(); // Assuming input1 is the object name of a QLineEdit
+    double rotate = ui->rotateLineEdit->text().toDouble(); // Assuming input1 is the object name of a QLineEdit
+    ui->mapLiveWidget->getCurrentPath().transform(moveX_m,moveY_m,rotate);
+    ui->mapLiveWidget->update();
+}
+
 bool MainWindow::onLoadShapefile()
 {
+    ShapeFile sf;
     // Create a file dialog
     QString fileName = QFileDialog::getOpenFileName(this,
                                                     "Open File", "", "Shape Files [*.shp](*.shp)");
+
+    double illh[3];
+    ui->mapWidgetFields->getEnuRef(illh);
 
     // Check if a file was selected
     if (!fileName.isEmpty()) {
         qDebug() << "Selected file:" << fileName;
         // Use the selected file path as needed
-    }
+        sf.load(fileName,illh,ui->mapWidgetFields);
 
-    QByteArray utf8Path = fileName.toUtf8();     // store the QByteArray
-    const char* shapefile = utf8Path.constData(); // safe pointer
+        if (ui->mapWidgetFields->saveRoutes(ui->filenameEdit->text()))
+        {
+            showStatusInfo("Saved routes", true);
+        } else
+        {
+            showStatusInfo("Could not save routes", false);
+        };
+        qDebug() << "stored file";
 
-    qDebug() << "loading shapefile";
+        addField();
 
-    // 1️⃣ Register all OGR drivers
-    GDALAllRegister();
+        return true;
+    } else return false;
+}
 
-    // 2️⃣ Open the shapefile (read-only)
-    GDALDataset *poDS = (GDALDataset*) GDALOpenEx(shapefile, GDAL_OF_VECTOR, NULL, NULL, NULL);
-    if (poDS == nullptr) {
-        std::cerr << "Failed to open shapefile: " << shapefile << std::endl;
-        return false;
-    }
-
-    // 3️⃣ Get the first layer
-    OGRLayer* poLayer = poDS->GetLayer(0);
-    if (poLayer == nullptr) {
-        std::cerr << "Could not get layer from shapefile" << std::endl;
-        GDALClose(poDS);
-        return false;
-    }
+bool MainWindow::onShowShapefile()
+{
+    ShapeFile sf;
+    // Create a file dialog
+    QString fileName = QFileDialog::getOpenFileName(this,
+                                                    "Open File", "", "Shape Files [*.shp](*.shp)");
 
     double illh[3];
-    ui->mapWidgetFields->getEnuRef(illh);
+    ui->mapLiveWidget->getEnuRef(illh);
 
-    // 4️⃣ Loop through features
-    OGRFeature* poFeature;
-    poLayer->ResetReading();
-    while ((poFeature = poLayer->GetNextFeature()) != nullptr) {
-        OGRGeometry* geom = poFeature->GetGeometryRef();
-        if (geom != nullptr && wkbFlatten(geom->getGeometryType()) == wkbMultiPolygon) {
-            OGRMultiPolygon* multiPoly = geom->toMultiPolygon();
-
-            for (int i = 0; i < multiPoly->getNumGeometries(); i++) {
-                OGRPolygon* poly = multiPoly->getGeometryRef(i)->toPolygon();
-
-                // Outer ring (boundary)
-                OGRLinearRing* outer = poly->getExteriorRing();
-
-                MapRoute MR;
-                if (outer) {
-                    int nPoints = outer->getNumPoints();
-                    for (int j = 0; j < nPoints; j++) {
-                        double llh[3];
-                        double xyh[3];
-                        llh[0]=outer->getY(j);
-                        llh[1]=outer->getX(j);
-                        llh[2]=0;
-                        utility::llhToEnu(illh, llh, xyh);
-                        LocPoint lp(xyh[0],xyh[1]);
-                        MR.append(lp);
-
-                    }
-                }
-                ui->mapWidgetFields->addField(MR);
-                /*
-                svg << "' style='fill:none;stroke:black;stroke-width:1'/>\n";
-
-                // Inner rings (holes)
-                for (int h = 0; h < poly->getNumInteriorRings(); h++) {
-                    OGRLinearRing* hole = poly->getInteriorRing(h);
-                    qDebug() << "  Hole " << h << ":" ;
-                    for (int j = 0; j < hole->getNumPoints(); j++) {
-                        qDebug() << hole->getX(j) << ", " << hole->getY(j);
-                    }
-                }
-                */
-            }
-        }
-
-        OGRFeature::DestroyFeature(poFeature);
+    // Check if a file was selected
+    if (!fileName.isEmpty()) {
+        qDebug() << "Selected file:" << fileName;
+        // Use the selected file path as needed
+        sf.load(fileName,illh,ui->mapLiveWidget);
+        return true;
     }
-
-    // 5️⃣ Close dataset
-    GDALClose(poDS);
-
-    // Get the current date and time
-//    QDateTime currentDateTime = QDateTime::currentDateTime();
-
-    // Format the date and time as a string
-//    QString formattedDateTime = currentDateTime.toString("yyyyMMdd-hhmmss");
-
-//    QString storedfilename= "shapefileimport" + formattedDateTime;
-//    qDebug() << "file name" << storedfilename;
-
-    if (ui->mapWidgetFields->saveRoutes(ui->filenameEdit->text()))
-    {
-        showStatusInfo("Saved routes", true);
-    } else
-    {
-        showStatusInfo("Could not save routes", false);
-    };
-    qDebug() << "stored file";
-
-    addField();
-
-//    svg << "</svg>\n";
-    return true;
+    return false;
 };
-
 
 bool MainWindow::onLoadLogfile()
 {

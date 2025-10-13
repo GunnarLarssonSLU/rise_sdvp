@@ -229,12 +229,11 @@ OsmTile OsmClient::getTile(int zoom, int x, int y, int &res)
 int OsmClient::downloadTile(int zoom, int x, int y)
 {
     int retval = -1;
-    qDebug() << "TRY TO DOWNLOAD";
 
     if (!mTileServer.isEmpty()) {
         if (mDownloadingTiles.size() < mMaxDownloadingTiles) {
             quint64 key = calcKey(zoom, x, y);
-            qDebug() << "(in downloadTile) x:" << x << ", y: " << y << ", zoom: " << zoom << "key :" << key;
+//            qDebug() << "(in downloadTile) x:" << x << ", y: " << y << ", zoom: " << zoom << "key :" << key;
 
             if (!mDownloadingTiles.contains(key)) {
                 // Only add if this tile is not already downloading
@@ -242,15 +241,12 @@ int OsmClient::downloadTile(int zoom, int x, int y)
 //                        "/" + QString::number(x) + "/" + QString::number(y) + ".png";
                 QString path = mTileServer + QString::number(zoom) +
                         "/" + QString::number(y) + "/" + QString::number(x);
-                qDebug() << "Tile server:" << path;
-               // cout << "Tile server:" << path;
 
                 QNetworkRequest request(path);
                 request.setRawHeader("User-Agent", "Firefox");
                 mWebCtrl.get(request);
                 mDownloadingTiles.insert(key, true);
             }
-            qDebug() << "I am confused";
             retval = 1;
         } else {
             emit errorGetTile("Too many tiles downloading.");
