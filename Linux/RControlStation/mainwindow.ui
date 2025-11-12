@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1561</width>
-    <height>1484</height>
+    <height>1510</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -500,7 +500,7 @@
        <enum>QTabWidget::TabPosition::North</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>9</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -863,7 +863,7 @@
                <enum>QTabWidget::TabShape::Rounded</enum>
               </property>
               <property name="currentIndex">
-               <number>5</number>
+               <number>6</number>
               </property>
               <property name="usesScrollButtons">
                <bool>false</bool>
@@ -2848,7 +2848,7 @@
                   <item row="9" column="1">
                    <widget class="QLineEdit" name="distanceBetweenPlotsMDdLineEdit">
                     <property name="text">
-                     <string>12</string>
+                     <string>18</string>
                     </property>
                     <property name="alignment">
                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -2883,7 +2883,11 @@
                    </widget>
                   </item>
                   <item row="12" column="1">
-                   <widget class="QCheckBox" name="flipSideCheckBox"/>
+                   <widget class="QCheckBox" name="flipSideCheckBox">
+                    <property name="checked">
+                     <bool>true</bool>
+                    </property>
+                   </widget>
                   </item>
                   <item row="13" column="0">
                    <widget class="QLabel" name="switchStartpointLabel">
@@ -2960,13 +2964,17 @@
                     </property>
                    </widget>
                   </item>
-                  <item row="21" column="1">
-                   <widget class="QLineEdit" name="lineEdit"/>
-                  </item>
                   <item row="22" column="0" colspan="2">
                    <widget class="QPushButton" name="buttonPrependRoute">
                     <property name="text">
                      <string>Prepend route</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="23" column="0" colspan="2">
+                   <widget class="QPushButton" name="buttonAppendRoute">
+                    <property name="text">
+                     <string>Append route</string>
                     </property>
                    </widget>
                   </item>
@@ -2986,6 +2994,19 @@
                   </item>
                   <item row="19" column="1">
                    <widget class="QCheckBox" name="addInsertDriveCheckBox"/>
+                  </item>
+                  <item row="21" column="1">
+                   <widget class="QDoubleSpinBox" name="prependRouteSpinBox">
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                    </property>
+                    <property name="decimals">
+                     <number>0</number>
+                    </property>
+                    <property name="value">
+                     <double>2.000000000000000</double>
+                    </property>
+                   </widget>
                   </item>
                  </layout>
                 </item>
@@ -3049,10 +3070,67 @@
                     </property>
                    </widget>
                   </item>
-                  <item row="99" column="0" colspan="2">
+                  <item row="4" column="0">
+                   <widget class="QLabel" name="removeBeforeLabel">
+                    <property name="text">
+                     <string>Remove, before</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="5" column="0">
+                   <widget class="QLabel" name="removeAfterLabel">
+                    <property name="text">
+                     <string>Remove, after</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="3" column="0" colspan="2">
                    <widget class="QPushButton" name="buttonTransform">
                     <property name="text">
                      <string>Transform</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="7" column="0" colspan="2">
+                   <widget class="QPushButton" name="buttonCut">
+                    <property name="text">
+                     <string>Cut</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="6" column="0">
+                   <widget class="QLabel" name="createNewPathLabel">
+                    <property name="text">
+                     <string>Create new path</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="6" column="1">
+                   <widget class="QCheckBox" name="createNewPathCheckBox"/>
+                  </item>
+                  <item row="4" column="1">
+                   <widget class="QDoubleSpinBox" name="removeBeforeSpinBox">
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                    </property>
+                    <property name="decimals">
+                     <number>0</number>
+                    </property>
+                    <property name="maximum">
+                     <double>1000.000000000000000</double>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="5" column="1">
+                   <widget class="QDoubleSpinBox" name="removeAfterSpinBox">
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                    </property>
+                    <property name="decimals">
+                     <number>0</number>
+                    </property>
+                    <property name="maximum">
+                     <double>1000.000000000000000</double>
                     </property>
                    </widget>
                   </item>
@@ -3408,7 +3486,7 @@
        </attribute>
        <layout class="QHBoxLayout" name="hBoxLayoutMain" stretch="1,1">
         <item>
-         <layout class="QVBoxLayout" name="vBoxDisplay" stretch="0,0,1">
+         <layout class="QVBoxLayout" name="vBoxDisplay" stretch="0,0,1,0">
           <property name="sizeConstraint">
            <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
           </property>
@@ -3421,6 +3499,9 @@
           </item>
           <item>
            <widget class="QListView" name="listLogfilesView"/>
+          </item>
+          <item>
+           <widget class="RangeSlider" name="rangeSlider" native="true"/>
           </item>
           <item>
            <widget class="MapWidget" name="mapWidgetAnalysis" native="true">
@@ -3709,6 +3790,12 @@
    <class>QChartView</class>
    <extends>QWidget</extends>
    <header>qchartview.h</header>
+  </customwidget>
+  <customwidget>
+   <class>RangeSlider</class>
+   <extends>QWidget</extends>
+   <header>rangeslider.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources>

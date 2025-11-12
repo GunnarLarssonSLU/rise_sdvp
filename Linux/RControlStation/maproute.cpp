@@ -79,19 +79,19 @@ bool MapRoute::isEmpty() const
 
 void MapRoute::append(LocPoint point)
 {
-    qDebug() << "Appending to mRoute:" << point.getX() << point.getY();
+//    qDebug() << "Appending to mRoute:" << point.getX() << point.getY();
     mRoute.append(point);
 }
 
 void MapRoute::append(const QList<LocPoint> &points)
 {
-    qDebug() << "Appending QList<LocPoint> to mRoute";
+//    qDebug() << "Appending QList<LocPoint> to mRoute";
     mRoute.append(points);
 }
 
 void MapRoute::append(const MapRoute &mr)
 {
-    qDebug() << "Appending MapRoute to mRoute";
+//    qDebug() << "Appending MapRoute to mRoute";
     mRoute.append(mr.mRoute);
 }
 
@@ -239,16 +239,14 @@ void MapRoute::paintLine(int i, bool isSelected, bool isAnalysed, QPainter &pain
     painter.setOpacity(0.7);
     painter.drawLine(mRoute[i - 1].getX() * 1000.0, mRoute[i - 1].getY() * 1000.0,
                      mRoute[i].getX() * 1000.0, mRoute[i].getY() * 1000.0);
-
+/*
     if (isImplementsDownAndPathSelected) {
         pen.setBrush(Qt::red);
         painter.setPen(pen);
-        //        double dx=mRoute[i].getX()-mRoute[i - 1].getX();
-        //        double dy=mRoute[i].getY()-mRoute[i - 1].getY();
         painter.drawLine(mRoute[i - 1].getX() * 1000.0, mRoute[i - 1].getY() * 1000.0+10000,
                          mRoute[i].getX() * 1000.0, mRoute[i].getY() * 1000.0+10000);
 
-    };
+    };*/
     painter.setOpacity(1.0);
 }
 
@@ -506,11 +504,26 @@ void MapRoute::insert(int i,LocPoint &value)
 
 void MapRoute::transform(double moveX,double moveY,double rotate)
 {
-    //no rotation yet
+    //no rotation yet!
 
     int nPoints=this->size();
     for (int i = 0;i < nPoints;i++) {
         mRoute[i].setX(mRoute[i].getX()+moveX);
         mRoute[i].setY(mRoute[i].getY()+moveY);
+    }
+}
+
+void MapRoute::cut(int before,int after)
+{
+    qDebug() << "MAPROUTE";
+    qDebug() << "before: " << before;
+    qDebug() << "after: " << after;
+
+    int nPoints=this->size();
+    for (int i = nPoints-1;i > after;i--) {
+        mRoute.removeAt(i);
+    }
+    for (int i = before;i >= 0;i--) {
+        mRoute.removeAt(i);
     }
 }

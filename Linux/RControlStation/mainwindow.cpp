@@ -246,7 +246,10 @@ MainWindow::MainWindow(QWidget *parent) :
     // Connect the button's clicked signal to a lambda that opens a file dialog
     connect(ui->pushButton_load_shapefile, &QPushButton::clicked, this, &MainWindow::onLoadShapefile);
     connect(ui->pushButtonLoadLogFile, &QPushButton::clicked, this, &MainWindow::onLoadLogfile);
+    connect(ui->buttonAppendRoute, &QPushButton::clicked, this, &MainWindow::onAppendButtonClicked);
+    connect(ui->buttonPrependRoute, &QPushButton::clicked, this, &MainWindow::onPrependButtonClicked);
     connect(ui->buttonTransform, &QPushButton::clicked, this, &MainWindow::onTransformButtonClicked);
+    connect(ui->buttonCut, &QPushButton::clicked, this, &MainWindow::onCutButtonClicked);
     connect(ui->listLogfilesView, &QListView::clicked, this, &MainWindow::on_listLogFilesView_clicked);
 
     connect(ui->actionAboutQt, SIGNAL(triggered(bool)),
@@ -1897,8 +1900,7 @@ void MainWindow::onGeneratePathButtonClicked()
         ui->mapLiveWidget->loadXMLRoute(&xmlData,false);
         int newPath=ui->mapLiveWidget->getPathNow()+1;
         ui->mapRouteBox->setValue(newPath);
-    //    ui->mapLiveWidget->setPathNow(newPath);
-
+        ui->removeAfterSpinBox->setValue(ui->mapLiveWidget->getPath().size());  // Later change so this line instead is execute when ui->mapRouteBox changes value (i.e. so it change whenever the size of the path changes - oh, and also need to change it when adding/removing points)
     } else
     {
         QMessageBox msgBox;
@@ -1907,13 +1909,73 @@ void MainWindow::onGeneratePathButtonClicked()
     }
 }
 
+void MainWindow::onCutButtonClicked()
+{
+    qDebug() << "CUT";
+    int before = ui->removeBeforeSpinBox->value();
+    qDebug() << "before: " << before;
+    int after = ui->removeAfterSpinBox->value();
+    qDebug() << "after: " << after;
+    if (ui->createNewPathCheckBox->isChecked())
+    {
+    qDebug() << "CHECKED";
+    MapRoute newRoute=ui->mapLiveWidget->getCurrentPath();
+    newRoute.cut(before,after);
+    ui->mapLiveWidget->addPath(newRoute);
+    } else
+    {
+        qDebug() << "UNCHECKED";
+        ui->mapLiveWidget->getCurrentPath().cut(before,after);
+    }
+    ui->mapLiveWidget->update();
+}
+
 void MainWindow::onTransformButtonClicked()
 {
-    double moveX_m = ui->moveXMLineEdit->text().toDouble(); // Assuming input1 is the object name of a QLineEdit
-    double moveY_m = ui->moveYMLineEdit->text().toDouble(); // Assuming input1 is the object name of a QLineEdit
-    double rotate = ui->rotateLineEdit->text().toDouble(); // Assuming input1 is the object name of a QLineEdit
+    double moveX_m = ui->moveXMLineEdit->text().toDouble();
+    double moveY_m = ui->moveYMLineEdit->text().toDouble();
+    double rotate = ui->rotateLineEdit->text().toDouble();
     ui->mapLiveWidget->getCurrentPath().transform(moveX_m,moveY_m,rotate);
     ui->mapLiveWidget->update();
+}
+
+void MainWindow::onPrependButtonClicked()
+{
+    int iPrependRouteId=ui->prependRouteSpinBox->value();
+    MapRoute prependRoute=ui->mapLiveWidget->getPath(iPrependRouteId);
+    MapRoute* currentRoute=ui->mapLiveWidget->mPaths->getCurrentP();
+    int pr_size=prependRoute.size();
+    int cr_size=currentRoute->size();
+    qDebug() << "pr_size: " << pr_size;
+    qDebug() << "cr_size: " << cr_size;
+    for (int i=0;i<pr_size;i++)
+    {
+        qDebug() << i;
+        LocPoint lp=prependRoute.at(i);
+        lp.setAttributes(8);            // implement up
+        currentRoute->prepend(lp);
+    }
+    cr_size=currentRoute->size();
+    qDebug() << "cr_size: " << cr_size;
+    ui->mapLiveWidget->repaint();
+}
+
+void MainWindow::onAppendButtonClicked()
+{
+    int iAppendRouteId=ui->prependRouteSpinBox->value();
+    MapRoute appendRoute=ui->mapLiveWidget->getPath(iAppendRouteId);
+    MapRoute* currentRoute=ui->mapLiveWidget->mPaths->getCurrentP();
+    int ap_size=appendRoute.size();
+    int cr_size=currentRoute->size();
+    qDebug() << "ap_size: " << ap_size;
+    qDebug() << "cr_size: " << cr_size;
+    for (int i=0;i<ap_size;i++)
+    {
+        qDebug() << i;
+        LocPoint lp=appendRoute.at(i);
+        currentRoute->append(lp);
+    }
+    ui->mapLiveWidget->repaint();
 }
 
 bool MainWindow::onLoadShapefile()
@@ -1971,7 +2033,7 @@ bool MainWindow::onLoadLogfile()
 {
     // Create a file dialog
     QString fileName = QFileDialog::getOpenFileName(this,
-                                                    "Open File", "", "Shape Files [*.csv](*.csv)");
+                                                    "Open File", "", "Shape Files [*.csv,*.txt](*.csv,*.txt)");
 
     // Check if a file was selected
     if (!fileName.isEmpty()) {
@@ -2842,7 +2904,6 @@ void MainWindow::handleAddFarmButton()
 
 void MainWindow::addField()
 {
-    qDebug() << "in AddField";
     int farmid=currentFarm();
     if (farmid)
     {

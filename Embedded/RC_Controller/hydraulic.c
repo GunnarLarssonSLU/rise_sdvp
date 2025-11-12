@@ -366,7 +366,7 @@ static THD_FUNCTION(hydro_thread, arg) {
 		(void)move_last_front;
 		(void)move_last_rear;
 		(void)move_last_extra;
-#endif
+ #endif
 	}
 //    chEvtUnregister(&emergency_event, &el);
 //    chThdExit(MSG_OK);

@@ -24,6 +24,8 @@
 #include <QBuffer>
 #include <QMessageBox>
 #include <optional>
+#include <locpoint.h>
+#include <routemagic.h>
 namespace
 {
 #define NMEA_SUFFIX_LEN 6
@@ -632,11 +634,6 @@ void NmeaServer::latLongToMeters(double nmea_time, double lat, double lon, doubl
 //const string &nmea
 bool NmeaServer::parseNMEA(const string &nmea, double &lat, double &lon, double &nmea_time)
 {
-    if (nmea.find("GGA") == string::npos)
-    {
-        return false;
-    }
-
     istringstream iss(nmea);
     string token;
     vector<string> tokens;
@@ -646,25 +643,39 @@ bool NmeaServer::parseNMEA(const string &nmea, double &lat, double &lon, double 
         tokens.push_back(token);
     }
 
-    if (tokens.size() < 6)
+    int items=tokens.size();
+    if (items < 6)
     {
         return false;
     }
 
     try
     {
-        nmea_time = stod(tokens[1]);
-        lat = stod(tokens[2]);
-        lon = stod(tokens[4]);
+        if (items==15)
+        {
+            if (nmea.find("GGA") == string::npos)
+            {
+                return false;
+            }
+            nmea_time = stod(tokens[1]);
+            lat = stod(tokens[2]);
+            lon = stod(tokens[4]);
+            // Convert latitude and longitude to decimal degrees
+            lat = floor(lat / 100) + (lat - floor(lat / 100) * 100) / 60;
+            lon = floor(lon / 100) + (lon - floor(lon / 100) * 100) / 60;
+        }
+        if (items==24)
+        {
+            nmea_time = stod(tokens[1]);
+            lat = stod(tokens[19]);
+            lon = stod(tokens[20]);
+        }
     }
     catch (...)
     {
         return false;
     }
 
-    // Convert latitude and longitude to decimal degrees
-    lat = floor(lat / 100) + (lat - floor(lat / 100) * 100) / 60;
-    lon = floor(lon / 100) + (lon - floor(lon / 100) * 100) / 60;
 
     // Determine the sign based on the hemisphere
     if (tokens[3] == "S")
@@ -691,6 +702,18 @@ bool NmeaServer::toXML(double refLat, double refLon, const std::string& filename
     xmlWriter.writeStartElement("routes");
     xmlWriter.writeStartElement("route");
 
+    QList<LocPoint> border;
+//    LocPoint point1(double x, double y, 0, 0, 0, 0, 0, 0,0, QColor color, 0, 0, 0, quint32 attributes) :
+    QColor blackpoint(0,0,0);
+    LocPoint point1(-180, 90, 0, 0, 0, 0, 0, 0,0, blackpoint, 0, 0, 0, 0);
+    LocPoint point2(-180, 45, 0, 0, 0, 0, 0, 0,0, blackpoint, 0, 0, 0, 0);
+    LocPoint point3(-155, 45, 0, 0, 0, 0, 0, 0,0, blackpoint, 0, 0, 0, 0);
+    LocPoint point4(-160, 90, 0, 0, 0, 0, 0, 0,0, blackpoint, 0, 0, 0, 0);
+
+    border.append(point1);
+    border.append(point4);
+    border.append(point3);
+    border.append(point2);
     string sentence;
     while (getline(nmeaFile, sentence))
     {
@@ -699,16 +722,28 @@ bool NmeaServer::toXML(double refLat, double refLon, const std::string& filename
         {
             double x, y, speed;
             latLongToMeters(nmea_time, lat, lon, refLat, refLon, x, y, speed);
-
             xmlWriter.writeStartElement("point");
 
             xmlWriter.writeTextElement("x", QString::number(x));
             xmlWriter.writeTextElement("y", QString::number(y));
             xmlWriter.writeTextElement("time", QString::number(nmea_time));
             xmlWriter.writeTextElement("speed", QString::number(speed));
+            if (RouteMagic::isPointWithin(x, y, border))
+            {
+//                qDebug() << "=== WITHIN ===";
+//                qDebug() << "X: " << x << " Y: " << y;
+                xmlWriter.writeTextElement("attributes", "16");
+            } else
+            {
+//                qDebug() << "=== OUTSIDE ===";
+//                qDebug() << "X: " << x << " Y: " << y;
+                xmlWriter.writeTextElement("attributes", "8");
+            };
+
             xmlWriter.writeEndElement(); // Point
         }
     }
+    qDebug() << "Border length: " << border.size();
 
     xmlWriter.writeEndElement(); // Route
     xmlWriter.writeEndElement(); // Routes
