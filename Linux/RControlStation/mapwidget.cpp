@@ -360,15 +360,9 @@ void MapWidget::addPath(const MapRoute &path)
 
 void MapWidget::addField(const MapRoute &field)
 {
-    qDebug() << "---function addField---";
     int s1=mFields->size();
-    qDebug() << "Number of fields:" << s1;
-    qDebug() << "Add field!";
-    qDebug() << "Field size: " << field.size();
     mFields->addRoute(field);
     int s2=mFields->size();
-    qDebug() << "Number of fields:" << s2;
-    qDebug() << "Size of this field: " << mFields->at(s2-1).size();
     update();
 }
 
@@ -968,10 +962,11 @@ void MapWidget::mousePressEventPaths(QMouseEvent *e)
         }
         update();
     }
+/*
     qDebug() << "Size (mPath): " << mPaths->size();
     qDebug() << "Current item (mPath): " << mPaths->mRouteNow;
     qDebug() << "Size (currentRoute): " << currentRoute->size();
-    qDebug() << "Current item (currentRoute): " << mRoutePointSelected;
+    qDebug() << "Current item (currentRoute): " << mRoutePointSelected;*/
 }
 
 void MapWidget::mousePressEvent(QMouseEvent *e)

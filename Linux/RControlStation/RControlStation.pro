@@ -88,6 +88,7 @@ SOURCES += main.cpp\
     maproutecollection.cpp \
     qcustomplot.cpp \
     packetinterface.cpp \
+    rangeslider.cpp \
     shapefile.cpp \
     utility.cpp \
     mapwidget.cpp \
@@ -135,6 +136,7 @@ HEADERS  += mainwindow.h \
     qcustomplot.h \
     datatypes.h \
     packetinterface.h \
+    rangeslider.h \
     shapefile.h \
     utility.h \
     mapwidget.h \

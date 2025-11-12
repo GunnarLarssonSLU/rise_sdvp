@@ -214,7 +214,10 @@ private slots:
     void on_AutopilotPausePushButton_clicked();
     void onGeneratePathButtonClicked();
     void onGenerateLineButtonClicked();
+    void onCutButtonClicked();
     void onTransformButtonClicked();
+    void onAppendButtonClicked();
+    void onPrependButtonClicked();
     bool onLoadShapefile();
     bool onShowShapefile();
     bool onLoadLogfile();

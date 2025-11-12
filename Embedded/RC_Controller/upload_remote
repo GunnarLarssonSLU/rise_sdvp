@@ -7,7 +7,6 @@ port=$4
 mode=$5
 targetos=$6
 
-
 if [[ !($mode == @(uart|stlink|pi_gpio)) ]]; then
     echo No valid mode specified. [mode] can be uart, stlink or pi_gpio
     exit 1

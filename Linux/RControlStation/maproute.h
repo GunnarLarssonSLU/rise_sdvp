@@ -29,6 +29,7 @@ public:
     void append(LocPoint point);
     void append(const QList<LocPoint> &points);
     void append(const MapRoute &mr);
+    void cut(int before,int after);
     int size();
     bool isEmpty() const;
     void clear();
