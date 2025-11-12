@@ -273,7 +273,6 @@ static THD_FUNCTION(hydro_thread, arg) {
 			move_last_extra = HYDRAULIC_MOVE_UNDEFINED;
 		}
 
-#ifdef IS_MACTRAC
 
 		ADC_CNT_t cnt;
 #ifdef SERVO_READ
@@ -299,9 +298,9 @@ static THD_FUNCTION(hydro_thread, arg) {
 
             m_speed_now=m_speed_pwm;
         }
-        #endif
+#endif
 
-
+#ifdef IS_MACTRAC
 		// Control hydraulic actuators
 		#ifdef ADDIO
 		if (!comm_can_addio_lim_sw(0) && m_move_front == HYDRAULIC_MOVE_UP) {

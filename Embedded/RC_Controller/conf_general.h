@@ -45,8 +45,8 @@
 // IO BOARD
 // #define IO_BOARD
 
-#define IS_DRANGEN
-//#define IS_MACTRAC
+//#define IS_DRANGEN
+#define IS_MACTRAC
 #define UPDATE20250812
 
 // MacTrac
@@ -54,6 +54,7 @@
 // Valve: Low values: Turn right; high values: turn left
 #ifdef IS_MACTRAC
 #define HAS_HYDRAULIC_DRIVE			1
+#define WHEEL_SENSOR                1
 #define SERVO_VESC_S1				178.0 // Left
 #define SERVO_VESC_S2				240.0 // Right
 #define USE_ADCONV_FOR_VIN
@@ -94,6 +95,8 @@
 #define ANALOG_ANGLE
 #define SERVO_WRITE
 #define SERVO_READ
+#define WHEEL_SENSOR                1
+#define HAS_HYDRAULIC_DRIVE			1
 //#define TACHOATCARD
 #endif
 

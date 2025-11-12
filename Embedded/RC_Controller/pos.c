@@ -1384,7 +1384,7 @@ static void mc_values_received(mc_values *val) {
 
     m_mc_val = *val;
 
-#if !HAS_HYDRAULIC_DRIVE
+#if !WHEEL_SENSOR
     static float last_tacho = 0;
     static bool tacho_read = false;
 
@@ -1418,7 +1418,7 @@ static void mc_values_received(mc_values *val) {
 
 #else
     // Old implementation
-#if HAS_DIFF_STEERING
+#if WHEEL_SENSOR
     static float last_tacho_diff = 0;
     float tacho_diff = m_mc_val_right.tachometer - m_mc_val.tachometer;
 
