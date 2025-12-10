@@ -102,10 +102,8 @@ static void ubx_rx_rawx(ubx_rxm_rawx *rawx);
 int iDebug;
 extern float debugvalue6;
 
-#if MAIN_MODE == MAIN_MODE_VEHICLE
 static void mc_values_received(mc_values *val);
 static void vehicle_update_pos(float distance, float turn_rad_rear, float angle_diff, float speed);
-#endif
 
 void pos_init(void) {
 	ahrs_init_attitude_info(&m_att);		// Sets initial ahrs values to zero
@@ -174,9 +172,7 @@ void pos_init(void) {
 
 	commands_printf("Communicate VESC\n");
 
-#if MAIN_MODE == MAIN_MODE_VEHICLE
 	bldc_interface_set_rx_value_func(mc_values_received);
-#endif
 
 	// PPS interrupt
 #if UBLOX_EN && UBLOX_USE_PPS
@@ -518,9 +514,7 @@ bool pos_input_nmea(const char *data) {
 				correct_pos_gps(&m_pos); // Correct position based on vehicle angle
 				m_pos.gps_corr_time = chVTGetSystemTimeX();
 
-#if MAIN_MODE == MAIN_MODE_VEHICLE
 				m_pos.pz = m_pos.pz_gps - m_pos.gps_ground_level;
-#endif
 
 			} else
 			{
@@ -883,12 +877,12 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 
 	update_orientation_angles(accel, gyro, mag, dt);
 
-#if MAIN_MODE == MAIN_MODE_VEHICLE
+//#if MAIN_MODE == MAIN_MODE_VEHICLE
 	// Read MC values every 10 iterations (should be 100 Hz)
 	static int mc_read_cnt = 0;
 	mc_read_cnt++;
 
-#if HAS_DIFF_STEERING
+	#if HAS_DIFF_STEERING
 	if (mc_read_cnt >= 5) {
 		mc_read_cnt = 0;
 
@@ -903,7 +897,7 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 		bldc_interface_get_values();
 		comm_can_unlock_vesc();
 	}
-#else
+	#else
 //	commands_printf("has not diff sterring");
 //	comm_can_set_vesc_id(36);
 //	bldc_interface_get_values();
@@ -912,7 +906,7 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 		mc_read_cnt = 0;
 		bldc_interface_get_values();
 
-#if HAS_HYDRAULIC_DRIVE
+		#if HAS_HYDRAULIC_DRIVE
 //--		commands_printf("has hydraulic drive");
 		float turn_rad_rear = 0.0;
 		float angle_diff = 0.0;
@@ -939,10 +933,10 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 			angle_diff = (distance * 2.0) / (turn_rad_rear + turn_rad_front);
 		}
 		vehicle_update_pos(distance, turn_rad_rear, angle_diff, speed);
-#endif
+		#endif
 	}
-#endif
-#endif
+	#endif
+//#endif
 
 	// Update time today
 	if (m_ms_today >= 0) {
@@ -1109,7 +1103,6 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 	}
 
 	// Correct yaw
-#if MAIN_MODE == MAIN_MODE_VEHICLE
 	{
 		if (!m_yaw_imu_clamp_set) {
 			m_yaw_imu_clamp = m_pos.yaw_imu - m_imu_yaw_offset;
@@ -1148,10 +1141,6 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 		m_pos.yaw = m_pos.yaw_imu - m_imu_yaw_offset;
 		utils_norm_angle(&m_pos.yaw);
 	}
-#else
-	m_pos.yaw = m_pos.yaw_imu - m_imu_yaw_offset;
-	utils_norm_angle(&m_pos.yaw);
-#endif
 
 	if ((iDebug==6))
 	{
@@ -1375,80 +1364,51 @@ static void ubx_rx_rawx(ubx_rxm_rawx *rawx) {
 
 #if MAIN_MODE == MAIN_MODE_VEHICLE
 static void mc_values_received(mc_values *val) {
-#if HAS_DIFF_STEERING
+	#if HAS_DIFF_STEERING
     if (val->vesc_id == DIFF_STEERING_VESC_RIGHT || !m_vesc_left_now) {
         m_mc_val_right = *val;
         return;
     }
-#endif
+	#endif
 
     m_mc_val = *val;
 
-#if !WHEEL_SENSOR
+	#if !WHEEL_SENSOR
     static float last_tacho = 0;
     static bool tacho_read = false;
 
-#ifdef MISTRAL
-    // New implementation
-    static float last_tacho_time = 0;
+	// New implementation
+	static float last_tacho_time = 0;
 
-    // Calculate time_last from the tachometer readings
-    float time_last = fmaxf(io_board_adc0_cnt.high_time_current, io_board_adc0_cnt.high_time_last) +
-                      fmaxf(io_board_adc0_cnt.low_time_current, io_board_adc0_cnt.low_time_last);
+	// Calculate time_last from the tachometer readings
+	float time_last = fmaxf(io_board_adc0_cnt.high_time_current, io_board_adc0_cnt.high_time_last) +
+					  fmaxf(io_board_adc0_cnt.low_time_current, io_board_adc0_cnt.low_time_last);
 
-    // Calculate RPM based on time_last
-    float rpm = 0;
-    if (time_last > 0) {
-        // Calculate the frequency of the tachometer pulses
-        float frequency = 1.0 / (time_last * 1e-6); // Convert time_last to seconds
+	// Calculate RPM based on time_last
+	float rpm = 0;
+	if (time_last > 0) {
+		// Calculate the frequency of the tachometer pulses
+		float frequency = 1.0 / (time_last * 1e-6); // Convert time_last to seconds
 
-        // Calculate RPM (assuming one pulse per revolution, adjust as needed)
-        rpm = frequency * 60.0;
-    }
+		// Calculate RPM (assuming one pulse per revolution, adjust as needed)
+		rpm = frequency * 60.0;
+	}
 
-    // Reset tacho_time the first time
-    if (!tacho_read) {
-        tacho_read = true;
-        last_tacho_time = time_last;
-    }
+	// Reset tacho_time the first time
+	if (!tacho_read) {
+		tacho_read = true;
+		last_tacho_time = time_last;
+	}
 
-    // Calculate distance based on RPM and vehicle properties
-    float distance = (rpm * main_config.vehicle.gear_ratio * (2.0 / main_config.vehicle.motor_poles) * (1.0 / 60.0) * main_config.vehicle.wheel_diam * M_PI) * (time_last - last_tacho_time) * 1e-6;
-    last_tacho_time = time_last;
+	// Calculate distance based on RPM and vehicle properties
+	float distance = (rpm * main_config.vehicle.gear_ratio * (2.0 / main_config.vehicle.motor_poles) * (1.0 / 60.0) * main_config.vehicle.wheel_diam * M_PI) * (time_last - last_tacho_time) * 1e-6;
+	last_tacho_time = time_last;
 
-#else
-    // Old implementation
-#if WHEEL_SENSOR
-    static float last_tacho_diff = 0;
-    float tacho_diff = m_mc_val_right.tachometer - m_mc_val.tachometer;
-
-    if (!tacho_read) {
-        last_tacho_diff = 0;
-    }
-
-    float tacho = (m_mc_val.tachometer + m_mc_val_right.tachometer) / 2.0;
-    float rpm = (m_mc_val.rpm + m_mc_val_right.rpm) / 2.0;
-#else
-    float tacho = m_mc_val.tachometer;
-    float rpm = m_mc_val.rpm;
-#endif
-
-    // Reset tacho the first time
-    if (!tacho_read) {
-        tacho_read = true;
-        last_tacho = tacho;
-    }
-
-    float distance = (tacho - last_tacho) * main_config.vehicle.gear_ratio
-            * (2.0 / main_config.vehicle.motor_poles) * (1.0 / 6.0)
-            * main_config.vehicle.wheel_diam * M_PI;
-    last_tacho = tacho;
-#endif
 
     float angle_diff = 0.0;
     float turn_rad_rear = 0.0;
 
-#if HAS_DIFF_STEERING && !defined(MISTRAL)
+	#if HAS_DIFF_STEERING && !defined(MISTRAL)
     float distance_diff = (tacho_diff - last_tacho_diff)
             * main_config.vehicle.gear_ratio * (2.0 / main_config.vehicle.motor_poles)
             * (1.0 / 6.0) * main_config.vehicle.wheel_diam * M_PI;
@@ -1462,7 +1422,7 @@ static void mc_values_received(mc_values *val) {
         angle_diff = (d2 - d1) / main_config.vehicle.axis_distance;
         utils_norm_angle_rad(&angle_diff);
     }
-#elif !defined(MISTRAL)
+	#elif !defined(MISTRAL)
     float steering_angle = (servo_simple_get_pos_now()
             - main_config.vehicle.steering_center)
             * ((2.0 * main_config.vehicle.steering_max_angle_rad)
@@ -1480,7 +1440,7 @@ static void mc_values_received(mc_values *val) {
 
         angle_diff = (distance * 2.0) / (turn_rad_rear + turn_rad_front);
     }
-#endif
+	#endif
 
     float speed = rpm * main_config.vehicle.gear_ratio
             * (2.0 / main_config.vehicle.motor_poles) * (1.0 / 60.0)

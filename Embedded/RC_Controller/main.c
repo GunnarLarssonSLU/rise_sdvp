@@ -95,7 +95,6 @@ int main(void) {
 	led_init();
 	ext_cb_init();
 
-#if MAIN_MODE == MAIN_MODE_vehicle
 	conf_general_init();
 	adconv_init();
 	servo_simple_init();
@@ -108,7 +107,6 @@ int main(void) {
 	motor_sim_init();
 #if HAS_HYDRAULIC_DRIVE
 	hydraulic_init();
-#endif
 #endif
 
 	comm_usb_init();
@@ -131,21 +129,11 @@ int main(void) {
 	ublox_init();
 #endif
 
-#if MAIN_MODE_IS_BASE || MAIN_MODE_IS_MOTE
-	m8t_base_init();
-#endif
-
-#if MAIN_MODE_IS_BASE
-	m8t_base_start();
-#endif
-
 #if MAIN_MODE == MAIN_MODE_vehicle
 	motor_sim_set_running(main_config.vehicle.simulate_motor);
 #endif
 
-#if MAIN_MODE_IS_VEHICLE
 	rtcm3_set_rx_callback_obs(pos_base_rtcm_obs, commands_get_rtcm3_state());
-#endif
 
 	fi_init();
 
