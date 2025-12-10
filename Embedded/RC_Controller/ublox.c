@@ -1179,13 +1179,7 @@ static int wait_ack_nak(int timeout_ms) {
 
 static void rtcm_rx(uint8_t *data, int len, int type) {
 	(void)type;
-#if MAIN_MODE == MAIN_MODE_MOTE_HYBRID
-	comm_cc1120_send_buffer(data, len);
-#elif MAIN_MODE == MAIN_MODE_MOTE_400
-	comm_cc1120_send_buffer(data, len);
-#else
 	comm_cc2520_send_buffer(data, len);
-#endif
 }
 
 static void ubx_decode(uint8_t class, uint8_t id, uint8_t *msg, int len) {

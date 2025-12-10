@@ -56,9 +56,7 @@ void terminal_process_string(char *str) {
 	int argc = 0;
 	char *argv[kMaxArgs];
 
-#if MAIN_MODE == MAIN_MODE_vehicle
 	static char buffer[256];
-#endif
 
 	char *p2 = strtok(str, " ");
 	while (p2 && argc < kMaxArgs) {
@@ -95,7 +93,6 @@ void terminal_process_string(char *str) {
 		commands_printf(" ");
 	}
 
-#if MAIN_MODE == MAIN_MODE_vehicle
 	else if (strcmp(argv[0], "vesc") == 0) {
 		buffer[0] = '\0';
 		int ind = 0;
@@ -105,7 +102,6 @@ void terminal_process_string(char *str) {
 		}
 		bldc_interface_terminal_cmd(buffer);
 	}
-#endif
 
 	else if (strcmp(argv[0], "reset_att") == 0) {
 		pos_reset_attitude();
@@ -244,10 +240,8 @@ void terminal_process_string(char *str) {
 		commands_printf("threads");
 		commands_printf("  List all threads");
 
-#if MAIN_MODE == MAIN_MODE_vehicle
 		commands_printf("vesc");
 		commands_printf("  Forward command to VESC");
-#endif
 
 		commands_printf("reset_att");
 		commands_printf("  Re-initialize the attitude estimation");

@@ -112,34 +112,7 @@ static THD_FUNCTION(serial_process_thread, arg) {
 }
 
 static void process_packet(unsigned char *data, unsigned int len) {
-#if MAIN_MODE_IS_MOTE
-	uint8_t id = data[0];
-	CMD_PACKET packet_id = data[1];
-
-	if (id == ID_MOTE && (packet_id < 50 || packet_id >= 200)) {
-		commands_process_packet(data, len, comm_usb_send_packet);
-	} else {
-#if MAIN_MODE == MAIN_MODE_MOTE_HYBRID
-		if (packet_id == CMD_SEND_RTCM_USB) {
-			comm_cc1120_send_buffer(data, len);
-		} else {
-			comm_cc2520_send_buffer(data, len);
-		}
-#elif MAIN_MODE == MAIN_MODE_MOTE_400
-		comm_cc1120_send_buffer(data, len);
-#else
-		comm_cc2520_send_buffer(data, len);
-#endif
-	}
-
-#if UBLOX_EN
-	if (packet_id == CMD_SEND_RTCM_USB) {
-		ublox_send(data + 2, len - 2);
-	}
-#endif
-#else
 	commands_process_packet(data, len, comm_usb_send_packet);
-#endif
 }
 
 static void send_packet(unsigned char *buffer, unsigned int len) {

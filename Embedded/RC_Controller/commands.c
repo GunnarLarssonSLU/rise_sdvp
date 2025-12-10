@@ -204,7 +204,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 		} break;
 
 		// ==================== Vehicle commands ==================== //
-#if MAIN_MODE_IS_VEHICLE
 
 
 		case CMD_HEARTBEAT:
@@ -627,9 +626,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			main_config.vehicle.deadband =deadband;
 			commands_printf("setting deadband (in struct 1): %f",main_config.vehicle.deadband);
 
-#if MAIN_MODE == MAIN_MODE_vehicle
 			motor_sim_set_running(main_config.vehicle.simulate_motor);
-#endif
 			conf_general_store_main_config(&main_config);
 			// Doing this while driving will get wrong as there is so much accelerometer noise then.
 			//pos_reset_attitude();
@@ -794,7 +791,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			break;
 
 		// ==================== vehicle commands ==================== //
-#if MAIN_MODE == MAIN_MODE_vehicle
 		case CMD_GET_STATE: {
 			timeout_reset();
 
@@ -1049,74 +1045,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			utils_truncate_number(&steering, 0.0, 1.0);
 			servo_simple_set_pos_ramp(steering, true);
 		} break;
-
-#endif
-#endif
-
-		// ==================== Mote commands ==================== //
-#if MAIN_MODE_IS_MOTE
-		case CMD_MOTE_UBX_START_BASE: {
-			commands_set_send_func(func);
-
-			ubx_cfg_tmode3 cfg;
-			memset(&cfg, 0, sizeof(ubx_cfg_tmode3));
-			int32_t ind = 0;
-
-			cfg.mode = data[ind++];
-			cfg.lla = true;
-			cfg.ecefx_lat = buffer_get_double64(data, D(1e16), &ind);
-			cfg.ecefy_lon = buffer_get_double64(data, D(1e16), &ind);
-			cfg.ecefz_alt = buffer_get_float32_auto(data, &ind);
-			cfg.fixed_pos_acc = buffer_get_float32_auto(data, &ind);
-			cfg.svin_min_dur = buffer_get_uint32(data, &ind);
-			cfg.svin_acc_limit = buffer_get_float32_auto(data, &ind);
-
-			if (cfg.mode == 0) {
-				m8t_base_stop();
-				ublox_cfg_tmode3(&cfg);
-
-				// Switch off RTCM messages, set rate to 5 Hz and time reference to UTC
-				ublox_cfg_msg(UBX_CLASS_RTCM3, UBX_RTCM3_1005, 0);
-				ublox_cfg_msg(UBX_CLASS_RTCM3, UBX_RTCM3_1077, 0);
-				ublox_cfg_msg(UBX_CLASS_RTCM3, UBX_RTCM3_1087, 0);
-				ublox_cfg_rate(200, 1, 0);
-
-				// Automotive dynamic model
-				ubx_cfg_nav5 nav5;
-				memset(&nav5, 0, sizeof(ubx_cfg_nav5));
-				nav5.apply_dyn = true;
-				nav5.dyn_model = 4;
-				ublox_cfg_nav5(&nav5);
-			} else if (cfg.mode == 1 || cfg.mode == 2) {
-				ublox_cfg_tmode3(&cfg);
-
-				// Switch on RTCM messages, set rate to 1 Hz and time reference to UTC
-				ublox_cfg_rate(1000, 1, 0);
-				ublox_cfg_msg(UBX_CLASS_RTCM3, UBX_RTCM3_1005, 1); // Every second
-				ublox_cfg_msg(UBX_CLASS_RTCM3, UBX_RTCM3_1077, 1); // Every second
-				ublox_cfg_msg(UBX_CLASS_RTCM3, UBX_RTCM3_1087, 1); // Every second
-
-				// Stationary dynamic model
-				ubx_cfg_nav5 nav5;
-				memset(&nav5, 0, sizeof(ubx_cfg_nav5));
-				nav5.apply_dyn = true;
-				nav5.dyn_model = 2;
-				ublox_cfg_nav5(&nav5);
-			} else if (cfg.mode == 3) {
-				m8t_base_set_min_acc_samples(cfg.svin_acc_limit, cfg.svin_min_dur);
-				m8t_base_start();
-			} else if (cfg.mode == 4) {
-				m8t_base_set_pos(cfg.ecefx_lat, cfg.ecefy_lon, cfg.ecefz_alt);
-				m8t_base_start();
-			}
-
-			// Send ack
-			int32_t send_index = 0;
-			m_send_buffer[send_index++] = id_ret;
-			m_send_buffer[send_index++] = CMD_MOTE_UBX_START_BASE_ACK;
-			commands_send_packet(m_send_buffer, send_index);
-		} break;
-#endif
 
 		default:
 			break;
