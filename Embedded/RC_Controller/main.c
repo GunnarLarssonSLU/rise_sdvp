@@ -52,7 +52,7 @@
 #include "fi.h"
 #include "hydraulic.h"
 #include "timer.h"
-#include "watchdog.h"
+// #include "watchdog.h"
 
 //event_source_t emergency_event;
 
@@ -108,9 +108,7 @@ int main(void) {
 #if HAS_HYDRAULIC_DRIVE
 	hydraulic_init();
 #endif
-
 	comm_usb_init();
-
 #if HAS_CC2520
 	comm_cc2520_init();
 #endif
@@ -119,7 +117,7 @@ int main(void) {
 #endif
 
 	commands_init();
-	watchdog_init();
+//	watchdog_init();
 
 #if MAIN_MODE_IS_VEHICLE && HAS_CC2520
 	commands_set_send_func(comm_cc2520_send_buffer);
@@ -129,9 +127,7 @@ int main(void) {
 	ublox_init();
 #endif
 
-#if MAIN_MODE == MAIN_MODE_vehicle
 	motor_sim_set_running(main_config.vehicle.simulate_motor);
-#endif
 
 	rtcm3_set_rx_callback_obs(pos_base_rtcm_obs, commands_get_rtcm3_state());
 
