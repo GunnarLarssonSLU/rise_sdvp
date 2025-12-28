@@ -46,7 +46,7 @@ public:
     QList<LocPoint> mRoute;
     QList<LocPoint> mInfoTrace;
 
-    void saveXMLRoute(QXmlStreamWriter* stream,bool withId, int i);
+    void saveXMLRoute(QXmlStreamWriter* stream,bool withId, int i) const;
     double getArea();
     double getLength(bool bForAnalysis);
     //    void paint(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawtrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool highQuality = false);

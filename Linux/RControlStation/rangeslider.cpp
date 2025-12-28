@@ -4,10 +4,28 @@
 #include <QStylePainter>
 #include <QMouseEvent>
 
-RangeSlider::RangeSlider(QWidget *parent = nullptr) : QSlider(Qt::Horizontal, parent) {
+RangeSlider::RangeSlider(QWidget *parent) : QSlider(Qt::Horizontal, parent) {
     setRange(0, 100);
     m_lower = 20;
     m_upper = 80;
+}
+
+void RangeSlider::setLowerValue(int value)
+{
+    if (value >= 0 && value <= m_upper) {
+        m_lower = value;
+        emit lowerValueChanged(m_lower);
+        update();
+    }
+}
+
+void RangeSlider::setUpperValue(int value)
+{
+    if (value <= 100 && value >= m_lower) {
+        m_upper = value;
+        emit upperValueChanged(m_upper);
+        update();
+    }
 }
 
 void RangeSlider::paintEvent(QPaintEvent *event) {

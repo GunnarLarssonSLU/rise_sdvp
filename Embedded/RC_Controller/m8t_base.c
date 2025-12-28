@@ -19,8 +19,6 @@
 #include "ublox.h"
 #include "rtcm3_simple.h"
 #include "utils.h"
-#include "comm_cc2520.h"
-#include "comm_cc1120.h"
 #include "terminal.h"
 #include "commands.h"
 

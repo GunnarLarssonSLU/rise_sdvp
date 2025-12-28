@@ -21,7 +21,6 @@
 #include "commands.h"
 #include "utils.h"
 #include "bldc_interface.h"
-#include "cc1120.h"
 #include "pos.h"
 #include "comm_can.h"
 #include "mpu9150.h"
@@ -107,22 +106,6 @@ void terminal_process_string(char *str) {
 		pos_reset_attitude();
 	} else if (strcmp(argv[0], "reset_enu") == 0) {
 		pos_reset_enu_ref();
-	} else if (strcmp(argv[0], "cc1120_state") == 0) {
-		commands_printf("%s\n", cc1120_state_name());
-	} else if (strcmp(argv[0], "cc1120_update_rf") == 0) {
-		if (argc != 2) {
-			commands_printf("Invalid number of arguments\n");
-		} else {
-			int set = -1;
-			sscanf(argv[1], "%d", &set);
-
-			if (set < 0) {
-				commands_printf("Invalid argument\n");
-			} else {
-				cc1120_update_rf(set);
-				commands_printf("Done\n");
-			}
-		}
 	} else if (strcmp(argv[0], "dw_range") == 0) {
 		if (argc != 2) {
 			commands_printf("Invalid number of arguments\n");

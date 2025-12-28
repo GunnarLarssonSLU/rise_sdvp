@@ -12,6 +12,12 @@ public:
     void paintEvent(QPaintEvent *event)  override;
     void mousePressEvent(QMouseEvent *event)  override;
     void mouseMoveEvent(QMouseEvent *event)  override;
+    
+    void setLowerValue(int value);
+    void setUpperValue(int value);
+    int getLowerValue() const { return m_lower; }
+    int getUpperValue() const { return m_upper; }
+
 signals:
     void lowerValueChanged(int value);
     void upperValueChanged(int value);

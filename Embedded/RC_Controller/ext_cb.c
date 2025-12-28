@@ -18,8 +18,7 @@
 #include "ext_cb.h"
 #include "ch.h"
 #include "hal.h"
-#include "hal_rf.h"
-#include "cc1120.h"
+//#include "hal_rf.h"
 #include "pos.h"
 
 static const EXTConfig extcfg = {
@@ -27,13 +26,13 @@ static const EXTConfig extcfg = {
 				{EXT_CH_MODE_DISABLED, NULL}, // 0
 				{EXT_CH_MODE_DISABLED, NULL}, // 1
 				{EXT_CH_MODE_DISABLED, NULL}, // 2
-				{EXT_CH_MODE_RISING_EDGE | EXT_MODE_GPIOA, cc1120_ext_cb}, // 3
+				{EXT_CH_MODE_DISABLED, NULL}, // 3 	{EXT_CH_MODE_RISING_EDGE | EXT_MODE_GPIOA, cc1120_ext_cb}, // 3
 				{EXT_CH_MODE_RISING_EDGE | EXT_MODE_GPIOD, pos_pps_cb}, // 4
 				{EXT_CH_MODE_DISABLED, NULL}, // 5
 				{EXT_CH_MODE_DISABLED, NULL}, // 6
 				{EXT_CH_MODE_DISABLED, NULL}, // 7
 				{EXT_CH_MODE_RISING_EDGE | EXT_MODE_GPIOC, pos_pps_cb}, // 8
-				{EXT_CH_MODE_RISING_EDGE | EXT_MODE_GPIOD, halRfExtCb}, // 9
+				{EXT_CH_MODE_DISABLED, NULL}, // 9 {EXT_CH_MODE_RISING_EDGE | EXT_MODE_GPIOD, halRfExtCb}, // 9
 				{EXT_CH_MODE_DISABLED, NULL}, // 10
 				{EXT_CH_MODE_DISABLED, NULL}, // 11
 				{EXT_CH_MODE_DISABLED, NULL}, // 12

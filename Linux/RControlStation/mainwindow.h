@@ -221,6 +221,9 @@ private slots:
     bool onLoadShapefile();
     bool onShowShapefile();
     bool onLoadLogfile();
+    void onRangeSliderLowerChanged(int value);
+    void onRangeSliderUpperChanged(int value);
+    void filterLogBasedOnRangeSlider();
 
     QSqlRelationalTableModel* setupFarmTable(QTableView* uiFarmtable,QString SqlTableName);
     QSqlRelationalTableModel* setupFieldTable(QTableView* uiFieldtable,QString SqlTableName);
@@ -282,6 +285,9 @@ private:
 
 //    FocusEventFilter filterFieldtable;
 //    FocusEventFilter filterPathtable;
+    int mRangeSliderLowerValue = 20; // Default lower value for range slider
+    int mRangeSliderUpperValue = 80; // Default upper value for range slider
+    QList<MapRoute> mOriginalLogs; // Store original logs for non-destructive filtering
 
 private slots:
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))

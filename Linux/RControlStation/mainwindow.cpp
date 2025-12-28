@@ -22,6 +22,7 @@
 #include <cmath>
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QHostInfo>
 #include <QInputDialog>
 #include <QXmlStreamWriter>
@@ -152,6 +153,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->mapWidgetAnalysis->setWheelEventHandler([this](QWheelEvent *e) {
         ui->mapWidgetAnalysis->wheelEventFields(e);
     });
+
+    // Connect RangeSlider signals to slots
+    connect(ui->rangeSlider, &RangeSlider::lowerValueChanged, this, &MainWindow::onRangeSliderLowerChanged);
+    connect(ui->rangeSlider, &RangeSlider::upperValueChanged, this, &MainWindow::onRangeSliderUpperChanged);
 
     ui->mapWidgetFields->setMainWindow(this);
     ui->mapWidgetFields->setBorderFocus(true);
@@ -776,12 +781,12 @@ void MainWindow::onSelectedFieldGeneral(QSqlRelationalTableModel *model,QSqlRela
         QFile file(xmlFile);
         if (!file.exists()) {
             qDebug() << "File does not exist:" << xmlFile;
-            return false;
+            return;
         }
 
         if (!file.open(QIODevice::ReadOnly)) {
             qDebug() << "Could not open file for reading:" << xmlFile;
-            return false;
+            return;
         }
 
         QXmlStreamReader xmlData(xmlFile);
@@ -1978,6 +1983,65 @@ void MainWindow::onAppendButtonClicked()
     ui->mapLiveWidget->repaint();
 }
 
+void MainWindow::onRangeSliderLowerChanged(int value)
+{
+    qDebug() << "RangeSlider lower value changed:" << value;
+    // Store the lower value for later use when filtering
+    mRangeSliderLowerValue = value;
+    // If both values are set, perform the filtering
+    if (mRangeSliderUpperValue > mRangeSliderLowerValue) {
+        filterLogBasedOnRangeSlider();
+    }
+}
+
+void MainWindow::onRangeSliderUpperChanged(int value)
+{
+    qDebug() << "RangeSlider upper value changed:" << value;
+    // Store the upper value for later use when filtering
+    mRangeSliderUpperValue = value;
+    // If both values are set, perform the filtering
+    if (mRangeSliderUpperValue > mRangeSliderLowerValue) {
+        filterLogBasedOnRangeSlider();
+    }
+}
+
+void MainWindow::filterLogBasedOnRangeSlider()
+{
+    qDebug() << "Filtering log based on range slider values:" << mRangeSliderLowerValue << "-" << mRangeSliderUpperValue;
+    
+    // Get the current path index
+    int currentPathIndex = ui->mapWidgetAnalysis->mPaths->mRouteNow;
+    
+    // Check if we have the original log stored and it's valid
+    if (currentPathIndex >= 0 && currentPathIndex < mOriginalLogs.size()) {
+        MapRoute& originalRoute = mOriginalLogs[currentPathIndex];
+        
+        // Calculate the filter points based on the slider range
+        // The slider range is 0-100, so we need to convert to actual indices
+        int totalPoints = originalRoute.size();
+        if (totalPoints == 0) return;
+        
+        int start = static_cast<int>((mRangeSliderLowerValue / 100.0) * totalPoints);
+        int end = static_cast<int>((mRangeSliderUpperValue / 100.0) * totalPoints);
+        
+        qDebug() << "Showing route from point" << start << "to" << end;
+        qDebug() << "Total points in original:" << totalPoints;
+        
+        // Create a filtered route with only the selected section
+        MapRoute filteredRoute;
+        for (int i = start; i <= end && i < totalPoints; i++) {
+            filteredRoute.append(originalRoute.at(i));
+        }
+        
+        // Replace the current route with the filtered version
+        // Since we can't directly replace, we'll clear the current route and add the new points
+        MapRoute& currentRoute = ui->mapWidgetAnalysis->getCurrentPath();
+        currentRoute.clear();
+        currentRoute.append(filteredRoute);
+        ui->mapWidgetAnalysis->update();
+    }
+}
+
 bool MainWindow::onLoadShapefile()
 {
     ShapeFile sf;
@@ -2032,8 +2096,15 @@ bool MainWindow::onShowShapefile()
 bool MainWindow::onLoadLogfile()
 {
     // Create a file dialog
-    QString fileName = QFileDialog::getOpenFileName(this,
-                                                    "Open File", "", "Shape Files [*.csv,*.txt](*.csv,*.txt)");
+//    QString fileName = QFileDialog::getOpenFileName(this,
+//                                                    "Open File", "", "CSV/text files [*.csv,*.txt](*.csv,*.txt)");
+
+    QString fileName = QFileDialog::getOpenFileName(
+        this,
+        "Open File",
+        "",
+        "CSV/text files [*.csv,*.txt] (*.csv *.txt)"
+        );
 
     // Check if a file was selected
     if (!fileName.isEmpty()) {
@@ -2044,12 +2115,60 @@ bool MainWindow::onLoadLogfile()
     QByteArray utf8Path = fileName.toUtf8();     // store the QByteArray
     const string &nmeafilename = utf8Path.constData(); // safe pointer
 
+    // Extract farm name from filename if possible
+    QString fileNameOnly = QFileInfo(fileName).fileName();
+    int lastUnderscore = fileNameOnly.lastIndexOf('_');
+    int lastDot = fileNameOnly.lastIndexOf('.');
+    
+    if (lastUnderscore != -1 && lastDot != -1 && lastUnderscore < lastDot) {
+        QString potentialFarmName = fileNameOnly.mid(lastUnderscore + 1, lastDot - lastUnderscore - 1);
+        qDebug() << "Extracted potential farm name:" << potentialFarmName;
+        
+        // Check if this farm name exists in the database
+        QSqlQuery query;
+        query.prepare("SELECT id FROM locations WHERE name = :farmname");
+        query.bindValue(":farmname", potentialFarmName);
+        
+        if (!query.exec()) {
+            qDebug() << "Failed to execute farm name query:" << query.lastError().text();
+        } else if (query.next()) {
+            int farmId = query.value(0).toInt();
+            qDebug() << "Found matching farm ID:" << farmId;
+            
+            // Select this farm in the farm table
+            selectRowByPrimaryKey(ui->farmTable, modelFarm, "id", farmId);
+        }
+    }
+
     double refs[3]={0.0,0.0,0.0};
     ui->mapWidgetAnalysis->getEnuRef(refs);
     QByteArray xmlData;
     if (NmeaServer::toXML(refs[0],refs[1],nmeafilename, &xmlData)) {
         QXmlStreamReader xmlReader(xmlData);
         ui->mapWidgetAnalysis->loadXMLRoute(&xmlReader, false);
+        
+        // Store the original log for non-destructive filtering
+        if (ui->mapWidgetAnalysis->mPaths->size() > 0) {
+            MapRoute originalRoute = ui->mapWidgetAnalysis->getCurrentPath();
+            mOriginalLogs.append(originalRoute);
+        }
+        
+        // Initialize RangeSlider based on the loaded route
+        if (ui->mapWidgetAnalysis->mPaths->size() > 0) {
+            MapRoute& currentRoute = ui->mapWidgetAnalysis->getCurrentPath();
+            int totalPoints = currentRoute.size();
+            if (totalPoints > 0) {
+                // Set default range to 20-80% of the route
+                ui->rangeSlider->setRange(0, 100);
+                ui->rangeSlider->setLowerValue(20);
+                ui->rangeSlider->setUpperValue(80);
+                
+                // Update our stored values
+                mRangeSliderLowerValue = 20;
+                mRangeSliderUpperValue = 80;
+            }
+        }
+        
         // Add to listview
         fileList.append(QString::fromStdString(nmeafilename));
         fileModel->setStringList(fileList);  // Update the model
@@ -2070,7 +2189,29 @@ void MainWindow::on_listLogFilesView_clicked(const QModelIndex& index) {
         qDebug() << "Selected file:" << filename;
         int row = index.row();  // 0-based row index
         qDebug() << "Clicked row:" << row;
-         ui->mapWidgetAnalysis->setPathNow(row);
+        ui->mapWidgetAnalysis->setPathNow(row);
+        
+        // Store the original log for non-destructive filtering if not already stored
+        if (row >= 0 && row >= mOriginalLogs.size()) {
+            MapRoute originalRoute = ui->mapWidgetAnalysis->getCurrentPath();
+            mOriginalLogs.append(originalRoute);
+        }
+        
+        // Initialize RangeSlider based on the selected route
+        if (ui->mapWidgetAnalysis->mPaths->size() > 0) {
+            MapRoute& currentRoute = ui->mapWidgetAnalysis->getCurrentPath();
+            int totalPoints = currentRoute.size();
+            if (totalPoints > 0) {
+                // Set default range to 20-80% of the route
+                ui->rangeSlider->setRange(0, 100);
+                ui->rangeSlider->setLowerValue(20);
+                ui->rangeSlider->setUpperValue(80);
+                
+                // Update our stored values
+                mRangeSliderLowerValue = 20;
+                mRangeSliderUpperValue = 80;
+            }
+        }
     }
 }
 
