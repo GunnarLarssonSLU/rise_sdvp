@@ -167,12 +167,6 @@
 //#define LOG_EN_CARREL
 //#define LOG_EN_ITRANSIT
 
-// CC2520 Settings
-#define CC2520_RF_CHANNEL			12
-#define CC2520_PAN_ID				0xfa11
-#define CC2520_NODE_ADDRESS			0x001
-#define CC2520_DEST_ADDRESS			0xffff // 0xffff = broadcast
-
 // General settings
 #define ID_ALL						255
 #define ID_VEHICLE_CLIENT				254 // Packet for vehicle client only
@@ -196,8 +190,6 @@
 
 // Board-dependent settings
 #if IS_F9_BOARD
-#define HAS_CC2520					0
-#define HAS_CC1120					0
 #define UBLOX_IS_F9P				1
 #define LED_RED_GPIO				GPIOC
 #define LED_RED_PIN					10
@@ -212,8 +204,6 @@
 #define VIN_R1						39000.0
 #define VIN_R2						2200.0
 #else
-#define HAS_CC2520					1
-#define HAS_CC1120					1
 //#define UBLOX_IS_F9P				0
 #define LED_RED_GPIO				GPIOE
 #define LED_RED_PIN					0

@@ -25,12 +25,11 @@
 #include <stdlib.h>
 
 #include "conf_general.h"
-#include "comm_cc2520.h"
 #include "comm_usb.h"
 #include "commands.h"
 #include "utils.h"
 #include "mpu9150.h"
-#include "basic_rf.h"
+//#include "basic_rf.h"
 #include "ext_cb.h"
 #include "adconv.h"
 #include "led.h"
@@ -41,7 +40,6 @@
 #include "autopilot.h"
 #include "timeout.h"
 #include "log.h"
-#include "comm_cc1120.h"
 #include "ublox.h"
 #include "srf10.h"
 #include "pwm_esc.h"
@@ -109,19 +107,8 @@ int main(void) {
 	hydraulic_init();
 #endif
 	comm_usb_init();
-#if HAS_CC2520
-	comm_cc2520_init();
-#endif
-#if HAS_CC1120
-	comm_cc1120_init();
-#endif
-
 	commands_init();
 //	watchdog_init();
-
-#if MAIN_MODE_IS_VEHICLE && HAS_CC2520
-	commands_set_send_func(comm_cc2520_send_buffer);
-#endif
 
 #if UBLOX_EN
 	ublox_init();

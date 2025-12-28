@@ -87,6 +87,11 @@ void MapRouteCollection::append(MapRoute &maproute)
 }
 
 
+int MapRouteCollection::getRouteNow() const
+{
+    return mRouteNow;
+}
+
 int MapRouteCollection::size()
 {
     return mCollection.size();

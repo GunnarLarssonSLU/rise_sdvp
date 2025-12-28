@@ -21,8 +21,6 @@
 #include "comm_usb.h"
 #include "packet.h"
 #include "comm_usb_serial.h"
-#include "comm_cc2520.h"
-#include "comm_cc1120.h"
 #include "ublox.h"
 
 // Settings

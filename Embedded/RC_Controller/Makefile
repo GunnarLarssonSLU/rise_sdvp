@@ -115,8 +115,6 @@ include $(CHIBIOS)/os/hal/osal/rt/osal.mk
 include $(CHIBIOS)/os/rt/rt.mk
 include $(CHIBIOS)/os/rt/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
 # Other files (optional).
-include cc2520/cc2520.mk
-include cc1120/cc1120.mk
 include imu/imu.mk
 
 # Define linker script file here
@@ -133,13 +131,10 @@ CSRC = $(STARTUPSRC) \
        $(BOARDSRC) \
        $(CHIBIOS)/os/hal/lib/streams/chprintf.c \
        $(CHIBIOS)/os/various/syscalls.c \
-       $(CC2520SRC) \
-       $(CC1120SRC) \
        $(IMUSRC) \
        main.c \
        comm_usb_serial.c \
        utils.c \
-       comm_cc2520.c \
        led.c \
        buffer.c \
        ext_cb.c \
@@ -159,7 +154,6 @@ CSRC = $(STARTUPSRC) \
        timeout.c \
        log.c \
        digital_filter.c \
-       comm_cc1120.c \
        ublox.c \
        rtcm3_simple.c \
        srf10.c \
@@ -206,7 +200,7 @@ INCDIR = $(STARTUPINC) $(KERNINC) $(PORTINC) $(OSALINC) \
          $(HALINC) $(PLATFORMINC) $(BOARDINC) $(TESTINC) \
          $(CHIBIOS)/os/various \
          $(CHIBIOS)/os/hal/lib/streams \
-         $(CC2520INC) $(CC1120INC) $(IMUINC) \
+         $(IMUINC) \
          $(CHIBIOS)/os/hal/include
 
 #

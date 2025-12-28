@@ -550,9 +550,9 @@ void MapWidget::mouseMoveEvent(QMouseEvent *e)
     bool shift = e->modifiers() == Qt::ShiftModifier;
     bool ctrl_shift = e->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier);
 
-    QPoint mousePosWidget = this->mapFromGlobal(QCursor::pos());
+    QPoint mousePosWidget = e->pos();
     LocPoint mousePosMap;
-    QPoint p = getMousePosRelative();
+    QPoint p = getMousePosRelativeNew(e->pos());
     mousePosMap.setXY(p.x() / 1000.0, p.y() / 1000.0);
 
     for (MapModule *m: mMapModules) {
@@ -701,6 +701,13 @@ void MapWidget::mousePressEventFields(QMouseEvent *e)
     bool shift = e->modifiers() == Qt::ShiftModifier;
     bool ctrl_shift = e->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier);
 
+    // Initialize mouse position for panning
+    if (e->buttons() & Qt::LeftButton && !ctrl && !shift && !ctrl_shift)
+    {
+        mMouseLastX = e->pos().x();
+        mMouseLastY = e->pos().y();
+    }
+
     QPoint mp = e->pos();
     QPoint p = getMousePosRelativeNew(e->pos());
     double px=p.x()/1000.0;
@@ -717,7 +724,7 @@ void MapWidget::mousePressEventFields(QMouseEvent *e)
 
     LocPoint mousePosMap;
     mousePosMap.setXY(px, py);
-    QPoint mousePosWidget = this->mapFromGlobal(QCursor::pos());
+    QPoint mousePosWidget = mp;
 
     for (MapModule *m: mMapModules) {
         if (m->processMouse(true, false, false, false,
@@ -767,6 +774,13 @@ void MapWidget::mousePressEventAnalysis(QMouseEvent *e)
     bool shift = e->modifiers() == Qt::ShiftModifier;
     bool ctrl_shift = e->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier);
 
+    // Initialize mouse position for panning
+    if (e->buttons() & Qt::LeftButton && !ctrl && !shift && !ctrl_shift)
+    {
+        mMouseLastX = e->pos().x();
+        mMouseLastY = e->pos().y();
+    }
+
     QPoint mp = e->pos();
     QPoint p = getMousePosRelativeNew(e->pos());
     double px=p.x()/1000.0;
@@ -775,7 +789,7 @@ void MapWidget::mousePressEventAnalysis(QMouseEvent *e)
 
     LocPoint mousePosMap;
     mousePosMap.setXY(px, py);
-    QPoint mousePosWidget = this->mapFromGlobal(QCursor::pos());
+    QPoint mousePosWidget = mp;
 
     for (MapModule *m: mMapModules) {
         if (m->processMouse(true, false, false, false,
@@ -830,9 +844,16 @@ void MapWidget::mousePressEventPaths(QMouseEvent *e)
     bool shift = e->modifiers() == Qt::ShiftModifier;
     bool ctrl_shift = e->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier);
 
-    QPoint mousePosWidget = this->mapFromGlobal(QCursor::pos());
+    // Initialize mouse position for panning
+    if (e->buttons() & Qt::LeftButton && !ctrl && !shift && !ctrl_shift)
+    {
+        mMouseLastX = e->pos().x();
+        mMouseLastY = e->pos().y();
+    }
+
+    QPoint mousePosWidget = e->pos();
     LocPoint mousePosMap;
-    QPoint p = getMousePosRelative();
+    QPoint p = getMousePosRelativeNew(e->pos());
     mousePosMap.setXY(p.x() / 1000.0, p.y() / 1000.0);
 
     for (MapModule *m: mMapModules) {
@@ -1002,9 +1023,9 @@ void MapWidget::mouseReleaseEventFields(QMouseEvent *e)
     bool shift = e->modifiers() == Qt::ShiftModifier;
     bool ctrl_shift = e->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier);
 
-    QPoint mousePosWidget = this->mapFromGlobal(QCursor::pos());
+    QPoint mousePosWidget = e->pos();
     LocPoint mousePosMap;
-    QPoint p = getMousePosRelative();
+    QPoint p = getMousePosRelativeNew(e->pos());
     mousePosMap.setXY(p.x() / 1000.0, p.y() / 1000.0);
 
     for (MapModule *m: mMapModules) {
@@ -1032,9 +1053,9 @@ void MapWidget::mouseReleaseEventPaths(QMouseEvent *e)
     bool shift = e->modifiers() == Qt::ShiftModifier;
     bool ctrl_shift = e->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier);
 
-    QPoint mousePosWidget = this->mapFromGlobal(QCursor::pos());
+    QPoint mousePosWidget = e->pos();
     LocPoint mousePosMap;
-    QPoint p = getMousePosRelative();
+    QPoint p = getMousePosRelativeNew(e->pos());
     mousePosMap.setXY(p.x() / 1000.0, p.y() / 1000.0);
 
     for (MapModule *m: mMapModules) {
@@ -1197,7 +1218,7 @@ bool MapWidget::event(QEvent *event)
                 QPointF(0, 0),          // Global position
                 QPoint(0, 0),           // Pixel delta
                 QPoint(0, 120),         // Angle delta
-                0,                      // Buttons
+                Qt::NoButton,           // Buttons
                 ke->modifiers(),        // Keyboard modifiers
                 Qt::NoScrollPhase,      // Scroll phase
                 false,                  // Inverted
@@ -1219,7 +1240,7 @@ bool MapWidget::event(QEvent *event)
                 QPointF(0, 0),          // Global position
                 QPoint(0, 0),           // Pixel delta
                 QPoint(0,-120),         // Angle delta
-                0,                      // Buttons
+                Qt::NoButton,           // Buttons
                 ke->modifiers(),        // Keyboard modifiers
                 Qt::NoScrollPhase,      // Scroll phase
                 false,                  // Inverted
@@ -2573,7 +2594,7 @@ void MapWidget::saveXMLCurrentRoute(QXmlStreamWriter* stream)
     stream->writeEndDocument();
 }
 
-void MapRoute::saveXMLRoute(QXmlStreamWriter* stream,bool withId, int i)
+void MapRoute::saveXMLRoute(QXmlStreamWriter* stream,bool withId, int i) const
 {
     stream->writeStartElement("route");
 

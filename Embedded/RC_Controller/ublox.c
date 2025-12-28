@@ -21,8 +21,6 @@
 #include "pos.h"
 #include "rtcm3_simple.h"
 #include "terminal.h"
-#include "comm_cc1120.h"
-#include "comm_cc2520.h"
 
 #include <string.h>
 #include <math.h>
@@ -1179,7 +1177,7 @@ static int wait_ack_nak(int timeout_ms) {
 
 static void rtcm_rx(uint8_t *data, int len, int type) {
 	(void)type;
-	comm_cc2520_send_buffer(data, len);
+//	comm_cc2520_send_buffer(data, len);
 }
 
 static void ubx_decode(uint8_t class, uint8_t id, uint8_t *msg, int len) {
