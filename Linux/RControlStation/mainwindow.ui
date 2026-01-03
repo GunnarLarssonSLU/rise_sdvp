@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1561</width>
-    <height>1510</height>
+    <width>1200</width>
+    <height>900</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -23,6 +23,18 @@
      <horstretch>0</horstretch>
      <verstretch>0</verstretch>
     </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>800</width>
+     <height>600</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>16777215</height>
+    </size>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,1">
     <item>
@@ -3484,7 +3496,7 @@
        <attribute name="title">
         <string>Log</string>
        </attribute>
-       <layout class="QHBoxLayout" name="hBoxLayoutMain" stretch="1,1">
+       <layout class="QHBoxLayout" name="hBoxLayoutMain" stretch="0,1">
         <item>
          <layout class="QVBoxLayout" name="vBoxDisplay" stretch="0,0,0,0,1,0,1">
           <property name="sizeConstraint">

@@ -2472,16 +2472,6 @@ void MainWindow::cutPathByArea()
 
 void MainWindow::setupResultPathSpinbox()
 {
-    // Create a horizontal layout for the result controls
-    QHBoxLayout* resultControlsLayout = new QHBoxLayout();
-    resultControlsLayout->setSpacing(4);
-    resultControlsLayout->setContentsMargins(0, 0, 0, 0);
-    
-    // Create the label
-    QLabel* resultLabel = new QLabel("Cutting Result (Area Filtered)");
-    resultLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    resultLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    
     // Create the path label
     QLabel* pathLabel = new QLabel("Path:");
     pathLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
@@ -2502,29 +2492,12 @@ void MainWindow::setupResultPathSpinbox()
     connect(resultSpinbox, QOverload<int>::of(&QSpinBox::valueChanged), 
             this, &MainWindow::onResultPathChanged);
     
-    // Add widgets to layout
-    resultControlsLayout->addWidget(resultLabel);
-    resultControlsLayout->addWidget(pathLabel);
-    resultControlsLayout->addWidget(resultSpinbox);
-    
     // Store the spinbox pointer for later use
     mResultPathSpinbox = resultSpinbox;
     
-    // Find the labelResultMap in the UI and replace it with our layout
-    QLabel* originalLabel = ui->labelResultMap;
-    if (originalLabel) {
-        // Get the parent layout and index of the original label
-        QLayout* parentLayout = originalLabel->parentWidget()->layout();
-        if (parentLayout) {
-            int index = parentLayout->indexOf(originalLabel);
-            if (index != -1) {
-                // Remove the original label and add our layout
-                parentLayout->removeWidget(originalLabel);
-                //parentLayout->insertLayout(index, resultControlsLayout);
-                originalLabel->deleteLater();
-            }
-        }
-    }
+    // The spinbox is created and will be managed by Qt's layout system
+    // Store the spinbox pointer for later use
+    mResultPathSpinbox = resultSpinbox;
 }
 
 void MainWindow::onResultPathChanged(int pathIndex)
