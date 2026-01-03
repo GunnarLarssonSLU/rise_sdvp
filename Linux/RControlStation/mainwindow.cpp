@@ -158,6 +158,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->mapWidgetAnalysisResult->setMousePressEventHandler([this](QMouseEvent *e) {
         ui->mapWidgetAnalysisResult->mousePressEventAnalysis(e);
     });
+
+    // Create result path spinbox programmatically to avoid Qt version issues
+    setupResultPathSpinbox();
     ui->mapWidgetAnalysisResult->setMouseReleaseEventHandler([this](QMouseEvent *e) {
         ui->mapWidgetAnalysisResult->mousePressEventFields(e);
     });
@@ -2289,6 +2292,15 @@ void MainWindow::applyAreaFiltering()
 
         // Update the display to show both original and filtered results
         ui->mapWidgetAnalysisResult->update();
+        
+        // Update the result path spinbox
+        if (mResultPathSpinbox) {
+            int resultPathCount = ui->mapWidgetAnalysisResult->mPaths->size();
+            mResultPathSpinbox->setMaximum(qMax(0, resultPathCount - 1));
+            if (resultPathCount > 0) {
+                mResultPathSpinbox->setValue(0);
+            }
+        }
 
         qDebug() << "Applied area filtering. Found" << routesWithinArea.size() << "route sections within the area.";
     }
@@ -2407,6 +2419,13 @@ void MainWindow::cutPathByArea()
         qDebug() << "DEBUG: Set result path to index 0";
         qDebug() << "DEBUG: Result widget total paths:" << ui->mapWidgetAnalysisResult->mPaths->size();
         qDebug() << "DEBUG: Result widget current path size:" << ui->mapWidgetAnalysisResult->getCurrentPath().size();
+        
+        // Update the result path spinbox
+        if (mResultPathSpinbox) {
+            int resultPathCount = ui->mapWidgetAnalysisResult->mPaths->size();
+            mResultPathSpinbox->setMaximum(qMax(0, resultPathCount - 1));
+            mResultPathSpinbox->setValue(0);
+        }
 
         // Debug: Check if the result widget has the expected content
         if (ui->mapWidgetAnalysisResult->mPaths->size() == 0) {
@@ -2449,6 +2468,86 @@ void MainWindow::cutPathByArea()
 
     qDebug() << "DEBUG: Completed cutPathByArea with" << routesWithinArea.size() << "route sections";
     QMessageBox::information(this, "Success", "Path cut to " + QString::number(routesWithinArea.size()) + " sections within the area.");
+}
+
+void MainWindow::setupResultPathSpinbox()
+{
+    // Create a horizontal layout for the result controls
+    QHBoxLayout* resultControlsLayout = new QHBoxLayout();
+    resultControlsLayout->setSpacing(4);
+    resultControlsLayout->setContentsMargins(0, 0, 0, 0);
+    
+    // Create the label
+    QLabel* resultLabel = new QLabel("Cutting Result (Area Filtered)");
+    resultLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    resultLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    
+    // Create the path label
+    QLabel* pathLabel = new QLabel("Path:");
+    pathLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+    pathLabel->setToolTip("Select which path to focus on in the Results map");
+    
+    // Create the spinbox
+    QSpinBox* resultSpinbox = new QSpinBox();
+    resultSpinbox->setObjectName("resultPathSpinbox");
+    resultSpinbox->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    resultSpinbox->setMinimumSize(80, 0);
+    resultSpinbox->setMaximumSize(100, 100);
+    resultSpinbox->setMinimum(0);
+    resultSpinbox->setMaximum(99);
+    resultSpinbox->setValue(0);
+    resultSpinbox->setToolTip("Select which path to focus on in the Results map");
+    
+    // Connect the spinbox signal
+    connect(resultSpinbox, QOverload<int>::of(&QSpinBox::valueChanged), 
+            this, &MainWindow::onResultPathChanged);
+    
+    // Add widgets to layout
+    resultControlsLayout->addWidget(resultLabel);
+    resultControlsLayout->addWidget(pathLabel);
+    resultControlsLayout->addWidget(resultSpinbox);
+    
+    // Store the spinbox pointer for later use
+    mResultPathSpinbox = resultSpinbox;
+    
+    // Find the labelResultMap in the UI and replace it with our layout
+    QLabel* originalLabel = ui->labelResultMap;
+    if (originalLabel) {
+        // Get the parent layout and index of the original label
+        QLayout* parentLayout = originalLabel->parentWidget()->layout();
+        if (parentLayout) {
+            int index = parentLayout->indexOf(originalLabel);
+            if (index != -1) {
+                // Remove the original label and add our layout
+                parentLayout->removeWidget(originalLabel);
+                //parentLayout->insertLayout(index, resultControlsLayout);
+                originalLabel->deleteLater();
+            }
+        }
+    }
+}
+
+void MainWindow::onResultPathChanged(int pathIndex)
+{
+    qDebug() << "DEBUG: Result path changed to" << pathIndex;
+    
+    // Set the current path in the result map widget
+    if (ui->mapWidgetAnalysisResult->mPaths->size() > 0) {
+        // Ensure the path index is within valid range
+        int validIndex = qBound(0, pathIndex, ui->mapWidgetAnalysisResult->mPaths->size() - 1);
+        ui->mapWidgetAnalysisResult->setPathNow(validIndex);
+        ui->mapWidgetAnalysisResult->update();
+        
+        // Update the spinbox in case the index was clamped
+        if (mResultPathSpinbox && pathIndex != validIndex) {
+            mResultPathSpinbox->setValue(validIndex);
+        }
+    } else {
+        // No paths available, reset to 0
+        if (mResultPathSpinbox) {
+            mResultPathSpinbox->setValue(0);
+        }
+    }
 }
 
 void MainWindow::testAreaCutting()
