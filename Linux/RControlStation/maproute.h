@@ -30,7 +30,8 @@ public:
     void append(const QList<LocPoint> &points);
     void append(const MapRoute &mr);
     void cut(int before,int after);
-    int size();
+    QList<MapRoute> cutByArea(double minX, double minY, double maxX, double maxY);
+    int size() const;
     bool isEmpty() const;
     void clear();
     QList<LocPoint>::const_iterator begin() const;
@@ -43,6 +44,7 @@ public:
     void 	removeLast();
     LocPoint& operator[](int i);
     LocPoint& at(int i);
+    const LocPoint& at(int i) const;
     QList<LocPoint> mRoute;
     QList<LocPoint> mInfoTrace;
 

@@ -86,7 +86,7 @@ private:
                 (void)e;
                 QString errorStr = socket.errorString();
                 socket.close();
-                emit client->stateChanged(QString("TCP Error: %1").arg(errorStr), true);
+                emit client->stateChanged(QString("TCP Error: %1").arg(errorStr), attempedip, true);
             });
     #endif
             connect(&packet, &PacketInterface::packetReceived,

@@ -154,13 +154,39 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->mapWidgetAnalysis->wheelEventFields(e);
     });
 
+    // Initialize the result map widget
+    ui->mapWidgetAnalysisResult->setMousePressEventHandler([this](QMouseEvent *e) {
+        ui->mapWidgetAnalysisResult->mousePressEventAnalysis(e);
+    });
+    ui->mapWidgetAnalysisResult->setMouseReleaseEventHandler([this](QMouseEvent *e) {
+        ui->mapWidgetAnalysisResult->mousePressEventFields(e);
+    });
+
+    ui->mapWidgetAnalysisResult->setWheelEventHandler([this](QWheelEvent *e) {
+        ui->mapWidgetAnalysisResult->wheelEventFields(e);
+    });
+
+    ui->mapWidgetAnalysisResult->setAnalysisActive(true);
+    
+    // Debug: Check result map widget initialization
+    qDebug() << "DEBUG: Result map widget initialized:" << ui->mapWidgetAnalysisResult;
+    qDebug() << "DEBUG: Result map widget paths:" << ui->mapWidgetAnalysisResult->mPaths->size();
+    qDebug() << "DEBUG: Result map widget fields:" << ui->mapWidgetAnalysisResult->getFieldNum();
+    
     // Connect RangeSlider signals to slots
     connect(ui->rangeSlider, &RangeSlider::lowerValueChanged, this, &MainWindow::onRangeSliderLowerChanged);
     connect(ui->rangeSlider, &RangeSlider::upperValueChanged, this, &MainWindow::onRangeSliderUpperChanged);
+    
+    // Connect area loading button
+    connect(ui->loadAreaButton, &QPushButton::clicked, this, &MainWindow::loadAreaFromXML);
+    
+    // Connect cut path button
+    connect(ui->cutPathButton, &QPushButton::clicked, this, &MainWindow::cutPathByArea);
 
     ui->mapWidgetFields->setMainWindow(this);
     ui->mapWidgetFields->setBorderFocus(true);
     ui->mapWidgetAnalysis->setAnalysisActive(true);
+    ui->mapWidgetAnalysisResult->setMainWindow(this);
 
     fileModel = new QStringListModel(this);
     ui->listLogfilesView->setModel(fileModel);  // Link the model to the view
@@ -647,6 +673,7 @@ void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& p
     ui->mapLiveWidget->setEnuRef(llh[0],llh[1],0);
     ui->mapWidgetFields->setEnuRef(llh[0],llh[1],0);
     ui->mapWidgetAnalysis->setEnuRef(llh[0],llh[1],0);
+    ui->mapWidgetAnalysisResult->setEnuRef(llh[0],llh[1],0);
 
     qDebug() << "lat: " << llh[0];
     qDebug() << "lon: " << llh[1];
@@ -1210,6 +1237,7 @@ void MainWindow::rtcmReceived(QByteArray data)
             int res = rtcm3_input_data(b, &mRtcmState);
             if (res == 1005 || res == 1006) {
                 ui->mapLiveWidget->setEnuRef(mRtcmState.pos.lat, mRtcmState.pos.lon, mRtcmState.pos.height);
+                ui->mapWidgetAnalysisResult->setEnuRef(mRtcmState.pos.lat, mRtcmState.pos.lon, mRtcmState.pos.height);
             }
         }
     }
@@ -1241,6 +1269,7 @@ void MainWindow::enuRx(quint8 id, double lat, double lon, double height)
 {
     (void)id;
     ui->mapLiveWidget->setEnuRef(lat, lon, height);
+    ui->mapWidgetAnalysisResult->setEnuRef(lat, lon, height);
 }
 
 void MainWindow::nmeaGgaRx(int fields, NmeaServer::nmea_gga_info_t gga)
@@ -2038,8 +2067,422 @@ void MainWindow::filterLogBasedOnRangeSlider()
         MapRoute& currentRoute = ui->mapWidgetAnalysis->getCurrentPath();
         currentRoute.clear();
         currentRoute.append(filteredRoute);
-        ui->mapWidgetAnalysis->update();
+        
+        // If area filtering is loaded, apply it automatically
+        if (mAreaLoaded) {
+            applyAreaFiltering();
+        } else {
+            ui->mapWidgetAnalysis->update();
+        }
     }
+}
+
+void MainWindow::cutCurrentLogByArea(double minX, double minY, double maxX, double maxY)
+{
+    qDebug() << "Cutting current log by area:" << minX << "," << minY << "to" << maxX << "," << maxY;
+    
+    // Get the current path index
+    int currentPathIndex = ui->mapWidgetAnalysis->mPaths->mRouteNow;
+    
+    // Check if we have a valid path
+    if (currentPathIndex >= 0 && currentPathIndex < ui->mapWidgetAnalysis->mPaths->size()) {
+        MapRoute& currentRoute = ui->mapWidgetAnalysis->getCurrentPath();
+        
+        // Cut the route by area
+        QList<MapRoute> routesWithinArea = currentRoute.cutByArea(minX, minY, maxX, maxY);
+        
+        if (routesWithinArea.isEmpty()) {
+            qDebug() << "No route sections found within the specified area";
+            return;
+        }
+        
+        // Clear the current routes and add the area-cut routes
+        ui->mapWidgetAnalysis->mPaths->clearAllRoutes();
+        
+        for (const MapRoute& route : routesWithinArea) {
+            if (!route.isEmpty()) {
+                ui->mapWidgetAnalysis->mPaths->addRoute(route);
+            }
+        }
+        
+        // Update the display
+        ui->mapWidgetAnalysis->update();
+        
+        qDebug() << "Added" << routesWithinArea.size() << "route sections that fall within the area";
+    } else {
+        qDebug() << "No valid path selected for area cutting";
+    }
+}
+
+void MainWindow::loadAreaFromXML()
+{
+    qDebug() << "Loading area definition from XML file";
+    
+    // Create a file dialog to select the XML file
+    QString fileName = QFileDialog::getOpenFileName(
+        this,
+        "Open Area Definition File",
+        "",
+        "XML Files (*.xml)"
+    );
+    
+    if (fileName.isEmpty()) {
+        qDebug() << "No file selected";
+        return;
+    }
+    
+    // Open the file
+    QFile file(fileName);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qDebug() << "Failed to open file:" << fileName;
+        QMessageBox::warning(this, "Error", "Failed to open the area definition file.");
+        return;
+    }
+    
+    // Use the existing XML loading infrastructure
+    QXmlStreamReader xmlReader(&file);
+    
+    // Load the area as a border using the existing function
+    bool success = ui->mapWidgetAnalysis->loadXMLRoute(&xmlReader, true); // true = isBorder
+    
+    file.close();
+    
+    if (success) {
+        // Get the index of the newly loaded border
+        mAreaBorderIndex = ui->mapWidgetAnalysis->getFieldNum() - 1;
+        mAreaLoaded = true;
+        
+        qDebug() << "Area loaded as border index:" << mAreaBorderIndex;
+        
+        // Update UI status
+        ui->labelAreaStatus->setText("Area loaded successfully");
+        QMessageBox::information(this, "Success", "Area definition loaded successfully as border.");
+        
+        // Apply the area filtering immediately if there's a log loaded
+        if (ui->mapWidgetAnalysis->mPaths->size() > 0) {
+            applyAreaFiltering();
+        }
+    } else {
+        qDebug() << "Failed to load area definition";
+        
+        // Update UI status
+        ui->labelAreaStatus->setText("Failed to load area");
+        QMessageBox::warning(this, "Error", "Failed to load the area definition file.");
+    }
+}
+
+// Point-in-polygon algorithm using ray casting
+bool MainWindow::isPointInsideBorder(const LocPoint& point, const MapRoute& border)
+{
+    if (border.size() < 3) {
+        return false; // Need at least 3 points to form a polygon
+    }
+    
+    double x = point.getX();
+    double y = point.getY();
+    
+    bool inside = false;
+    int n = border.size();
+    
+    for (int i = 0, j = n - 1; i < n; j = i++) {
+        double xi = border.at(i).getX();
+        double yi = border.at(i).getY();
+        double xj = border.at(j).getX();
+        double yj = border.at(j).getY();
+        
+        // Check if the ray from point to infinity crosses this edge
+        bool intersect = ((yi > y) != (yj > y)) && 
+                        (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        
+        if (intersect) {
+            inside = !inside;
+        }
+    }
+    
+    return inside;
+}
+
+void MainWindow::applyAreaFiltering()
+{
+    if (!mAreaLoaded || mAreaBorderIndex < 0) {
+        qDebug() << "No area definition loaded";
+        return;
+    }
+
+    qDebug() << "Applying area filtering using border index:" << mAreaBorderIndex;
+
+    // Get the current path index
+    int currentPathIndex = ui->mapWidgetAnalysis->mPaths->mRouteNow;
+
+    if (currentPathIndex < 0 || currentPathIndex >= ui->mapWidgetAnalysis->mPaths->size()) {
+        qDebug() << "No valid path selected";
+        return;
+    }
+
+    // Get the border that defines our area
+    MapRoute& border = ui->mapWidgetAnalysis->getField(mAreaBorderIndex);
+
+    if (border.size() < 3) {
+        qDebug() << "Border has insufficient points to form a valid area";
+        return;
+    }
+
+    // Work with the original log, not the potentially filtered current route
+    if (currentPathIndex >= 0 && currentPathIndex < mOriginalLogs.size()) {
+        MapRoute& originalRoute = mOriginalLogs[currentPathIndex];
+
+        // Apply area filtering to the original route
+        QList<MapRoute> routesWithinArea;
+        MapRoute currentSection;
+        bool insideArea = false;
+
+        for (const LocPoint& point : originalRoute) {
+            bool pointInside = isPointInsideBorder(point, border);
+
+            if (pointInside) {
+                // Point is inside the area
+                if (!insideArea) {
+                    // We just entered the area, start a new route section
+                    currentSection = MapRoute();
+                    insideArea = true;
+                }
+                // Add the point to the current section
+                currentSection.append(point);
+            } else {
+                // Point is outside the area
+                if (insideArea) {
+                    // We just exited the area, finalize the current section
+                    if (!currentSection.isEmpty()) {
+                        routesWithinArea.append(currentSection);
+                    }
+                    insideArea = false;
+                }
+                // Don't add points outside the area
+            }
+        }
+
+        // Add the last section if we're still inside the area
+        if (insideArea && !currentSection.isEmpty()) {
+            routesWithinArea.append(currentSection);
+        }
+
+        if (routesWithinArea.isEmpty()) {
+            qDebug() << "No route sections found within the specified area";
+            return;
+        }
+
+        // Clear the current routes and show both original and filtered results
+        ui->mapWidgetAnalysisResult->mPaths->clearAllRoutes();
+
+        // Add the original route first
+        //ui->mapWidgetAnalysis->mPaths->addRoute(originalRoute);
+
+        // Add the filtered sections as additional routes
+        for (const MapRoute& route : routesWithinArea) {
+            if (!route.isEmpty()) {
+                ui->mapWidgetAnalysisResult->mPaths->addRoute(route);
+            }
+        }
+
+        // Keep the original route as the current route (index 0)
+        //ui->mapWidgetAnalysis->setPathNow(0);
+
+        // Update the display to show both original and filtered results
+        ui->mapWidgetAnalysisResult->update();
+
+        qDebug() << "Applied area filtering. Found" << routesWithinArea.size() << "route sections within the area.";
+    }
+}
+
+void MainWindow::cutPathByArea()
+{
+    qDebug() << "=== DEBUG: Starting cutPathByArea ===";
+    qDebug() << "Main analysis widget:" << ui->mapWidgetAnalysis;
+    qDebug() << "Result analysis widget:" << ui->mapWidgetAnalysisResult;
+    
+    if (!mAreaLoaded || mAreaBorderIndex < 0) {
+        qDebug() << "DEBUG: No area definition loaded (mAreaLoaded:" << mAreaLoaded << ", mAreaBorderIndex:" << mAreaBorderIndex << ")";
+        QMessageBox::warning(this, "Error", "No area definition loaded. Please load an area first.");
+        return;
+    }
+    
+    qDebug() << "DEBUG: Area loaded, border index:" << mAreaBorderIndex;
+    
+    // Get the border that defines our area
+    MapRoute& border = ui->mapWidgetAnalysis->getField(mAreaBorderIndex);
+    qDebug() << "DEBUG: Border points:" << border.size();
+    
+    if (border.size() < 3) {
+        qDebug() << "DEBUG: Border has insufficient points:" << border.size();
+        QMessageBox::warning(this, "Error", "Border has insufficient points to form a valid area.");
+        return;
+    }
+    
+    // Get the current path index
+    int currentPathIndex = ui->mapWidgetAnalysis->mPaths->mRouteNow;
+    qDebug() << "DEBUG: Current path index:" << currentPathIndex;
+    qDebug() << "DEBUG: Total paths in main widget:" << ui->mapWidgetAnalysis->mPaths->size();
+    
+    if (currentPathIndex < 0 || currentPathIndex >= ui->mapWidgetAnalysis->mPaths->size()) {
+        qDebug() << "DEBUG: Invalid path index (current:" << currentPathIndex << ", total:" << ui->mapWidgetAnalysis->mPaths->size() << ")";
+        QMessageBox::warning(this, "Error", "No valid path selected.");
+        return;
+    }
+    
+    // Work with the currently displayed route (which may already be RangeSlider-filtered)
+    MapRoute& currentRoute = ui->mapWidgetAnalysis->getCurrentPath();
+    qDebug() << "DEBUG: Current route points:" << currentRoute.size();
+    
+    if (currentRoute.isEmpty()) {
+        qDebug() << "DEBUG: Current route is empty";
+        QMessageBox::warning(this, "Error", "Current route is empty.");
+        return;
+    }
+        
+    // Apply area cutting to create separate route sections
+    QList<MapRoute> routesWithinArea;
+    MapRoute currentSection;
+    bool insideArea = false;
+
+    for (const LocPoint& point : currentRoute) {
+        bool pointInside = isPointInsideBorder(point, border);
+
+        if (pointInside) {
+            // Point is inside the area
+            if (!insideArea) {
+                // We just entered the area, start a new route section
+                currentSection = MapRoute();
+                insideArea = true;
+            }
+            // Add the point to the current section
+            currentSection.append(point);
+        } else {
+            // Point is outside the area
+            if (insideArea) {
+                // We just exited the area, finalize the current section
+                if (!currentSection.isEmpty()) {
+                    routesWithinArea.append(currentSection);
+                }
+                insideArea = false;
+            }
+            // Don't add points outside the area
+        }
+    }
+
+    // Add the last section if we're still inside the area
+    if (insideArea && !currentSection.isEmpty()) {
+        routesWithinArea.append(currentSection);
+    }
+
+    qDebug() << "DEBUG: Found" << routesWithinArea.size() << "route sections after filtering";
+
+    if (routesWithinArea.isEmpty()) {
+        qDebug() << "DEBUG: No route sections found within the specified area";
+        QMessageBox::warning(this, "Info", "No route sections found within the specified area.");
+        return;
+    }
+
+    // Debug: Check result widget state before clearing
+    qDebug() << "DEBUG: Result widget paths before clear:" << ui->mapWidgetAnalysisResult->mPaths->size();
+    qDebug() << "DEBUG: Result widget fields before clear:" << ui->mapWidgetAnalysisResult->getFieldNum();
+
+    // Display the filtered results in the second map widget instead of replacing the first one
+    ui->mapWidgetAnalysisResult->mPaths->clearAllRoutes();
+    qDebug() << "DEBUG: Cleared result widget routes";
+
+    // Add only the filtered sections to the result map widget
+    int addedRoutes = 0;
+    for (const MapRoute& route : routesWithinArea) {
+        if (!route.isEmpty()) {
+            ui->mapWidgetAnalysisResult->mPaths->addRoute(route);
+            addedRoutes++;
+            qDebug() << "DEBUG: Added route with" << route.size() << "points to result widget";
+        }
+    }
+    qDebug() << "DEBUG: Added" << addedRoutes << "routes to result widget";
+
+    // Set the current route to the first filtered section in the result widget (if any exist)
+    if (routesWithinArea.size() > 0) {
+        ui->mapWidgetAnalysisResult->setPathNow(0); // Set to first filtered section
+        qDebug() << "DEBUG: Set result path to index 0";
+        qDebug() << "DEBUG: Result widget total paths:" << ui->mapWidgetAnalysisResult->mPaths->size();
+        qDebug() << "DEBUG: Result widget current path size:" << ui->mapWidgetAnalysisResult->getCurrentPath().size();
+
+        // Debug: Check if the result widget has the expected content
+        if (ui->mapWidgetAnalysisResult->mPaths->size() == 0) {
+            qDebug() << "DEBUG: WARNING: Result widget has 0 paths after adding!";
+        }
+    } else {
+        qDebug() << "DEBUG: No filtered sections found!";
+    }
+
+    // Copy the ENU reference from the main analysis widget to the result widget
+    double refs[3];
+    ui->mapWidgetAnalysis->getEnuRef(refs);
+    qDebug() << "DEBUG: Copying ENU reference:" << refs[0] << "," << refs[1] << "," << refs[2];
+    ui->mapWidgetAnalysisResult->setEnuRef(refs[0], refs[1], refs[2]);
+
+    // Copy the area border to the result widget for visualization
+    if (mAreaBorderIndex >= 0) {
+        MapRoute borderCopy = ui->mapWidgetAnalysis->getField(mAreaBorderIndex);
+        ui->mapWidgetAnalysisResult->addField(borderCopy);
+        qDebug() << "DEBUG: Added border with" << borderCopy.size() << "points to result widget";
+    }
+
+    // Debug: Check final state
+    qDebug() << "DEBUG: Final result widget paths:" << ui->mapWidgetAnalysisResult->mPaths->size();
+    qDebug() << "DEBUG: Final result widget fields:" << ui->mapWidgetAnalysisResult->getFieldNum();
+    qDebug() << "DEBUG: Result widget current path:" << ui->mapWidgetAnalysisResult->getCurrentPath().size() << "points";
+
+    // Update UI status
+    ui->labelAreaStatus->setText("Path cut to " + QString::number(routesWithinArea.size()) + " sections (shown in result map)");
+
+    // Force a repaint to ensure visibility in both widgets
+    qDebug() << "DEBUG: Calling repaint on both widgets";
+    ui->mapWidgetAnalysis->repaint();
+    ui->mapWidgetAnalysisResult->repaint();
+
+    // Update the display for both widgets
+    qDebug() << "DEBUG: Calling update on both widgets";
+    ui->mapWidgetAnalysis->update();
+    ui->mapWidgetAnalysisResult->update();
+
+    qDebug() << "DEBUG: Completed cutPathByArea with" << routesWithinArea.size() << "route sections";
+    QMessageBox::information(this, "Success", "Path cut to " + QString::number(routesWithinArea.size()) + " sections within the area.");
+}
+
+void MainWindow::testAreaCutting()
+{
+    qDebug() << "Testing area cutting with predefined area";
+    
+    // Create a simple rectangular border for testing
+    MapRoute testBorder;
+    
+    // Create a rectangle from (-100,-100) to (100,100)
+    LocPoint p1, p2, p3, p4;
+    p1.setXY(-100.0, -100.0);
+    p2.setXY(100.0, -100.0);
+    p3.setXY(100.0, 100.0);
+    p4.setXY(-100.0, 100.0);
+    
+    testBorder.append(p1);
+    testBorder.append(p2);
+    testBorder.append(p3);
+    testBorder.append(p4);
+    testBorder.append(p1); // Close the polygon
+    
+    // Add this border to the analysis widget
+    ui->mapWidgetAnalysis->addField(testBorder);
+    mAreaBorderIndex = ui->mapWidgetAnalysis->getFieldNum() - 1;
+    mAreaLoaded = true;
+    
+    qDebug() << "Created test border with" << testBorder.size() << "points";
+    
+    // Update UI status
+    ui->labelAreaStatus->setText("Test area loaded");
+    
+    // Apply the area filtering
+    applyAreaFiltering();
 }
 
 bool MainWindow::onLoadShapefile()
