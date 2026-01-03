@@ -224,12 +224,25 @@ private slots:
     void onRangeSliderLowerChanged(int value);
     void onRangeSliderUpperChanged(int value);
     void filterLogBasedOnRangeSlider();
+    void cutCurrentLogByArea(double minX, double minY, double maxX, double maxY);
+    void testAreaCutting(); // Test function with predefined area
+    void loadAreaFromXML(); // Load area definition from XML file
+    void applyAreaFiltering(); // Apply area filtering to current log
+    void cutPathByArea(); // Actually cut the path to only show sections within area
+    
 
     QSqlRelationalTableModel* setupFarmTable(QTableView* uiFarmtable,QString SqlTableName);
     QSqlRelationalTableModel* setupFieldTable(QTableView* uiFieldtable,QString SqlTableName);
     QSqlRelationalTableModel* setupPathTable(QTableView* uiPathTable,QString sqlTablename);
 
 private:
+    // Helper methods
+    bool isPointInsideBorder(const LocPoint& point, const MapRoute& border); // Check if point is inside border
+
+    // Area definition storage - using existing border infrastructure
+    bool mAreaLoaded = false;
+    int mAreaBorderIndex = -1; // Index of the border used for area filtering
+
     QSqlRelationalTableModel *modelFarm;
     QSqlRelationalTableModel *modelField;
     QSqlRelationalTableModel *modelPath;

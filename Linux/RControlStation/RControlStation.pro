@@ -4,23 +4,23 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core5compat gui
 QT       += widgets
 QT       += printsupport
 QT       += serialport
 QT       += network
 QT       += quick
-QT       +=sql
-QT       +=charts
-#CONFIG += static
+QT       += sql
+QT       += charts
 
-#QMAKE_LFLAGS += -static
-
-
-CONFIG   += c++11
+# Qt 6 specific configuration
+CONFIG   += c++17
 
 DEFINES += HAS_JOYSTICK_CHECK
 DEFINES += HAS_JOYSTICK
+
+# Qt 6 include paths
+QT += core5compat
 
 # Ubuntu
 # sudo apt-get install libassimp-dev

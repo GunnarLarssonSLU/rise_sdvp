@@ -62,11 +62,6 @@ MapRoute &MapRoute::operator=(MapRoute &&other) noexcept {
     return *this;
 }
 
-int MapRoute::size()
-{
-    return mRoute.size();
-}
-
 void MapRoute::clear()
 {
     mRoute.clear();
@@ -526,4 +521,54 @@ void MapRoute::cut(int before,int after)
     for (int i = before;i >= 0;i--) {
         mRoute.removeAt(i);
     }
+}
+
+QList<MapRoute> MapRoute::cutByArea(double minX, double minY, double maxX, double maxY)
+{
+    qDebug() << "Cutting route by area:" << minX << "," << minY << "to" << maxX << "," << maxY;
+    
+    QList<MapRoute> resultRoutes;
+    MapRoute* currentRoute = nullptr;
+    bool insideArea = false;
+    
+    for (const LocPoint& point : mRoute) {
+        double x = point.getX();
+        double y = point.getY();
+        
+        // Check if the point is inside the area
+        bool pointInside = (x >= minX && x <= maxX && y >= minY && y <= maxY);
+        
+        if (pointInside) {
+            // Point is inside the area
+            if (!insideArea) {
+                // We just entered the area, start a new route
+                currentRoute = new MapRoute();
+                resultRoutes.append(*currentRoute);
+                insideArea = true;
+            }
+            // Add the point to the current route
+            currentRoute->append(point);
+        } else {
+            // Point is outside the area
+            if (insideArea) {
+                // We just exited the area, finalize the current route
+                insideArea = false;
+            }
+            // Don't add points outside the area
+        }
+    }
+    
+    qDebug() << "Found" << resultRoutes.size() << "route sections within the area";
+    return resultRoutes;
+}
+
+// Implement const-correct versions of size() and at()
+int MapRoute::size() const
+{
+    return mRoute.size();
+}
+
+const LocPoint& MapRoute::at(int i) const
+{
+    return mRoute.at(i);
 }

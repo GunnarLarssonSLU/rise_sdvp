@@ -1,6 +1,6 @@
 #include "arduinoreader.h"
 
-ArduinoReader::ArduinoReader(const QString &portName, qint32 baudRate, QObject *parent = nullptr)
+ArduinoReader::ArduinoReader(const QString &portName, qint32 baudRate, QObject *parent)
         : QObject(parent), serialPort(new QSerialPort(this))
 {
     serialPort->setPortName(portName);
