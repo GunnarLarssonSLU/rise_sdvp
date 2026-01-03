@@ -3630,14 +3630,54 @@
            </widget>
           </item>
           <item>
-           <widget class="QLabel" name="labelResultMap">
-            <property name="text">
-             <string>Cutting Result (Area Filtered)</string>
+           <layout class="QHBoxLayout" name="horizontalLayoutResultControls">
+            <property name="spacing">
+             <number>4</number>
             </property>
-            <property name="alignment">
-             <set>Qt::AlignmentFlag::AlignCenter</set>
-            </property>
-           </widget>
+            <item>
+             <widget class="QLabel" name="labelResultMap">
+              <property name="text">
+               <string>Cutting Result (Area Filtered)</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="labelResultPath">
+              <property name="text">
+               <string>Path:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="spinBoxResultPath">
+              <property name="minimum">
+               <number>0</number>
+              </property>
+              <property name="maximum">
+               <number>99</number>
+              </property>
+              <property name="toolTip">
+               <string>Select which path to focus on in the Results map</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacerResult">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
           </item>
           <item>
            <widget class="MapWidget" name="mapWidgetAnalysisResult" native="true">
