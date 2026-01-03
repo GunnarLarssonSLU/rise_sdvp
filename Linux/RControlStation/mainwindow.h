@@ -230,7 +230,8 @@ private slots:
     void applyAreaFiltering(); // Apply area filtering to current log
     void cutPathByArea(); // Actually cut the path to only show sections within area
     void onResultPathChanged(int pathIndex); // Handle result path spinbox changes
-    
+    void onAnalysisSelectionChanged(); // Handle analysis table selection changes
+    void calculateAndDisplayPathLengths();
 
     QSqlRelationalTableModel* setupFarmTable(QTableView* uiFarmtable,QString SqlTableName);
     QSqlRelationalTableModel* setupFieldTable(QTableView* uiFieldtable,QString SqlTableName);

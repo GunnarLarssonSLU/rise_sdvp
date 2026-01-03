@@ -42,6 +42,11 @@
 
 #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
+#include <QtCharts/QBarSeries>
+#include <QtCharts/QBarSet>
+#include <QtCharts/QBarCategoryAxis>
+#include <QtCharts/QValueAxis>
+#include <QtCharts/QChart>
 #include <QListView>
 #include <QStringListModel>
 
@@ -122,6 +127,12 @@ MainWindow::MainWindow(QWidget *parent) :
     db(this)
 {
     ui->setupUi(this);
+    
+    // Initialize analysis table items (they are defined in UI but need content)
+    ui->tableAnalysis->setItem(0, 0, new QTableWidgetItem("Length"));
+    ui->tableAnalysis->setItem(1, 0, new QTableWidgetItem("Angle"));
+    ui->tableAnalysis->setItem(2, 0, new QTableWidgetItem("Root-Mean-Square"));
+    
     ui->mapLiveWidget->setMousePressEventHandler([this](QMouseEvent *e) {
         ui->mapLiveWidget->mousePressEventPaths(e);
     });
@@ -163,6 +174,11 @@ MainWindow::MainWindow(QWidget *parent) :
     // Connect the UI spinbox signal
     connect(ui->spinBoxResultPath, QOverload<int>::of(&QSpinBox::valueChanged), 
             this, &MainWindow::onResultPathChanged);
+
+    // Connect analysis table selection
+    connect(ui->tableAnalysis, &QTableWidget::itemSelectionChanged, 
+            this, &MainWindow::onAnalysisSelectionChanged);
+
     ui->mapWidgetAnalysisResult->setMouseReleaseEventHandler([this](QMouseEvent *e) {
         ui->mapWidgetAnalysisResult->mousePressEventFields(e);
     });
@@ -2489,6 +2505,157 @@ void MainWindow::onResultPathChanged(int pathIndex)
         // No paths available, reset to 0
         ui->spinBoxResultPath->setValue(0);
     }
+}
+
+void MainWindow::onAnalysisSelectionChanged()
+{
+    qDebug() << "DEBUG: Analysis selection changed";
+    
+    // Debug: Check table state
+    qDebug() << "DEBUG: Table row count:" << ui->tableAnalysis->rowCount();
+    qDebug() << "DEBUG: Table column count:" << ui->tableAnalysis->columnCount();
+    
+    // Check if items exist
+    for (int i = 0; i < ui->tableAnalysis->rowCount(); i++) {
+        QTableWidgetItem* item = ui->tableAnalysis->item(i, 0);
+        if (item) {
+            qDebug() << "DEBUG: Row" << i << "has item:" << item->text();
+        } else {
+            qDebug() << "DEBUG: Row" << i << "has NO item";
+        }
+    }
+    
+    // Get the selected items
+    QList<QTableWidgetItem*> selectedItems = ui->tableAnalysis->selectedItems();
+    
+    if (selectedItems.isEmpty()) {
+        qDebug() << "DEBUG: No item selected";
+        
+        // Try to get current item
+        QTableWidgetItem* currentItem = ui->tableAnalysis->currentItem();
+        if (currentItem) {
+            qDebug() << "DEBUG: Current item:" << currentItem->text();
+        } else {
+            qDebug() << "DEBUG: No current item either";
+        }
+        return;
+    }
+    
+    // Get the first selected item (since we're using single selection)
+    QTableWidgetItem* selectedItem = selectedItems.first();
+    int selectedRow = selectedItem->row();
+    
+    // For single-column table, get the text directly from the item
+    QString analysisType = selectedItem->text();
+    
+    qDebug() << "DEBUG: Selected analysis type:" << analysisType << "(row" << selectedRow << ")";
+    
+    // Handle different analysis types
+    if (analysisType == "Length") {
+        calculateAndDisplayPathLengths();
+    } else if (analysisType == "Angle") {
+        qDebug() << "DEBUG: Angle analysis selected (not yet implemented)";
+        // calculateAndDisplayPathAngles();
+    } else if (analysisType == "Root-Mean-Square") {
+        qDebug() << "DEBUG: RMS analysis selected (not yet implemented)";
+        // calculateAndDisplayPathRMS();
+    }
+}
+
+void MainWindow::calculateAndDisplayPathLengths()
+{
+    qDebug() << "DEBUG: Calculating path lengths...";
+    
+    // Check if we have any paths to analyze
+    if (ui->mapWidgetAnalysisResult->mPaths->size() == 0) {
+        qDebug() << "DEBUG: No paths available for length analysis";
+        QMessageBox::information(this, "Analysis", "No paths available for length analysis.");
+        return;
+    }
+    
+    // Create a bar chart to display the lengths
+    QChart* chart = new QChart();
+    chart->setTitle("Path Lengths Analysis");
+    chart->setAnimationOptions(QChart::SeriesAnimations);
+    
+    QBarSeries* series = new QBarSeries();
+    
+    // Calculate length for each path and add to the chart
+    for (int i = 0; i < ui->mapWidgetAnalysisResult->mPaths->size(); i++) {
+        MapRoute& route = ui->mapWidgetAnalysisResult->getPath(i);
+        
+        if (route.isEmpty()) {
+            qDebug() << "DEBUG: Path" << i << "is empty, skipping";
+            continue;
+        }
+        
+        // Calculate the length of this path
+        double length = 0.0;
+        LocPoint prevPoint = route.first();
+        
+        for (int j = 1; j < route.size(); j++) {
+            LocPoint currentPoint = route.at(j);
+            // Calculate distance between points using Euclidean distance
+            double dx = currentPoint.getX() - prevPoint.getX();
+            double dy = currentPoint.getY() - prevPoint.getY();
+            length += std::sqrt(dx*dx + dy*dy);
+            prevPoint = currentPoint;
+        }
+        
+        qDebug() << "DEBUG: Path" << i << "length:" << length << "units";
+        
+        // Add this path's length to the chart
+        QBarSet* set = new QBarSet(QString("Path %1").arg(i));
+        set->append(length);
+        series->append(set);
+        
+        // For single-column table, we could store the value in the item's data
+        // Or display it in the chart title or as a tooltip
+        // ui->tableAnalysis->item(i, 0)->setToolTip(QString::number(length, 'f', 2));
+    }
+    
+    if (series->count() == 0) {
+        qDebug() << "DEBUG: No valid paths found for length analysis";
+        QMessageBox::information(this, "Analysis", "No valid paths found for length analysis.");
+        delete series;
+        delete chart;
+        return;
+    }
+    
+    // Add the series to the chart
+    chart->addSeries(series);
+    
+    // Customize the chart
+    chart->setTitle("Path Lengths");
+    chart->legend()->setVisible(true);
+    chart->legend()->setAlignment(Qt::AlignBottom);
+    
+    // Create axis
+    QValueAxis* axisY = new QValueAxis();
+    axisY->setTitleText("Length (units)");
+    chart->addAxis(axisY, Qt::AlignLeft);
+    series->attachAxis(axisY);
+    
+    QBarCategoryAxis* axisX = new QBarCategoryAxis();
+    chart->addAxis(axisX, Qt::AlignBottom);
+    series->attachAxis(axisX);
+    
+    // Display the chart
+    QChartView* chartView = new QChartView(chart);
+    chartView->setRenderHint(QPainter::Antialiasing);
+    
+    // Show the chart in a dialog or add it to the UI
+    QDialog* chartDialog = new QDialog(this);
+    chartDialog->setWindowTitle("Path Length Analysis");
+    chartDialog->resize(800, 600);
+    
+    QVBoxLayout* layout = new QVBoxLayout(chartDialog);
+    layout->addWidget(chartView);
+    
+    chartDialog->exec();
+    
+    // Clean up (dialog will delete chartView when closed)
+    delete chartDialog;
 }
 
 void MainWindow::testAreaCutting()

@@ -3701,6 +3701,45 @@
            </widget>
           </item>
           <item>
+           <widget class="QTableWidget" name="tableAnalysis">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumHeight">
+             <number>150</number>
+            </property>
+            <property name="selectionMode">
+             <enum>QAbstractItemView::SingleSelection</enum>
+            </property>
+            <property name="selectionBehavior">
+             <enum>QAbstractItemView::SelectRows</enum>
+            </property>
+            <column>
+             <property name="text">
+              <string>Analysis Type</string>
+             </property>
+            </column>
+            <row>
+             <property name="text">
+              <string>Length</string>
+             </property>
+            </row>
+            <row>
+             <property name="text">
+              <string>Angle</string>
+             </property>
+            </row>
+            <row>
+             <property name="text">
+              <string>Root-Mean-Square</string>
+             </property>
+            </row>
+           </widget>
+          </item>
+          <item>
            <widget class="QLabel" name="textAnalysis">
             <property name="minimumSize">
              <size>
