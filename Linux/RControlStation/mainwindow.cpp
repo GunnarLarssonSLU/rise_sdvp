@@ -2472,6 +2472,12 @@ void MainWindow::cutPathByArea()
 
 void MainWindow::setupResultPathSpinbox()
 {
+    // Create a container widget for the spinbox and label
+    QWidget* spinboxContainer = new QWidget();
+    QHBoxLayout* containerLayout = new QHBoxLayout(spinboxContainer);
+    containerLayout->setContentsMargins(0, 0, 0, 0);
+    containerLayout->setSpacing(10);
+    
     // Create the path label
     QLabel* pathLabel = new QLabel("Path:");
     pathLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
@@ -2492,10 +2498,24 @@ void MainWindow::setupResultPathSpinbox()
     connect(resultSpinbox, QOverload<int>::of(&QSpinBox::valueChanged), 
             this, &MainWindow::onResultPathChanged);
     
-    // Store the spinbox pointer for later use
-    mResultPathSpinbox = resultSpinbox;
+    // Add widgets to container layout
+    containerLayout->addWidget(pathLabel);
+    containerLayout->addWidget(resultSpinbox);
+    containerLayout->addStretch();
     
-    // The spinbox is created and will be managed by Qt's layout system
+    // Find the labelResultMap and add our container after it
+    QLabel* originalLabel = ui->labelResultMap;
+    if (originalLabel) {
+        QLayout* parentLayout = originalLabel->parentWidget()->layout();
+        if (parentLayout) {
+            int index = parentLayout->indexOf(originalLabel);
+            if (index != -1) {
+                // Add the container widget after the original label
+                parentLayout->addWidget(spinboxContainer);
+            }
+        }
+    }
+    
     // Store the spinbox pointer for later use
     mResultPathSpinbox = resultSpinbox;
 }
