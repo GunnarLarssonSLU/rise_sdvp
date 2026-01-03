@@ -229,7 +229,6 @@ private slots:
     void loadAreaFromXML(); // Load area definition from XML file
     void applyAreaFiltering(); // Apply area filtering to current log
     void cutPathByArea(); // Actually cut the path to only show sections within area
-    void setupResultPathSpinbox(); // Setup result path spinbox programmatically
     void onResultPathChanged(int pathIndex); // Handle result path spinbox changes
     
 
@@ -253,7 +252,6 @@ private:
     QStringList fileList;         // Underlying data
 
     Ui::MainWindow *ui;
-    QSpinBox* mResultPathSpinbox = nullptr; // Spinbox for result path selection
     QTimer *mTimer;
     QTimer *mHeartbeatTimer; // periodic heartbeat to vehicles for safety
     const int mHeartbeatMS = 300;
