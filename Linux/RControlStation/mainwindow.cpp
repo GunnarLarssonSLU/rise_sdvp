@@ -2640,22 +2640,41 @@ void MainWindow::calculateAndDisplayPathLengths()
     chart->addAxis(axisX, Qt::AlignBottom);
     series->attachAxis(axisX);
     
-    // Display the chart
-    QChartView* chartView = new QChartView(chart);
-    chartView->setRenderHint(QPainter::Antialiasing);
+    // Note: The chart is now owned by the chartView and will be deleted when
+    // the chartView is destroyed or when a new chart is set
     
-    // Show the chart in a dialog or add it to the UI
-    QDialog* chartDialog = new QDialog(this);
-    chartDialog->setWindowTitle("Path Length Analysis");
-    chartDialog->resize(800, 600);
-    
-    QVBoxLayout* layout = new QVBoxLayout(chartDialog);
-    layout->addWidget(chartView);
-    
-    chartDialog->exec();
-    
-    // Clean up (dialog will delete chartView when closed)
-    delete chartDialog;
+    // Display the chart in the existing Graph widget
+    QChartView* chartView = ui->Graph;
+    if (chartView) {
+        // Clear any existing chart
+        QChart* existingChart = chartView->chart();
+        if (existingChart) {
+            delete existingChart;
+        }
+        
+        // Set the new chart
+        chartView->setChart(chart);
+        chartView->setRenderHint(QPainter::Antialiasing);
+        
+        // Make sure the graph is visible
+        qDebug() << "DEBUG: Displaying chart in existing Graph widget";
+    } else {
+        qDebug() << "DEBUG: Graph widget not found, falling back to dialog";
+        
+        // Fallback to dialog if Graph widget not available
+        QChartView* fallbackChartView = new QChartView(chart);
+        fallbackChartView->setRenderHint(QPainter::Antialiasing);
+        
+        QDialog* chartDialog = new QDialog(this);
+        chartDialog->setWindowTitle("Path Length Analysis");
+        chartDialog->resize(800, 600);
+        
+        QVBoxLayout* layout = new QVBoxLayout(chartDialog);
+        layout->addWidget(fallbackChartView);
+        
+        chartDialog->exec();
+        delete chartDialog;
+    }
 }
 
 void MainWindow::testAreaCutting()
