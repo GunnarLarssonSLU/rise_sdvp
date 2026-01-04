@@ -214,6 +214,7 @@ signals:
     void infoTraceChanged(int traceNow);
 
     void mouseClickedInField(const int field);
+    void pathsUpdated();
 
 private slots:
     void tileReady(OsmTile tile);
@@ -226,6 +227,7 @@ protected:
     void mousePressEvent(QMouseEvent *e) override;
     void mouseReleaseEvent(QMouseEvent *e) override;
     void wheelEvent(QWheelEvent *e) override;
+    void keyPressEvent(QKeyEvent *event) override;
     bool event(QEvent *event) override;
 
 public:
