@@ -425,8 +425,48 @@ MainWindow::~MainWindow()
 
 bool MainWindow::eventFilter(QObject *object, QEvent *e)
 {
-    Q_UNUSED(object);
+    if (not(object->objectName()==""))
+    {
+   //     qDebug() << "DEBUG: Event filter called for:" << object->objectName() << "event type:" << e->type();
+    }
 
+/*    // Handle chart view mouse events for bar selection
+    if ((object == ui->Graph)  && (e->type() == QEvent::InputMethodQuery)) {
+        qDebug() << "DEBUG: Graph mouse press detected";
+        QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(e);
+        QChartView* chartView = qobject_cast<QChartView*>(object);
+        if (chartView && chartView->chart()) {
+            // Get the chart and check if we clicked on a bar
+            QPointF chartPoint = chartView->chart()->mapToValue(chartView->mapFromGlobal(QCursor::pos()));
+            qDebug() << "DEBUG: Chart click at:" << chartPoint;
+            
+            // Get the bar series
+            QBarSeries* barSeries = static_cast<QBarSeries*>(chartView->chart()->series().first());
+            if (barSeries && barSeries->count() > 0) {
+                // Calculate which bar was clicked based on x position
+                // This is a simplified approach - assumes bars are evenly spaced
+                double barWidth = 0.8; // Approximate bar width in chart coordinates
+                double barSpacing = 0.2; // Approximate spacing between bars
+                double barTotalWidth = barWidth + barSpacing;
+                
+                // Calculate which bar was clicked
+                int clickedBarIndex = static_cast<int>(chartPoint.x() / barTotalWidth);
+                
+                qDebug() << "DEBUG: Clicked bar index:" << clickedBarIndex;
+                
+                // Validate the index
+                if (clickedBarIndex >= 0 && clickedBarIndex < barSeries->count()) {
+                    // Select this path in the analysis results map
+                    ui->mapWidgetAnalysisResult->setPathNow(clickedBarIndex);
+                    ui->mapWidgetAnalysisResult->update();
+                    ui->spinBoxResultPath->setValue(clickedBarIndex);
+                    qDebug() << "DEBUG: Selected path" << clickedBarIndex << "in analysis results map";
+                }
+            }
+        }
+        return true;
+    }
+*/
     // Emergency stop on escape
     if (e->type() == QEvent::KeyPress) {
         QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
@@ -742,17 +782,13 @@ void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& p
             return;
         }
 
-        qDebug() << "name: " << xmlFile;
-        qDebug() << "Fields (onSelectedFarm 2): " << ui->mapWidgetFields->mFields->size();
         QXmlStreamReader xmlData(&file);
         ui->mapWidgetFields->loadXMLRoute(&xmlData,true);
-        qDebug() << "Fields (onSelectedFarm 3): " << ui->mapWidgetFields->mFields->size();
     }
     qDebug() << "AC";
     //            if (ui->fieldTable->model()->rowCount()>0)
     if (ui->mapWidgetFields->getFieldNum()>0)
     {
-        qDebug() << "Skala:";
         std::array<double, 4> extremes_m=ui->mapWidgetFields->findExtremeValuesFieldBorders();
         double fieldareawidth_m=extremes_m[2]-extremes_m[0];
         double fieldareaheight_m=extremes_m[3]-extremes_m[1];
@@ -760,10 +796,8 @@ void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& p
         double offsety_m=(extremes_m[3]+extremes_m[1])/2;
         double scalex=0.5/(fieldareawidth_m);
         double scaley=0.5/(fieldareaheight_m);
-        qDebug() << "AD";
         ui->mapWidgetFields->moveView(offsetx_m, offsety_m);
         ui->mapWidgetFields->setScaleFactor(std::min(scalex,scaley));
-        qDebug() << std::min(scalex,scaley);
    //     //                ui->fieldTable->selectRow(0);
     } else
     {
@@ -2177,7 +2211,6 @@ void MainWindow::loadAreaFromXML()
         
         // Update UI status
         ui->labelAreaStatus->setText("Area loaded successfully");
-        QMessageBox::information(this, "Success", "Area definition loaded successfully as border.");
         
         // Apply the area filtering immediately if there's a log loaded
         if (ui->mapWidgetAnalysis->mPaths->size() > 0) {
@@ -2605,7 +2638,7 @@ void MainWindow::calculateAndDisplayPathLengths()
         qDebug() << "DEBUG: Path" << i << "length:" << length << "units";
         
         // Add this path's length to the chart
-        QBarSet* set = new QBarSet(QString("Path %1").arg(i));
+        QBarSet* set = new QBarSet(QString("%1").arg(i));
         set->append(length);
         series->append(set);
         
@@ -2645,35 +2678,57 @@ void MainWindow::calculateAndDisplayPathLengths()
     
     // Display the chart in the existing Graph widget
     QChartView* chartView = ui->Graph;
+    qDebug() << "DEBUG: Chart view pointer:" << chartView;
     if (chartView) {
+        qDebug() << "DEBUG: Chart view is valid";
         // Clear any existing chart
         QChart* existingChart = chartView->chart();
         if (existingChart) {
             delete existingChart;
         }
-        
+
         // Set the new chart
         chartView->setChart(chart);
         chartView->setRenderHint(QPainter::Antialiasing);
-        
-        // Make sure the graph is visible
-        qDebug() << "DEBUG: Displaying chart in existing Graph widget";
+
+        // Connect to bar series clicked signal for proper bar click handling
+        QBarSeries* barSeries = static_cast<QBarSeries*>(chart->series().first());
+        if (barSeries) {
+            // Debug: Print the number of bar sets and bars in the first set
+            qDebug() << "DEBUG: Number of bar sets in series:" << barSeries->barSets().size();
+            QBarSet* firstBarSet = barSeries->barSets().first();
+            if (firstBarSet) {
+                qDebug() << "DEBUG: Number of bars in the first set:" << firstBarSet->count();
+            }
+
+            // Connect the clicked signal
+            connect(barSeries, &QBarSeries::clicked, [this, barSeries](int index, QBarSet* barSet) {
+                qDebug() << "DEBUG: Bar series clicked, index:" << index;
+                qDebug() << "DEBUG: Bar set pointer:" << barSet;
+                qDebug() << "DEBUG: Bar set label:" << barSet->label();
+                index = barSet->label().toInt();
+                qDebug() << "DEBUG: New index:" << index;
+
+                // Debug: Print the value of the clicked bar
+                if (index >= 0 && index < barSet->count()) {
+                    qDebug() << "DEBUG: Value of clicked bar:" << barSet->at(index);
+                }
+
+                // Your logic to handle the click
+                if (index >= 0 && index < ui->mapWidgetAnalysisResult->mPaths->size()) {
+                    qDebug() << "DEBUG: Setting path index to:" << index;
+                    ui->mapWidgetAnalysisResult->setPathNow(index);
+                    ui->mapWidgetAnalysisResult->update();
+                    ui->spinBoxResultPath->setValue(index);
+                } else {
+                    qDebug() << "DEBUG: Index out of bounds:" << index;
+                }
+            });
+        } else {
+            qDebug() << "DEBUG: No bar series found!";
+        }
     } else {
-        qDebug() << "DEBUG: Graph widget not found, falling back to dialog";
-        
-        // Fallback to dialog if Graph widget not available
-        QChartView* fallbackChartView = new QChartView(chart);
-        fallbackChartView->setRenderHint(QPainter::Antialiasing);
-        
-        QDialog* chartDialog = new QDialog(this);
-        chartDialog->setWindowTitle("Path Length Analysis");
-        chartDialog->resize(800, 600);
-        
-        QVBoxLayout* layout = new QVBoxLayout(chartDialog);
-        layout->addWidget(fallbackChartView);
-        
-        chartDialog->exec();
-        delete chartDialog;
+        qDebug() << "DEBUG: Chart view is invalid!";
     }
 }
 
