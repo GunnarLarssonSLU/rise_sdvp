@@ -207,6 +207,9 @@ MapWidget::MapWidget(QWidget *parent) : QWidget(parent)
     grabGesture(Qt::PinchGesture);
     // Install the event filter on itself
 //    MapRoute::initPixmaps();
+    
+    // Set focus policy to accept key events
+    setFocusPolicy(Qt::StrongFocus);
 }
 
 CarInfo *MapWidget::getCarInfo(int car)
@@ -1015,6 +1018,52 @@ void MapWidget::wheelEvent(QWheelEvent *e)
     if (wheelEventHandler) {
         wheelEventHandler(e);
     }
+}
+
+void MapWidget::keyPressEvent(QKeyEvent *event)
+{
+    // Handle Delete key to remove the currently selected path
+    if (event->key() == Qt::Key_Delete && hasFocus()) {
+        qDebug() << "Delete key pressed in MapWidget";
+        qDebug() << "bAnalysisActive:" << bAnalysisActive;
+        qDebug() << "mPaths valid:" << (mPaths != nullptr);
+        if (mPaths) {
+            qDebug() << "mPaths size:" << mPaths->size();
+            qDebug() << "Current path index:" << mPaths->mRouteNow;
+        }
+        
+        if (bAnalysisActive && mPaths && mPaths->size() > 0) {
+            int currentPathIndex = mPaths->mRouteNow;
+            
+            qDebug() << "Removing path at index:" << currentPathIndex;
+            
+            // Remove the current path
+            mPaths->removeAt(currentPathIndex);
+            
+            // Adjust the current path index
+            if (mPaths->size() > 0) {
+                // If we removed the last path, select the new last one
+                if (currentPathIndex >= mPaths->size()) {
+                    mPaths->mRouteNow = mPaths->size() - 1;
+                }
+                // Otherwise, keep the same index (now pointing to the next path)
+                qDebug() << "New current path index:" << mPaths->mRouteNow;
+            } else {
+                // No more paths
+                mPaths->mRouteNow = -1;
+                qDebug() << "No more paths left";
+            }
+            
+            update();
+            qDebug() << "Emitting pathsUpdated signal to refresh analysis";
+            emit pathsUpdated();
+            event->accept();
+            return;
+        }
+    }
+    
+    // Call base class implementation for other keys
+    QWidget::keyPressEvent(event);
 }
 
 void MapWidget::mouseReleaseEventFields(QMouseEvent *e)

@@ -232,6 +232,7 @@ private slots:
     void onResultPathChanged(int pathIndex); // Handle result path spinbox changes
     void onAnalysisSelectionChanged(); // Handle analysis table selection changes
     void calculateAndDisplayPathLengths();
+    void updateCurrentAnalysis(); // Update the currently selected analysis
 
     QSqlRelationalTableModel* setupFarmTable(QTableView* uiFarmtable,QString SqlTableName);
     QSqlRelationalTableModel* setupFieldTable(QTableView* uiFieldtable,QString SqlTableName);

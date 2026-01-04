@@ -208,6 +208,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->mapWidgetFields->setBorderFocus(true);
     ui->mapWidgetAnalysis->setAnalysisActive(true);
     ui->mapWidgetAnalysisResult->setMainWindow(this);
+    
+    // Connect the pathsUpdated signal to refresh the graph
+    connect(ui->mapWidgetAnalysisResult, &MapWidget::pathsUpdated, this, &MainWindow::updateCurrentAnalysis);
 
     fileModel = new QStringListModel(this);
     ui->listLogfilesView->setModel(fileModel);  // Link the model to the view
@@ -2592,6 +2595,41 @@ void MainWindow::onAnalysisSelectionChanged()
     } else if (analysisType == "Root-Mean-Square") {
         qDebug() << "DEBUG: RMS analysis selected (not yet implemented)";
         // calculateAndDisplayPathRMS();
+    }
+}
+
+void MainWindow::updateCurrentAnalysis()
+{
+    qDebug() << "DEBUG: Updating current analysis";
+    
+    // Get the currently selected analysis type
+    QList<QTableWidgetItem*> selectedItems = ui->tableAnalysis->selectedItems();
+    
+    if (selectedItems.isEmpty()) {
+        qDebug() << "DEBUG: No analysis selected, defaulting to Length analysis";
+        // If no analysis is selected, default to Length analysis
+        calculateAndDisplayPathLengths();
+        return;
+    }
+    
+    // Get the selected analysis type
+    QTableWidgetItem* selectedItem = selectedItems.first();
+    QString analysisType = selectedItem->text();
+    
+    qDebug() << "DEBUG: Updating analysis type:" << analysisType;
+    
+    // Call the appropriate analysis function based on the current selection
+    if (analysisType == "Length") {
+        calculateAndDisplayPathLengths();
+    } else if (analysisType == "Angle") {
+        qDebug() << "DEBUG: Angle analysis update requested (not yet implemented)";
+        // calculateAndDisplayPathAngles();
+    } else if (analysisType == "Root-Mean-Square") {
+        qDebug() << "DEBUG: RMS analysis update requested (not yet implemented)";
+        // calculateAndDisplayPathRMS();
+    } else {
+        qDebug() << "DEBUG: Unknown analysis type:" << analysisType << ", defaulting to Length";
+        calculateAndDisplayPathLengths();
     }
 }
 
