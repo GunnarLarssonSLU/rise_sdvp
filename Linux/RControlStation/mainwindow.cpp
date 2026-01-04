@@ -2598,6 +2598,65 @@ void MainWindow::onAnalysisSelectionChanged()
     }
 }
 
+void MainWindow::updateStatisticsDisplay(const QList<double>& values, const QString& unit)
+{
+    qDebug() << "DEBUG: Updating statistics display with" << values.size() << "values";
+    if (values.isEmpty()) {
+        ui->textAnalysis->setText("No data available for statistical analysis.");
+        return;
+    }
+    
+    // Calculate mean
+    double sum = 0.0;
+    foreach (double value, values) {
+        sum += value;
+    }
+    double mean = sum / values.size();
+    
+    // Calculate standard deviation
+    double sumSquaredDiffs = 0.0;
+    foreach (double value, values) {
+        double diff = value - mean;
+        sumSquaredDiffs += diff * diff;
+    }
+    double stdDev = std::sqrt(sumSquaredDiffs / values.size());
+    
+    // Calculate min and max
+    double min = *std::min_element(values.begin(), values.end());
+    double max = *std::max_element(values.begin(), values.end());
+    
+    // Format the statistics display with styling
+    QString statsText;
+    statsText += QString("<style>");
+    statsText += QString("h3 { color: #2c3e50; font-family: Arial, sans-serif; }");
+    statsText += QString("p { margin: 5px 0; font-family: Arial, sans-serif; }");
+    statsText += QString(".stat-value { color: #e74c3c; font-weight: bold; }");
+    statsText += QString(".stat-unit { color: #3498db; font-style: italic; }");
+    statsText += QString("</style>");
+    statsText += QString("<h3>📊 Statistical Analysis</h3>");
+    statsText += QString("<p><b>Sample Size:</b> <span class=\"stat-value\">%1</span></p>").arg(values.size());
+    statsText += QString("<p><b>Mean:</b> <span class=\"stat-value\">%1</span> <span class=\"stat-unit\">%2</span></p>").arg(mean, 0, 'f', 2).arg(unit);
+    statsText += QString("<p><b>Standard Deviation:</b> <span class=\"stat-value\">%1</span> <span class=\"stat-unit\">%2</span></p>").arg(stdDev, 0, 'f', 2).arg(unit);
+    statsText += QString("<p><b>Minimum:</b> <span class=\"stat-value\">%1</span> <span class=\"stat-unit\">%2</span></p>").arg(min, 0, 'f', 2).arg(unit);
+    statsText += QString("<p><b>Maximum:</b> <span class=\"stat-value\">%1</span> <span class=\"stat-unit\">%2</span></p>").arg(max, 0, 'f', 2).arg(unit);
+    
+    // Calculate coefficient of variation if mean is not zero
+    if (qFuzzyCompare(mean, 0.0)) {
+        statsText += QString("<p><b>Coefficient of Variation:</b> <span class=\"stat-value\">N/A</span> (mean is zero)</p>");
+    } else {
+        double cv = (stdDev / mean) * 100.0;
+        statsText += QString("<p><b>Coefficient of Variation:</b> <span class=\"stat-value\">%1%</span></p>").arg(cv, 0, 'f', 1);
+    }
+    
+    // Add interpretation
+    statsText += QString("<p style=\"margin-top: 10px; color: #7f8c8d; font-size: 90%;\">");
+    statsText += QString("Note: Statistics are calculated from the path lengths shown in the graph.");
+    statsText += QString("</p>");
+    
+    ui->textAnalysis->setText(statsText);
+    qDebug() << "DEBUG: Updated statistics display with" << values.size() << "data points";
+}
+
 void MainWindow::updateCurrentAnalysis()
 {
     qDebug() << "DEBUG: Updating current analysis";
@@ -2623,9 +2682,11 @@ void MainWindow::updateCurrentAnalysis()
         calculateAndDisplayPathLengths();
     } else if (analysisType == "Angle") {
         qDebug() << "DEBUG: Angle analysis update requested (not yet implemented)";
+        ui->textAnalysis->setText("📊 Statistical Analysis\n\nAngle analysis: Not yet implemented");
         // calculateAndDisplayPathAngles();
     } else if (analysisType == "Root-Mean-Square") {
         qDebug() << "DEBUG: RMS analysis update requested (not yet implemented)";
+        ui->textAnalysis->setText("📊 Statistical Analysis\n\nRMS analysis: Not yet implemented");
         // calculateAndDisplayPathRMS();
     } else {
         qDebug() << "DEBUG: Unknown analysis type:" << analysisType << ", defaulting to Length";
@@ -2641,6 +2702,7 @@ void MainWindow::calculateAndDisplayPathLengths()
     if (ui->mapWidgetAnalysisResult->mPaths->size() == 0) {
         qDebug() << "DEBUG: No paths available for length analysis";
         QMessageBox::information(this, "Analysis", "No paths available for length analysis.");
+        ui->textAnalysis->setText("No paths available for statistical analysis.");
         return;
     }
     
@@ -2650,6 +2712,7 @@ void MainWindow::calculateAndDisplayPathLengths()
     chart->setAnimationOptions(QChart::SeriesAnimations);
     
     QBarSeries* series = new QBarSeries();
+    QList<double> lengthValues; // Store values for statistics
     
     // Calculate length for each path and add to the chart
     for (int i = 0; i < ui->mapWidgetAnalysisResult->mPaths->size(); i++) {
@@ -2680,6 +2743,9 @@ void MainWindow::calculateAndDisplayPathLengths()
         set->append(length);
         series->append(set);
         
+        // Store the value for statistics calculation
+        lengthValues.append(length);
+        
         // For single-column table, we could store the value in the item's data
         // Or display it in the chart title or as a tooltip
         // ui->tableAnalysis->item(i, 0)->setToolTip(QString::number(length, 'f', 2));
@@ -2688,6 +2754,7 @@ void MainWindow::calculateAndDisplayPathLengths()
     if (series->count() == 0) {
         qDebug() << "DEBUG: No valid paths found for length analysis";
         QMessageBox::information(this, "Analysis", "No valid paths found for length analysis.");
+        ui->textAnalysis->setText("No valid paths found for statistical analysis.");
         delete series;
         delete chart;
         return;
@@ -2767,6 +2834,13 @@ void MainWindow::calculateAndDisplayPathLengths()
         }
     } else {
         qDebug() << "DEBUG: Chart view is invalid!";
+    }
+    
+    // Update statistics display with the calculated values
+    if (!lengthValues.isEmpty()) {
+        updateStatisticsDisplay(lengthValues, "units");
+    } else {
+        ui->textAnalysis->setText("No valid path data available for statistical analysis.");
     }
 }
 
