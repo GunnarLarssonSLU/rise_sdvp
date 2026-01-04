@@ -233,6 +233,7 @@ private slots:
     void onAnalysisSelectionChanged(); // Handle analysis table selection changes
     void calculateAndDisplayPathLengths();
     void updateCurrentAnalysis(); // Update the currently selected analysis
+    void updateStatisticsDisplay(const QList<double>& values, const QString& unit = ""); // Update statistics display
 
     QSqlRelationalTableModel* setupFarmTable(QTableView* uiFarmtable,QString SqlTableName);
     QSqlRelationalTableModel* setupFieldTable(QTableView* uiFieldtable,QString SqlTableName);
