@@ -95,98 +95,143 @@ PacketInterface::~PacketInterface()
 
 void PacketInterface::processData(QByteArray &data)
 {
+    qDebug() << "PacketInterface::processData: START - Processing" << data.length() << "bytes";
+    qDebug() << "PacketInterface::processData: Initial state - mRxState:" << mRxState << ", mRxDataPtr:" << mRxDataPtr << ", mPayloadLength:" << mPayloadLength;
+    
     unsigned char rx_data;
     const int rx_timeout = 50;
 
     for(int i = 0;i < data.length();i++) {
         rx_data = data[i];
+        qDebug() << "PacketInterface::processData: Byte" << i << "/" << data.length() << ": 0x" << QString::number(rx_data, 16).rightJustified(2, '0') << ", current state:" << mRxState;
 
         switch (mRxState) {
         case 0:
+            qDebug() << "PacketInterface::processData: State 0 - Looking for packet start";
             if (rx_data == 2) {
+                qDebug() << "PacketInterface::processData: Found start byte 2, setting up for 1-byte length";
                 mRxState += 3;
                 mRxTimer = rx_timeout;
                 mRxDataPtr = 0;
                 mPayloadLength = 0;
             } else if (rx_data == 3) {
+                qDebug() << "PacketInterface::processData: Found start byte 3, setting up for 2-byte length";
                 mRxState += 2;
                 mRxTimer = rx_timeout;
                 mRxDataPtr = 0;
                 mPayloadLength = 0;
             } else if (rx_data == 4) {
+                qDebug() << "PacketInterface::processData: Found start byte 4, setting up for 3-byte length";
                 mRxState++;
                 mRxTimer = rx_timeout;
                 mRxDataPtr = 0;
                 mPayloadLength = 0;
             } else {
+                qDebug() << "PacketInterface::processData: Invalid start byte 0x" << QString::number(rx_data, 16) << ", resetting state";
                 mRxState = 0;
             }
             break;
 
         case 1:
+            qDebug() << "PacketInterface::processData: State 1 - Reading payload length byte 2";
             mPayloadLength |= (unsigned int)rx_data << 16;
+            qDebug() << "PacketInterface::processData: mPayloadLength now:" << mPayloadLength;
             mRxState++;
             mRxTimer = rx_timeout;
             break;
 
         case 2:
+            qDebug() << "PacketInterface::processData: State 2 - Reading payload length byte 1";
             mPayloadLength |= (unsigned int)rx_data << 8;
+            qDebug() << "PacketInterface::processData: mPayloadLength now:" << mPayloadLength;
             mRxState++;
             mRxTimer = rx_timeout;
             break;
 
         case 3:
+            qDebug() << "PacketInterface::processData: State 3 - Reading payload length byte 0";
             mPayloadLength |= (unsigned int)rx_data;
+            qDebug() << "PacketInterface::processData: Final mPayloadLength:" << mPayloadLength;
             if (mPayloadLength <= mMaxBufferLen && mPayloadLength > 0) {
+                qDebug() << "PacketInterface::processData: Payload length valid, moving to data collection";
                 mRxState++;
                 mRxTimer = rx_timeout;
             } else {
+                qDebug() << "PacketInterface::processData: ERROR - Invalid payload length:" << mPayloadLength << ", resetting";
                 mRxState = 0;
             }
             break;
 
         case 4:
+            qDebug() << "PacketInterface::processData: State 4 - Collecting payload data";
+            qDebug() << "PacketInterface::processData: Byte" << mRxDataPtr << "/" << mPayloadLength << ": 0x" << QString::number(rx_data, 16);
             mRxBuffer[mRxDataPtr++] = rx_data;
             if (mRxDataPtr == mPayloadLength) {
+                qDebug() << "PacketInterface::processData: Payload collection complete, moving to CRC";
                 mRxState++;
             }
             mRxTimer = rx_timeout;
             break;
 
         case 5:
+            qDebug() << "PacketInterface::processData: State 5 - Reading CRC high byte";
             mCrcHigh = rx_data;
+            qDebug() << "PacketInterface::processData: mCrcHigh:" << mCrcHigh;
             mRxState++;
             mRxTimer = rx_timeout;
             break;
 
         case 6:
+            qDebug() << "PacketInterface::processData: State 6 - Reading CRC low byte";
             mCrcLow = rx_data;
+            qDebug() << "PacketInterface::processData: mCrcLow:" << mCrcLow;
             mRxState++;
             mRxTimer = rx_timeout;
             break;
 
         case 7:
+            qDebug() << "PacketInterface::processData: State 7 - Checking packet end and CRC";
             if (rx_data == 3) {
-                if (crc16(mRxBuffer, mPayloadLength) ==
-                        ((unsigned short)mCrcHigh << 8 | (unsigned short)mCrcLow)) {
-                    // Packet received!
+                qDebug() << "PacketInterface::processData: Found end byte 3";
+                unsigned short calculated_crc = crc16(mRxBuffer, mPayloadLength);
+                unsigned short received_crc = ((unsigned short)mCrcHigh << 8 | (unsigned short)mCrcLow);
+                qDebug() << "PacketInterface::processData: Calculated CRC:" << calculated_crc << ", Received CRC:" << received_crc;
+                if (calculated_crc == received_crc) {
+                    qDebug() << "PacketInterface::processData: CRC valid, processing packet";
                     processPacket(mRxBuffer, mPayloadLength);
+                    qDebug() << "PacketInterface::processData: processPacket returned";
+                } else {
+                    qDebug() << "PacketInterface::processData: ERROR - CRC mismatch!";
                 }
+            } else {
+                qDebug() << "PacketInterface::processData: ERROR - Invalid end byte:" << rx_data << ", expected 3";
             }
 
+            qDebug() << "PacketInterface::processData: Resetting state to 0";
             mRxState = 0;
             break;
 
         default:
+            qDebug() << "PacketInterface::processData: ERROR - Invalid state:" << mRxState << ", resetting";
             mRxState = 0;
             break;
         }
     }
+    
+    qDebug() << "PacketInterface::processData: COMPLETED - Final state:" << mRxState;
 }
 
 void PacketInterface::processPacket(const unsigned char *data, int len)
 {
+    qDebug() << "PacketInterface::processPacket: Received packet, length:" << len << "bytes";
+    qDebug() << "PacketInterface::processPacket: First bytes:" << QByteArray((const char*)data, qMin(10, len)).toHex();
+    
     QByteArray pkt = QByteArray((const char*)data, len);
+
+    if (len < 2) {
+        qDebug() << "PacketInterface::processPacket: ERROR - Packet too short for ID and command, length:" << len;
+        return;
+    }
 
     unsigned char id = data[0];
     data++;
@@ -195,6 +240,8 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     CMD_PACKET cmd = (CMD_PACKET)(quint8)data[0];
     data++;
     len--;
+
+    qDebug() << "PacketInterface::processPacket: ID:" << id << ", Command:" << cmd << ", Remaining data length:" << len;
 
     emit packetReceived(id, cmd, pkt);
 
@@ -579,19 +626,33 @@ void PacketInterface::timerSlot()
 
 void PacketInterface::readPendingDatagrams()
 {
+    qDebug() << "PacketInterface::readPendingDatagrams: Checking for pending datagrams";
+    
     while (mUdpSocket->hasPendingDatagrams()) {
+        qDebug() << "PacketInterface::readPendingDatagrams: Processing datagram";
         QByteArray datagram;
-        datagram.resize(mUdpSocket->pendingDatagramSize());
+        int datagramSize = mUdpSocket->pendingDatagramSize();
+        qDebug() << "PacketInterface::readPendingDatagrams: Datagram size:" << datagramSize << "bytes";
+        datagram.resize(datagramSize);
         QHostAddress sender;
         quint16 senderPort;
 
         mUdpSocket->readDatagram(datagram.data(), datagram.size(),
                                  &sender, &senderPort);
+        qDebug() << "PacketInterface::readPendingDatagrams: Received from" << sender.toString() << ":" << senderPort;
+        qDebug() << "PacketInterface::readPendingDatagrams: Datagram hex:" << datagram.toHex();
+        
         if (mUdpServer) {
+            qDebug() << "PacketInterface::readPendingDatagrams: UDP server mode - updating host address";
             mHostAddress = sender;
         }
+        
+        qDebug() << "PacketInterface::readPendingDatagrams: Calling processPacket with" << datagram.length() << "bytes";
         processPacket((unsigned char*)datagram.data(), datagram.length());
+        qDebug() << "PacketInterface::readPendingDatagrams: processPacket completed";
     }
+    
+    qDebug() << "PacketInterface::readPendingDatagrams: No more pending datagrams";
 }
 
 unsigned short PacketInterface::crc16(const unsigned char *buf, unsigned int len)

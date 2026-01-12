@@ -819,8 +819,8 @@ void CarClient::packetDataToSend(QByteArray &data)
 
     if (!packetConsumed) {
         if (mSerialPort->isOpen()) {
-//            qDebug() << "Packet sent (port open)";
-//            qDebug() << static_cast<int>(data[2]) << ":" << static_cast<int>(data[3]) << ":" << static_cast<int>(data[4]);
+            qDebug() << "Packet sent (port open)";
+            qDebug() << static_cast<int>(data[2]) << ":" << static_cast<int>(data[3]) << ":" << static_cast<int>(data[4]);
             mSerialPort->writeData(data);
         } else
         {
@@ -916,6 +916,9 @@ void CarClient::readPendingDatagrams()
 
 void CarClient::carPacketRx(quint8 id, CMD_PACKET cmd, const QByteArray &data)
 {
+    qDebug() << "CarClient::carPacketRx: START - ID:" << id << ", Command:" << cmd << ", Data size:" << data.size() << "bytes";
+    qDebug() << "CarClient::carPacketRx: Data hex:" << data.toHex();
+    
     QByteArray toSend = data;
 
     /* Uncomment as likely to produce confusing errors when the composition and size of data is changed
@@ -928,16 +931,26 @@ void CarClient::carPacketRx(quint8 id, CMD_PACKET cmd, const QByteArray &data)
     }
 */
     if (id != 254) {
-//        qDebug() << "In CarClient::carPacketRx. Car: " << id;
+        qDebug() << "CarClient::carPacketRx: Processing for car ID:" << id;
         mCarId = id;
+        qDebug() << "CarClient::carPacketRx: Set mCarId to:" << mCarId;
 
         if (QString::compare(mHostAddress.toString(), "0.0.0.0") != 0) {
-//            qDebug() << "datagramming";
+            qDebug() << "CarClient::carPacketRx: Sending UDP datagram to" << mHostAddress << ":" << mUdpPort;
+            qDebug() << "CarClient::carPacketRx: UDP data size:" << toSend.size() << "bytes";
             mUdpSocket->writeDatagram(toSend, mHostAddress, mUdpPort);
+            qDebug() << "CarClient::carPacketRx: UDP datagram sent successfully";
         }
-//        qDebug() << "tcpservering";
+        
+        qDebug() << "CarClient::carPacketRx: Sending to TCP server";
+        qDebug() << "CarClient::carPacketRx: TCP data size:" << toSend.size() << "bytes";
         mTcpServer->packet()->sendPacket(toSend);
+        qDebug() << "CarClient::carPacketRx: TCP packet sent successfully";
+    } else {
+        qDebug() << "CarClient::carPacketRx: Skipping broadcast ID 254";
     }
+    
+    qDebug() << "CarClient::carPacketRx: COMPLETED";
 }
 
 void CarClient::logLineUsbReceived(quint8 id, QString str)
