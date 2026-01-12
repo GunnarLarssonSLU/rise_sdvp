@@ -55,10 +55,13 @@ rtcm3_state CarClient::rtcmState;
 
 CarClient::CarClient(QObject *parent) : QObject(parent)
 {
+    qDebug() << "CarClient::CarClient: Constructor started";
+    
     mSettings.nmeaConnect = false;
     mSettings.serialConnect = false;
     mSettings.serialRtcmConnect = false;
 
+    qDebug() << "CarClient::CarClient: Creating components";
     mSerialPort = new SerialPort(this);
     mSerialPortRtcm = new QSerialPort(this);
     mSerialPortArduino = new QSerialPort(this);
@@ -84,8 +87,11 @@ CarClient::CarClient(QObject *parent) : QObject(parent)
     mOverrideUwbX = 0.0;
     mOverrideUwbY = 0.0;
     
-    // Debugging control - default to basic debugging
-    mDebugLevel = DEBUG_BASIC;
+    // Debugging control - default to verbose debugging
+    mDebugLevel = DEBUG_VERBOSE;
+    qDebug() << "CarClient::CarClient: Set debug level to" << mDebugLevel;
+    
+    qDebug() << "CarClient::CarClient: Constructor completed";
 
     mHostAddress = QHostAddress("0.0.0.0");
     mUdpPort = 0;
@@ -123,6 +129,8 @@ CarClient::CarClient(QObject *parent) : QObject(parent)
             this, SLOT(readPendingDatagrams()));
     connect(mPacketInterface, SIGNAL(packetReceived(quint8,CMD_PACKET,QByteArray)),
             this, SLOT(carPacketRx(quint8,CMD_PACKET,QByteArray)));
+    
+    qDebug() << "CarClient::CarClient: Connected packetReceived signal to carPacketRx slot";
     connect(mPacketInterface, SIGNAL(logLineUsbReceived(quint8,QString)),
             this, SLOT(logLineUsbReceived(quint8,QString)));
     connect(mLogFlushTimer, SIGNAL(timeout()),
