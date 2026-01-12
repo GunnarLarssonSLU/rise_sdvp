@@ -354,6 +354,9 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         CAR_STATE state;
         int32_t ind = 0;
 
+        qDebug() << "CMD_GET_STATE: Starting processing, received" << len << "bytes of data";
+        qDebug() << "CMD_GET_STATE: First few bytes:" << QByteArray((const char*)data, qMin(20, len)).toHex();
+
         // Calculate minimum required data size:
         // 2 bytes (fw_major, fw_minor) +
         // 3*3*4 bytes (accel, gyro, mag arrays - 3 doubles each) +
@@ -364,65 +367,149 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         // 1*2 bytes (sensor_value)
         const int min_required_size = 2 + (3*3*4) + (20*4) + 1 + 4 + 2 + 2;
         
+        qDebug() << "CMD_GET_STATE: Minimum required size:" << min_required_size << "bytes";
+        qDebug() << "CMD_GET_STATE: Data length check - received:" << len << ", required:" << min_required_size;
+        
         if (len < min_required_size) {
-            qDebug() << "CMD_GET_STATE: Received data too short. Expected at least" << min_required_size << "bytes, got" << len << "bytes";
+            qDebug() << "CMD_GET_STATE: ERROR - Received data too short. Expected at least" << min_required_size << "bytes, got" << len << "bytes";
+            qDebug() << "CMD_GET_STATE: Aborting processing to prevent buffer overrun";
             break;
         }
 
-        qDebug() << "CMD_GET_STATE - start" ;
+        qDebug() << "CMD_GET_STATE - start processing fields" ;
+        qDebug() << "CMD_GET_STATE: Processing field 1/30 - fw_major at index" << ind;
         state.fw_major = data[ind++];
+        qDebug() << "CMD_GET_STATE: fw_major =" << state.fw_major << ", index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 2/30 - fw_minor at index" << ind;
         state.fw_minor = data[ind++];
+        qDebug() << "CMD_GET_STATE: fw_minor =" << state.fw_minor << ", index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 3/30 - roll at index" << ind;
         state.roll = utility::buffer_get_double32(data, 1e6, &ind);
+        qDebug() << "CMD_GET_STATE: roll =" << state.roll << ", index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 4/30 - pitch at index" << ind;
         state.pitch = utility::buffer_get_double32(data, 1e6, &ind);
+        qDebug() << "CMD_GET_STATE: pitch =" << state.pitch << ", index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 5/30 - yaw at index" << ind;
         state.yaw = utility::buffer_get_double32(data, 1e6, &ind);
+        qDebug() << "CMD_GET_STATE: yaw =" << state.yaw << ", index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing accel array at index" << ind;
         state.accel[0] = utility::buffer_get_double32(data, 1e6, &ind);
         state.accel[1] = utility::buffer_get_double32(data, 1e6, &ind);
         state.accel[2] = utility::buffer_get_double32(data, 1e6, &ind);
+        qDebug() << "CMD_GET_STATE: accel = [" << state.accel[0] << ", " << state.accel[1] << ", " << state.accel[2] << "], index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing gyro array at index" << ind;
         state.gyro[0] = utility::buffer_get_double32(data, 1e6, &ind);
         state.gyro[1] = utility::buffer_get_double32(data, 1e6, &ind);
         state.gyro[2] = utility::buffer_get_double32(data, 1e6, &ind);
+        qDebug() << "CMD_GET_STATE: gyro = [" << state.gyro[0] << ", " << state.gyro[1] << ", " << state.gyro[2] << "], index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing mag array at index" << ind;
         state.mag[0] = utility::buffer_get_double32(data, 1e6, &ind);
         state.mag[1] = utility::buffer_get_double32(data, 1e6, &ind);
         state.mag[2] = utility::buffer_get_double32(data, 1e6, &ind);
+        qDebug() << "CMD_GET_STATE: mag = [" << state.mag[0] << ", " << state.mag[1] << ", " << state.mag[2] << "], index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 12/30 - px at index" << ind;
         state.px = utility::buffer_get_double32(data, 1e4, &ind);
+        qDebug() << "CMD_GET_STATE: px =" << state.px << ", index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 13/30 - py at index" << ind;
         state.py = utility::buffer_get_double32(data, 1e4, &ind);
+        qDebug() << "CMD_GET_STATE: py =" << state.py << ", index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 14/30 - speed at index" << ind;
         state.speed = utility::buffer_get_double32(data, 1e6, &ind);
+        qDebug() << "CMD_GET_STATE: speed =" << state.speed << ", index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 15/30 - vin at index" << ind;
         state.vin = utility::buffer_get_double32(data, 1e6, &ind);
+        qDebug() << "CMD_GET_STATE: vin =" << state.vin << ", index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 16/30 - temp_fet at index" << ind;
         state.temp_fet = utility::buffer_get_double32(data, 1e6, &ind);
+        qDebug() << "CMD_GET_STATE: temp_fet =" << state.temp_fet << ", index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 17/30 - mc_fault at index" << ind;
         state.mc_fault = (mc_fault_code)data[ind++];
+        qDebug() << "CMD_GET_STATE: mc_fault =" << state.mc_fault << ", index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 18/30 - px_gps at index" << ind;
         state.px_gps = utility::buffer_get_double32(data, 1e4, &ind);
+        qDebug() << "CMD_GET_STATE: px_gps =" << state.px_gps << ", index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 19/30 - py_gps at index" << ind;
         state.py_gps = utility::buffer_get_double32(data, 1e4, &ind);
+        qDebug() << "CMD_GET_STATE: py_gps =" << state.py_gps << ", index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 20/30 - ap_goal_px at index" << ind;
         state.ap_goal_px = utility::buffer_get_double32(data, 1e4, &ind);
+        qDebug() << "CMD_GET_STATE: ap_goal_px =" << state.ap_goal_px << ", index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 21/30 - ap_goal_py at index" << ind;
         state.ap_goal_py = utility::buffer_get_double32(data, 1e4, &ind);
+        qDebug() << "CMD_GET_STATE: ap_goal_py =" << state.ap_goal_py << ", index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 22/30 - ap_rad at index" << ind;
         state.ap_rad = utility::buffer_get_double32(data, 1e6, &ind);
+        qDebug() << "CMD_GET_STATE: ap_rad =" << state.ap_rad << ", index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 23/30 - ms_today at index" << ind;
         state.ms_today = utility::buffer_get_int32(data, &ind);
+        qDebug() << "CMD_GET_STATE: ms_today =" << state.ms_today << ", index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 24/30 - ap_route_left at index" << ind;
         state.ap_route_left = utility::buffer_get_int16(data, &ind);
+        qDebug() << "CMD_GET_STATE: ap_route_left =" << state.ap_route_left << ", index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 25/30 - px_uwb at index" << ind;
         state.px_uwb = utility::buffer_get_double32(data, 1e4, &ind);
+        qDebug() << "CMD_GET_STATE: px_uwb =" << state.px_uwb << ", index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 26/30 - py_uwb at index" << ind;
         state.py_uwb = utility::buffer_get_double32(data, 1e4, &ind);
+        qDebug() << "CMD_GET_STATE: py_uwb =" << state.py_uwb << ", index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 27/30 - angle at index" << ind;
         state.angle = utility::buffer_get_double32(data, 1e4, &ind);
+        qDebug() << "CMD_GET_STATE: angle =" << state.angle << ", index now:" << ind;
+        
         qDebug() << "CMD_GET_STATE - middle" ;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 28/30 - servo_output at index" << ind;
         state.servo_output = utility::buffer_get_double32(data, 1e4, &ind);
+        qDebug() << "CMD_GET_STATE: servo_output =" << state.servo_output << ", index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 29/30 - sensor_value at index" << ind;
         state.sensor_value = utility::buffer_get_uint16(data, &ind);
+        qDebug() << "CMD_GET_STATE: sensor_value =" << state.sensor_value << ", index now:" << ind;
+        
+        qDebug() << "CMD_GET_STATE: Processing field 30/30 - debug_value at index" << ind;
         state.debug_value = utility::buffer_get_double32(data, 1e4, &ind);
+        qDebug() << "CMD_GET_STATE: debug_value =" << state.debug_value << ", index now:" << ind;
+        
         state.debug_value2 = utility::buffer_get_double32(data, 1e4, &ind);
         state.debug_value3 = utility::buffer_get_double32(data, 1e4, &ind);
         state.debug_value4 = utility::buffer_get_double32(data, 1e4, &ind);
         state.debug_value5 = utility::buffer_get_double32(data, 1e4, &ind);
-/*        state.debug_value6 = utility::buffer_get_double32(data, 1e4, &ind);
-        state.debug_value7 = utility::buffer_get_double32(data, 1e4, &ind);
-        state.debug_value8 = utility::buffer_get_double32(data, 1e4, &ind);
-        state.debug_value9 = utility::buffer_get_double32(data, 1e4, &ind);
-        state.debug_value10 = utility::buffer_get_double32(data, 1e4, &ind);
-        state.debug_value11 = utility::buffer_get_double32(data, 1e4, &ind);
-        state.debug_value12 = utility::buffer_get_double32(data, 1e4, &ind);
-        state.debug_value13 = utility::buffer_get_double32(data, 1e4, &ind);
-        state.debug_value14 = utility::buffer_get_double32(data, 1e4, &ind);
-        state.debug_value15 = utility::buffer_get_double32(data, 1e4, &ind);*/
-//        qDebug() << "Servo output: " << state.servo_output << ", Debug value: " << state.debug_value << "::" << state.debug_value2 << "::" << state.debug_value3 << "::" << state.debug_value4 << "::" << state.debug_value5  << "::" << state.debug_value6  << "::" << state.debug_value7  << "::" << state.debug_value8  << "::" << state.debug_value9  << "::" << state.debug_value10   << "::" << state.debug_value11  << "::" << state.debug_value12   << "::" << state.debug_value13  << "::" << state.debug_value14  << "::" << state.debug_value15;
+        
+        qDebug() << "CMD_GET_STATE: All debug values processed, final index:" << ind;
+        qDebug() << "CMD_GET_STATE: Total data length:" << len << ", bytes processed:" << ind;
+        
+        if (ind > len) {
+            qDebug() << "CMD_GET_STATE: ERROR - Processed more bytes than available! This should not happen.";
+        }
+
         qDebug() << "Servo output: " << state.servo_output << ", Debug value: " << state.debug_value << "::" << state.debug_value2 << "::" << state.debug_value3 << "::" << state.debug_value4 << "::" << state.debug_value5;
         qDebug() << "CMD_GET_STATE - slut" ;
-//        qDebug() << "Sensor value: " << state.sensor_value;
+        qDebug() << "CMD_GET_STATE: Emitting stateReceived signal for ID:" << id;
         emit stateReceived(id, state);
+        qDebug() << "CMD_GET_STATE: Processing completed successfully";
     } break;
 
     case CMD_VESC_FWD:
