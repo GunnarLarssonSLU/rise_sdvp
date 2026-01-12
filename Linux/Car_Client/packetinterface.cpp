@@ -195,6 +195,21 @@ void PacketInterface::processData(QByteArray &data)
             qDebug() << "PacketInterface::processData: State 4 - Collecting payload data";
             qDebug() << "PacketInterface::processData: Byte" << mRxDataPtr << "/" << mPayloadLength << ": 0x" << QString::number(rx_data, 16);
             
+            // CRITICAL SAFETY CHECK: This is the main fix for the semi-hanging issue
+            // Check BEFORE processing the byte to catch corrupted packets immediately
+            if (mRxDataPtr >= mPayloadLength) {
+                qDebug() << "PacketInterface::processData: ERROR - Payload length exceeded!";
+                qDebug() << "PacketInterface::processData: Expected" << mPayloadLength << "bytes but already at" << mRxDataPtr << "bytes";
+                qDebug() << "PacketInterface::processData: This indicates corrupted packet header - RESETTING";
+                
+                // Reset state to recover from corrupted packet
+                mRxState = 0;
+                mRxDataPtr = 0;
+                mPayloadLength = 0;
+                mRxBuffer[mRxDataPtr++] = rx_data; // Store current byte for next packet
+                break;
+            }
+            
             // Safety check: Prevent buffer overrun and infinite loops
             if (mRxDataPtr >= mMaxBufferLen) {
                 qDebug() << "PacketInterface::processData: ERROR - Buffer overrun detected!";
@@ -206,9 +221,7 @@ void PacketInterface::processData(QByteArray &data)
                 break;
             }
             
-            // Safety check: Prevent processing packets that exceed expected length
-            // We allow a small tolerance (10 bytes) for potential protocol variations
-            // but anything significantly larger indicates corruption
+            // Additional safety check for unreasonably large packets
             if (mRxDataPtr > mPayloadLength + 10) { // Small tolerance for protocol variations
                 qDebug() << "PacketInterface::processData: ERROR - Payload length mismatch!";
                 qDebug() << "PacketInterface::processData: Expected" << mPayloadLength << "bytes but already processed" << mRxDataPtr << "bytes";
