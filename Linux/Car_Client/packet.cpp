@@ -183,9 +183,12 @@ void Packet::processData(QByteArray data)
             qDebug() << "Packet::processData: State 4 - Collecting payload data, byte" << mRxBuffer.size() << "/" << mPayloadLength;
             
             // Safety check: Prevent infinite loops from corrupted packets
-            if (mRxBuffer.size() > mPayloadLength + 1000) { // Allow some tolerance
+            // We allow a small tolerance (10 bytes) for potential protocol variations
+            // but anything significantly larger indicates corruption
+            if (mRxBuffer.size() > mPayloadLength + 10) { // Small tolerance for protocol variations
                 qDebug() << "Packet::processData: ERROR - Payload length mismatch!";
                 qDebug() << "Packet::processData: Expected" << mPayloadLength << "bytes but already collected" << mRxBuffer.size() << "bytes";
+                qDebug() << "Packet::processData: Difference:" << (mRxBuffer.size() - mPayloadLength) << "bytes";
                 qDebug() << "Packet::processData: This suggests corrupted packet header, resetting state";
                 mRxState = 0; // Reset state to recover
                 mRxBuffer.clear();

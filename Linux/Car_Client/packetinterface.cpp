@@ -197,10 +197,13 @@ void PacketInterface::processData(QByteArray &data)
                 break;
             }
             
-            // Safety check: Prevent processing unreasonably large packets
-            if (mRxDataPtr > mPayloadLength + 1000) { // Allow some tolerance
+            // Safety check: Prevent processing packets that exceed expected length
+            // We allow a small tolerance (10 bytes) for potential protocol variations
+            // but anything significantly larger indicates corruption
+            if (mRxDataPtr > mPayloadLength + 10) { // Small tolerance for protocol variations
                 qDebug() << "PacketInterface::processData: ERROR - Payload length mismatch!";
                 qDebug() << "PacketInterface::processData: Expected" << mPayloadLength << "bytes but already processed" << mRxDataPtr << "bytes";
+                qDebug() << "PacketInterface::processData: Difference:" << (mRxDataPtr - mPayloadLength) << "bytes";
                 qDebug() << "PacketInterface::processData: This suggests corrupted packet header or buffer overrun";
                 qDebug() << "PacketInterface::processData: Resetting state to recover";
                 mRxState = 0; // Reset state to recover
