@@ -52,6 +52,8 @@ const unsigned short crc16_tab[] = { 0x0000, 0x1021, 0x2042, 0x3063, 0x4084,
 
 Packet::Packet(QObject *parent) : QObject(parent)
 {
+    qDebug() << "Packet::Packet: Constructor started";
+    
     mRxState = 0;
     mRxTimer = 0;
     mPayloadLength = 0;
@@ -64,21 +66,29 @@ Packet::Packet(QObject *parent) : QObject(parent)
     mTimer->start();
 
     connect(mTimer, SIGNAL(timeout()), this, SLOT(timerSlot()));
+    
+    qDebug() << "Packet::Packet: Constructor completed, timer started";
 }
 
 void Packet::sendPacket(const QByteArray &data)
 {
+    qDebug() << "Packet::sendPacket: Called with" << data.size() << "bytes";
+    qDebug() << "Packet::sendPacket: First bytes:" << data.left(qMin(10, data.size())).toHex();
+    
     QByteArray to_send;
     unsigned int len_tot = data.size();
 
     if (len_tot <= 255) {
+        qDebug() << "Packet::sendPacket: Using 1-byte length format";
         to_send.append((char)2);
         to_send.append((char)len_tot);
     } else if (len_tot <= 65535) {
+        qDebug() << "Packet::sendPacket: Using 2-byte length format";
         to_send.append((char)3);
         to_send.append((char)(len_tot >> 8));
         to_send.append((char)(len_tot & 0xFF));
     } else {
+        qDebug() << "Packet::sendPacket: Using 3-byte length format";
         to_send.append((char)4);
         to_send.append((char)((len_tot >> 16) & 0xFF));
         to_send.append((char)((len_tot >> 8) & 0xFF));
@@ -86,13 +96,19 @@ void Packet::sendPacket(const QByteArray &data)
     }
 
     unsigned short crc = crc16((const unsigned char*)data.data(), len_tot);
+    qDebug() << "Packet::sendPacket: Calculated CRC:" << crc;
 
     to_send.append(data);
     to_send.append((char)(crc >> 8));
     to_send.append((char)(crc & 0xFF));
     to_send.append((char)3);
 
+    qDebug() << "Packet::sendPacket: Final packet size:" << to_send.size() << "bytes";
+    qDebug() << "Packet::sendPacket: Emitting dataToSend signal";
+    
     emit dataToSend(to_send);
+    
+    qDebug() << "Packet::sendPacket: Completed";
 }
 
 unsigned short Packet::crc16(const unsigned char *buf, unsigned int len)
@@ -106,87 +122,114 @@ unsigned short Packet::crc16(const unsigned char *buf, unsigned int len)
 
 void Packet::processData(QByteArray data)
 {
+    qDebug() << "Packet::processData: Called with" << data.length() << "bytes";
+    qDebug() << "Packet::processData: Initial state - mRxState:" << mRxState << ", mPayloadLength:" << mPayloadLength;
+    
     unsigned char rx_data;
     for(int i = 0;i < data.length();i++) {
         rx_data = data.at(i);
+        qDebug() << "Packet::processData: Byte" << i << ": 0x" << QString::number(rx_data, 16) << ", state:" << mRxState;
 
         switch (mRxState) {
         case 0:
+            qDebug() << "Packet::processData: State 0 - Looking for packet start";
             if (rx_data == 2) {
+                qDebug() << "Packet::processData: Found start byte 2";
                 mRxState += 3;
                 mRxTimer = mByteTimeout;
                 mRxBuffer.clear();
                 mPayloadLength = 0;
             } else if (rx_data == 3) {
+                qDebug() << "Packet::processData: Found start byte 3";
                 mRxState += 2;
                 mRxTimer = mByteTimeout;
                 mRxBuffer.clear();
                 mPayloadLength = 0;
             } else if (rx_data == 4) {
+                qDebug() << "Packet::processData: Found start byte 4";
                 mRxState++;
                 mRxTimer = mByteTimeout;
                 mRxBuffer.clear();
                 mPayloadLength = 0;
             } else {
+                qDebug() << "Packet::processData: Invalid start byte, resetting state";
                 mRxState = 0;
             }
             break;
 
         case 1:
+            qDebug() << "Packet::processData: State 1 - Reading payload length byte 2";
             mPayloadLength |= (unsigned int)rx_data << 16;
             mRxState++;
             mRxTimer = mByteTimeout;
             break;
 
         case 2:
+            qDebug() << "Packet::processData: State 2 - Reading payload length byte 1";
             mPayloadLength |= (unsigned int)rx_data << 8;
             mRxState++;
             mRxTimer = mByteTimeout;
             break;
 
         case 3:
+            qDebug() << "Packet::processData: State 3 - Reading payload length byte 0";
             mPayloadLength |= (unsigned int)rx_data;
+            qDebug() << "Packet::processData: Final payload length:" << mPayloadLength;
             mRxState++;
             mRxTimer = mByteTimeout;
             break;
 
         case 4:
+            qDebug() << "Packet::processData: State 4 - Collecting payload data, byte" << mRxBuffer.size() << "/" << mPayloadLength;
             mRxBuffer.append((char)rx_data);
             if (mRxBuffer.size() == (int)mPayloadLength) {
+                qDebug() << "Packet::processData: Payload collection complete";
                 mRxState++;
             }
             mRxTimer = mByteTimeout;
             break;
 
         case 5:
+            qDebug() << "Packet::processData: State 5 - Reading CRC high byte";
             mCrcHigh = rx_data;
             mRxState++;
             mRxTimer = mByteTimeout;
             break;
 
         case 6:
+            qDebug() << "Packet::processData: State 6 - Reading CRC low byte";
             mCrcLow = rx_data;
             mRxState++;
             mRxTimer = mByteTimeout;
             break;
 
         case 7:
+            qDebug() << "Packet::processData: State 7 - Checking packet end and CRC";
             if (rx_data == 3) {
-                if (crc16((const unsigned char*)mRxBuffer.data(), mPayloadLength) ==
-                        ((unsigned short)mCrcHigh << 8 | (unsigned short)mCrcLow)) {
-                    // Packet received!
-//                    qDebug() << "Packet received! (packet::processData)";
+                qDebug() << "Packet::processData: Found end byte 3";
+                unsigned short crc = crc16((const unsigned char*)mRxBuffer.data(), mPayloadLength);
+                unsigned short received_crc = ((unsigned short)mCrcHigh << 8 | (unsigned short)mCrcLow);
+                qDebug() << "Packet::processData: Calculated CRC:" << crc << ", Received CRC:" << received_crc;
+                if (crc == received_crc) {
+                    qDebug() << "Packet::processData: CRC valid, emitting packetReceived";
                     emit packetReceived(mRxBuffer);
+                } else {
+                    qDebug() << "Packet::processData: ERROR - CRC mismatch!";
                 }
+            } else {
+                qDebug() << "Packet::processData: ERROR - Invalid end byte:" << rx_data;
             }
             mRxState = 0;
             break;
 
         default:
+            qDebug() << "Packet::processData: ERROR - Invalid state:" << mRxState << ", resetting";
             mRxState = 0;
             break;
         }
     }
+    
+    qDebug() << "Packet::processData: Completed processing" << data.length() << "bytes";
 }
 
 void Packet::timerSlot()
