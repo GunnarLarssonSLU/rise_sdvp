@@ -65,6 +65,18 @@ public:
         int nmeaPort;
     } settings_t;
 
+    // Debugging control
+    enum DebugLevel {
+        DEBUG_OFF = 0,           // No debugging output
+        DEBUG_BASIC = 1,         // Basic packet flow debugging
+        DEBUG_DETAILED = 2,      // Detailed processing debugging
+        DEBUG_VERBOSE = 3       // Very verbose (includes hex dumps, etc.)
+    };
+    
+    void setDebugLevel(DebugLevel level);
+    DebugLevel getDebugLevel() const;
+    bool isDebugEnabled() const;
+
     explicit CarClient(QObject *parent = 0);
     ~CarClient();
     void connectSerial(QString port, int baudrate = 115200);
@@ -173,6 +185,9 @@ private:
     bool mOverrideUwbPos;
     double mOverrideUwbX;
     double mOverrideUwbY;
+    
+    // Debugging control
+    DebugLevel mDebugLevel;
 
     bool setUnixTime(qint64 t);
     void printTerminal(QString str);

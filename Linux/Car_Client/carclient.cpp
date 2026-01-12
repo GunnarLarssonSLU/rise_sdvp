@@ -83,6 +83,9 @@ CarClient::CarClient(QObject *parent) : QObject(parent)
     mOverrideUwbPos = false;
     mOverrideUwbX = 0.0;
     mOverrideUwbY = 0.0;
+    
+    // Debugging control - default to basic debugging
+    mDebugLevel = DEBUG_BASIC;
 
     mHostAddress = QHostAddress("0.0.0.0");
     mUdpPort = 0;
@@ -916,8 +919,12 @@ void CarClient::readPendingDatagrams()
 
 void CarClient::carPacketRx(quint8 id, CMD_PACKET cmd, const QByteArray &data)
 {
-    qDebug() << "CarClient::carPacketRx: START - ID:" << id << ", Command:" << cmd << ", Data size:" << data.size() << "bytes";
-    qDebug() << "CarClient::carPacketRx: Data hex:" << data.toHex();
+    if (mDebugLevel >= DEBUG_BASIC) {
+        qDebug() << "CarClient::carPacketRx: START - ID:" << id << ", Command:" << cmd << ", Data size:" << data.size() << "bytes";
+        if (mDebugLevel >= DEBUG_VERBOSE) {
+            qDebug() << "CarClient::carPacketRx: Data hex:" << data.toHex();
+        }
+    }
     
     QByteArray toSend = data;
 
@@ -931,26 +938,42 @@ void CarClient::carPacketRx(quint8 id, CMD_PACKET cmd, const QByteArray &data)
     }
 */
     if (id != 254) {
-        qDebug() << "CarClient::carPacketRx: Processing for car ID:" << id;
-        mCarId = id;
-        qDebug() << "CarClient::carPacketRx: Set mCarId to:" << mCarId;
+        if (mDebugLevel >= DEBUG_BASIC) {
+            qDebug() << "CarClient::carPacketRx: Processing for car ID:" << id;
+            mCarId = id;
+            qDebug() << "CarClient::carPacketRx: Set mCarId to:" << mCarId;
+        } else {
+            mCarId = id;
+        }
 
         if (QString::compare(mHostAddress.toString(), "0.0.0.0") != 0) {
-            qDebug() << "CarClient::carPacketRx: Sending UDP datagram to" << mHostAddress << ":" << mUdpPort;
-            qDebug() << "CarClient::carPacketRx: UDP data size:" << toSend.size() << "bytes";
+            if (mDebugLevel >= DEBUG_BASIC) {
+                qDebug() << "CarClient::carPacketRx: Sending UDP datagram to" << mHostAddress << ":" << mUdpPort;
+                qDebug() << "CarClient::carPacketRx: UDP data size:" << toSend.size() << "bytes";
+            }
             mUdpSocket->writeDatagram(toSend, mHostAddress, mUdpPort);
-            qDebug() << "CarClient::carPacketRx: UDP datagram sent successfully";
+            if (mDebugLevel >= DEBUG_BASIC) {
+                qDebug() << "CarClient::carPacketRx: UDP datagram sent successfully";
+            }
         }
         
-        qDebug() << "CarClient::carPacketRx: Sending to TCP server";
-        qDebug() << "CarClient::carPacketRx: TCP data size:" << toSend.size() << "bytes";
+        if (mDebugLevel >= DEBUG_BASIC) {
+            qDebug() << "CarClient::carPacketRx: Sending to TCP server";
+            qDebug() << "CarClient::carPacketRx: TCP data size:" << toSend.size() << "bytes";
+        }
         mTcpServer->packet()->sendPacket(toSend);
-        qDebug() << "CarClient::carPacketRx: TCP packet sent successfully";
+        if (mDebugLevel >= DEBUG_BASIC) {
+            qDebug() << "CarClient::carPacketRx: TCP packet sent successfully";
+        }
     } else {
-        qDebug() << "CarClient::carPacketRx: Skipping broadcast ID 254";
+        if (mDebugLevel >= DEBUG_BASIC) {
+            qDebug() << "CarClient::carPacketRx: Skipping broadcast ID 254";
+        }
     }
     
-    qDebug() << "CarClient::carPacketRx: COMPLETED";
+    if (mDebugLevel >= DEBUG_BASIC) {
+        qDebug() << "CarClient::carPacketRx: COMPLETED";
+    }
 }
 
 void CarClient::logLineUsbReceived(quint8 id, QString str)
@@ -1148,6 +1171,26 @@ void CarClient::logBroadcasterDataReceived(QByteArray &data)
         }
         newLineIndex = mLogBroadcasterDataBuffer.indexOf("\n");
     }
+}
+
+void CarClient::setDebugLevel(DebugLevel level)
+{
+    qDebug() << "CarClient::setDebugLevel: Setting debug level to" << level;
+    mDebugLevel = level;
+    // Also set the packet interface debug level
+    if (mPacketInterface) {
+        mPacketInterface->setDebugLevel(static_cast<PacketInterface::DebugLevel>(level));
+    }
+}
+
+CarClient::DebugLevel CarClient::getDebugLevel() const
+{
+    return mDebugLevel;
+}
+
+bool CarClient::isDebugEnabled() const
+{
+    return mDebugLevel > DEBUG_OFF;
 }
 
 int CarClient::getCarIdToSet() const

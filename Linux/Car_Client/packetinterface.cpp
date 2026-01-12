@@ -71,6 +71,9 @@ PacketInterface::PacketInterface(QObject *parent) :
     mCrcHigh = 0;
     mWaitingAck = false;
 
+    // Debugging control - default to basic debugging
+    mDebugLevel = DEBUG_BASIC;
+
     mTimer = new QTimer(this);
     mTimer->setInterval(10);
     mTimer->start();
@@ -95,39 +98,53 @@ PacketInterface::~PacketInterface()
 
 void PacketInterface::processData(QByteArray &data)
 {
-    qDebug() << "PacketInterface::processData: START - Processing" << data.length() << "bytes";
-    qDebug() << "PacketInterface::processData: Initial state - mRxState:" << mRxState << ", mRxDataPtr:" << mRxDataPtr << ", mPayloadLength:" << mPayloadLength;
+    if (mDebugLevel >= DEBUG_BASIC) {
+        qDebug() << "PacketInterface::processData: START - Processing" << data.length() << "bytes";
+        qDebug() << "PacketInterface::processData: Initial state - mRxState:" << mRxState << ", mRxDataPtr:" << mRxDataPtr << ", mPayloadLength:" << mPayloadLength;
+    }
     
     unsigned char rx_data;
     const int rx_timeout = 50;
 
     for(int i = 0;i < data.length();i++) {
         rx_data = data[i];
-        qDebug() << "PacketInterface::processData: Byte" << i << "/" << data.length() << ": 0x" << QString::number(rx_data, 16).rightJustified(2, '0') << ", current state:" << mRxState;
+        if (mDebugLevel >= DEBUG_VERBOSE) {
+            qDebug() << "PacketInterface::processData: Byte" << i << "/" << data.length() << ": 0x" << QString::number(rx_data, 16).rightJustified(2, '0') << ", current state:" << mRxState;
+        }
 
         switch (mRxState) {
         case 0:
-            qDebug() << "PacketInterface::processData: State 0 - Looking for packet start";
+            if (mDebugLevel >= DEBUG_DETAILED) {
+                qDebug() << "PacketInterface::processData: State 0 - Looking for packet start";
+            }
             if (rx_data == 2) {
-                qDebug() << "PacketInterface::processData: Found start byte 2, setting up for 1-byte length";
+                if (mDebugLevel >= DEBUG_DETAILED) {
+                    qDebug() << "PacketInterface::processData: Found start byte 2, setting up for 1-byte length";
+                }
                 mRxState += 3;
                 mRxTimer = rx_timeout;
                 mRxDataPtr = 0;
                 mPayloadLength = 0;
             } else if (rx_data == 3) {
-                qDebug() << "PacketInterface::processData: Found start byte 3, setting up for 2-byte length";
+                if (mDebugLevel >= DEBUG_DETAILED) {
+                    qDebug() << "PacketInterface::processData: Found start byte 3, setting up for 2-byte length";
+                }
                 mRxState += 2;
                 mRxTimer = rx_timeout;
                 mRxDataPtr = 0;
                 mPayloadLength = 0;
             } else if (rx_data == 4) {
-                qDebug() << "PacketInterface::processData: Found start byte 4, setting up for 3-byte length";
+                if (mDebugLevel >= DEBUG_DETAILED) {
+                    qDebug() << "PacketInterface::processData: Found start byte 4, setting up for 3-byte length";
+                }
                 mRxState++;
                 mRxTimer = rx_timeout;
                 mRxDataPtr = 0;
                 mPayloadLength = 0;
             } else {
-                qDebug() << "PacketInterface::processData: Invalid start byte 0x" << QString::number(rx_data, 16) << ", resetting state";
+                if (mDebugLevel >= DEBUG_DETAILED) {
+                    qDebug() << "PacketInterface::processData: Invalid start byte 0x" << QString::number(rx_data, 16) << ", resetting state";
+                }
                 mRxState = 0;
             }
             break;
@@ -223,13 +240,19 @@ void PacketInterface::processData(QByteArray &data)
 
 void PacketInterface::processPacket(const unsigned char *data, int len)
 {
-    qDebug() << "PacketInterface::processPacket: Received packet, length:" << len << "bytes";
-    qDebug() << "PacketInterface::processPacket: First bytes:" << QByteArray((const char*)data, qMin(10, len)).toHex();
+    if (mDebugLevel >= DEBUG_BASIC) {
+        qDebug() << "PacketInterface::processPacket: Received packet, length:" << len << "bytes";
+        if (mDebugLevel >= DEBUG_VERBOSE) {
+            qDebug() << "PacketInterface::processPacket: First bytes:" << QByteArray((const char*)data, qMin(10, len)).toHex();
+        }
+    }
     
     QByteArray pkt = QByteArray((const char*)data, len);
 
     if (len < 2) {
-        qDebug() << "PacketInterface::processPacket: ERROR - Packet too short for ID and command, length:" << len;
+        if (mDebugLevel >= DEBUG_BASIC) {
+            qDebug() << "PacketInterface::processPacket: ERROR - Packet too short for ID and command, length:" << len;
+        }
         return;
     }
 
@@ -241,7 +264,9 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     data++;
     len--;
 
-    qDebug() << "PacketInterface::processPacket: ID:" << id << ", Command:" << cmd << ", Remaining data length:" << len;
+    if (mDebugLevel >= DEBUG_BASIC) {
+        qDebug() << "PacketInterface::processPacket: ID:" << id << ", Command:" << cmd << ", Remaining data length:" << len;
+    }
 
     emit packetReceived(id, cmd, pkt);
 
@@ -615,6 +640,22 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     }
 }
 
+void PacketInterface::setDebugLevel(DebugLevel level)
+{
+    qDebug() << "PacketInterface::setDebugLevel: Setting debug level to" << level;
+    mDebugLevel = level;
+}
+
+PacketInterface::DebugLevel PacketInterface::getDebugLevel() const
+{
+    return mDebugLevel;
+}
+
+bool PacketInterface::isDebugEnabled() const
+{
+    return mDebugLevel > DEBUG_OFF;
+}
+
 void PacketInterface::timerSlot()
 {
     if (mRxTimer) {
@@ -626,33 +667,51 @@ void PacketInterface::timerSlot()
 
 void PacketInterface::readPendingDatagrams()
 {
-    qDebug() << "PacketInterface::readPendingDatagrams: Checking for pending datagrams";
+    if (mDebugLevel >= DEBUG_BASIC) {
+        qDebug() << "PacketInterface::readPendingDatagrams: Checking for pending datagrams";
+    }
     
     while (mUdpSocket->hasPendingDatagrams()) {
-        qDebug() << "PacketInterface::readPendingDatagrams: Processing datagram";
+        if (mDebugLevel >= DEBUG_BASIC) {
+            qDebug() << "PacketInterface::readPendingDatagrams: Processing datagram";
+        }
         QByteArray datagram;
         int datagramSize = mUdpSocket->pendingDatagramSize();
-        qDebug() << "PacketInterface::readPendingDatagrams: Datagram size:" << datagramSize << "bytes";
+        if (mDebugLevel >= DEBUG_BASIC) {
+            qDebug() << "PacketInterface::readPendingDatagrams: Datagram size:" << datagramSize << "bytes";
+        }
         datagram.resize(datagramSize);
         QHostAddress sender;
         quint16 senderPort;
 
         mUdpSocket->readDatagram(datagram.data(), datagram.size(),
                                  &sender, &senderPort);
-        qDebug() << "PacketInterface::readPendingDatagrams: Received from" << sender.toString() << ":" << senderPort;
-        qDebug() << "PacketInterface::readPendingDatagrams: Datagram hex:" << datagram.toHex();
+        if (mDebugLevel >= DEBUG_BASIC) {
+            qDebug() << "PacketInterface::readPendingDatagrams: Received from" << sender.toString() << ":" << senderPort;
+        }
+        if (mDebugLevel >= DEBUG_VERBOSE) {
+            qDebug() << "PacketInterface::readPendingDatagrams: Datagram hex:" << datagram.toHex();
+        }
         
         if (mUdpServer) {
-            qDebug() << "PacketInterface::readPendingDatagrams: UDP server mode - updating host address";
+            if (mDebugLevel >= DEBUG_DETAILED) {
+                qDebug() << "PacketInterface::readPendingDatagrams: UDP server mode - updating host address";
+            }
             mHostAddress = sender;
         }
         
-        qDebug() << "PacketInterface::readPendingDatagrams: Calling processPacket with" << datagram.length() << "bytes";
+        if (mDebugLevel >= DEBUG_BASIC) {
+            qDebug() << "PacketInterface::readPendingDatagrams: Calling processPacket with" << datagram.length() << "bytes";
+        }
         processPacket((unsigned char*)datagram.data(), datagram.length());
-        qDebug() << "PacketInterface::readPendingDatagrams: processPacket completed";
+        if (mDebugLevel >= DEBUG_BASIC) {
+            qDebug() << "PacketInterface::readPendingDatagrams: processPacket completed";
+        }
     }
     
-    qDebug() << "PacketInterface::readPendingDatagrams: No more pending datagrams";
+    if (mDebugLevel >= DEBUG_BASIC) {
+        qDebug() << "PacketInterface::readPendingDatagrams: No more pending datagrams";
+    }
 }
 
 unsigned short PacketInterface::crc16(const unsigned char *buf, unsigned int len)

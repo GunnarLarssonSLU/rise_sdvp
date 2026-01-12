@@ -33,6 +33,18 @@ public:
     explicit PacketInterface(QObject *parent = 0);
     ~PacketInterface();
 
+    // Debugging control
+    enum DebugLevel {
+        DEBUG_OFF = 0,           // No debugging output
+        DEBUG_BASIC = 1,         // Basic packet flow debugging
+        DEBUG_DETAILED = 2,      // Detailed processing debugging
+        DEBUG_VERBOSE = 3       // Very verbose (includes hex dumps, etc.)
+    };
+    
+    void setDebugLevel(DebugLevel level);
+    DebugLevel getDebugLevel() const;
+    bool isDebugEnabled() const;
+
     bool sendPacket(const unsigned char *data, unsigned int len_packet);
     bool sendPacket(QByteArray data);
     bool sendPacketAck(const unsigned char *data, unsigned int len_packet,
@@ -145,6 +157,9 @@ private:
     unsigned int mRxDataPtr;
     unsigned char mCrcLow;
     unsigned char mCrcHigh;
+    
+    // Debugging control
+    DebugLevel mDebugLevel;
 };
 
 #endif // PACKETINTERFACE_H
