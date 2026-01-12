@@ -354,11 +354,22 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         CAR_STATE state;
         int32_t ind = 0;
 
-        if (len <= 1) {
+        // Calculate minimum required data size:
+        // 2 bytes (fw_major, fw_minor) +
+        // 3*3*4 bytes (accel, gyro, mag arrays - 3 doubles each) +
+        // 20*4 bytes (other double fields) +
+        // 1 byte (mc_fault) +
+        // 1*4 bytes (ms_today) +
+        // 1*2 bytes (ap_route_left) +
+        // 1*2 bytes (sensor_value)
+        const int min_required_size = 2 + (3*3*4) + (20*4) + 1 + 4 + 2 + 2;
+        
+        if (len < min_required_size) {
+            qDebug() << "CMD_GET_STATE: Received data too short. Expected at least" << min_required_size << "bytes, got" << len << "bytes";
             break;
         }
 
-//        qDebug() << "CMD_GET_STATE";
+        qDebug() << "CMD_GET_STATE - start" ;
         state.fw_major = data[ind++];
         state.fw_minor = data[ind++];
         state.roll = utility::buffer_get_double32(data, 1e6, &ind);
@@ -389,6 +400,7 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         state.px_uwb = utility::buffer_get_double32(data, 1e4, &ind);
         state.py_uwb = utility::buffer_get_double32(data, 1e4, &ind);
         state.angle = utility::buffer_get_double32(data, 1e4, &ind);
+        qDebug() << "CMD_GET_STATE - middle" ;
         state.servo_output = utility::buffer_get_double32(data, 1e4, &ind);
         state.sensor_value = utility::buffer_get_uint16(data, &ind);
         state.debug_value = utility::buffer_get_double32(data, 1e4, &ind);
@@ -396,7 +408,7 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         state.debug_value3 = utility::buffer_get_double32(data, 1e4, &ind);
         state.debug_value4 = utility::buffer_get_double32(data, 1e4, &ind);
         state.debug_value5 = utility::buffer_get_double32(data, 1e4, &ind);
-        state.debug_value6 = utility::buffer_get_double32(data, 1e4, &ind);
+/*        state.debug_value6 = utility::buffer_get_double32(data, 1e4, &ind);
         state.debug_value7 = utility::buffer_get_double32(data, 1e4, &ind);
         state.debug_value8 = utility::buffer_get_double32(data, 1e4, &ind);
         state.debug_value9 = utility::buffer_get_double32(data, 1e4, &ind);
@@ -405,8 +417,10 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         state.debug_value12 = utility::buffer_get_double32(data, 1e4, &ind);
         state.debug_value13 = utility::buffer_get_double32(data, 1e4, &ind);
         state.debug_value14 = utility::buffer_get_double32(data, 1e4, &ind);
-        state.debug_value15 = utility::buffer_get_double32(data, 1e4, &ind);
-        qDebug() << "Servo output: " << state.servo_output << ", Debug value: " << state.debug_value << "::" << state.debug_value2 << "::" << state.debug_value3 << "::" << state.debug_value4 << "::" << state.debug_value5  << "::" << state.debug_value6  << "::" << state.debug_value7  << "::" << state.debug_value8  << "::" << state.debug_value9  << "::" << state.debug_value10   << "::" << state.debug_value11  << "::" << state.debug_value12   << "::" << state.debug_value13  << "::" << state.debug_value14  << "::" << state.debug_value15;
+        state.debug_value15 = utility::buffer_get_double32(data, 1e4, &ind);*/
+//        qDebug() << "Servo output: " << state.servo_output << ", Debug value: " << state.debug_value << "::" << state.debug_value2 << "::" << state.debug_value3 << "::" << state.debug_value4 << "::" << state.debug_value5  << "::" << state.debug_value6  << "::" << state.debug_value7  << "::" << state.debug_value8  << "::" << state.debug_value9  << "::" << state.debug_value10   << "::" << state.debug_value11  << "::" << state.debug_value12   << "::" << state.debug_value13  << "::" << state.debug_value14  << "::" << state.debug_value15;
+        qDebug() << "Servo output: " << state.servo_output << ", Debug value: " << state.debug_value << "::" << state.debug_value2 << "::" << state.debug_value3 << "::" << state.debug_value4 << "::" << state.debug_value5;
+        qDebug() << "CMD_GET_STATE - slut" ;
 //        qDebug() << "Sensor value: " << state.sensor_value;
         emit stateReceived(id, state);
     } break;
