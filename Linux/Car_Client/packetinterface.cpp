@@ -185,6 +185,30 @@ void PacketInterface::processData(QByteArray &data)
         case 4:
             qDebug() << "PacketInterface::processData: State 4 - Collecting payload data";
             qDebug() << "PacketInterface::processData: Byte" << mRxDataPtr << "/" << mPayloadLength << ": 0x" << QString::number(rx_data, 16);
+            
+            // Safety check: Prevent buffer overrun and infinite loops
+            if (mRxDataPtr >= mMaxBufferLen) {
+                qDebug() << "PacketInterface::processData: ERROR - Buffer overrun detected!";
+                qDebug() << "PacketInterface::processData: Expected" << mPayloadLength << "bytes but received too much data";
+                qDebug() << "PacketInterface::processData: Resetting state to recover";
+                mRxState = 0; // Reset state to recover
+                mRxDataPtr = 0;
+                mPayloadLength = 0;
+                break;
+            }
+            
+            // Safety check: Prevent processing unreasonably large packets
+            if (mRxDataPtr > mPayloadLength + 1000) { // Allow some tolerance
+                qDebug() << "PacketInterface::processData: ERROR - Payload length mismatch!";
+                qDebug() << "PacketInterface::processData: Expected" << mPayloadLength << "bytes but already processed" << mRxDataPtr << "bytes";
+                qDebug() << "PacketInterface::processData: This suggests corrupted packet header or buffer overrun";
+                qDebug() << "PacketInterface::processData: Resetting state to recover";
+                mRxState = 0; // Reset state to recover
+                mRxDataPtr = 0;
+                mPayloadLength = 0;
+                break;
+            }
+            
             mRxBuffer[mRxDataPtr++] = rx_data;
             if (mRxDataPtr == mPayloadLength) {
                 qDebug() << "PacketInterface::processData: Payload collection complete, moving to CRC";
