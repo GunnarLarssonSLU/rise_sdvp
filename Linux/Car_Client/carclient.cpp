@@ -829,14 +829,31 @@ void CarClient::packetDataToSend(QByteArray &data)
     }
 
     if (!packetConsumed) {
+        qDebug() << "CarClient::processData: About to send packet to serial port";
+        qDebug() << "CarClient::processData: Packet size:" << data.size() << "bytes";
+        qDebug() << "CarClient::processData: First bytes:" << data.left(qMin(10, data.size())).toHex();
+        
         if (mSerialPort->isOpen()) {
+            qDebug() << "CarClient::processData: Serial port is open, sending data";
             qDebug() << "Packet sent (port open)";
             qDebug() << static_cast<int>(data[2]) << ":" << static_cast<int>(data[3]) << ":" << static_cast<int>(data[4]);
-            mSerialPort->writeData(data);
-        } else
-        {
+            
+            qDebug() << "CarClient::processData: Calling mSerialPort->writeData() with non-blocking mode";
+            int result = mSerialPort->writeData(data, false); // Use non-blocking mode
+            qDebug() << "CarClient::processData: mSerialPort->writeData() returned with result:" << result;
+            
+            if (result < 0) {
+                qDebug() << "CarClient::processData: WARNING - Serial port write failed with error:" << result;
+                qDebug() << "CarClient::processData: This might indicate serial port issues";
+            } else if (result == 0) {
+                qDebug() << "CarClient::processData: WARNING - Serial port write returned 0, no bytes written";
+                qDebug() << "CarClient::processData: Serial port might be busy or disconnected";
+            } else {
+                qDebug() << "CarClient::processData: Serial port write successful, bytes written:" << result;
+            }
+        } else {
+            qDebug() << "CarClient::processData: Serial port is closed, not sending";
             qDebug() << "Packet not sent (port closed)";
-
         }
     }
 }
