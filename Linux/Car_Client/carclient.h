@@ -73,6 +73,12 @@ public:
         DEBUG_VERBOSE = 3       // Very verbose (includes hex dumps, etc.)
     };
     
+    // Command-specific debugging control
+    void setCommandDebugLevel(CMD_PACKET cmd, DebugLevel level);
+    DebugLevel getCommandDebugLevel(CMD_PACKET cmd) const;
+    void clearCommandDebugLevel(CMD_PACKET cmd);
+    void clearAllCommandDebugLevels();
+    
     void setDebugLevel(DebugLevel level);
     DebugLevel getDebugLevel() const;
     bool isDebugEnabled() const;

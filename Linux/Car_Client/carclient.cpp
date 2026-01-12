@@ -1173,6 +1173,39 @@ void CarClient::logBroadcasterDataReceived(QByteArray &data)
     }
 }
 
+void CarClient::setCommandDebugLevel(CMD_PACKET cmd, DebugLevel level)
+{
+    qDebug() << "CarClient::setCommandDebugLevel: Setting debug level" << level << "for command" << cmd;
+    // Forward to packet interface
+    if (mPacketInterface) {
+        mPacketInterface->setCommandDebugLevel(cmd, static_cast<PacketInterface::DebugLevel>(level));
+    }
+}
+
+CarClient::DebugLevel CarClient::getCommandDebugLevel(CMD_PACKET cmd) const
+{
+    if (mPacketInterface) {
+        return static_cast<DebugLevel>(mPacketInterface->getCommandDebugLevel(cmd));
+    }
+    return DEBUG_OFF;
+}
+
+void CarClient::clearCommandDebugLevel(CMD_PACKET cmd)
+{
+    qDebug() << "CarClient::clearCommandDebugLevel: Clearing debug level for command" << cmd;
+    if (mPacketInterface) {
+        mPacketInterface->clearCommandDebugLevel(cmd);
+    }
+}
+
+void CarClient::clearAllCommandDebugLevels()
+{
+    qDebug() << "CarClient::clearAllCommandDebugLevels: Clearing all command-specific debug levels";
+    if (mPacketInterface) {
+        mPacketInterface->clearAllCommandDebugLevels();
+    }
+}
+
 void CarClient::setDebugLevel(DebugLevel level)
 {
     qDebug() << "CarClient::setDebugLevel: Setting debug level to" << level;
