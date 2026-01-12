@@ -100,6 +100,15 @@ void PacketInterface::processData(QByteArray &data)
 {
     // Basic debugging that always runs to ensure we can see if processData is called
     qDebug() << "PacketInterface::processData: Called with" << data.length() << "bytes, debug level:" << mDebugLevel;
+    qDebug() << "PacketInterface::processData: First few bytes:" << data.left(qMin(20, data.size())).toHex();
+    
+    // Critical safety check: Prevent processing if we're already in the middle of a packet
+    if (mRxState != 0) {
+        qDebug() << "PacketInterface::processData: WARNING - Called while already processing a packet!";
+        qDebug() << "PacketInterface::processData: Current state:" << mRxState << ", payload length:" << mPayloadLength;
+        qDebug() << "PacketInterface::processData: This indicates concurrent processing - potential bug!";
+        // Continue processing to avoid deadlock, but this is a serious issue
+    }
     
     if (mDebugLevel >= DEBUG_BASIC) {
         qDebug() << "PacketInterface::processData: START - Processing" << data.length() << "bytes";

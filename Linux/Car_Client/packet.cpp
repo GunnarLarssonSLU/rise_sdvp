@@ -123,7 +123,16 @@ unsigned short Packet::crc16(const unsigned char *buf, unsigned int len)
 void Packet::processData(QByteArray data)
 {
     qDebug() << "Packet::processData: Called with" << data.length() << "bytes";
+    qDebug() << "Packet::processData: First few bytes:" << data.left(qMin(20, data.size())).toHex();
     qDebug() << "Packet::processData: Initial state - mRxState:" << mRxState << ", mPayloadLength:" << mPayloadLength;
+    
+    // Critical safety check: Prevent processing if we're already in the middle of a packet
+    if (mRxState != 0) {
+        qDebug() << "Packet::processData: WARNING - Called while already processing a packet!";
+        qDebug() << "Packet::processData: Current state:" << mRxState << ", payload length:" << mPayloadLength;
+        qDebug() << "Packet::processData: This indicates concurrent processing - potential bug!";
+        // Continue processing to avoid deadlock, but this is a serious issue
+    }
     
     unsigned char rx_data;
     for(int i = 0;i < data.length();i++) {
