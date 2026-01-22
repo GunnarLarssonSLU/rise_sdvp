@@ -17,6 +17,15 @@
 
 #include "packet.h"
 #include <QDebug>
+
+// Debug helper for simple messages (no stream operations)
+#define PACKET_DEBUG(level, message) \
+    do { \
+        if (mDebugLevel >= level) { \
+            qDebug() << message; \
+        } \
+    } while (0)
+
 namespace {
 // CRC Table
 const unsigned short crc16_tab[] = { 0x0000, 0x1021, 0x2042, 0x3063, 0x4084,
@@ -52,7 +61,13 @@ const unsigned short crc16_tab[] = { 0x0000, 0x1021, 0x2042, 0x3063, 0x4084,
 
 Packet::Packet(QObject *parent) : QObject(parent)
 {
-    qDebug() << "Packet::Packet: Constructor started";
+    // Initialize debug level - default to BASIC to reduce debug flooding
+    // Set to DEBUG_VERBOSE only when detailed packet debugging is needed
+    mDebugLevel = DEBUG_BASIC;
+    
+    if (mDebugLevel >= DEBUG_VERBOSE) {
+        qDebug() << "Packet::Packet: Constructor started";
+    }
     
     mRxState = 0;
     mRxTimer = 0;
@@ -67,13 +82,15 @@ Packet::Packet(QObject *parent) : QObject(parent)
 
     connect(mTimer, SIGNAL(timeout()), this, SLOT(timerSlot()));
     
-    qDebug() << "Packet::Packet: Constructor completed, timer started";
+    PACKET_DEBUG(DEBUG_VERBOSE, "Packet::Packet: Constructor completed, timer started");
 }
 
 void Packet::sendPacket(const QByteArray &data)
 {
-    qDebug() << "Packet::sendPacket: Called with" << data.size() << "bytes";
-    qDebug() << "Packet::sendPacket: First bytes:" << data.left(qMin(10, data.size())).toHex();
+    if (mDebugLevel >= DEBUG_VERBOSE) {
+        qDebug() << "Packet::sendPacket: Called with" << data.size() << "bytes";
+        qDebug() << "Packet::sendPacket: First bytes:" << data.left(qMin(10, data.size())).toHex();
+    }
     
     QByteArray to_send;
     unsigned int len_tot = data.size();
@@ -122,66 +139,92 @@ unsigned short Packet::crc16(const unsigned char *buf, unsigned int len)
 
 void Packet::processData(QByteArray data)
 {
-    qDebug() << "Packet::processData: Called with" << data.length() << "bytes";
-    qDebug() << "Packet::processData: First few bytes:" << data.left(qMin(20, data.size())).toHex();
-    qDebug() << "Packet::processData: Initial state - mRxState:" << mRxState << ", mPayloadLength:" << mPayloadLength;
+    if (mDebugLevel >= DEBUG_BASIC) {
+        qDebug() << "Packet::processData: Called with" << data.length() << "bytes";
+    }
+    if (mDebugLevel >= DEBUG_VERBOSE) {
+        qDebug() << "Packet::processData: First few bytes:" << data.left(qMin(20, data.size())).toHex();
+    }
+    if (mDebugLevel >= DEBUG_VERBOSE) {
+        qDebug() << "Packet::processData: Initial state - mRxState:" << mRxState << ", mPayloadLength:" << mPayloadLength;
+    }
     
     // Critical safety check: Prevent processing if we're already in the middle of a packet
     if (mRxState != 0) {
-        qDebug() << "Packet::processData: WARNING - Called while already processing a packet!";
-        qDebug() << "Packet::processData: Current state:" << mRxState << ", payload length:" << mPayloadLength;
-        qDebug() << "Packet::processData: This indicates concurrent processing - potential bug!";
+        PACKET_DEBUG(DEBUG_BASIC, "Packet::processData: WARNING - Called while already processing a packet!");
+        if (mDebugLevel >= DEBUG_BASIC) {
+            qDebug() << "Packet::processData: Current state:" << mRxState << ", payload length:" << mPayloadLength;
+        }
+        PACKET_DEBUG(DEBUG_BASIC, "Packet::processData: This indicates concurrent processing - potential bug!");
         // Continue processing to avoid deadlock, but this is a serious issue
     }
     
     unsigned char rx_data;
     for(int i = 0;i < data.length();i++) {
         rx_data = data.at(i);
-        qDebug() << "Packet::processData: Byte" << i << ": 0x" << QString::number(rx_data, 16) << ", state:" << mRxState;
+        if (mDebugLevel >= DEBUG_VERBOSE) {
+            qDebug() << "Packet::processData: Byte" << i << ": 0x" << QString::number(rx_data, 16) << ", state:" << mRxState;
+        }
 
         switch (mRxState) {
         case 0:
-            qDebug() << "Packet::processData: State 0 - Looking for packet start";
+            if (mDebugLevel >= DEBUG_VERBOSE) {
+                qDebug() << "Packet::processData: State 0 - Looking for packet start";
+            }
             if (rx_data == 2) {
-                qDebug() << "Packet::processData: Found start byte 2";
+                if (mDebugLevel >= DEBUG_VERBOSE) {
+                    qDebug() << "Packet::processData: Found start byte 2";
+                }
                 mRxState += 3;
                 mRxTimer = mByteTimeout;
                 mRxBuffer.clear();
                 mPayloadLength = 0;
             } else if (rx_data == 3) {
-                qDebug() << "Packet::processData: Found start byte 3";
+                if (mDebugLevel >= DEBUG_VERBOSE) {
+                    qDebug() << "Packet::processData: Found start byte 3";
+                }
                 mRxState += 2;
                 mRxTimer = mByteTimeout;
                 mRxBuffer.clear();
                 mPayloadLength = 0;
             } else if (rx_data == 4) {
-                qDebug() << "Packet::processData: Found start byte 4";
+                if (mDebugLevel >= DEBUG_VERBOSE) {
+                    qDebug() << "Packet::processData: Found start byte 4";
+                }
                 mRxState++;
                 mRxTimer = mByteTimeout;
                 mRxBuffer.clear();
                 mPayloadLength = 0;
             } else {
-                qDebug() << "Packet::processData: Invalid start byte, resetting state";
+                if (mDebugLevel >= DEBUG_VERBOSE) {
+                    qDebug() << "Packet::processData: Invalid start byte, resetting state";
+                }
                 mRxState = 0;
             }
             break;
 
         case 1:
-            qDebug() << "Packet::processData: State 1 - Reading payload length byte 2";
+            if (mDebugLevel >= DEBUG_VERBOSE) {
+                qDebug() << "Packet::processData: State 1 - Reading payload length byte 2";
+            }
             mPayloadLength |= (unsigned int)rx_data << 16;
             mRxState++;
             mRxTimer = mByteTimeout;
             break;
 
         case 2:
-            qDebug() << "Packet::processData: State 2 - Reading payload length byte 1";
+            if (mDebugLevel >= DEBUG_VERBOSE) {
+                qDebug() << "Packet::processData: State 2 - Reading payload length byte 1";
+            }
             mPayloadLength |= (unsigned int)rx_data << 8;
             mRxState++;
             mRxTimer = mByteTimeout;
             break;
 
         case 3:
-            qDebug() << "Packet::processData: State 3 - Reading payload length byte 0";
+            if (mDebugLevel >= DEBUG_VERBOSE) {
+                qDebug() << "Packet::processData: State 3 - Reading payload length byte 0";
+            }
             mPayloadLength |= (unsigned int)rx_data;
             qDebug() << "Packet::processData: Final payload length:" << mPayloadLength;
             mRxState++;
@@ -189,8 +232,9 @@ void Packet::processData(QByteArray data)
             break;
 
         case 4:
-            qDebug() << "Packet::processData: State 4 - Collecting payload data, byte" << mRxBuffer.size() << "/" << mPayloadLength;
-            
+            if (mDebugLevel >= DEBUG_VERBOSE) {
+                qDebug() << "Packet::processData: State 4 - Collecting payload data, byte" << mRxBuffer.size() << "/" << mPayloadLength;
+            }
             // Safety check: Prevent infinite loops from corrupted packets
             // We allow a small tolerance (10 bytes) for potential protocol variations
             // but anything significantly larger indicates corruption
@@ -253,7 +297,9 @@ void Packet::processData(QByteArray data)
         }
     }
     
-    qDebug() << "Packet::processData: Completed processing" << data.length() << "bytes";
+    if (mDebugLevel >= DEBUG_BASIC) {
+        qDebug() << "Packet::processData: Completed processing" << data.length() << "bytes";
+    }
 }
 
 void Packet::timerSlot()
@@ -263,4 +309,18 @@ void Packet::timerSlot()
     } else {
         mRxState = 0;
     }
+}
+
+// Debug control methods
+void Packet::setDebugLevel(DebugLevel level)
+{
+    mDebugLevel = level;
+    if (mDebugLevel >= DEBUG_VERBOSE) {
+        qDebug() << "Packet::setDebugLevel: Setting debug level to" << level;
+    }
+}
+
+Packet::DebugLevel Packet::getDebugLevel() const
+{
+    return mDebugLevel;
 }

@@ -484,7 +484,7 @@ int main(int argc, char *argv[])
 
     car.setCarIdToSet(carId);
     car.setDebugLevel(CarClient::DEBUG_BASIC);
-    car.setCommandDebugLevel(CMD_GET_STATE,CarClient::DEBUG_VERBOSE);
+    //car.setCommandDebugLevel(CMD_GET_STATE,CarClient::DEBUG_VERBOSE);
 
     qDebug() << "TTY port:" << ttyPort;
 

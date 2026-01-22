@@ -23,8 +23,35 @@
 #include <QVector>
 #include <QUdpSocket>
 #include <QImage>
+#include <QMap>
 #include "datatypes.h"
 #include "locpoint.h"
+
+// Statistics for message length tracking
+struct MessageStatistics {
+    quint32 count = 0;
+    quint32 minLength = UINT32_MAX;
+    quint32 maxLength = 0;
+    quint64 totalBytes = 0;
+    
+    void update(quint32 length) {
+        count++;
+        if (length < minLength) minLength = length;
+        if (length > maxLength) maxLength = length;
+        totalBytes += length;
+    }
+    
+    double averageLength() const {
+        return count > 0 ? static_cast<double>(totalBytes) / count : 0.0;
+    }
+    
+    void reset() {
+        count = 0;
+        minLength = UINT32_MAX;
+        maxLength = 0;
+        totalBytes = 0;
+    }
+};
 
 class PacketInterface : public QObject
 {
@@ -79,6 +106,13 @@ public:
                          double lon = 0,
                          double height = 0,
                          int retries = 10);
+
+    // Statistics debugging methods
+    void enableMessageStatistics(bool enable);
+    bool isMessageStatisticsEnabled() const;
+    void resetMessageStatistics();
+    QMap<CMD_PACKET, MessageStatistics> getMessageStatistics() const;
+    QString getMessageStatisticsSummary() const;
 
 signals:
     void dataToSend(QByteArray &data);
@@ -151,6 +185,10 @@ private:
     unsigned int mRxDataPtr;
     unsigned char mCrcLow;
     unsigned char mCrcHigh;
+    
+    // Message statistics variables
+    bool mEnableMessageStatistics;
+    QMap<CMD_PACKET, MessageStatistics> mMessageStatistics;
     
 };
 

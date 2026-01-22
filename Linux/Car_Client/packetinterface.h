@@ -24,6 +24,7 @@
 #include <QUdpSocket>
 #include <QImage>
 #include <QHash>
+#include <QMap>
 #include "datatypes.h"
 #include "locpoint.h"
 
@@ -39,7 +40,34 @@ public:
         DEBUG_OFF = 0,           // No debugging output
         DEBUG_BASIC = 1,         // Basic packet flow debugging
         DEBUG_DETAILED = 2,      // Detailed processing debugging
-        DEBUG_VERBOSE = 3       // Very verbose (includes hex dumps, etc.)
+        DEBUG_VERBOSE = 3,       // Very verbose (includes hex dumps, etc.)
+        DEBUG_STATISTICS = 4     // Statistics-based debugging (message length tracking)
+    };
+    
+    // Statistics for message length tracking
+    struct MessageStatistics {
+        quint32 count = 0;
+        quint32 minLength = UINT32_MAX;
+        quint32 maxLength = 0;
+        quint64 totalBytes = 0;
+        
+        void update(quint32 length) {
+            count++;
+            if (length < minLength) minLength = length;
+            if (length > maxLength) maxLength = length;
+            totalBytes += length;
+        }
+        
+        double averageLength() const {
+            return count > 0 ? static_cast<double>(totalBytes) / count : 0.0;
+        }
+        
+        void reset() {
+            count = 0;
+            minLength = UINT32_MAX;
+            maxLength = 0;
+            totalBytes = 0;
+        }
     };
     
     // Command-specific debugging control
@@ -52,6 +80,13 @@ public:
     DebugLevel getDebugLevel() const;
     DebugLevel getEffectiveDebugLevel(CMD_PACKET cmd) const;
     bool isDebugEnabled() const;
+    
+    // Statistics debugging methods
+    void enableMessageStatistics(bool enable);
+    bool isMessageStatisticsEnabled() const;
+    void resetMessageStatistics();
+    QMap<CMD_PACKET, MessageStatistics> getMessageStatistics() const;
+    QString getMessageStatisticsSummary() const;
 
     bool sendPacket(const unsigned char *data, unsigned int len_packet);
     bool sendPacket(QByteArray data);
@@ -169,6 +204,10 @@ private:
     // Debugging control
     DebugLevel mDebugLevel;
     QHash<CMD_PACKET, DebugLevel> mCommandDebugLevels;
+    
+    // Message statistics variables
+    bool mEnableMessageStatistics;
+    QMap<CMD_PACKET, MessageStatistics> mMessageStatistics;
 };
 
 #endif // PACKETINTERFACE_H

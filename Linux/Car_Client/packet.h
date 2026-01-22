@@ -25,8 +25,19 @@ class Packet : public QObject
 {
     Q_OBJECT
 public:
+    // Debug levels for Packet class (simplified version)
+    enum DebugLevel {
+        DEBUG_OFF = 0,      // No debug output
+        DEBUG_BASIC = 1,    // Basic packet processing info
+        DEBUG_VERBOSE = 2   // Very detailed packet processing
+    };
+
     explicit Packet(QObject *parent = 0);
     void sendPacket(const QByteArray &data);
+
+    // Debug control methods
+    void setDebugLevel(DebugLevel level);
+    DebugLevel getDebugLevel() const;
 
     static unsigned short crc16(const unsigned char *buf, unsigned int len);
 
@@ -49,6 +60,9 @@ private:
     unsigned char mCrcHigh;
     QByteArray mRxBuffer;
     int mByteTimeout;
+    
+    // Debug level control
+    DebugLevel mDebugLevel;
 
 };
 

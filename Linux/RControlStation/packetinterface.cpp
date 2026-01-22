@@ -81,6 +81,9 @@ PacketInterface::PacketInterface(QObject *parent) :
     mUdpSocket = new QUdpSocket(this);
     mUdpServer = false;
 
+    // Initialize message statistics
+    mEnableMessageStatistics = false;
+
     connect(mUdpSocket, SIGNAL(readyRead()),
             this, SLOT(readPendingDatagrams()));
     connect(mTimer, SIGNAL(timeout()), this, SLOT(timerSlot()));
@@ -196,6 +199,11 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     data++;
     len--;
 //    qDebug() << "command:" << cmd;
+
+    // Collect message statistics if enabled
+    if (mEnableMessageStatistics) {
+        mMessageStatistics[cmd].update(len);
+    }
 
     emit packetReceived(id, cmd, pkt);
 
@@ -1375,4 +1383,71 @@ void PacketInterface::setApMode(quint8 id, AP_MODE mode)
     packet.append(CMD_SET_AP_MODE);
     packet.append(mode);
     sendPacket(packet);
+}
+
+// Message statistics methods
+void PacketInterface::enableMessageStatistics(bool enable)
+{
+    mEnableMessageStatistics = enable;
+    if (enable) {
+        // Reset statistics when enabling
+        resetMessageStatistics();
+    }
+}
+
+bool PacketInterface::isMessageStatisticsEnabled() const
+{
+    return mEnableMessageStatistics;
+}
+
+void PacketInterface::resetMessageStatistics()
+{
+    mMessageStatistics.clear();
+}
+
+QMap<CMD_PACKET, MessageStatistics> PacketInterface::getMessageStatistics() const
+{
+    return mMessageStatistics;
+}
+
+QString PacketInterface::getMessageStatisticsSummary() const
+{
+    QString summary;
+    summary += "Message Statistics Summary:\n";
+    summary += "==========================\n\n";
+    
+    if (mMessageStatistics.isEmpty()) {
+        summary += "No statistics collected yet.\n";
+        return summary;
+    }
+    
+    quint64 totalMessages = 0;
+    quint64 totalBytes = 0;
+    
+    for (auto it = mMessageStatistics.constBegin(); it != mMessageStatistics.constEnd(); ++it) {
+        const MessageStatistics &stats = it.value();
+        totalMessages += stats.count;
+        totalBytes += stats.totalBytes;
+    }
+    
+    summary += QString("Total messages: %1\n").arg(totalMessages);
+    summary += QString("Total bytes: %1\n").arg(totalBytes);
+    summary += QString("Average bytes per message: %1\n\n").arg(totalMessages > 0 ? static_cast<double>(totalBytes) / totalMessages : 0.0);
+    
+    summary += "By Message Type:\n";
+    summary += "----------------\n";
+    
+    for (auto it = mMessageStatistics.constBegin(); it != mMessageStatistics.constEnd(); ++it) {
+        CMD_PACKET cmd = it.key();
+        const MessageStatistics &stats = it.value();
+        
+        summary += QString("CMD %1 (0x%2):\n").arg(cmd).arg(cmd, 2, 16, QLatin1Char('0'));
+        summary += QString("  Count: %1\n").arg(stats.count);
+        summary += QString("  Min length: %1 bytes\n").arg(stats.minLength);
+        summary += QString("  Max length: %1 bytes\n").arg(stats.maxLength);
+        summary += QString("  Avg length: %1 bytes\n").arg(stats.averageLength(), 0, 'f', 2);
+        summary += QString("  Total bytes: %1\n\n").arg(stats.totalBytes);
+    }
+    
+    return summary;
 }

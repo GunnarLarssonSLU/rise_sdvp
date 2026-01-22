@@ -71,8 +71,13 @@ PacketInterface::PacketInterface(QObject *parent) :
     mCrcHigh = 0;
     mWaitingAck = false;
 
-    // Debugging control - default to basic debugging
+    // Debugging control - default to basic debugging with statistics
     mDebugLevel = DEBUG_BASIC;
+    
+    // Enable message statistics by default for comprehensive monitoring
+    mEnableMessageStatistics = true;
+    
+    qDebug() << "PacketInterface: Initialized with DEBUG_BASIC + Statistics enabled";
 
     mTimer = new QTimer(this);
     mTimer->setInterval(10);
@@ -168,7 +173,9 @@ void PacketInterface::processData(QByteArray &data)
             break;
 
         case 1:
-            qDebug() << "PacketInterface::processData: State 1 - Reading payload length byte 2";
+            if (mDebugLevel >= DEBUG_VERBOSE) {
+                qDebug() << "PacketInterface::processData: State 1 - Reading payload length byte 2";
+            }
             mPayloadLength |= (unsigned int)rx_data << 16;
             qDebug() << "PacketInterface::processData: mPayloadLength now:" << mPayloadLength;
             mRxState++;
@@ -176,15 +183,21 @@ void PacketInterface::processData(QByteArray &data)
             break;
 
         case 2:
-            qDebug() << "PacketInterface::processData: State 2 - Reading payload length byte 1";
+            if (mDebugLevel >= DEBUG_VERBOSE) {
+                qDebug() << "PacketInterface::processData: State 2 - Reading payload length byte 1";
+            }
             mPayloadLength |= (unsigned int)rx_data << 8;
-            qDebug() << "PacketInterface::processData: mPayloadLength now:" << mPayloadLength;
+            if (mDebugLevel >= DEBUG_VERBOSE) {
+                qDebug() << "PacketInterface::processData: mPayloadLength now:" << mPayloadLength;
+            }
             mRxState++;
             mRxTimer = rx_timeout;
             break;
 
         case 3:
-            qDebug() << "PacketInterface::processData: State 3 - Reading payload length byte 0";
+            if (mDebugLevel >= DEBUG_VERBOSE) {
+                qDebug() << "PacketInterface::processData: State 3 - Reading payload length byte 0";
+            }
             mPayloadLength |= (unsigned int)rx_data;
             qDebug() << "PacketInterface::processData: Final mPayloadLength:" << mPayloadLength;
             
@@ -205,9 +218,10 @@ void PacketInterface::processData(QByteArray &data)
             break;
 
         case 4:
-            qDebug() << "PacketInterface::processData: State 4 - Collecting payload data";
-            qDebug() << "PacketInterface::processData: Byte" << mRxDataPtr << "/" << mPayloadLength << ": 0x" << QString::number(rx_data, 16);
-            
+            if (mDebugLevel >= DEBUG_VERBOSE) {
+                qDebug() << "PacketInterface::processData: State 4 - Collecting payload data";
+                qDebug() << "PacketInterface::processData: Byte" << mRxDataPtr << "/" << mPayloadLength << ": 0x" << QString::number(rx_data, 16);
+            }
             // Show packet ID and command for the first few bytes of very long messages
             if (mPayloadLength > 2000 && mRxDataPtr < 10) {
                 if (mRxDataPtr == 0) {
@@ -271,45 +285,57 @@ void PacketInterface::processData(QByteArray &data)
             break;
 
         case 5:
-            qDebug() << "PacketInterface::processData: State 5 - Reading CRC high byte";
+            if (mDebugLevel >= DEBUG_VERBOSE) {
+                qDebug() << "PacketInterface::processData: State 5 - Reading CRC high byte";
+            }
             mCrcHigh = rx_data;
-            qDebug() << "PacketInterface::processData: mCrcHigh:" << mCrcHigh;
+            if (mDebugLevel >= DEBUG_VERBOSE) {
+                qDebug() << "PacketInterface::processData: mCrcHigh:" << mCrcHigh;
+            }
             mRxState++;
             mRxTimer = rx_timeout;
             break;
 
         case 6:
-            qDebug() << "PacketInterface::processData: State 6 - Reading CRC low byte";
+            if (mDebugLevel >= DEBUG_VERBOSE) {
+                qDebug() << "PacketInterface::processData: State 6 - Reading CRC low byte";
+            }
             mCrcLow = rx_data;
-            qDebug() << "PacketInterface::processData: mCrcLow:" << mCrcLow;
+            if (mDebugLevel >= DEBUG_VERBOSE) {
+                qDebug() << "PacketInterface::processData: mCrcLow:" << mCrcLow;
+            }
             mRxState++;
             mRxTimer = rx_timeout;
             break;
 
         case 7:
-            qDebug() << "PacketInterface::processData: State 7 - Checking packet end and CRC";
+            if (mDebugLevel >= DEBUG_VERBOSE) {
+                qDebug() << "PacketInterface::processData: State 7 - Checking packet end and CRC";
+            }
             if (rx_data == 3) {
-                qDebug() << "PacketInterface::processData: Found end byte 3";
+                // qDebug() << "PacketInterface::processData: Found end byte 3";
                 unsigned short calculated_crc = crc16(mRxBuffer, mPayloadLength);
                 unsigned short received_crc = ((unsigned short)mCrcHigh << 8 | (unsigned short)mCrcLow);
-                qDebug() << "PacketInterface::processData: Calculated CRC:" << calculated_crc << ", Received CRC:" << received_crc;
+                // qDebug() << "PacketInterface::processData: Calculated CRC:" << calculated_crc << ", Received CRC:" << received_crc;
                 if (calculated_crc == received_crc) {
-                    qDebug() << "PacketInterface::processData: CRC valid, processing packet";
+                    // qDebug() << "PacketInterface::processData: CRC valid, processing packet";
                     processPacket(mRxBuffer, mPayloadLength);
-                    qDebug() << "PacketInterface::processData: processPacket returned";
+                    // qDebug() << "PacketInterface::processData: processPacket returned";
                 } else {
-                    qDebug() << "PacketInterface::processData: ERROR - CRC mismatch!";
+                    // qDebug() << "PacketInterface::processData: ERROR - CRC mismatch!";
                 }
             } else {
-                qDebug() << "PacketInterface::processData: ERROR - Invalid end byte:" << rx_data << ", expected 3";
+                // qDebug() << "PacketInterface::processData: ERROR - Invalid end byte:" << rx_data << ", expected 3";
             }
 
-            qDebug() << "PacketInterface::processData: Resetting state to 0";
+            // qDebug() << "PacketInterface::processData: Resetting state to 0";
             mRxState = 0;
             break;
 
         default:
-            qDebug() << "PacketInterface::processData: ERROR - Invalid state:" << mRxState << ", resetting";
+            if (mDebugLevel >= DEBUG_VERBOSE) {
+                qDebug() << "PacketInterface::processData: ERROR - Invalid state:" << mRxState << ", resetting";
+            }
             mRxState = 0;
             break;
         }
@@ -324,9 +350,13 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     qDebug() << "PacketInterface::processPacket: Called with" << len << "bytes";
     
     if (len > 0) {
-        qDebug() << "PacketInterface::processPacket: First byte: 0x" << QString::number(data[0], 16);
+        if (mDebugLevel >= DEBUG_VERBOSE) {
+            qDebug() << "PacketInterface::processPacket: First byte: 0x" << QString::number(data[0], 16);
+        }
         if (len > 1) {
-            qDebug() << "PacketInterface::processPacket: Second byte: 0x" << QString::number(data[1], 16);
+            if (mDebugLevel >= DEBUG_VERBOSE) {
+                qDebug() << "PacketInterface::processPacket: Second byte: 0x" << QString::number(data[1], 16);
+            }
         }
     }
     
@@ -354,6 +384,11 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     CMD_PACKET cmd = (CMD_PACKET)(quint8)data[0];
     data++;
     len--;
+
+    // Collect message statistics if enabled
+    if (mEnableMessageStatistics) {
+        mMessageStatistics[cmd].update(len);
+    }
 
     // Enhanced debugging for very long packets
     if (len > 2000) {
@@ -896,7 +931,10 @@ PacketInterface::DebugLevel PacketInterface::getDebugLevel() const
 
 bool PacketInterface::isDebugEnabled() const
 {
-    return mDebugLevel > DEBUG_OFF;
+    // Statistics collection is silent and doesn't count as "debug enabled"
+    // for the purpose of debug output, but we still consider it debugging
+    // for the purpose of this method
+    return mDebugLevel > DEBUG_OFF || mEnableMessageStatistics;
 }
 
 void PacketInterface::setCommandDebugLevel(CMD_PACKET cmd, DebugLevel level)
@@ -917,6 +955,13 @@ PacketInterface::DebugLevel PacketInterface::getEffectiveDebugLevel(CMD_PACKET c
     if (cmdLevel > DEBUG_OFF) {
         return cmdLevel;
     }
+    
+    // Statistics collection is independent - it doesn't affect debug output levels
+    // Only return DEBUG_STATISTICS if it's explicitly set as the global level
+    if (mDebugLevel == DEBUG_STATISTICS) {
+        return DEBUG_STATISTICS;
+    }
+    
     return mDebugLevel;
 }
 
@@ -930,6 +975,75 @@ void PacketInterface::clearAllCommandDebugLevels()
 {
     qDebug() << "PacketInterface::clearAllCommandDebugLevels: Clearing all command-specific debug levels";
     mCommandDebugLevels.clear();
+}
+
+// Message statistics methods
+void PacketInterface::enableMessageStatistics(bool enable)
+{
+    qDebug() << "PacketInterface::enableMessageStatistics: Setting message statistics to" << (enable ? "enabled" : "disabled");
+    mEnableMessageStatistics = enable;
+    if (enable) {
+        // Reset statistics when enabling
+        resetMessageStatistics();
+    }
+}
+
+bool PacketInterface::isMessageStatisticsEnabled() const
+{
+    return mEnableMessageStatistics;
+}
+
+void PacketInterface::resetMessageStatistics()
+{
+    qDebug() << "PacketInterface::resetMessageStatistics: Clearing all message statistics";
+    mMessageStatistics.clear();
+}
+
+QMap<CMD_PACKET, PacketInterface::MessageStatistics> PacketInterface::getMessageStatistics() const
+{
+    return mMessageStatistics;
+}
+
+QString PacketInterface::getMessageStatisticsSummary() const
+{
+    QString summary;
+    summary += "Message Statistics Summary:\n";
+    summary += "==========================\n\n";
+    
+    if (mMessageStatistics.isEmpty()) {
+        summary += "No statistics collected yet.\n";
+        return summary;
+    }
+    
+    quint64 totalMessages = 0;
+    quint64 totalBytes = 0;
+    
+    for (auto it = mMessageStatistics.constBegin(); it != mMessageStatistics.constEnd(); ++it) {
+        const MessageStatistics &stats = it.value();
+        totalMessages += stats.count;
+        totalBytes += stats.totalBytes;
+    }
+    
+    summary += QString("Total messages: %1\n").arg(totalMessages);
+    summary += QString("Total bytes: %1\n").arg(totalBytes);
+    summary += QString("Average bytes per message: %1\n\n").arg(totalMessages > 0 ? static_cast<double>(totalBytes) / totalMessages : 0.0);
+    
+    summary += "By Message Type:\n";
+    summary += "----------------\n";
+    
+    for (auto it = mMessageStatistics.constBegin(); it != mMessageStatistics.constEnd(); ++it) {
+        CMD_PACKET cmd = it.key();
+        const MessageStatistics &stats = it.value();
+        
+        summary += QString("CMD %1 (0x%2):\n").arg(cmd).arg(cmd, 2, 16, QLatin1Char('0'));
+        summary += QString("  Count: %1\n").arg(stats.count);
+        summary += QString("  Min length: %1 bytes\n").arg(stats.minLength);
+        summary += QString("  Max length: %1 bytes\n").arg(stats.maxLength);
+        summary += QString("  Avg length: %1 bytes\n").arg(stats.averageLength(), 0, 'f', 2);
+        summary += QString("  Total bytes: %1\n\n").arg(stats.totalBytes);
+    }
+    
+    return summary;
 }
 
 void PacketInterface::timerSlot()
