@@ -77,6 +77,9 @@ PacketInterface::PacketInterface(QObject *parent) :
     // Enable message statistics by default for comprehensive monitoring
     mEnableMessageStatistics = true;
     
+    // Initialize concurrency control
+    mIsProcessing = false;
+    
     qDebug() << "PacketInterface: Initialized with DEBUG_BASIC + Statistics enabled";
 
     mTimer = new QTimer(this);
@@ -103,6 +106,27 @@ PacketInterface::~PacketInterface()
 
 void PacketInterface::processData(QByteArray &data)
 {
+    // Concurrency control: Use mutex to prevent reentrancy
+    QMutexLocker locker(&mProcessMutex);
+    
+    // Check if we're already processing a packet
+    if (mIsProcessing) {
+        // Queue the data for later processing
+        qDebug() << "PacketInterface::processData: INFO - Already processing, queuing" << data.length() << "bytes";
+        mPendingData.append(data);
+        return; // Exit and let the current processing complete
+    }
+    
+    // Mark that we're now processing
+    mIsProcessing = true;
+    
+    // Check if we have pending data to process first
+    if (!mPendingData.isEmpty()) {
+        qDebug() << "PacketInterface::processData: Processing" << mPendingData.length() << "queued bytes first";
+        data.prepend(mPendingData);
+        mPendingData.clear();
+    }
+    
     // Basic debugging that always runs to ensure we can see if processData is called
     qDebug() << "PacketInterface::processData: Called with" << data.length() << "bytes, debug level:" << mDebugLevel;
     qDebug() << "PacketInterface::processData: First few bytes:" << data.left(qMin(20, static_cast<int>(data.size()))).toHex();
@@ -111,14 +135,6 @@ void PacketInterface::processData(QByteArray &data)
     if (data.length() > 1000) {
         qDebug() << "PacketInterface::processData: WARNING - Large incoming data chunk:" << data.length() << "bytes";
         qDebug() << "PacketInterface::processData: This might indicate USB communication issues or corrupted data";
-    }
-    
-    // Critical safety check: Prevent processing if we're already in the middle of a packet
-    if (mRxState != 0) {
-        qDebug() << "PacketInterface::processData: WARNING - Called while already processing a packet!";
-        qDebug() << "PacketInterface::processData: Current state:" << mRxState << ", payload length:" << mPayloadLength;
-        qDebug() << "PacketInterface::processData: This indicates concurrent processing - potential bug!";
-        // Continue processing to avoid deadlock, but this is a serious issue
     }
     
     if (mDebugLevel >= DEBUG_BASIC) {
@@ -342,6 +358,19 @@ void PacketInterface::processData(QByteArray &data)
     }
     
     qDebug() << "PacketInterface::processData: COMPLETED - Final state:" << mRxState;
+    // Processing completed - reset processing flag and check for more data
+    mIsProcessing = false;
+    
+    // If we have pending data, process it now
+    if (!mPendingData.isEmpty()) {
+        qDebug() << "PacketInterface::processData: Processing queued data after completion";
+        QByteArray pending = mPendingData;
+        mPendingData.clear();
+        mIsProcessing = true;
+        QMutexLocker pendingLocker(&mProcessMutex);
+        pendingLocker.unlock(); // Release lock before recursive call
+        processData(pending);
+    }
 }
 
 void PacketInterface::processPacket(const unsigned char *data, int len)
@@ -1044,6 +1073,21 @@ QString PacketInterface::getMessageStatisticsSummary() const
     }
     
     return summary;
+}
+
+// Method to check and process any pending data
+void PacketInterface::processPendingData()
+{
+    QMutexLocker locker(&mProcessMutex);
+    
+    if (!mIsProcessing && !mPendingData.isEmpty()) {
+        qDebug() << "PacketInterface::processPendingData: Processing" << mPendingData.length() << "queued bytes";
+        QByteArray pending = mPendingData;
+        mPendingData.clear();
+        mIsProcessing = true;
+        locker.unlock(); // Release lock before recursive call
+        processData(pending);
+    }
 }
 
 void PacketInterface::timerSlot()

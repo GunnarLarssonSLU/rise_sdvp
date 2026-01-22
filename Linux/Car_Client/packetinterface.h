@@ -25,6 +25,8 @@
 #include <QImage>
 #include <QHash>
 #include <QMap>
+#include <QMutex>
+#include <QMutexLocker>
 #include "datatypes.h"
 #include "locpoint.h"
 
@@ -87,6 +89,9 @@ public:
     void resetMessageStatistics();
     QMap<CMD_PACKET, MessageStatistics> getMessageStatistics() const;
     QString getMessageStatisticsSummary() const;
+    
+    // Concurrency control method
+    void processPendingData();
 
     bool sendPacket(const unsigned char *data, unsigned int len_packet);
     bool sendPacket(QByteArray data);
@@ -208,6 +213,11 @@ private:
     // Message statistics variables
     bool mEnableMessageStatistics;
     QMap<CMD_PACKET, MessageStatistics> mMessageStatistics;
+    
+    // Concurrency control for processData
+    QMutex mProcessMutex;
+    bool mIsProcessing;
+    QByteArray mPendingData;
 };
 
 #endif // PACKETINTERFACE_H

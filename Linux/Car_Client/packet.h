@@ -20,6 +20,8 @@
 
 #include <QObject>
 #include <QTimer>
+#include <QMutex>
+#include <QMutexLocker>
 
 class Packet : public QObject
 {
@@ -38,6 +40,9 @@ public:
     // Debug control methods
     void setDebugLevel(DebugLevel level);
     DebugLevel getDebugLevel() const;
+    
+    // Concurrency control method
+    void processPendingData();
 
     static unsigned short crc16(const unsigned char *buf, unsigned int len);
 
@@ -63,6 +68,11 @@ private:
     
     // Debug level control
     DebugLevel mDebugLevel;
+    
+    // Concurrency control
+    QMutex mProcessMutex;
+    bool mIsProcessing;
+    QByteArray mPendingData;
 
 };
 

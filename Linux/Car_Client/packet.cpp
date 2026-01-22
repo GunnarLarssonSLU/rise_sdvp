@@ -75,7 +75,10 @@ Packet::Packet(QObject *parent) : QObject(parent)
     mCrcLow = 0;
     mCrcHigh = 0;
     mByteTimeout = 50;
-
+    
+    // Initialize concurrency control
+    mIsProcessing = false;
+    
     mTimer = new QTimer(this);
     mTimer->setInterval(10);
     mTimer->start();
@@ -145,18 +148,34 @@ void Packet::processData(QByteArray data)
     if (mDebugLevel >= DEBUG_VERBOSE) {
         qDebug() << "Packet::processData: First few bytes:" << data.left(qMin(20, data.size())).toHex();
     }
-    if (mDebugLevel >= DEBUG_VERBOSE) {
-        qDebug() << "Packet::processData: Initial state - mRxState:" << mRxState << ", mPayloadLength:" << mPayloadLength;
+    
+    // Concurrency control: Use mutex to prevent reentrancy
+    QMutexLocker locker(&mProcessMutex);
+    
+    // Check if we're already processing a packet
+    if (mIsProcessing) {
+        // Queue the data for later processing
+        if (mDebugLevel >= DEBUG_BASIC) {
+            qDebug() << "Packet::processData: INFO - Already processing, queuing" << data.length() << "bytes";
+        }
+        mPendingData.append(data);
+        return; // Exit and let the current processing complete
     }
     
-    // Critical safety check: Prevent processing if we're already in the middle of a packet
-    if (mRxState != 0) {
-        PACKET_DEBUG(DEBUG_BASIC, "Packet::processData: WARNING - Called while already processing a packet!");
+    // Mark that we're now processing
+    mIsProcessing = true;
+    
+    // Check if we have pending data to process first
+    if (!mPendingData.isEmpty()) {
         if (mDebugLevel >= DEBUG_BASIC) {
-            qDebug() << "Packet::processData: Current state:" << mRxState << ", payload length:" << mPayloadLength;
+            qDebug() << "Packet::processData: Processing" << mPendingData.length() << "queued bytes first";
         }
-        PACKET_DEBUG(DEBUG_BASIC, "Packet::processData: This indicates concurrent processing - potential bug!");
-        // Continue processing to avoid deadlock, but this is a serious issue
+        data.prepend(mPendingData);
+        mPendingData.clear();
+    }
+    
+    if (mDebugLevel >= DEBUG_VERBOSE) {
+        qDebug() << "Packet::processData: Initial state - mRxState:" << mRxState << ", mPayloadLength:" << mPayloadLength;
     }
     
     unsigned char rx_data;
@@ -300,6 +319,20 @@ void Packet::processData(QByteArray data)
     if (mDebugLevel >= DEBUG_BASIC) {
         qDebug() << "Packet::processData: Completed processing" << data.length() << "bytes";
     }
+    
+    // Processing completed - reset processing flag and check for more data
+    mIsProcessing = false;
+    
+    // If we have pending data, process it now
+    if (!mPendingData.isEmpty()) {
+        if (mDebugLevel >= DEBUG_BASIC) {
+            qDebug() << "Packet::processData: Processing queued data after completion";
+        }
+        // Recursively process the pending data
+        QByteArray pending = mPendingData;
+        mPendingData.clear();
+        processData(pending);
+    }
 }
 
 void Packet::timerSlot()
@@ -308,6 +341,23 @@ void Packet::timerSlot()
         mRxTimer--;
     } else {
         mRxState = 0;
+    }
+}
+
+// Method to check and process any pending data
+void Packet::processPendingData()
+{
+    QMutexLocker locker(&mProcessMutex);
+    
+    if (!mIsProcessing && !mPendingData.isEmpty()) {
+        if (mDebugLevel >= DEBUG_BASIC) {
+            qDebug() << "Packet::processPendingData: Processing" << mPendingData.length() << "queued bytes";
+        }
+        QByteArray pending = mPendingData;
+        mPendingData.clear();
+        mIsProcessing = true;
+        locker.unlock(); // Release lock before recursive call
+        processData(pending);
     }
 }
 

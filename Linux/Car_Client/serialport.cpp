@@ -40,6 +40,7 @@ SerialPort::SerialPort(QObject *parent) :
     mSettings.parity = PARITY_NONE;
     mSettings.stopBits = STOP_1;
     mSettings.baudrate = 115200;
+    mSettings.useFlowControl = false; // Default: no flow control
 
     mBufferSize = 32768;
     mReadBuffer = new char[mBufferSize];
@@ -63,11 +64,19 @@ int SerialPort::openPort(
         int baudrate,
         SerialDataBits dataBits,
         SerialStopBits stopBits,
-        SerialParity parity)
+        SerialParity parity,
+        bool useFlowControl)
 {
     if (mIsOpen) {
         closePort();
     }
+
+    // Store settings before opening port
+    mSettings.baudrate = baudrate;
+    mSettings.dataBits = dataBits;
+    mSettings.parity = parity;
+    mSettings.stopBits = stopBits;
+    mSettings.useFlowControl = useFlowControl;
 
     mFd = open(port.toLocal8Bit().data(), O_RDWR | O_NOCTTY | O_NDELAY);
     if (mFd == -1) {
@@ -240,6 +249,14 @@ bool SerialPort::setBaudrate(int baudrate)
         qDebug() << "Baud base: " << ser_info.baud_base;
 
         cfsetspeed(&options, B38400);
+        
+        // Apply flow control setting
+        if (mSettings.useFlowControl) {
+            options.c_cflag |= CRTSCTS;
+        } else {
+            options.c_cflag &= ~CRTSCTS;
+        }
+        
         if (0 != tcsetattr(mFd, TCSANOW, &options)) {
             qCritical() << "Writing serial port options failed";
             return false;
@@ -253,6 +270,15 @@ bool SerialPort::setBaudrate(int baudrate)
         qDebug() << "Custom type baudrate set";
     } else {
         cfsetspeed(&options, baud);
+        
+        // Apply flow control setting
+        if (mSettings.useFlowControl) {
+            options.c_cflag |= CRTSCTS;
+            qDebug() << "Enabled hardware flow control (RTS/CTS)";
+        } else {
+            options.c_cflag &= ~CRTSCTS;
+        }
+        
         if (0 != tcsetattr(mFd, TCSANOW, &options)) {
             qCritical() << "Writing serial port options failed";
             return false;
@@ -315,6 +341,38 @@ bool SerialPort::setDataBits(SerialDataBits dataBits)
     }
 
     mSettings.dataBits = dataBits;
+    return true;
+}
+
+bool SerialPort::setFlowControl(bool enable)
+{
+    if (!mIsOpen) {
+        qCritical() << "Serial port not open.";
+        return false;
+    }
+
+    struct termios options;
+    if (0 != tcgetattr(mFd, &options)) {
+        qCritical() << "Reading serial port options failed.";
+        return false;
+    }
+
+    if (enable) {
+        // Enable hardware flow control (RTS/CTS)
+        options.c_cflag |= CRTSCTS;
+        qDebug() << "Enabled hardware flow control (RTS/CTS)";
+    } else {
+        // Disable hardware flow control
+        options.c_cflag &= ~CRTSCTS;
+        qDebug() << "Disabled hardware flow control";
+    }
+
+    if (0 != tcsetattr(mFd, TCSANOW, &options)) {
+        qCritical() << "Writing serial port options failed.";
+        return false;
+    }
+
+    mSettings.useFlowControl = enable;
     return true;
 }
 
@@ -528,7 +586,29 @@ int SerialPort::writeData(const char *data, int length, bool block)
         }
         return written;
     } else {
-        return write(mFd, data, length);
+        // Non-blocking write with retry logic
+        int result = write(mFd, data, length);
+        int retryCount = 0;
+        const int maxRetries = 3;
+        
+        while (result == -1 && retryCount < maxRetries) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                // Buffer full, wait a bit and retry
+                usleep(1000); // 1ms delay
+                result = write(mFd, data, length);
+                retryCount++;
+            } else {
+                // Other errors, don't retry
+                break;
+            }
+        }
+        
+        if (result == -1) {
+            qCritical().nospace() << "Non-blocking write failed after " << retryCount 
+                                  << " retries, error: " << strerror(errno);
+        }
+        
+        return result;
     }
 }
 

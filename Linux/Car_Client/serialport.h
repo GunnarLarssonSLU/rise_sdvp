@@ -40,6 +40,7 @@ public:
         int baudrate;
         SerialDataBits dataBits;
         SerialStopBits stopBits;
+        bool useFlowControl;
     };
 
     int openPort(
@@ -47,13 +48,15 @@ public:
         int baudrate = 115200,
         SerialDataBits dataBits = DATA_8,
         SerialStopBits stopBits = STOP_1,
-        SerialParity parity = PARITY_NONE);
+        SerialParity parity = PARITY_NONE,
+        bool useFlowControl = false);
 
     void closePort();
     bool setBaudrate(int baudrate);
     bool setParity(SerialParity parity);
     bool setStopBits(SerialStopBits stopBits);
     bool setDataBits(SerialDataBits dataBits);
+    bool setFlowControl(bool enable);
     bool readByte(char& byte);
     int readBytes(char* buffer, int bytes);
     int readString(QString& string, int length);
