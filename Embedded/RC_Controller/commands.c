@@ -463,6 +463,12 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 					m_send_buffer[send_index++] = id_ret;
 					m_send_buffer[send_index++] = packet_id;
 					int len_line = strlen(curLine);
+					
+					// Add length validation to prevent buffer overflow
+					if (len_line > (PACKET_MAX_PL_LEN - 2)) {
+						len_line = PACKET_MAX_PL_LEN - 2;
+					}
+					
 					memcpy(m_send_buffer + send_index, curLine, len_line);
 					send_index += len_line;
 
@@ -620,9 +626,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			main_config.vehicle.sensorinterval = buffer_get_float32_auto(data, &ind);
 			main_config.vehicle.degreeinterval = buffer_get_float32_auto(data, &ind);
 			float deadband= buffer_get_float32_auto(data, &ind);
-			commands_printf("setting deadband: %f",deadband);
 			main_config.vehicle.deadband =deadband;
-			commands_printf("setting deadband (in struct 1): %f",main_config.vehicle.deadband);
 
 			motor_sim_set_running(main_config.vehicle.simulate_motor);
 			conf_general_store_main_config(&main_config);
@@ -633,7 +637,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			int32_t send_index = 0;
 			m_send_buffer[send_index++] = id_ret;
 			m_send_buffer[send_index++] = packet_id;
-			commands_printf("setting deadband (in struct 2): %f",main_config.vehicle.deadband);
 			commands_send_packet(m_send_buffer, send_index);
 		} break;
 
@@ -784,8 +787,8 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			break;
 
 		case CMD_GET_ANGLE:
-//			io_board_as5047_angle = buffer_get_float32(data, 1e3, &ind);
-			// io_board_as5047_angle = buffer_get_float32_auto(data, &ind);
+			//			io_board_as5047_angle = buffer_get_float32(data, 1e3, &ind);
+						// io_board_as5047_angle = buffer_get_float32_auto(data, &ind);
 			break;
 
 		// ==================== vehicle commands ==================== //
@@ -810,12 +813,23 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			fi_inject_fault_float("px", &pos.px);
 
 			int32_t send_index = 0;
+			// Add buffer overflow protection
+			#define CHECK_BUFFER_SPACE(space_needed) \
+			    if (send_index + (space_needed) > PACKET_MAX_PL_LEN) { \
+			        commands_printf("CMD_GET_STATE buffer overflow prevented at index %d", send_index); \
+			        break; \
+			    }
+
+			CHECK_BUFFER_SPACE(4); // id_ret + CMD_GET_STATE + 2 version bytes
 			m_send_buffer[send_index++] = id_ret; // 1
 			m_send_buffer[send_index++] = CMD_GET_STATE; // 2
 			m_send_buffer[send_index++] = FW_VERSION_MAJOR; // 3
 			m_send_buffer[send_index++] = FW_VERSION_MINOR; // 4
+			CHECK_BUFFER_SPACE(4); // pos.roll
 			buffer_append_float32(m_send_buffer, pos.roll, 1e6, &send_index); // 8
+			CHECK_BUFFER_SPACE(4); // pos.pitch
 			buffer_append_float32(m_send_buffer, pos.pitch, 1e6, &send_index); // 12
+			CHECK_BUFFER_SPACE(4); // yaw (either pos_uwb.yaw or pos.yaw)
 			if (main_config.vehicle.use_uwb_pos) {
 				buffer_append_float32(m_send_buffer, pos_uwb.yaw, 1e6, &send_index); // 16
 			} else {
@@ -823,15 +837,25 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			}
 //			commands_printf("Sending yaw: %f\n",pos.yaw);
 
+			CHECK_BUFFER_SPACE(4); // accel[0]
 			buffer_append_float32(m_send_buffer, accel[0], 1e6, &send_index); // 20
+			CHECK_BUFFER_SPACE(4); // accel[1]
 			buffer_append_float32(m_send_buffer, accel[1], 1e6, &send_index); // 24
+			CHECK_BUFFER_SPACE(4); // accel[2]
 			buffer_append_float32(m_send_buffer, accel[2], 1e6, &send_index); // 28
+			CHECK_BUFFER_SPACE(4); // gyro[0]
 			buffer_append_float32(m_send_buffer, gyro[0], 1e6, &send_index); // 32
+			CHECK_BUFFER_SPACE(4); // gyro[1]
 			buffer_append_float32(m_send_buffer, gyro[1], 1e6, &send_index); // 36
+			CHECK_BUFFER_SPACE(4); // gyro[2]
 			buffer_append_float32(m_send_buffer, gyro[2], 1e6, &send_index); // 40
+			CHECK_BUFFER_SPACE(4); // mag[0]
 			buffer_append_float32(m_send_buffer, mag[0], 1e6, &send_index); // 44
+			CHECK_BUFFER_SPACE(4); // mag[1]
 			buffer_append_float32(m_send_buffer, mag[1], 1e6, &send_index); // 48
+			CHECK_BUFFER_SPACE(4); // mag[2]
 			buffer_append_float32(m_send_buffer, mag[2], 1e6, &send_index); // 52
+			CHECK_BUFFER_SPACE(8); // pos_uwb.px + pos_uwb.py OR pos.px + pos.py
 			if (main_config.vehicle.use_uwb_pos) {
 				buffer_append_float32(m_send_buffer, pos_uwb.px, 1e4, &send_index); // 56
 				buffer_append_float32(m_send_buffer, pos_uwb.py, 1e4, &send_index); // 60
@@ -839,6 +863,8 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				buffer_append_float32(m_send_buffer, pos.px, 1e4, &send_index); // 56
 				buffer_append_float32(m_send_buffer, pos.py, 1e4, &send_index); // 60
 			}
+			CHECK_BUFFER_SPACE(4); // pos.speed
+			CHECK_BUFFER_SPACE(4); // voltage input
 			buffer_append_float32(m_send_buffer, pos.speed, 1e6, &send_index); // 64
 			#ifdef USE_ADCONV_FOR_VIN
 				buffer_append_float32(m_send_buffer, adconv_get_vin(), 1e6, &send_index); // 68
@@ -849,15 +875,25 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 						buffer_append_float32(m_send_buffer, mcval.v_in, 1e6, &send_index); // 68
 				#endif
 			#endif
+			CHECK_BUFFER_SPACE(4); // mcval.temp_mos
 			buffer_append_float32(m_send_buffer, mcval.temp_mos, 1e6, &send_index); // 72
+			CHECK_BUFFER_SPACE(1); // mcval.fault_code
 			m_send_buffer[send_index++] = mcval.fault_code; // 73
+			CHECK_BUFFER_SPACE(4); // pos.px_gps
 			buffer_append_float32(m_send_buffer, pos.px_gps, 1e4, &send_index); // 77
+			CHECK_BUFFER_SPACE(4); // pos.py_gps
 			buffer_append_float32(m_send_buffer, pos.py_gps, 1e4, &send_index); // 81
+			CHECK_BUFFER_SPACE(4); // rp_goal.px
 			buffer_append_float32(m_send_buffer, rp_goal.px, 1e4, &send_index); // 85
+			CHECK_BUFFER_SPACE(4); // rp_goal.py
 			buffer_append_float32(m_send_buffer, rp_goal.py, 1e4, &send_index); // 89
+			CHECK_BUFFER_SPACE(4); // autopilot_get_rad_now()
 			buffer_append_float32(m_send_buffer, autopilot_get_rad_now(), 1e6, &send_index); // 93
+			CHECK_BUFFER_SPACE(4); // pos_get_ms_today()
 			buffer_append_int32(m_send_buffer, pos_get_ms_today(), &send_index); // 97
+			CHECK_BUFFER_SPACE(2); // autopilot_get_route_left()
 			buffer_append_int16(m_send_buffer, autopilot_get_route_left(), &send_index); // 99
+			CHECK_BUFFER_SPACE(8); // pos.px + pos.py OR pos_uwb.px + pos_uwb.py
 			if (main_config.vehicle.use_uwb_pos) {
 				buffer_append_float32(m_send_buffer, pos.px, 1e4, &send_index); // 103
 				buffer_append_float32(m_send_buffer, pos.py, 1e4, &send_index); // 107
@@ -866,14 +902,23 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				buffer_append_float32(m_send_buffer, pos_uwb.py, 1e4, &send_index); // 107
 			}
 //			buffer_append_float32(m_send_buffer, (float) packet_id , 1e4, &send_index); // 111
+			CHECK_BUFFER_SPACE(4); // io_board_as5047_angle
 			buffer_append_float32(m_send_buffer, io_board_as5047_angle, 1e4, &send_index); // 111
+			CHECK_BUFFER_SPACE(4); // servo_output
 			buffer_append_float32(m_send_buffer, servo_output, 1e4, &send_index); // 115
+			CHECK_BUFFER_SPACE(2); // last_sensorvalue
 			buffer_append_uint16(m_send_buffer, last_sensorvalue, &send_index); // 119
+			CHECK_BUFFER_SPACE(4); // debugvalue
 			buffer_append_float32(m_send_buffer, debugvalue, 1e4, &send_index); // 121
+			CHECK_BUFFER_SPACE(4); // debugvalue2
 			buffer_append_float32(m_send_buffer, debugvalue2, 1e4, &send_index); // 125
+			CHECK_BUFFER_SPACE(4); // debugvalue3
 			buffer_append_float32(m_send_buffer, debugvalue3, 1e4, &send_index); // 129
+			CHECK_BUFFER_SPACE(4); // debugvalue4
 			buffer_append_float32(m_send_buffer, debugvalue4, 1e4, &send_index); // 133
+			CHECK_BUFFER_SPACE(4); // debugvalue5
 			buffer_append_float32(m_send_buffer, debugvalue5, 1e4, &send_index); // 137
+/*
 			buffer_append_float32(m_send_buffer, debugvalue6, 1e4, &send_index); // 141
 			buffer_append_float32(m_send_buffer, debugvalue7, 1e4, &send_index); // 145
 			buffer_append_float32(m_send_buffer, debugvalue8, 1e4, &send_index); // 149
@@ -884,9 +929,12 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			buffer_append_float32(m_send_buffer, debugvalue13, 1e4, &send_index); // 169
 			buffer_append_float32(m_send_buffer, debugvalue14, 1e4, &send_index); // 173
 			buffer_append_float32(m_send_buffer, debugvalue15, 1e4, &send_index); // 177
+			*/
 			commands_send_packet(m_send_buffer, send_index);
+			#undef CHECK_BUFFER_SPACE // Clean up the macro definition
+#if TEST_20260112
+#endif
 		} break;
-
 		case CMD_VESC_FWD:
 			timeout_reset();
 			commands_set_send_func(func);
@@ -1051,6 +1099,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 }
 
 void commands_printf(const char* format, ...) {
+#if TEST_20260112
 	if (!m_init_done) {
 		return;
 	}
@@ -1070,6 +1119,7 @@ void commands_printf(const char* format, ...) {
 		commands_send_packet((unsigned char*)print_buffer, (len<509) ? len + 2: 512);
 	}
 	chMtxUnlock(&m_print_gps);
+#endif
 }
 
 void commands_printf_log_usb(char* format, ...) {
@@ -1089,6 +1139,11 @@ void commands_printf_log_usb(char* format, ...) {
 }
 
 void commands_forward_vesc_packet(unsigned char *data, unsigned int len) {
+	// Add length validation to prevent buffer overflow
+	if (len > (PACKET_MAX_PL_LEN - 2)) {
+		len = PACKET_MAX_PL_LEN - 2;
+	}
+	
 	m_send_buffer[0] = main_id;
 	m_send_buffer[1] = CMD_VESC_FWD;
 	memcpy(m_send_buffer + 2, data, len);
@@ -1097,6 +1152,13 @@ void commands_forward_vesc_packet(unsigned char *data, unsigned int len) {
 
 void commands_send_nmea(unsigned char *data, unsigned int len) {
 	if (main_config.gps_send_nmea) {
+		// Add length validation to prevent buffer overflow
+		// PACKET_MAX_PL_LEN - 2 bytes for ID and CMD
+		if (len > (PACKET_MAX_PL_LEN - 2)) {
+			// Simple debug: set a breakpoint here to see if truncation occurs
+			len = PACKET_MAX_PL_LEN - 2;
+		}
+
 		int32_t send_index = 0;
 		m_send_buffer[send_index++] = main_id;
 		m_send_buffer[send_index++] = CMD_SEND_NMEA_RADIO;
@@ -1107,6 +1169,11 @@ void commands_send_nmea(unsigned char *data, unsigned int len) {
 }
 
 void commands_send_log_ethernet(unsigned char *data, int len) {
+	// Add length validation to prevent buffer overflow
+	if (len > (PACKET_MAX_PL_LEN - 2)) {
+		len = PACKET_MAX_PL_LEN - 2;
+	}
+
 	int32_t ind = 0;
 	m_send_buffer[ind++] = ID_VEHICLE_CLIENT;
 	m_send_buffer[ind++] = CMD_LOG_ETHERNET;
@@ -1130,6 +1197,12 @@ static void rtcm_rx(uint8_t *data, int len, int type) {
 	int32_t send_index = 0;
 	m_send_buffer[send_index++] = main_id;
 	m_send_buffer[send_index++] = CMD_SEND_RTCM_USB;
+	
+	// Add length validation to prevent buffer overflow
+	if (len > (PACKET_MAX_PL_LEN - 2)) {
+		len = PACKET_MAX_PL_LEN - 2;
+	}
+	
 	memcpy(m_send_buffer + send_index, data, len);
 	send_index += len;
 	comm_usb_send_packet(m_send_buffer, send_index);

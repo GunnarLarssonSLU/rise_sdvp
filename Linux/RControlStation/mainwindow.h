@@ -234,6 +234,8 @@ private slots:
     void calculateAndDisplayPathLengths();
     void updateCurrentAnalysis(); // Update the currently selected analysis
     void updateStatisticsDisplay(const QList<double>& values, const QString& unit = ""); // Update statistics display
+    void calculateAndDisplayPathAngles(); // Calculate and display path angles
+    void calculateAndDisplayPathRMS(); // Calculate and display RMS distances
 
     QSqlRelationalTableModel* setupFarmTable(QTableView* uiFarmtable,QString SqlTableName);
     QSqlRelationalTableModel* setupFieldTable(QTableView* uiFieldtable,QString SqlTableName);

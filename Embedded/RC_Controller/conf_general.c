@@ -129,8 +129,8 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 	conf->ap_max_speed = 30.0 / 3.6;
 	conf->ap_time_add_repeat_ms = 60 * 1000;
 
-	conf->log_rate_hz = 50;
-	conf->log_en = false;
+	conf->log_rate_hz = 10;  // Reduced from 50 to prevent USB overload on Raspberry Pi
+	conf->log_en = false;   // Logging disabled by default to prevent USB flooding
 	strcpy(conf->log_name, "New Log");
 	conf->log_mode_ext = 0;
 	conf->log_uart_baud = 115200;

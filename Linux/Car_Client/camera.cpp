@@ -77,7 +77,7 @@ MyVideoSurface *Camera::video()
 {
     return mVid;
 }
-
+VERBOSE
 bool Camera::openCamera(int cameraIndex)
 {
     int res = false;

@@ -2681,13 +2681,11 @@ void MainWindow::updateCurrentAnalysis()
     if (analysisType == "Length") {
         calculateAndDisplayPathLengths();
     } else if (analysisType == "Angle") {
-        qDebug() << "DEBUG: Angle analysis update requested (not yet implemented)";
-        ui->textAnalysis->setText("📊 Statistical Analysis\n\nAngle analysis: Not yet implemented");
-        // calculateAndDisplayPathAngles();
+        qDebug() << "DEBUG: Angle analysis requested";
+        calculateAndDisplayPathAngles();
     } else if (analysisType == "Root-Mean-Square") {
-        qDebug() << "DEBUG: RMS analysis update requested (not yet implemented)";
-        ui->textAnalysis->setText("📊 Statistical Analysis\n\nRMS analysis: Not yet implemented");
-        // calculateAndDisplayPathRMS();
+        qDebug() << "DEBUG: RMS analysis requested";
+        calculateAndDisplayPathRMS();
     } else {
         qDebug() << "DEBUG: Unknown analysis type:" << analysisType << ", defaulting to Length";
         calculateAndDisplayPathLengths();
@@ -2839,6 +2837,322 @@ void MainWindow::calculateAndDisplayPathLengths()
     // Update statistics display with the calculated values
     if (!lengthValues.isEmpty()) {
         updateStatisticsDisplay(lengthValues, "units");
+    } else {
+        ui->textAnalysis->setText("No valid path data available for statistical analysis.");
+    }
+}
+
+void MainWindow::calculateAndDisplayPathAngles()
+{
+    qDebug() << "DEBUG: Calculating path angles...";
+    
+    // Check if we have any paths to analyze
+    if (ui->mapWidgetAnalysisResult->mPaths->size() == 0) {
+        qDebug() << "DEBUG: No paths available for angle analysis";
+        QMessageBox::information(this, "Analysis", "No paths available for angle analysis.");
+        ui->textAnalysis->setText("No paths available for statistical analysis.");
+        return;
+    }
+    
+    // Create a bar chart to display the angles
+    QChart* chart = new QChart();
+    chart->setTitle("Path Angle Analysis");
+    chart->setAnimationOptions(QChart::SeriesAnimations);
+    
+    QBarSeries* series = new QBarSeries();
+    QList<double> angleValues; // Store values for statistics
+    
+    // Calculate angle for each path and add to the chart
+    for (int i = 0; i < ui->mapWidgetAnalysisResult->mPaths->size(); i++) {
+        MapRoute& route = ui->mapWidgetAnalysisResult->getPath(i);
+        
+        if (route.isEmpty() || route.size() < 2) {
+            qDebug() << "DEBUG: Path" << i << "has less than 2 points, skipping";
+            continue;
+        }
+        
+        // Get first and last points
+        LocPoint firstPoint = route.first();
+        LocPoint lastPoint = route.last();
+        
+        // Calculate the angle between first and last point
+        // Angle is calculated as the direction from first to last point
+        double dx = lastPoint.getX() - firstPoint.getX();
+        double dy = lastPoint.getY() - firstPoint.getY();
+        
+        // Calculate angle in degrees from positive X-axis
+        double angleRad = std::atan2(dy, dx);
+        double angleDeg = angleRad * 180.0 / M_PI;
+        
+        // Normalize angle to 0-360 degree range
+        if (angleDeg < 0) {
+            angleDeg += 360.0;
+        }
+        
+        qDebug() << "DEBUG: Path" << i << "angle:" << angleDeg << "degrees";
+        
+        // Add this path's angle to the chart
+        QBarSet* set = new QBarSet(QString("%1").arg(i));
+        set->append(angleDeg);
+        series->append(set);
+        
+        // Store the value for statistics calculation
+        angleValues.append(angleDeg);
+    }
+    
+    if (series->count() == 0) {
+        qDebug() << "DEBUG: No valid paths found for angle analysis";
+        QMessageBox::information(this, "Analysis", "No valid paths found for angle analysis.");
+        ui->textAnalysis->setText("No valid paths found for statistical analysis.");
+        delete series;
+        delete chart;
+        return;
+    }
+    
+    // Add the series to the chart
+    chart->addSeries(series);
+    
+    // Customize the chart
+    chart->setTitle("Path Angles (degrees)");
+    chart->legend()->setVisible(true);
+    chart->legend()->setAlignment(Qt::AlignBottom);
+    
+    // Create axis
+    QValueAxis* axisY = new QValueAxis();
+    axisY->setTitleText("Angle (degrees)");
+    axisY->setRange(0, 360);
+    axisY->setTickCount(9); // 0, 45, 90, 135, 180, 225, 270, 315, 360
+    chart->addAxis(axisY, Qt::AlignLeft);
+    series->attachAxis(axisY);
+    
+    QBarCategoryAxis* axisX = new QBarCategoryAxis();
+    chart->addAxis(axisX, Qt::AlignBottom);
+    series->attachAxis(axisX);
+    
+    // Display the chart in the existing Graph widget
+    QChartView* chartView = ui->Graph;
+    qDebug() << "DEBUG: Chart view pointer:" << chartView;
+    if (chartView) {
+        qDebug() << "DEBUG: Chart view is valid";
+        // Clear any existing chart
+        QChart* existingChart = chartView->chart();
+        if (existingChart) {
+            delete existingChart;
+        }
+        
+        // Set the new chart
+        chartView->setChart(chart);
+        chartView->setRenderHint(QPainter::Antialiasing);
+        
+        // Connect to bar series clicked signal for proper bar click handling
+        QBarSeries* barSeries = static_cast<QBarSeries*>(chart->series().first());
+        if (barSeries) {
+            connect(barSeries, &QBarSeries::clicked, [this, barSeries](int index, QBarSet* barSet) {
+                qDebug() << "DEBUG: Bar series clicked, index:" << index;
+                qDebug() << "DEBUG: Bar set label:" << barSet->label();
+                index = barSet->label().toInt();
+                qDebug() << "DEBUG: New index:" << index;
+                
+                if (index >= 0 && index < ui->mapWidgetAnalysisResult->mPaths->size()) {
+                    qDebug() << "DEBUG: Setting path index to:" << index;
+                    ui->mapWidgetAnalysisResult->setPathNow(index);
+                    ui->mapWidgetAnalysisResult->update();
+                    ui->spinBoxResultPath->setValue(index);
+                } else {
+                    qDebug() << "DEBUG: Index out of bounds:" << index;
+                }
+            });
+        } else {
+            qDebug() << "DEBUG: No bar series found!";
+        }
+    } else {
+        qDebug() << "DEBUG: Chart view is invalid!";
+    }
+    
+    // Update statistics display with the calculated values
+    if (!angleValues.isEmpty()) {
+        updateStatisticsDisplay(angleValues, "degrees");
+    } else {
+        ui->textAnalysis->setText("No valid path data available for statistical analysis.");
+    }
+}
+
+void MainWindow::calculateAndDisplayPathRMS()
+{
+    qDebug() << "DEBUG: Calculating RMS distances...";
+    
+    // Check if we have any paths to analyze
+    if (ui->mapWidgetAnalysisResult->mPaths->size() == 0) {
+        qDebug() << "DEBUG: No paths available for RMS analysis";
+        QMessageBox::information(this, "Analysis", "No paths available for RMS analysis.");
+        ui->textAnalysis->setText("No paths available for statistical analysis.");
+        return;
+    }
+    
+    // Create a bar chart to display the RMS distances
+    QChart* chart = new QChart();
+    chart->setTitle("RMS Distance Analysis");
+    chart->setAnimationOptions(QChart::SeriesAnimations);
+    
+    QBarSeries* series = new QBarSeries();
+    QList<double> rmsValues; // Store values for statistics
+    
+    // Calculate RMS distance for each path and add to the chart
+    for (int i = 0; i < ui->mapWidgetAnalysisResult->mPaths->size(); i++) {
+        MapRoute& route = ui->mapWidgetAnalysisResult->getPath(i);
+        
+        if (route.isEmpty() || route.size() < 2) {
+            qDebug() << "DEBUG: Path" << i << "has less than 2 points, skipping";
+            continue;
+        }
+        
+        // Get first and last points to define the straight line
+        LocPoint firstPoint = route.first();
+        LocPoint lastPoint = route.last();
+        
+        // Calculate the straight line parameters (y = mx + b)
+        double x1 = firstPoint.getX();
+        double y1 = firstPoint.getY();
+        double x2 = lastPoint.getX();
+        double y2 = lastPoint.getY();
+        
+        // Handle vertical line case
+        if (qFuzzyCompare(x1, x2)) {
+            // Vertical line - all points should have x = x1
+            double sumSquaredDistances = 0.0;
+            int validPoints = 0;
+            
+            for (int j = 1; j < route.size() - 1; j++) { // Skip first and last points
+                LocPoint currentPoint = route.at(j);
+                double currentX = currentPoint.getX();
+                
+                // Distance from vertical line x = x1
+                double distance = qAbs(currentX - x1);
+                sumSquaredDistances += distance * distance;
+                validPoints++;
+            }
+            
+            if (validPoints > 0) {
+                double rms = std::sqrt(sumSquaredDistances / validPoints);
+                qDebug() << "DEBUG: Path" << i << "RMS distance (vertical):" << rms << "units";
+                
+                // Add this path's RMS to the chart
+                QBarSet* set = new QBarSet(QString("%1").arg(i));
+                set->append(rms);
+                series->append(set);
+                
+                // Store the value for statistics calculation
+                rmsValues.append(rms);
+            }
+        } else {
+            // Calculate line parameters: y = m*x + b
+            double m = (y2 - y1) / (x2 - x1);
+            double b = y1 - m * x1;
+            
+            // Calculate RMS distance from the line
+            double sumSquaredDistances = 0.0;
+            int validPoints = 0;
+            
+            for (int j = 1; j < route.size() - 1; j++) { // Skip first and last points
+                LocPoint currentPoint = route.at(j);
+                double currentX = currentPoint.getX();
+                double currentY = currentPoint.getY();
+                
+                // Distance from point to line using point-to-line distance formula
+                // distance = |m*x - y + b| / sqrt(m^2 + 1)
+                double numerator = qAbs(m * currentX - currentY + b);
+                double denominator = std::sqrt(m * m + 1);
+                double distance = numerator / denominator;
+                
+                sumSquaredDistances += distance * distance;
+                validPoints++;
+            }
+            
+            if (validPoints > 0) {
+                double rms = std::sqrt(sumSquaredDistances / validPoints);
+                qDebug() << "DEBUG: Path" << i << "RMS distance:" << rms << "units";
+                
+                // Add this path's RMS to the chart
+                QBarSet* set = new QBarSet(QString("%1").arg(i));
+                set->append(rms);
+                series->append(set);
+                
+                // Store the value for statistics calculation
+                rmsValues.append(rms);
+            }
+        }
+    }
+    
+    if (series->count() == 0) {
+        qDebug() << "DEBUG: No valid paths found for RMS analysis";
+        QMessageBox::information(this, "Analysis", "No valid paths found for RMS analysis.");
+        ui->textAnalysis->setText("No valid paths found for statistical analysis.");
+        delete series;
+        delete chart;
+        return;
+    }
+    
+    // Add the series to the chart
+    chart->addSeries(series);
+    
+    // Customize the chart
+    chart->setTitle("RMS Distances from Straight Line");
+    chart->legend()->setVisible(true);
+    chart->legend()->setAlignment(Qt::AlignBottom);
+    
+    // Create axis
+    QValueAxis* axisY = new QValueAxis();
+    axisY->setTitleText("RMS Distance (units)");
+    chart->addAxis(axisY, Qt::AlignLeft);
+    series->attachAxis(axisY);
+    
+    QBarCategoryAxis* axisX = new QBarCategoryAxis();
+    chart->addAxis(axisX, Qt::AlignBottom);
+    series->attachAxis(axisX);
+    
+    // Display the chart in the existing Graph widget
+    QChartView* chartView = ui->Graph;
+    qDebug() << "DEBUG: Chart view pointer:" << chartView;
+    if (chartView) {
+        qDebug() << "DEBUG: Chart view is valid";
+        // Clear any existing chart
+        QChart* existingChart = chartView->chart();
+        if (existingChart) {
+            delete existingChart;
+        }
+        
+        // Set the new chart
+        chartView->setChart(chart);
+        chartView->setRenderHint(QPainter::Antialiasing);
+        
+        // Connect to bar series clicked signal for proper bar click handling
+        QBarSeries* barSeries = static_cast<QBarSeries*>(chart->series().first());
+        if (barSeries) {
+            connect(barSeries, &QBarSeries::clicked, [this, barSeries](int index, QBarSet* barSet) {
+                qDebug() << "DEBUG: Bar series clicked, index:" << index;
+                qDebug() << "DEBUG: Bar set label:" << barSet->label();
+                index = barSet->label().toInt();
+                qDebug() << "DEBUG: New index:" << index;
+                
+                if (index >= 0 && index < ui->mapWidgetAnalysisResult->mPaths->size()) {
+                    qDebug() << "DEBUG: Setting path index to:" << index;
+                    ui->mapWidgetAnalysisResult->setPathNow(index);
+                    ui->mapWidgetAnalysisResult->update();
+                    ui->spinBoxResultPath->setValue(index);
+                } else {
+                    qDebug() << "DEBUG: Index out of bounds:" << index;
+                }
+            });
+        } else {
+            qDebug() << "DEBUG: No bar series found!";
+        }
+    } else {
+        qDebug() << "DEBUG: Chart view is invalid!";
+    }
+    
+    // Update statistics display with the calculated values
+    if (!rmsValues.isEmpty()) {
+        updateStatisticsDisplay(rmsValues, "units");
     } else {
         ui->textAnalysis->setText("No valid path data available for statistical analysis.");
     }

@@ -82,6 +82,8 @@
  *
  */
 
+#define TEST_20260113
+
 int main(void) {
 	halInit();
 	chSysInit();
@@ -92,6 +94,7 @@ int main(void) {
 	timer_init();
 	led_init();
 	ext_cb_init();
+
 
 	conf_general_init();
 	adconv_init();
@@ -105,6 +108,11 @@ int main(void) {
 	motor_sim_init();
 #if HAS_HYDRAULIC_DRIVE
 	hydraulic_init();
+#endif
+#if TEST_20260112
+
+	// Only initialize USB communication if enabled
+	// This prevents overwhelming the Raspberry Pi with USB data
 #endif
 	comm_usb_init();
 	commands_init();

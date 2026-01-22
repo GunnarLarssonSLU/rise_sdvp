@@ -223,6 +223,10 @@
 extern MAIN_CONFIG main_config;
 extern int main_id;
 
+// USB Configuration
+#define USB_COMM_ENABLED_DEFAULT    true  // Set to false to disable USB communication by default
+#define USB_MIN_SEND_INTERVAL_MS   2     // Minimum interval between USB transmissions (ms)
+
 // Functions
 void conf_general_init(void);
 void conf_general_get_default_main_config(MAIN_CONFIG *conf);

@@ -132,7 +132,7 @@ public:
     double debug_value3;
     double debug_value4;
     double debug_value5;
-    double debug_value6;
+/*    double debug_value6;
     double debug_value7;
     double debug_value8;
     double debug_value9;
@@ -141,7 +141,7 @@ public:
     double debug_value12;
     double debug_value13;
     double debug_value14;
-    double debug_value15;
+    double debug_value15;*/
 
     QList<double> accelList() {
         QList<double> a;

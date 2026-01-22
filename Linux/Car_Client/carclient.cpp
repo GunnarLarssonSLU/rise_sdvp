@@ -88,7 +88,7 @@ CarClient::CarClient(QObject *parent) : QObject(parent)
     mOverrideUwbY = 0.0;
     
     // Debugging control - default to verbose debugging
-    mDebugLevel = DEBUG_VERBOSE;
+    mDebugLevel = DEBUG_OFF;
     qDebug() << "CarClient::CarClient: Set debug level to" << mDebugLevel;
     
     qDebug() << "CarClient::CarClient: Constructor completed";

@@ -21,11 +21,15 @@
 #include "comm_usb.h"
 #include "packet.h"
 #include "comm_usb_serial.h"
+#include "conf_general.h"
+//#include "comm_cc2520.h"
+//#include "comm_cc1120.h"
 #include "ublox.h"
 
 // Settings
 #define PACKET_HANDLER				0
 #define SERIAL_RX_BUFFER_SIZE		2048
+#define MS2ST(ms)   ((systime_t)((ms) * CH_CFG_ST_FREQUENCY / 1000))
 
 // Private variables
 static uint8_t serial_rx_buffer[SERIAL_RX_BUFFER_SIZE];
@@ -110,9 +114,48 @@ static THD_FUNCTION(serial_process_thread, arg) {
 }
 
 static void process_packet(unsigned char *data, unsigned int len) {
+#if MAIN_MODE_IS_MOTE
+	uint8_t id = data[0];
+	CMD_PACKET packet_id = data[1];
+
+	if (id == ID_MOTE && (packet_id < 50 || packet_id >= 200)) {
+		commands_process_packet(data, len, comm_usb_send_packet);
+	} else {
+#if MAIN_MODE == MAIN_MODE_MOTE_HYBRID
+		if (packet_id == CMD_SEND_RTCM_USB) {
+			comm_cc1120_send_buffer(data, len);
+		} else {
+			comm_cc2520_send_buffer(data, len);
+		}
+#elif MAIN_MODE == MAIN_MODE_MOTE_400
+		comm_cc1120_send_buffer(data, len);
+#else
+		comm_cc2520_send_buffer(data, len);
+#endif
+	}
+
+#if UBLOX_EN
+	if (packet_id == CMD_SEND_RTCM_USB) {
+		ublox_send(data + 2, len - 2);
+	}
+#endif
+#else
 	commands_process_packet(data, len, comm_usb_send_packet);
+#endif
 }
 
 static void send_packet(unsigned char *buffer, unsigned int len) {
-	chSequentialStreamWrite(&SDU1, buffer, len);
+	// Basic flow control: limit the rate of USB transmissions
+	// This helps prevent overwhelming the USB connection to Raspberry Pi
+	static systime_t last_send_time = 0;
+	systime_t now = chVTGetSystemTimeX();
+	
+	// Minimum interval between USB transmissions to prevent flooding
+	if (now - last_send_time > MS2ST(USB_MIN_SEND_INTERVAL_MS) || last_send_time == 0) {
+		chSequentialStreamWrite(&SDU1, buffer, len);
+		last_send_time = now;
+	} else {
+		// Skip this packet to prevent USB buffer overflow
+		// This is a simple rate limiting approach
+	}
 }

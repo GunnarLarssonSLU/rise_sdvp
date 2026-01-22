@@ -72,7 +72,7 @@ PacketInterface::PacketInterface(QObject *parent) :
     mWaitingAck = false;
 
     // Debugging control - default to basic debugging
-    mDebugLevel = DEBUG_VERBOSE;
+    mDebugLevel = DEBUG_BASIC;
 
     mTimer = new QTimer(this);
     mTimer->setInterval(10);
@@ -100,7 +100,13 @@ void PacketInterface::processData(QByteArray &data)
 {
     // Basic debugging that always runs to ensure we can see if processData is called
     qDebug() << "PacketInterface::processData: Called with" << data.length() << "bytes, debug level:" << mDebugLevel;
-    qDebug() << "PacketInterface::processData: First few bytes:" << data.left(qMin(20, data.size())).toHex();
+    qDebug() << "PacketInterface::processData: First few bytes:" << data.left(qMin(20, static_cast<int>(data.size()))).toHex();
+    
+    // Check for unusually large incoming data chunks
+    if (data.length() > 1000) {
+        qDebug() << "PacketInterface::processData: WARNING - Large incoming data chunk:" << data.length() << "bytes";
+        qDebug() << "PacketInterface::processData: This might indicate USB communication issues or corrupted data";
+    }
     
     // Critical safety check: Prevent processing if we're already in the middle of a packet
     if (mRxState != 0) {
@@ -181,6 +187,13 @@ void PacketInterface::processData(QByteArray &data)
             qDebug() << "PacketInterface::processData: State 3 - Reading payload length byte 0";
             mPayloadLength |= (unsigned int)rx_data;
             qDebug() << "PacketInterface::processData: Final mPayloadLength:" << mPayloadLength;
+            
+            // Enhanced debugging for very long messages
+            if (mPayloadLength > 2000) { // Threshold for "very long" messages
+                qDebug() << "PacketInterface::processData: WARNING - Extremely long payload length:" << mPayloadLength << "bytes";
+                qDebug() << "PacketInterface::processData: This suggests corrupted packet header or protocol issue";
+            }
+            
             if (mPayloadLength <= mMaxBufferLen && mPayloadLength > 0) {
                 qDebug() << "PacketInterface::processData: Payload length valid, moving to data collection";
                 mRxState++;
@@ -194,6 +207,15 @@ void PacketInterface::processData(QByteArray &data)
         case 4:
             qDebug() << "PacketInterface::processData: State 4 - Collecting payload data";
             qDebug() << "PacketInterface::processData: Byte" << mRxDataPtr << "/" << mPayloadLength << ": 0x" << QString::number(rx_data, 16);
+            
+            // Show packet ID and command for the first few bytes of very long messages
+            if (mPayloadLength > 2000 && mRxDataPtr < 10) {
+                if (mRxDataPtr == 0) {
+                    qDebug() << "PacketInterface::processData: First payload byte (should be ID): 0x" << QString::number(rx_data, 16);
+                } else if (mRxDataPtr == 1) {
+                    qDebug() << "PacketInterface::processData: Second payload byte (should be CMD): 0x" << QString::number(rx_data, 16);
+                }
+            }
             
             // CRITICAL SAFETY CHECK: This is the main fix for the semi-hanging issue
             // Check BEFORE processing the byte to catch corrupted packets immediately
@@ -227,6 +249,12 @@ void PacketInterface::processData(QByteArray &data)
                 qDebug() << "PacketInterface::processData: Expected" << mPayloadLength << "bytes but already processed" << mRxDataPtr << "bytes";
                 qDebug() << "PacketInterface::processData: Difference:" << (mRxDataPtr - mPayloadLength) << "bytes";
                 qDebug() << "PacketInterface::processData: This suggests corrupted packet header or buffer overrun";
+                
+                // For very long messages, show what we've collected so far
+                if (mPayloadLength > 2000) {
+                    qDebug() << "PacketInterface::processData: First bytes collected:" << QByteArray((const char*)mRxBuffer, qMin(20u, mRxDataPtr)).toHex();
+                }
+                
                 qDebug() << "PacketInterface::processData: Resetting state to recover";
                 mRxState = 0; // Reset state to recover
                 mRxDataPtr = 0;
@@ -326,6 +354,25 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     CMD_PACKET cmd = (CMD_PACKET)(quint8)data[0];
     data++;
     len--;
+
+    // Enhanced debugging for very long packets
+    if (len > 2000) {
+        qDebug() << "PacketInterface::processPacket: WARNING - Processing very long packet!";
+        qDebug() << "PacketInterface::processPacket: ID:" << id << ", Command:" << cmd << ", Data length:" << len << "bytes";
+        
+        // Try to identify the command type
+        QString cmdName;
+        switch(cmd) {
+            case CMD_SEND_NMEA_RADIO: cmdName = "CMD_SEND_NMEA_RADIO"; break;
+            case CMD_SEND_RTCM_USB: cmdName = "CMD_SEND_RTCM_USB"; break;
+            case CMD_VESC_FWD: cmdName = "CMD_VESC_FWD"; break;
+            case CMD_LOG_ETHERNET: cmdName = "CMD_LOG_ETHERNET"; break;
+            case CMD_PRINTF: cmdName = "CMD_PRINTF"; break;
+            case CMD_LOG_LINE_USB: cmdName = "CMD_LOG_LINE_USB"; break;
+            default: cmdName = "UNKNOWN_COMMAND_" + QString::number(cmd); break;
+        }
+        qDebug() << "PacketInterface::processPacket: Command name:" << cmdName;
+    }
 
     qDebug() << "PacketInterface::processPacket: ID:" << id << ", Command:" << cmd << ", Remaining data:" << len << "bytes";
     
