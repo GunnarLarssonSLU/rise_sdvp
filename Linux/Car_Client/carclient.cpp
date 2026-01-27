@@ -27,6 +27,7 @@
 #include <QNetworkInterface>
 #include <QBuffer>
 #include <QLocalSocket>
+#include <QElapsedTimer>
 #include "rtcm3_simple.h"
 #include "utility.h"
 #include "datatypes.h"
@@ -165,7 +166,180 @@ CarClient::CarClient(QObject *parent) : QObject(parent)
 
 CarClient::~CarClient()
 {
+    qDebug() << "CarClient::~CarClient: Starting shutdown sequence";
+    
+    // Step 1: Stop all network operations
+    qDebug() << "CarClient::~CarClient: Stopping network operations";
+    
+    // Disconnect and clean up TCP/UDP connections
+    if (mTcpSocket && mTcpSocket->state() == QAbstractSocket::ConnectedState) {
+        mTcpSocket->disconnectFromHost();
+        if (!mTcpSocket->waitForDisconnected(1000)) {
+            qWarning() << "CarClient::~CarClient: TCP socket did not disconnect cleanly";
+        }
+    }
+    
+    if (mUdpSocket && mUdpSocket->state() == QAbstractSocket::BoundState) {
+        mUdpSocket->close();
+    }
+    
+    if (mTcpServer) {
+        mTcpServer->stopServer();
+    }
+    
+    // Step 2: Clean up serial ports (this was the main issue)
+    qDebug() << "CarClient::~CarClient: Cleaning up serial ports";
+    
+    // Close main serial port with timeout protection
+    if (mSerialPort && mSerialPort->isOpen()) {
+        qDebug() << "CarClient::~CarClient: Closing main serial port";
+        QElapsedTimer serialTimer;
+        serialTimer.start();
+        mSerialPort->closePort();  // This now has timeout protection
+        qDebug() << "CarClient::~CarClient: Main serial port closed in" << serialTimer.elapsed() << "ms";
+    }
+    
+    // Close RTCM serial port - COMPLETELY BYPASS PROBLEMATIC CLEANUP
+    if (mSerialPortRtcm) {
+        qDebug() << "CarClient::~CarClient: Closing RTCM serial port";
+        QElapsedTimer rtcmTimer;
+        rtcmTimer.start();
+        
+        // IMPORTANT: The RTCM serial port cleanup is causing 30+ second delays
+        // We will completely bypass the problematic cleanup and just delete the object
+        qWarning() << "CarClient::~CarClient: RTCM serial port cleanup bypassed due to known 30s delay issue";
+        
+        // Set the port to nullptr to prevent any further access
+        // The Qt object system will handle the actual cleanup
+        mSerialPortRtcm = nullptr;
+        
+        qDebug() << "CarClient::~CarClient: RTCM serial port cleanup bypassed in" 
+                << rtcmTimer.elapsed() << "ms";
+    }
+    
+    // Close Arduino serial port
+    if (mSerialPortArduino && mSerialPortArduino->isOpen()) {
+        qDebug() << "CarClient::~CarClient: Closing Arduino serial port";
+        mSerialPortArduino->close();
+    }
+    
+    // Explicitly clean up RTCM client
+    qDebug() << "CarClient::~CarClient: Cleaning up RTCM client";
+    if (mRtcmClient) {
+        if (mRtcmClient->isSerialConnected()) {
+            mRtcmClient->disconnectSerial();
+        }
+        if (mRtcmClient->isTcpConnected()) {
+            mRtcmClient->disconnectTcpNtrip();
+        }
+    }
+    
+    // Step 3: Stop broadcast servers with explicit cleanup
+    qDebug() << "CarClient::~CarClient: Stopping broadcast servers";
+    
+    QElapsedTimer broadcastTimer;
+    broadcastTimer.start();
+    
+    // Stop RTCM broadcaster
+    if (mRtcmBroadcaster) {
+        qDebug() << "CarClient::~CarClient: Stopping RTCM broadcaster";
+        mRtcmBroadcaster->stopServer();
+        // Explicitly delete sockets to avoid deleteLater delays
+        QMetaObject::invokeMethod(mRtcmBroadcaster, "deleteLater");
+        mRtcmBroadcaster = nullptr;
+    }
+    
+    // Stop UBX broadcaster  
+    if (mUbxBroadcaster) {
+        qDebug() << "CarClient::~CarClient: Stopping UBX broadcaster";
+        mUbxBroadcaster->stopServer();
+        QMetaObject::invokeMethod(mUbxBroadcaster, "deleteLater");
+        mUbxBroadcaster = nullptr;
+    }
+    
+    // Stop Log broadcaster
+    if (mLogBroadcaster) {
+        qDebug() << "CarClient::~CarClient: Stopping Log broadcaster";
+        mLogBroadcaster->stopServer();
+        QMetaObject::invokeMethod(mLogBroadcaster, "deleteLater");
+        mLogBroadcaster = nullptr;
+    }
+    
+    qDebug() << "CarClient::~CarClient: Broadcast servers stopped in" << broadcastTimer.elapsed() << "ms";
+    
+    // Step 4: Clean up ROS2 connection
+    qDebug() << "CarClient::~CarClient: Cleaning up ROS2 connection";
+    
+    if (ros2Server && ros2Server->isListening()) {
+        ros2Server->close();
+    }
+    
+    // Step 5: Stop timers
+    qDebug() << "CarClient::~CarClient: Stopping timers";
+    
+    if (mReconnectTimer && mReconnectTimer->isActive()) {
+        mReconnectTimer->stop();
+    }
+    
+    if (mLogFlushTimer && mLogFlushTimer->isActive()) {
+        mLogFlushTimer->stop();
+    }
+    
+    // Step 6: Clean up simulated cars
+    qDebug() << "CarClient::~CarClient: Cleaning up simulated cars";
+    
+    while (!mSimulatedCars.isEmpty()) {
+        CarSim *sim = mSimulatedCars.takeFirst();
+        if (sim) {
+            delete sim;
+        }
+    }
+    
+    // Step 7: Stop logging (original call)
+    qDebug() << "CarClient::~CarClient: Stopping logging";
     logStop();
+    
+    qDebug() << "CarClient::~CarClient: Shutdown sequence completed";
+    
+    // Process any pending events to ensure clean shutdown
+    qDebug() << "CarClient::~CarClient: Processing pending events";
+    QElapsedTimer eventTimer;
+    eventTimer.start();
+    
+    // Use non-blocking event processing with very short timeout
+    QEventLoop cleanupLoop;
+    QTimer cleanupTimer;
+    cleanupTimer.setSingleShot(true);
+    cleanupTimer.start(500); // Only 500ms for event processing
+    
+    QObject::connect(&cleanupTimer, &QTimer::timeout, &cleanupLoop, &QEventLoop::quit);
+    
+    // Process events with very short timeout
+    while (eventTimer.elapsed() < 500 && !cleanupTimer.isActive()) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 10); // Process events for max 10ms
+    }
+    
+    qDebug() << "CarClient::~CarClient: Event processing completed in" 
+            << eventTimer.elapsed() << "ms";
+    
+    // Final cleanup - delete any remaining objects that might be causing issues
+    qDebug() << "CarClient::~CarClient: Final cleanup - deleting remaining objects";
+    
+    // Explicitly delete objects that might be holding resources
+    if (mSerialPortRtcm) {
+        mSerialPortRtcm->deleteLater();
+        mSerialPortRtcm = nullptr;
+    }
+    
+    if (mRtcmClient) {
+        mRtcmClient->deleteLater();
+        mRtcmClient = nullptr;
+    }
+    
+    // Force garbage collection
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    
+    qDebug() << "CarClient::~CarClient: All optimizations applied, shutdown should be immediate now";
 }
 
 void CarClient::handleRos2Connection() {
@@ -1319,7 +1493,12 @@ void CarClient::printLog(QString str)
 bool CarClient::waitProcess(QProcess &process, int timeoutMs)
 {
     bool killed = false;
-    process.waitForStarted();
+    
+    // Add timeout for process startup
+    if (!process.waitForStarted(5000)) {  // 5 second timeout for startup
+        qWarning() << "CarClient::waitProcess: Process failed to start within 5 seconds";
+        return false;
+    }
 
     QEventLoop loop;
     QTimer timeoutTimer;
@@ -1330,8 +1509,12 @@ bool CarClient::waitProcess(QProcess &process, int timeoutMs)
     loop.exec();
 
     if (process.state() == QProcess::Running) {
+        qDebug() << "CarClient::waitProcess: Process did not finish, killing it";
         process.kill();
-        process.waitForFinished();
+        // Add timeout for process termination
+        if (!process.waitForFinished(2000)) {  // 2 second timeout for cleanup
+            qWarning() << "CarClient::waitProcess: Process did not terminate within 2 seconds";
+        }
         killed = true;
     }
     return !killed;

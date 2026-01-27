@@ -362,15 +362,138 @@ void PacketInterface::processData(QByteArray &data)
     // Processing completed - reset processing flag and check for more data
     mIsProcessing = false;
     
-    // If we have pending data, process it now
-    if (!mPendingData.isEmpty()) {
-        qDebug() << "PacketInterface::processData: Processing queued data after completion";
+    // Use iterative approach instead of recursion to process pending data
+    const int MAX_PENDING_ITERATIONS = 5;
+    int iterationCount = 0;
+    
+    while (!mPendingData.isEmpty() && iterationCount < MAX_PENDING_ITERATIONS) {
+        qDebug() << "PacketInterface::processData: Processing queued data (iteration " << (iterationCount + 1) << ")";
         QByteArray pending = mPendingData;
         mPendingData.clear();
         mIsProcessing = true;
-        QMutexLocker pendingLocker(&mProcessMutex);
-        pendingLocker.unlock(); // Release lock before recursive call
-        processData(pending);
+        
+        // Process the pending data directly in this iteration
+        int pendingLength = pending.length();
+        qDebug() << "PacketInterface::processData: Processing " << pendingLength << " bytes of pending data";
+        
+        for(int i = 0; i < pendingLength; i++) {
+            unsigned char rx_data = pending[i];
+            
+            if (mDebugLevel >= DEBUG_VERBOSE) {
+                qDebug() << "PacketInterface::processData: Pending byte " << i << "/" << pendingLength 
+                         << ": 0x" << QString::number(rx_data, 16).rightJustified(2, '0') 
+                         << ", current state:" << mRxState;
+            }
+            
+            // Use the same state machine logic as the main processing loop
+            switch (mRxState) {
+                case 0:
+                    if (rx_data == 2) {
+                        mRxState += 3;
+                        mRxTimer = rx_timeout;
+                        mRxDataPtr = 0;
+                        mPayloadLength = 0;
+                    } else if (rx_data == 3) {
+                        mRxState += 2;
+                        mRxTimer = rx_timeout;
+                        mRxDataPtr = 0;
+                        mPayloadLength = 0;
+                    } else if (rx_data == 4) {
+                        mRxState++;
+                        mRxTimer = rx_timeout;
+                        mRxDataPtr = 0;
+                        mPayloadLength = 0;
+                    } else {
+                        mRxState = 0;
+                    }
+                    break;
+                
+                case 1:
+                    mPayloadLength |= (unsigned int)rx_data << 16;
+                    mRxState++;
+                    mRxTimer = rx_timeout;
+                    break;
+                
+                case 2:
+                    mPayloadLength |= (unsigned int)rx_data << 8;
+                    mRxState++;
+                    mRxTimer = rx_timeout;
+                    break;
+                
+                case 3:
+                    mPayloadLength |= (unsigned int)rx_data;
+                    if (mPayloadLength <= mMaxBufferLen && mPayloadLength > 0) {
+                        mRxState++;
+                        mRxTimer = rx_timeout;
+                    } else {
+                        mRxState = 0;
+                    }
+                    break;
+                
+                case 4:
+                    if (mRxDataPtr >= mPayloadLength) {
+                        qDebug() << "PacketInterface::processData: ERROR - Payload length exceeded in pending data!";
+                        mRxState = 0;
+                        mRxDataPtr = 0;
+                        mPayloadLength = 0;
+                        mRxBuffer[mRxDataPtr++] = rx_data;
+                        break;
+                    }
+                    
+                    if (mRxDataPtr >= mMaxBufferLen) {
+                        qDebug() << "PacketInterface::processData: ERROR - Buffer overrun in pending data!";
+                        mRxState = 0;
+                        mRxDataPtr = 0;
+                        mPayloadLength = 0;
+                        break;
+                    }
+                    
+                    mRxBuffer[mRxDataPtr++] = rx_data;
+                    if (mRxDataPtr == mPayloadLength) {
+                        mRxState++;
+                    }
+                    mRxTimer = rx_timeout;
+                    break;
+                
+                case 5:
+                    mCrcHigh = rx_data;
+                    mRxState++;
+                    mRxTimer = rx_timeout;
+                    break;
+                
+                case 6:
+                    mCrcLow = rx_data;
+                    mRxState++;
+                    mRxTimer = rx_timeout;
+                    break;
+                
+                case 7:
+                    if (rx_data == 3) {
+                        unsigned short calculated_crc = crc16(mRxBuffer, mPayloadLength);
+                        unsigned short received_crc = ((unsigned short)mCrcHigh << 8 | (unsigned short)mCrcLow);
+                        if (calculated_crc == received_crc) {
+                            processPacket(mRxBuffer, mPayloadLength);
+                        }
+                    }
+                    mRxState = 0;
+                    break;
+                
+                default:
+                    mRxState = 0;
+                    break;
+            }
+        }
+        
+        iterationCount++;
+        mIsProcessing = false;
+    }
+    
+    // If we still have pending data after max iterations, log and discard it
+    if (!mPendingData.isEmpty()) {
+        qWarning() << "PacketInterface::processData: Exceeded max pending iterations (" 
+                   << MAX_PENDING_ITERATIONS << "), discarding " 
+                   << mPendingData.length() << " bytes of pending data";
+        mPendingData.clear();
     }
 }
 

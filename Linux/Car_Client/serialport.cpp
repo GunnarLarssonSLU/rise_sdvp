@@ -18,7 +18,7 @@
 #include <time.h>
 #include <signal.h>
 #include <errno.h>
-#include <QtDebug>
+#include <QDebug>
 
 #include <cstdio>   /* Standard input/output definitions */
 #include <unistd.h>  /* UNIX standard function definitions */
@@ -177,7 +177,14 @@ void SerialPort::closePort()
     mCondition.wakeOne();
     mMutex.unlock();
 
-    wait();
+    // Use timed wait to prevent hanging during shutdown
+    const int SHUTDOWN_TIMEOUT_MS = 1000; // 1 second timeout
+    if (!wait(SHUTDOWN_TIMEOUT_MS)) {
+        qWarning() << "SerialPort thread did not exit within" << SHUTDOWN_TIMEOUT_MS << "ms, forcing termination";
+        terminate();
+        // Give it a final chance to clean up
+        wait(500); // Additional 500ms for cleanup
+    }
 
     mMutex.lock();
     if (mIsOpen) {

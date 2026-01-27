@@ -10,6 +10,7 @@ COPT = $(USE_COPT)
 CPPOPT = $(USE_CPPOPT)
 
 # Garbage collection
+# Disabled by default to prevent issues with critical functions being optimized away
 ifeq ($(USE_LINK_GC),yes)
   OPT += -ffunction-sections -fdata-sections -fno-common
   LDOPT := ,--gc-sections

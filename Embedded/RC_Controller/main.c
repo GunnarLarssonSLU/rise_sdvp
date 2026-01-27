@@ -116,7 +116,9 @@ int main(void) {
 #endif
 	comm_usb_init();
 	commands_init();
-//	watchdog_init();
+
+
+	//	watchdog_init();
 
 #if UBLOX_EN
 	ublox_init();

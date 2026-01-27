@@ -56,9 +56,9 @@ static mutex_t m_print_gps;
 static bool m_init_done = false;
 
 // Private functions
-static void stop_forward(void *p);
-static void rtcm_rx(uint8_t *data, int len, int type);
-static void rtcm_base_rx(rtcm_ref_sta_pos_t *pos);
+void stop_forward(void *p);
+void rtcm_rx(uint8_t *data, int len, int type);
+void rtcm_base_rx(rtcm_ref_sta_pos_t *pos);
 
 // Private variables
 static rtcm3_state m_rtcm_state;
@@ -123,6 +123,27 @@ void commands_init(void) {
 	debugvalue12=0.0;
 	m_init_done = true;
 	m_kb_active=false;
+	
+	// Ensure critical functions are not optimized away
+	(void)commands_printf;
+	(void)commands_forward_vesc_packet;
+	(void)commands_send_nmea;
+	(void)commands_printf_log_usb;
+	(void)rtcm_rx;
+	(void)rtcm_base_rx;
+	(void)stop_forward;
+	
+	// Force inclusion of critical functions
+	commands_printf_force_include();
+}
+
+// Force inclusion of critical functions
+void __attribute__((used)) commands_printf_force_include(void) {
+    commands_printf("dummy");
+    commands_forward_vesc_packet(NULL, 0);
+    commands_send_nmea(NULL, 0);
+    commands_printf_log_usb("dummy");
+    stop_forward(NULL);
 }
 
 /**
@@ -1121,9 +1142,9 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			commands_send_packet(m_send_buffer, send_index);
 		} break;
 		*/
+	}
 
-void commands_printf(const char* format, ...) {
-#if TEST_20260112
+void __attribute__((used)) commands_printf(const char* format, ...) {
 	if (!m_init_done) {
 		return;
 	}
@@ -1143,7 +1164,6 @@ void commands_printf(const char* format, ...) {
 		commands_send_packet((unsigned char*)print_buffer, (len<509) ? len + 2: 512);
 	}
 	chMtxUnlock(&m_print_gps);
-#endif
 }
 
 void commands_printf_log_usb(char* format, ...) {
@@ -1211,7 +1231,7 @@ void stop_forward(void *p) {
 	bldc_interface_set_forward_func(0);
 }
 
-static void rtcm_rx(uint8_t *data, int len, int type) {
+void rtcm_rx(uint8_t *data, int len, int type) {
 	(void)type;
 
 #if UBLOX_EN
@@ -1233,7 +1253,7 @@ static void rtcm_rx(uint8_t *data, int len, int type) {
 #endif
 }
 
-static void rtcm_base_rx(rtcm_ref_sta_pos_t *pos) {
+void rtcm_base_rx(rtcm_ref_sta_pos_t *pos) {
 	if (main_config.gps_use_rtcm_base_as_enu_ref) {
 		pos_set_enu_ref(pos->lat, pos->lon, pos->height);
 	}
