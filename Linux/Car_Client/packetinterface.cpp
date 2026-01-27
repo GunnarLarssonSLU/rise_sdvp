@@ -72,8 +72,9 @@ PacketInterface::PacketInterface(QObject *parent) :
     mWaitingAck = false;
 
     // Debugging control - default to basic debugging with statistics
-    mDebugLevel = DEBUG_BASIC;
-    
+    //mDebugLevel = DEBUG_BASIC;
+    mDebugLevel = DEBUG_VERBOSE;
+
     // Enable message statistics by default for comprehensive monitoring
     mEnableMessageStatistics = true;
     

@@ -1096,7 +1096,31 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			break;
 		}
 	}
-}
+		// MINIMAL CMD_GET_STATE FOR TROUBLESHOOTING
+		// To use: comment out the complex version above and uncomment this one
+		/*
+		case CMD_GET_STATE: {
+			commands_printf("DEBUG: Received CMD_GET_STATE request");
+			
+			commands_set_send_func(func);
+			
+			int32_t send_index = 0;
+			m_send_buffer[send_index++] = id_ret; // ID
+			m_send_buffer[send_index++] = CMD_GET_STATE; // Command
+			m_send_buffer[send_index++] = FW_VERSION_MAJOR; // Version major
+			m_send_buffer[send_index++] = FW_VERSION_MINOR; // Version minor
+			
+			// Add just essential position data
+			POS_STATE pos;
+			pos_get_pos(&pos);
+			buffer_append_float32(m_send_buffer, pos.px, 1e4, &send_index);
+			buffer_append_float32(m_send_buffer, pos.py, 1e4, &send_index);
+			buffer_append_float32(m_send_buffer, pos.yaw, 1e6, &send_index);
+			
+			commands_printf("DEBUG: Sending minimal CMD_GET_STATE response (%d bytes)", send_index);
+			commands_send_packet(m_send_buffer, send_index);
+		} break;
+		*/
 
 void commands_printf(const char* format, ...) {
 #if TEST_20260112
@@ -1182,7 +1206,7 @@ void commands_send_log_ethernet(unsigned char *data, int len) {
 	comm_usb_send_packet(m_send_buffer, ind);
 }
 
-static void stop_forward(void *p) {
+void stop_forward(void *p) {
 	(void)p;
 	bldc_interface_set_forward_func(0);
 }
