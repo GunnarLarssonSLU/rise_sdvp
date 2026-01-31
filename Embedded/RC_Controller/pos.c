@@ -105,6 +105,25 @@ extern float debugvalue6;
 static void mc_values_received(mc_values *val);
 static void vehicle_update_pos(float distance, float turn_rad_rear, float angle_diff, float speed);
 
+/**
+ * Initialize the position tracking system
+ * 
+ * This function initializes all position-related subsystems including:
+ * - IMU (MPU9150 or BMI160) with calibration
+ * - GPS reference frame and coordinate transformations
+ * - Position history buffer for correction
+ * - Timer for position updates (50kHz)
+ * - Terminal commands for debugging
+ * - PPS (Pulse Per Second) interrupt for GPS time synchronization
+ * - Mutexes for thread-safe access
+ * 
+ * The system supports multiple sensor configurations:
+ * - Standard IMU (MPU9150)
+ * - BMI160 IMU
+ * - Differential steering with dual VESC
+ * - Hydraulic drive systems
+ * - GPS with RTCM3 corrections
+ */
 void pos_init(void) {
 	ahrs_init_attitude_info(&m_att);		// Sets initial ahrs values to zero
 	m_attitude_init_done = false;			// Attitude not initiated yet
@@ -242,6 +261,23 @@ void pos_init(void) {
 	commands_printf("Done initializing! \n");
 }
 
+/**
+ * PPS (Pulse Per Second) interrupt callback
+ * 
+ * This function is called when a PPS pulse is received from the GPS receiver.
+ * PPS provides precise time synchronization (1 pulse per second) which is
+ * used to align GPS position corrections with the correct time. This is
+ * critical for accurate position tracking, especially at higher speeds.
+ * 
+ * @param extp External driver pointer (unused)
+ * @param channel External channel (unused)
+ * 
+ * The function performs:
+ * - Noise filtering (for external PPS on long cables)
+ * - Time synchronization with NMEA data
+ * - PPS pulse counting for debugging
+ * - Time-of-day calculation
+ */
 void pos_pps_cb(EXTDriver *extp, expchannel_t channel) {
 	(void)extp;
 	(void)channel;
@@ -263,6 +299,7 @@ void pos_pps_cb(EXTDriver *extp, expchannel_t channel) {
 	static int32_t last_timestamp = 0;
 
 	// Only one correction per time stamp.
+	// This prevents duplicate corrections for the same GPS second
 	if (last_timestamp == m_nma_last_time) {
 		return;
 	}
@@ -280,6 +317,19 @@ void pos_pps_cb(EXTDriver *extp, expchannel_t channel) {
 	last_timestamp = m_nma_last_time;
 }
 
+/**
+ * Get raw IMU sensor data
+ * 
+ * Retrieves the latest raw sensor readings from the IMU (accelerometer,
+ * gyroscope, and magnetometer). This function provides direct access to
+ * the sensor data before any processing or fusion.
+ * 
+ * @param accel Array to store accelerometer data (3 elements: X, Y, Z)
+ * @param gyro Array to store gyroscope data (3 elements: X, Y, Z in deg/s)
+ * @param mag Array to store magnetometer data (3 elements: X, Y, Z)
+ * 
+ * Note: Any of the parameters can be NULL if that data is not needed.
+ */
 void pos_get_imu(float *accel, float *gyro, float *mag) {
 	if (accel) {
 		accel[0] = m_accel[0];
@@ -300,6 +350,17 @@ void pos_get_imu(float *accel, float *gyro, float *mag) {
 	}
 }
 
+/**
+ * Get current orientation as quaternions
+ * 
+ * Retrieves the current orientation represented as a quaternion.
+ * Quaternions provide a singularity-free representation of 3D orientation
+ * and are used internally by the attitude estimation algorithm.
+ * 
+ * @param q Array to store quaternion (4 elements: q0, q1, q2, q3)
+ * 
+ * Note: This function is thread-safe and locks the position mutex.
+ */
 void pos_get_quaternions(float *q) {
 	chMtxLock(&m_mutex_pos);
 	q[0] = m_pos.q0;
@@ -309,22 +370,66 @@ void pos_get_quaternions(float *q) {
 	chMtxUnlock(&m_mutex_pos);
 }
 
+/**
+ * Get current position state
+ * 
+ * Retrieves the complete position state including position, orientation,
+ * velocity, and other navigation data. This is the primary function
+ * for accessing position information.
+ * 
+ * @param p Pointer to POS_STATE structure to fill
+ * 
+ * Note: This function is thread-safe and locks the position mutex.
+ */
 void pos_get_pos(POS_STATE *p) {
 	chMtxLock(&m_mutex_pos);
 	*p = m_pos;
 	chMtxUnlock(&m_mutex_pos);
 }
 
+/**
+ * Get current GPS state
+ * 
+ * Retrieves the complete GPS state including WGS84 coordinates, ECEF
+ * coordinates, local ENU coordinates, and GPS quality information.
+ * 
+ * @param p Pointer to GPS_STATE structure to fill
+ * 
+ * Note: This function is thread-safe and locks the GPS mutex.
+ */
 void pos_get_gps(GPS_STATE *p) {
 	chMtxLock(&m_mutex_gps);
 	*p = m_gps;
 	chMtxUnlock(&m_mutex_gps);
 }
 
+/**
+ * Get current speed
+ * 
+ * Retrieves the current speed in m/s. The speed is calculated from
+ * odometry data (wheel encoders or hydraulic sensors) and represents
+ * the ground speed of the vehicle.
+ * 
+ * @return Current speed in meters per second (m/s)
+ */
 float pos_get_speed(void) {
 	return m_pos.speed;
 }
 
+/**
+ * Set position and yaw manually
+ * 
+ * Manually sets the vehicle position and yaw angle. This is useful for
+ * initializing the position at a known location or resetting the position
+ * during operation. The function also recalculates the IMU yaw offset
+ * to maintain consistency between the position reference frame and IMU.
+ * 
+ * @param x X position in local ENU frame (meters)
+ * @param y Y position in local ENU frame (meters)
+ * @param angle Yaw angle in degrees (0-360)
+ * 
+ * Note: This function is thread-safe and locks both position and GPS mutexes.
+ */
 void pos_set_xya(float x, float y, float angle) {
 	commands_printf("In Pos Set XYA\n");
 	commands_printf("Setting position to (x,y,z): %f, %f %f", (double) x,(double) y,(double) angle);
@@ -352,6 +457,25 @@ void pos_set_yaw_offset(float angle) {
 	chMtxUnlock(&m_mutex_pos);
 }
 
+/**
+ * Set local ENU reference frame origin
+ * 
+ * Sets the origin of the local East-North-Up (ENU) coordinate frame
+ * based on WGS84 latitude, longitude, and height. This function
+ * calculates the rotation matrix for converting between ECEF and
+ * local ENU coordinates, which is used for all position calculations.
+ * 
+ * The ENU frame is right-handed with:
+ * - X axis pointing East
+ * - Y axis pointing North
+ * - Z axis pointing Up
+ * 
+ * @param lat Latitude in degrees
+ * @param lon Longitude in degrees
+ * @param height Height above WGS84 ellipsoid in meters
+ * 
+ * Note: This function is thread-safe and locks the GPS mutex.
+ */
 void pos_set_enu_ref(double lat, double lon, double height) {
 
 	double x, y, z;
@@ -365,12 +489,15 @@ void pos_set_enu_ref(double lat, double lon, double height) {
 	m_gps.iy = y;
 	m_gps.iz = z;
 
+	// Calculate trigonometric values for rotation matrix
 	float so = sinf((float)lon * M_PI / 180.0);
 	float co = cosf((float)lon * M_PI / 180.0);
 	float sa = sinf((float)lat * M_PI / 180.0);
 	float ca = cosf((float)lat * M_PI / 180.0);
 
-	// ENU
+	// ENU rotation matrix: ECEF to ENU
+	// This matrix transforms from Earth-Centered, Earth-Fixed (ECEF)
+	// to local East-North-Up (ENU) coordinates
 	m_gps.r1c1 = -so;
 	m_gps.r1c2 = co;
 	m_gps.r1c3 = 0.0;
@@ -383,6 +510,7 @@ void pos_set_enu_ref(double lat, double lon, double height) {
 	m_gps.r3c2 = ca * so;
 	m_gps.r3c3 = sa;
 
+	// Initialize local position to origin
 	m_gps.lx = 0.0;
 	m_gps.ly = 0.0;
 	m_gps.lz = 0.0;
@@ -414,6 +542,24 @@ void pos_set_ms_today(int32_t ms) {
 	m_ms_today = ms;
 }
 
+/**
+ * Process NMEA GPS sentence
+ * 
+ * Parses NMEA GPS sentences and updates the GPS state. This function
+ * handles GGA (position fix), GPGSV (GPS satellite info), and GLGSV
+ * (GLONASS satellite info) sentences. The parsed data is used to
+ * update the vehicle's position and GPS quality information.
+ * 
+ * @param data NMEA sentence string (e.g., "$GPGGA,123519,5556.470,N,...")
+ * @return true if GGA sentence was successfully decoded, false otherwise
+ * 
+ * The function extracts:
+ * - Position (latitude, longitude, height)
+ * - GPS fix type (no fix, 2D, 3D, RTK, etc.)
+ * - Number of satellites
+ * - GPS time
+ * - Satellite information (for GPGSV and GLGSV)
+ */
 bool pos_input_nmea(const char *data) {
 
 	nmea_gga_info_t gga;

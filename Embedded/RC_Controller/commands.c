@@ -45,7 +45,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/**
+ * @file    commands.c
+ * @brief   Command Processing Module
+ * @details This module handles command processing for the RC_Controller system.
+ *          It manages packet reception, command routing, and communication with
+ *          various subsystems including position, motor control, hydraulic systems,
+ *          and GNSS receivers. The module supports both local and remote command
+ *          execution with proper synchronization and error handling.
+ *
+ * @defgroup COMMANDS Command Processing
+ * @ingroup  SYSTEM
+ * @{
+ */
+
 // Defines
+/**
+ * @brief Forwarding time for packets
+ * @details Time in microseconds to forward packets
+ */
 #define FWD_TIME		20000
 
 // Private variables
@@ -1281,3 +1299,4 @@ void commands_sleep(void)
 	// Signal all threads to terminate
 //    chEvtBroadcastFlags(&emergency_event, EMERGENCY_STOP_EVENT);
 }
+/* @} */

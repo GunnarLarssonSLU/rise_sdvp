@@ -99,8 +99,7 @@ int main(void) {
 	conf_general_init();
 	adconv_init();
 	servo_simple_init();
-	pos_init();
-	pos_uwb_init();
+	comm_usb_init();			// moved
 	comm_can_init();
 	autopilot_init();
 	timeout_init();
@@ -114,8 +113,10 @@ int main(void) {
 	// Only initialize USB communication if enabled
 	// This prevents overwhelming the Raspberry Pi with USB data
 #endif
-	comm_usb_init();
 	commands_init();
+	/*
+	pos_init();					// moved
+	pos_uwb_init();				// moved
 
 
 	//	watchdog_init();
@@ -140,4 +141,5 @@ int main(void) {
 		chThdSleepMilliseconds(10);
 		packet_timerfunc();
 	}
+	*/
 }

@@ -93,31 +93,52 @@ static void terminal_angle_dist_comp(int argc, const char **argv);
 static void terminal_look_ahead(int argc, const char **argv);
 static void reset_state(void);
 
+/**
+ * Initialize the autopilot system
+ * 
+ * This function initializes the autopilot system, including:
+ * - Route tracking state variables
+ * - Terminal commands for debugging and control
+ * - Mutex for thread-safe access
+ * - Configuration parameters for route following
+ * 
+ * The autopilot system implements a waypoint-based navigation algorithm
+ * that guides the vehicle along a predefined route. It supports:
+ * - Pure pursuit steering control
+ * - Dynamic look-ahead distance
+ * - Speed override functionality
+ * - Differential steering support
+ * - Route point synchronization
+ */
 void autopilot_init(void) {
+	// Clear route data
 	memset(m_route, 0, sizeof(m_route));
-	m_is_active = false;
-	m_is_route_started = false;
-	m_point_now = 0;
-	m_point_last = 0;
-	m_has_prev_point = false;
-	m_override_speed = 0.0;
-	m_is_speed_override = false;
+	
+	// Initialize autopilot state
+	m_is_active = false;				// Autopilot not active initially
+	m_is_route_started = false;			// Route not started
+	m_point_now = 0;					// Current route point index
+	m_point_last = 0;					// Last route point index
+	m_has_prev_point = false;			// No previous point initially
+	m_override_speed = 0.0;			// No speed override
+	m_is_speed_override = false;		// Speed override disabled
 	memset(&m_rp_now, 0, sizeof(ROUTE_POINT));
-	m_rad_now = -1.0;
+	m_rad_now = -1.0;					// No current turn radius
 	memset(&m_point_rx_prev, 0, sizeof(ROUTE_POINT));
-	m_point_rx_prev_set = false;
-	chMtxObjectInit(&m_ap_lock);
-	m_start_time = 0;
-	m_sync_rx = false;
-	m_print_closest_point = false;
-	m_en_dynamic_rad = true;
-	m_en_angle_dist_comp = true;
-	m_route_look_ahead = 8;
-	m_route_left = 0;
-	m_route_end = false;
+	m_point_rx_prev_set = false;		// No previous received point
+	chMtxObjectInit(&m_ap_lock);		// Initialize mutex for thread safety
+	m_start_time = 0;					// No start time set
+	m_sync_rx = false;					// No route synchronization
+	m_print_closest_point = false;	// Don't print closest point by default
+	m_en_dynamic_rad = true;			// Enable dynamic turn radius
+	m_en_angle_dist_comp = true;		// Enable angle-distance compensation
+	m_route_look_ahead = 8;			// Look-ahead distance for pure pursuit
+	m_route_left = 0;					// Route points remaining
+	m_route_end = false;				// Route not completed
 
+	// Initialize differential steering state
 #if HAS_DIFF_STEERING
-	m_turn_rad_now = 1e6;
+	m_turn_rad_now = 1e6;			// Large turn radius initially
 #endif
 
 	terminal_register_command_callback(
@@ -506,6 +527,23 @@ void autopilot_set_turn_rad(float rad) {
 }
 #endif
 
+/**
+ * Autopilot Control Thread
+ * 
+ * This is the main autopilot thread that runs at AP_HZ (100Hz) frequency.
+ * It implements a pure pursuit algorithm to follow a predefined route.
+ * 
+ * The thread:
+ * 1. Checks for emergency stop events
+ * 2. Sleeps to maintain control frequency
+ * 3. Locks the autopilot mutex for thread-safe access
+ * 4. Checks if autopilot is active
+ * 5. Calculates the current target point and turn radius
+ * 6. Updates vehicle steering and speed
+ * 7. Handles route completion and wrapping
+ * 
+ * @param arg Unused thread argument
+ */
 static THD_FUNCTION(ap_thread, arg) {
 	(void)arg;
 
@@ -514,24 +552,27 @@ static THD_FUNCTION(ap_thread, arg) {
 	uint32_t attributes_now = 0;
 
 	for(;;) {
+		// Check for emergency stop (commented out in current implementation)
 /*        if (chEvtWaitOneTimeout(EMERGENCY_STOP_EVENT, TIME_IMMEDIATE) == MSG_OK) {
             // Perform cleanup if necessary
             // ...
             break;
         }*/
 
-
+		// Sleep to maintain control loop frequency (100Hz)
 		chThdSleep(CH_CFG_ST_FREQUENCY / AP_HZ);
 
+		// Lock mutex for thread-safe access to autopilot state
 		chMtxLock(&m_ap_lock);
 
+		// If autopilot is not active, reset turn radius and continue
 		if (!m_is_active) {
 			m_rad_now = -1.0;
 			chMtxUnlock(&m_ap_lock);
 			continue;
 		}
 
-		// the length of the route
+		// Calculate the length of the route
 		int len = m_point_last;
 
 		// This means that the route has wrapped around

@@ -50,19 +50,37 @@ static void dw_range_callback(uint8_t id, uint8_t dest, float range);
 static void dw_ping_callback(uint8_t id);
 static void dw_uptime_callback(uint8_t id, uint32_t uptime);
 
+/**
+ * Process terminal command string
+ * 
+ * This function parses and executes terminal commands. It tokenizes the input
+ * string, identifies the command, and calls the appropriate handler function.
+ * 
+ * @param str Input string containing the command and arguments
+ * 
+ * The function supports:
+ * - Basic commands (ping, mem, threads, vesc, etc.)
+ * - Command registration via callbacks
+ * - Argument parsing (up to 64 arguments)
+ * - Error handling for invalid commands
+ */
 void terminal_process_string(char *str) {
+	// Maximum number of arguments supported
 	enum { kMaxArgs = 64 };
 	int argc = 0;
 	char *argv[kMaxArgs];
 
+	// Buffer for command processing
 	static char buffer[256];
 
+	// Tokenize the input string
 	char *p2 = strtok(str, " ");
 	while (p2 && argc < kMaxArgs) {
 		argv[argc++] = p2;
 		p2 = strtok(0, " ");
 	}
 
+	// Handle case where no command was provided
 	if (argc == 0) {
 		commands_printf("No command received\n");
 		return;

@@ -25,6 +25,19 @@
 #include <string.h>
 #include <math.h>
 
+/**
+ * @file    ublox.c
+ * @brief   UBLOX GNSS Module
+ * @details This module handles communication with UBLOX GNSS receivers (F9P, M8N, etc.).
+ *          It provides parsing of UBX protocol messages, configuration of GNSS settings,
+ *          and integration with RTCM3 correction data. The module runs a dedicated thread
+ *          for processing incoming data and supports various GNSS constellations.
+ *
+ * @defgroup UBLOX UBLOX GNSS
+ * @ingroup  GNSS
+ * @{
+ */
+
 // Settings
 #define HW_UART_DEV				UARTD6
 #define HW_UBX_TX_PORT				GPIOC
@@ -1887,3 +1900,4 @@ static void ubx_put_R8(uint8_t *msg, int *ind, double data) {
 	msg[(*ind)++] = x.i >> 48;
 	msg[(*ind)++] = x.i >> 56;
 }
+/* @} */

@@ -30,6 +30,19 @@
 #include "chvt.h"
 #include <math.h>
 
+/**
+ * @file    pwm_esc.c
+ * @brief   PWM ESC Control Module
+ * @details This module controls PWM signals for ESC (Electronic Speed Controllers)
+ *          and servo motors. It provides precise pulse width modulation for motor
+ *          control and servo positioning. The module supports speed measurement
+ *          via tachometer input and integrates with various vehicle configurations.
+ *
+ * @defgroup PWM_ESC PWM ESC Control
+ * @ingroup  MOTOR_CONTROL
+ * @{
+ */
+
 // #include "io_board_adc.h"  // or wherever ADC_CNT_t is defined
 
 //extern ADC_CNT_t io_board_adc0_cnt;
@@ -379,3 +392,4 @@ static void tacho_debug_thread(void *arg) {
     }
 }
 #endif
+/* @} */

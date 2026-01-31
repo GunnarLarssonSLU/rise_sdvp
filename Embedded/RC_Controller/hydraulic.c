@@ -30,9 +30,30 @@
 
 #include "pos.h"
 
+/**
+ * @file    hydraulic.c
+ * @brief   Hydraulic System Control Module
+ * @details This module controls the hydraulic system of the RC_Controller vehicle.
+ *          It manages hydraulic actuators, speed control, distance tracking, and
+ *          limit switch monitoring. The module supports different vehicle configurations
+ *          (MacTrac vs standard) and integrates with various IO boards and ADDIO
+ *          valve controllers via CAN bus.
+ *
+ * @defgroup HYDRAULIC Hydraulic System
+ * @ingroup  VEHICLE_CONTROL
+ * @{
+ */
+
 //thread_t *hydro_thread = NULL;
 
-// Settings
+/**
+ * @name Configuration Settings
+ * @{
+ */
+/**
+ * @brief Servo motor assignments
+ * @details Defines which PWM outputs control the hydraulic servos
+ */
 #ifdef IS_MACTRAC
 #define SERVO_LEFT				10 // Only one servo
 #define SERVO_RIGHT				1
@@ -370,3 +391,4 @@ static THD_FUNCTION(hydro_thread, arg) {
 //    chEvtUnregister(&emergency_event, &el);
 //    chThdExit(MSG_OK);
 }
+/* @} */

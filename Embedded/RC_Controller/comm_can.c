@@ -15,6 +15,19 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+ * @file    comm_can.c
+ * @brief   CAN Bus Communication Module
+ * @details This module handles CAN bus communication for the RC_Controller system.
+ *          It supports multiple CAN devices including VESC motor controllers, IO boards,
+ *          UWB (DW) modules, and ADDIO valve controllers. The module uses a dual-thread
+ *          architecture for reliable CAN message handling with proper synchronization.
+ *
+ * @defgroup CAN_COMM CAN Communication
+ * @ingroup  COMMUNICATION
+ * @{
+ */
+
 #include <string.h>
 #include "comm_can.h"
 #include "ch.h"
@@ -833,3 +846,4 @@ static void printf_wrapper(char *str) {
 	commands_printf(str);
 }
 
+/* @} */
