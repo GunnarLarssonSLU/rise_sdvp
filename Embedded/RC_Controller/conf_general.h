@@ -30,6 +30,7 @@
 
 // Mode macros
 #define MAIN_MODE_IS_VEHICLE		(MAIN_MODE == MAIN_MODE_VEHICLE)
+#define MAIN_MODE_IS_MOTE		(MAIN_MODE != MAIN_MODE_VEHICLE)
 
 // Firmware version
 #define FW_VERSION_MAJOR			30

@@ -36,6 +36,7 @@
 #include "pos_uwb.h"
 #include "comm_can.h"
 #include "hydraulic.h"
+#include "comm_usb.h"
 #include "pos.h"
 #include "bmi160_wrapper.h"
 
