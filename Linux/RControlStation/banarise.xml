@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<routes>
+    <route>
+        <point>
+            <x>-213.249</x>
+            <y>95.438</y>
+            <speed>0.833333</speed>
+            <time>6000</time>
+            <attributes>0</attributes>
+        </point>
+        <point>
+            <x>-168.441</x>
+            <y>94.579</y>
+            <speed>0.833333</speed>
+            <time>0</time>
+            <attributes>0</attributes>
+        </point>
+        <point>
+            <x>-165.2</x>
+            <y>48.338</y>
+            <speed>0.833333</speed>
+            <time>2000</time>
+            <attributes>0</attributes>
+        </point>
+        <point>
+            <x>-211.826</x>
+            <y>48.339</y>
+            <speed>0.833333</speed>
+            <time>4000</time>
+            <attributes>0</attributes>
+        </point>
+    </route>
+</routes>
