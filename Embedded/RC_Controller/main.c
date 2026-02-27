@@ -114,7 +114,6 @@ int main(void) {
 	// This prevents overwhelming the Raspberry Pi with USB data
 #endif
 	commands_init();
-	/*
 	pos_init();					// moved
 	pos_uwb_init();				// moved
 
@@ -124,6 +123,7 @@ int main(void) {
 #if UBLOX_EN
 	ublox_init();
 #endif
+	/*
 
 	motor_sim_set_running(main_config.vehicle.simulate_motor);
 

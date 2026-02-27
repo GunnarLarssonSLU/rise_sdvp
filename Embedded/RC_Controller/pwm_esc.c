@@ -53,6 +53,11 @@ volatile bool new_pulse = false;
 		const float wheel_diam = 0.65;
 		const float cnts_per_rev = 16.0;
 #endif
+#ifdef IS_DRANGEN
+		// Measure speed
+		const float wheel_diam = 0.65;
+		const float cnts_per_rev = 16.0;
+#endif
 
 
 #ifdef SERVO_READ

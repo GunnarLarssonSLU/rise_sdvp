@@ -243,9 +243,9 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 		// ==================== Vehicle commands ==================== //
 
 
-		case CMD_HEARTBEAT:
-            chEvtBroadcast(&heartbeat_event); // Signal heartbeat
-	        break;
+//		case CMD_HEARTBEAT:
+//            chEvtBroadcast(&heartbeat_event); // Signal heartbeat
+//	        break;
 		case CMD_ARDUINO_STATUS   :
 			if (data[0])
 			{
