@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<routes>
+    <route>
+        <point>
+            <x>30.0739</x>
+            <y>-94.4774</y>
+            <speed>1.25</speed>
+            <time>22000</time>
+            <attributes>16</attributes>
+        </point>
+        <point>
+            <x>-72.5884</x>
+            <y>-113.989</y>
+            <speed>1.25</speed>
+            <time>24000</time>
+            <attributes>16</attributes>
+        </point>
+        <point>
+            <x>28.3202</x>
+            <y>-93.2839</y>
+            <speed>1.25</speed>
+            <time>62000</time>
+            <attributes>16</attributes>
+        </point>
+        <point>
+            <x>-71.3948</x>
+            <y>-112.236</y>
+            <speed>1.25</speed>
+            <time>64000</time>
+            <attributes>16</attributes>
+        </point>
+        <point>
+            <x>26.5665</x>
+            <y>-92.0903</y>
+            <speed>1.25</speed>
+            <time>102000</time>
+            <attributes>16</attributes>
+        </point>
+        <point>
+            <x>-70.2013</x>
+            <y>-110.482</y>
+            <speed>1.25</speed>
+            <time>104000</time>
+            <attributes>16</attributes>
+        </point>
+    </route>
+</routes>

@@ -1,0 +1,45 @@
+{
+    "logs": [
+        {
+            "outputFile": "/home/biophysics/rise_sdvp_gunnar/Linux/RControlStation/android-build/build/intermediates/incremental/mergeDebugResources/merged.dir/values/values.xml",
+            "map": [
+                {
+                    "source": "/home/biophysics/rise_sdvp_gunnar/Linux/RControlStation/android-build/res/values/libs.xml",
+                    "from": {
+                        "startLines": "9,30,13,2",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "292,1171,347,55",
+                        "endLines": "11,32,28,4",
+                        "endColumns": "12,12,12,12",
+                        "endOffsets": "341,1394,1165,166"
+                    },
+                    "to": {
+                        "startLines": "2,5,8,24",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,109,337,1160",
+                        "endLines": "4,7,23,26",
+                        "endColumns": "12,12,12,12",
+                        "endOffsets": "104,332,1155,1271"
+                    }
+                },
+                {
+                    "source": "/home/biophysics/Qt/5.15.2/android/src/android/java/res/values/strings.xml",
+                    "from": {
+                        "startLines": "5,4,3,6",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "319,197,85,427",
+                        "endColumns": "107,121,111,97",
+                        "endOffsets": "422,314,192,520"
+                    },
+                    "to": {
+                        "startLines": "27,28,29,30",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "1276,1384,1506,1618",
+                        "endColumns": "107,121,111,97",
+                        "endOffsets": "1379,1501,1613,1711"
+                    }
+                }
+            ]
+        }
+    ]
+}
