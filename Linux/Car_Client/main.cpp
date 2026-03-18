@@ -36,6 +36,9 @@
 
 QLocalServer ros2Server;
 
+/**
+ * Display help text showing all available command-line arguments.
+ */
 void showHelp()
 {
     qDebug() << "Arguments";
@@ -76,9 +79,17 @@ void showHelp()
 #endif
 }
 
+/**
+ * Signal handler for graceful shutdown.
+ * Called on SIGINT (Ctrl+C) and SIGTERM.
+ * 
+ * @param sig Signal number
+ */
 static void m_cleanup(int sig)
 {
-    (void)sig;
+    (void)sig;  // Unused parameter
+    
+    // Request application to quit
     qApp->quit();
     qDebug() << "Bye :)";
 }

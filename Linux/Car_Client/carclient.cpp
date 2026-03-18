@@ -41,6 +41,14 @@
 #define JETSON____
 
 namespace {
+/**
+ * Callback function for RTCM data reception.
+ * Converts raw RTCM data to QByteArray and forwards to CarClient instance.
+ * 
+ * @param data Pointer to RTCM data buffer
+ * @param len Length of data in bytes
+ * @param type RTCM message type
+ */
 void rtcm_rx(uint8_t *data, int len, int type) {
     if (CarClient::currentMsgHandler) {
         QByteArray rtcm_data((const char*)data, len);
@@ -53,12 +61,20 @@ void rtcm_rx(uint8_t *data, int len, int type) {
 CarClient *CarClient::currentMsgHandler = 0;
 rtcm3_state CarClient::rtcmState;
 
+/**
+ * Constructor for CarClient.
+ * Initializes all communication interfaces, timers, and signal-slot connections.
+ * 
+ * @param parent Parent QObject
+ */
 CarClient::CarClient(QObject *parent) : QObject(parent)
 {
+    // Initialize settings
     mSettings.nmeaConnect = false;
     mSettings.serialConnect = false;
     mSettings.serialRtcmConnect = false;
 
+    // Create communication interfaces
     mSerialPort = new SerialPort(this);
     mSerialPortRtcm = new QSerialPort(this);
     mSerialPortArduino = new QSerialPort(this);
@@ -71,32 +87,38 @@ CarClient::CarClient(QObject *parent) : QObject(parent)
     mTcpServer = new TcpServerSimple(this);
 
     mRtcmClient = new RtcmClient(this);
-    mCarId = 255;
+    
+    // Initialize state variables
+    mCarId = 255;  // 255 = undefined
     mReconnectTimer = new QTimer(this);
-    mReconnectTimer->start(2000);
+    mReconnectTimer->start(2000);  // 2 second reconnect interval
     mTcpConnected = false;
     mLogFlushTimer = new QTimer(this);
-    mLogFlushTimer->start(2000);
+    mLogFlushTimer->start(2000);  // 2 second log flush interval
     mRtklibRunning = false;
-    mBatteryCells = 10;
-    mCarIdToSet = -1;
+    mBatteryCells = 10;  // Default: 10S battery
+    mCarIdToSet = -1;  // No pending ID change
     mOverrideUwbPos = false;
     mOverrideUwbX = 0.0;
     mOverrideUwbY = 0.0;
 
+    // Network configuration
     mHostAddress = QHostAddress("0.0.0.0");
     mUdpPort = 0;
     mUdpSocket = new QUdpSocket(this);
 
+    // RTCM configuration
     mRtcmBaseLat = 0.0;
     mRtcmBaseLon = 0.0;
     mRtcmBaseHeight = 0.0;
     mRtcmSendBase = false;
 
+    // Set up RTCM callback and initialize state
     currentMsgHandler = this;
     rtcm3_init_state(&rtcmState);
     rtcm3_set_rx_callback(rtcm_rx, &rtcmState);
 
+    // Configure TCP server to use packet protocol
     mTcpServer->setUsePacket(true);
 
     connect(mSerialPort, SIGNAL(serial_data_available()),
@@ -141,40 +163,62 @@ CarClient::CarClient(QObject *parent) : QObject(parent)
     connect(mLogBroadcaster, SIGNAL(dataReceived(QByteArray&)),
             this, SLOT(logBroadcasterDataReceived(QByteArray&)));
 
+    // Set up ROS 2 local server for inter-process communication
     ros2Server = new QLocalServer(this);
     connect(ros2Server, &QLocalServer::newConnection, this, &CarClient::handleRos2Connection);
 
     if (!ros2Server->listen("ros2_carclient_channel")) {
         qDebug() << "Unable to start the ROS 2 local server:" << ros2Server->errorString();
-        // Handle error
+        // Handle error - continue without ROS 2 support
     }
+    
+    // Log startup message
     logLineUsbReceived(0, "All Started!");
 }
 
+/**
+ * Destructor for CarClient.
+ * Ensures proper cleanup by stopping logging before destruction.
+ */
 CarClient::~CarClient()
 {
     logStop();
 }
 
+/**
+ * Handle new ROS 2 connection.
+ * Sets up signal-slot connections for the new client connection.
+ */
 void CarClient::handleRos2Connection() {
     QLocalSocket* clientConnection = ros2Server->nextPendingConnection();
     connect(clientConnection, &QLocalSocket::readyRead, this, &CarClient::readRos2Command);
     connect(clientConnection, &QLocalSocket::disconnected, clientConnection, &QLocalSocket::deleteLater);
 }
 
+/**
+ * Connect to controller card via serial port.
+ * 
+ * @param port Serial port name (e.g., "/dev/ttyUSB0")
+ * @param baudrate Baud rate (default: 115200)
+ */
 void CarClient::connectSerial(QString port, int baudrate)
 {
     qDebug() << "Trying to connect to serial port: " << port;
+    
+    // Close existing connection if open
     if(mSerialPort->isOpen()) {
         mSerialPort->closePort();
     }
 
+    // Open new connection
     mSerialPort->openPort(port, baudrate);
 
+    // Update settings
     mSettings.serialConnect = true;
     mSettings.serialPort = port;
     mSettings.serialBaud = baudrate;
 
+    // Check if connection succeeded
     if(!mSerialPort->isOpen()) {
 //        qDebug() << "Serial port connection failed";
         return;
@@ -186,19 +230,29 @@ void CarClient::connectSerial(QString port, int baudrate)
     mPacketInterface->getState(255); // To get car ID
 }
 
+/**
+ * Connect to RTCM GPS receiver via serial port.
+ * 
+ * @param port Serial port name (e.g., "/dev/ttyUSB1")
+ * @param baudrate Baud rate (default: 9600)
+ */
 void CarClient::connectSerialRtcm(QString port, int baudrate)
 {
+    // Close existing connection if open
     if(mSerialPortRtcm->isOpen()) {
         mSerialPortRtcm->close();
     }
 
+    // Configure and open new connection
     mSerialPortRtcm->setPortName(port);
     mSerialPortRtcm->open(QIODevice::ReadWrite);
 
+    // Update settings
     mSettings.serialRtcmConnect = true;
     mSettings.serialRtcmPort = port;
     mSettings.serialRtcmBaud = baudrate;
 
+    // Check if connection succeeded
     if(mSerialPortRtcm->isOpen())
     {
         // Tell RC_Controller about it
@@ -208,6 +262,7 @@ void CarClient::connectSerialRtcm(QString port, int baudrate)
 
     qDebug() << "Serial port RTCM connected";
 
+    // Configure serial port parameters
     mSerialPortRtcm->setBaudRate(baudrate);
     mSerialPortRtcm->setDataBits(QSerialPort::Data8);
     mSerialPortRtcm->setParity(QSerialPort::NoParity);
@@ -215,21 +270,32 @@ void CarClient::connectSerialRtcm(QString port, int baudrate)
     mSerialPortRtcm->setFlowControl(QSerialPort::NoFlowControl);
 }
 
+/**
+ * Connect to Arduino via serial port.
+ * 
+ * @param port Serial port name (e.g., "/dev/ttyACM0")
+ * @param baudrate Baud rate (default: 9600)
+ */
 void CarClient::connectSerialArduino(QString port, int baudrate)
 {
+    // Close existing connection if open
     if(mSerialPortArduino->isOpen()) {
         mSerialPortArduino->close();
     }
 
+    // Configure and open new connection
     mSerialPortArduino->setPortName(port);
     mSerialPortArduino->open(QIODevice::ReadWrite);
 
+    // Update settings
     mSettings.serialArduinoConnect = true;
     mSettings.serialArduinoPort = port;
     mSettings.serialArduinoBaud = baudrate;
 
+    // Check if connection succeeded and notify controller
     if(mSerialPortArduino->isOpen())
         {
+        // Notify controller that Arduino is connected
         QByteArray packet;
         packet.clear();
         packet.append(this->mCarId);
@@ -240,6 +306,7 @@ void CarClient::connectSerialArduino(QString port, int baudrate)
             // Tell RC_Controller about it
         } else
         {
+        // Notify controller that Arduino connection failed
         QByteArray packet;
         packet.clear();
         packet.append(this->mCarId);
@@ -252,6 +319,7 @@ void CarClient::connectSerialArduino(QString port, int baudrate)
     qDebug() << "Serial port Arduino connected";
     qDebug() << "Baudrate: " << baudrate;
 
+    // Configure serial port parameters
     mSerialPortArduino->setBaudRate(baudrate);
     mSerialPortArduino->setDataBits(QSerialPort::Data8);
     mSerialPortArduino->setParity(QSerialPort::NoParity);
@@ -259,31 +327,61 @@ void CarClient::connectSerialArduino(QString port, int baudrate)
     mSerialPortArduino->setFlowControl(QSerialPort::NoFlowControl);
 }
 
+/**
+ * Start RTCM broadcast server.
+ * 
+ * @param port TCP port to listen on (default: 8200)
+ */
 void CarClient::startRtcmServer(int port)
 {
     mRtcmBroadcaster->startTcpServer(port);
 }
 
+/**
+ * Start UBX broadcast server.
+ * 
+ * @param port TCP port to listen on (default: 8210)
+ */
 void CarClient::startUbxServer(int port)
 {
     mUbxBroadcaster->startTcpServer(port);
 }
 
+/**
+ * Start log broadcast server.
+ * 
+ * @param port TCP port to listen on (default: 8410)
+ */
 void CarClient::startLogServer(int port)
 {
     mLogBroadcaster->startTcpServer(port);
 }
 
+/**
+ * Connect to NMEA server for GPS data.
+ * 
+ * @param server Server address or hostname
+ * @param port TCP port (default: 2948)
+ */
 void CarClient::connectNmea(QString server, int port)
 {
+    // Close existing connection
     mTcpSocket->close();
+    
+    // Connect to NMEA server
     mTcpSocket->connectToHost(server, port);
 
+    // Update settings
     mSettings.nmeaConnect = true;
     mSettings.nmeaServer = server;
     mSettings.nmeaPort = port;
 }
 
+/**
+ * Start UDP server for broadcast messages.
+ * 
+ * @param port UDP port to listen on (default: 8300)
+ */
 void CarClient::startUdpServer(int port)
 {
     mUdpPort = port + 1;
@@ -306,24 +404,38 @@ bool CarClient::startTcpServer(int port, QHostAddress addr)
     return res;
 }
 
+/**
+ * Enable logging to file.
+ * 
+ * @param directory Directory to store log files
+ * @return true if logging started successfully, false otherwise
+ */
 bool CarClient::enableLogging(QString directory)
 {
+    // Close existing log if open
     if (mLog.isOpen()) {
         mLog.close();
     }
 
+    // Generate timestamped log filename
     QString name = QDateTime::currentDateTime().
             toString("LOG_yyyy-MM-dd_hh.mm.ss.log");
 
+    // Create directory if it doesn't exist
     QDir dir;
     dir.mkpath(directory);
 
+    // Set log file path and open
     mLog.setFileName(directory + "/" + name);
     return mLog.open(QIODevice::ReadWrite | QIODevice::Truncate);
 }
 
+/**
+ * Stop logging and close log file.
+ */
 void CarClient::logStop()
 {
+    // Close log file if open
     if (mLog.isOpen()) {
         qDebug() << "Closing log:" << mLog.fileName();
         mLog.close();

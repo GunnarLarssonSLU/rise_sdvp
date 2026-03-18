@@ -50,27 +50,45 @@ const unsigned short crc16_tab[] = { 0x0000, 0x1021, 0x2042, 0x3063, 0x4084,
                                      0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0 };
 }
 
+/**
+ * Constructor for Packet.
+ * Initializes state variables, timer, and signal-slot connections.
+ * 
+ * @param parent Parent QObject
+ */
 Packet::Packet(QObject *parent) : QObject(parent)
 {
+    // Initialize receive state
     mRxState = 0;
     mRxTimer = 0;
     mPayloadLength = 0;
     mCrcLow = 0;
     mCrcHigh = 0;
-    mByteTimeout = 50;
+    mByteTimeout = 50;  // 500ms timeout
 
+    // Set up timer for timeout detection (10ms interval)
     mTimer = new QTimer(this);
     mTimer->setInterval(10);
     mTimer->start();
 
+    // Connect timer signal
     connect(mTimer, SIGNAL(timeout()), this, SLOT(timerSlot()));
 }
 
+/**
+ * Send a packet with framing, length, CRC, and end marker.
+ * 
+ * Packet format:
+ * [START_BYTE][LENGTH][PAYLOAD][CRC16][END_BYTE]
+ * 
+ * @param data Packet payload data
+ */
 void Packet::sendPacket(const QByteArray &data)
 {
     QByteArray to_send;
     unsigned int len_tot = data.size();
 
+    // Add start byte based on packet size
     if (len_tot <= 255) {
         to_send.append((char)2);
         to_send.append((char)len_tot);
@@ -85,16 +103,26 @@ void Packet::sendPacket(const QByteArray &data)
         to_send.append((char)(len_tot & 0xFF));
     }
 
+    // Calculate CRC over payload
     unsigned short crc = crc16((const unsigned char*)data.data(), len_tot);
 
+    // Add payload, CRC, and end marker
     to_send.append(data);
     to_send.append((char)(crc >> 8));
     to_send.append((char)(crc & 0xFF));
     to_send.append((char)3);
 
+    // Emit signal to send the framed packet
     emit dataToSend(to_send);
 }
 
+/**
+ * Calculate CRC-16-CCITT checksum using precomputed lookup table.
+ * 
+ * @param buf Data buffer
+ * @param len Length of data
+ * @return CRC-16 checksum
+ */
 unsigned short Packet::crc16(const unsigned char *buf, unsigned int len)
 {
     unsigned short cksum = 0;
@@ -104,14 +132,31 @@ unsigned short Packet::crc16(const unsigned char *buf, unsigned int len)
     return cksum;
 }
 
+/**
+ * Process incoming data and reassemble packets.
+ * Implements a state machine to handle packet reception.
+ * 
+ * State machine:
+ * 0: Looking for start byte (2, 3, or 4)
+ * 1: Reading length bytes
+ * 2: Reading payload
+ * 3: Reading CRC (high byte)
+ * 4: Reading CRC (low byte)
+ * 5: Reading end byte
+ * 6: Validating CRC and emitting packet
+ * 
+ * @param data Incoming byte array
+ */
 void Packet::processData(QByteArray data)
 {
     unsigned char rx_data;
     for(int i = 0;i < data.length();i++) {
         rx_data = data.at(i);
 
+        // State machine for packet reassembly
         switch (mRxState) {
         case 0:
+            // Looking for start byte
             if (rx_data == 2) {
                 mRxState += 3;
                 mRxTimer = mByteTimeout;

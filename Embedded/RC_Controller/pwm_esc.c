@@ -30,6 +30,10 @@
 #include "chvt.h"
 #include <math.h>
 
+extern float debugvalue6;
+extern float debugvalue7;
+
+
 // #include "io_board_adc.h"  // or wherever ADC_CNT_t is defined
 
 //extern ADC_CNT_t io_board_adc0_cnt;
@@ -38,6 +42,11 @@ volatile bool new_pulse = false;
 #ifdef IS_MACTRAC
 		// Measure speed
 		const float wheel_diam = 0.65;
+		const float cnts_per_rev = 16.0;
+#endif
+#ifdef IS_DRANGEN
+		// Measure speed
+		const float wheel_diam = 0.30;
 		const float cnts_per_rev = 16.0;
 #endif
 
@@ -245,9 +254,10 @@ void pwm_esc_set(uint8_t channel, float pulse_width) {
 
 #ifdef SERVO_READ
 
-static void update_speed_buffer(float high_t, float low_t) {
-    float time_last = (high_t + low_t)/2;
-//    time_last = high_t + low_t;
+static void update_speed_buffer(float period, float unused) {
+    // Simplified version: just use the period directly
+    float time_last = period;
+    debugvalue6=time_last;
     if (time_last <= 0.0f) return;
 
     // Dynamiska toleranser beroende på hastighet
@@ -287,6 +297,7 @@ static void update_speed_buffer(float high_t, float low_t) {
     const float alpha = 0.3f;
     m_speed_filtered = m_speed_filtered * (1.0f - alpha) + new_speed * alpha;
     m_speed_pwm = m_speed_filtered;
+    debugvalue7=m_speed_pwm;
 //    m_speed_pwm = new_speed;
 };
 
@@ -303,8 +314,11 @@ void tach_input_init(void) {
     TIM2->ARR = 0xFFFF;        // Max period
     TIM2->CCMR2 &= ~TIM_CCMR2_CC3S;
     TIM2->CCMR2 |= TIM_CCMR2_CC3S_0;  // CC3 input, map to TI3
-    TIM2->CCER &= ~TIM_CCER_CC3P;     // Rising edge
+    TIM2->CCER &= ~TIM_CCER_CC3P;     // Rising edge (clear bit for rising edge)
     TIM2->CCER |= TIM_CCER_CC3E;      // Enable input capture
+    
+    // Try capturing falling edges instead
+    // TIM2->CCER |= TIM_CCER_CC3P;  // Uncomment to capture falling edge
 
     // Enable interrupt on CC3 match
     TIM2->DIER |= TIM_DIER_CC3IE;
@@ -315,8 +329,19 @@ void tach_input_init(void) {
 
     last_capture = 0;
 
+    // Initialize the state machine for the first pulse
+    io_board_adc0_cnt.is_high = false;
+    io_board_adc0_cnt.high_time_last = 0.0f;
+    io_board_adc0_cnt.high_time_current = 0.0f;
+    io_board_adc0_cnt.low_time_last = 0.0f;
+    io_board_adc0_cnt.low_time_current = 0.0f;
+    io_board_adc0_cnt.toggle_high_cnt = 0;
+    io_board_adc0_cnt.toggle_low_cnt = 0;
+
     // Debug: Print initialization complete
     commands_printf("Tachometer input initialized\n");
+    commands_printf("TIM2->CCER = 0x%08X\n", TIM2->CCER);
+    commands_printf("TIM2->DIER = 0x%08X\n", TIM2->DIER);
 }
 
 
@@ -338,18 +363,19 @@ CH_IRQ_HANDLER(STM32_TIM2_HANDLER) {
 
         last_reading_time = chVTGetSystemTimeX();
 
-        if (io_board_adc0_cnt.is_high) {
-			update_speed_buffer(io_board_adc0_cnt.high_time_last, io_board_adc0_cnt.low_time_last);
-            io_board_adc0_cnt.high_time_last = io_board_adc0_cnt.high_time_current;
-            io_board_adc0_cnt.high_time_current = 0.00001f * delta;
-        } else {
-			update_speed_buffer(io_board_adc0_cnt.high_time_last, io_board_adc0_cnt.low_time_last);
-            io_board_adc0_cnt.low_time_last = io_board_adc0_cnt.low_time_current;
-            io_board_adc0_cnt.low_time_current = 0.00001f * delta;
+        // Debug: Print when we receive a pulse
+        static uint32_t pulse_count = 0;
+        if (pulse_count++ % 100 == 0) {
+            commands_printf("Tach pulse: delta=%lu us\n", delta);
         }
 
-        io_board_adc0_cnt.toggle_high_cnt++;
-        io_board_adc0_cnt.is_high = !io_board_adc0_cnt.is_high;
+        // Simplified: Just measure the time between rising edges (period)
+        // This is simpler and more reliable than trying to measure both high and low times
+        float period = 0.00001f * delta;  // Convert to seconds
+        
+        // Update speed buffer with the period
+        // For a square wave, the period is the sum of high and low times
+        update_speed_buffer(period, 0.0f);
 
         new_pulse = true;  // signalera till tråden
 
