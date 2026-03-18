@@ -19,46 +19,84 @@
 #include <QDebug>
 #include <QLocalSocket>
 
+/**
+ * Constructor for TcpServerSimple.
+ * Initializes TCP server, packet handler, and sets up signal-slot connections.
+ * 
+ * @param parent Parent QObject
+ */
 TcpServerSimple::TcpServerSimple(QObject *parent) : QObject(parent)
 {
+    // Create TCP server
     mTcpServer = new QTcpServer(this);
+    
+    // Create packet handler
     mPacket = new Packet(this);
+    
+    // Initialize state
     mTcpSocket = 0;
     mUsePacket = false;
 
+    // Connect signals
     connect(mTcpServer, SIGNAL(newConnection()), this, SLOT(newTcpConnection()));
     connect(mPacket, SIGNAL(dataToSend(QByteArray&)),
             this, SLOT(dataToSend(QByteArray&)));
 }
 
+/**
+ * Start TCP server on specified port and address.
+ * 
+ * @param port TCP port to listen on
+ * @param addr Network address to bind to (default: Any)
+ * @return true if server started successfully, false otherwise
+ */
 bool TcpServerSimple::startServer(int port, QHostAddress addr)
 {
 	qDebug() << "in TcpServerSimple::startServer";
 	qDebug() << "(adress: " << addr << ", port: " << port;
+    
+    // Start listening on specified address and port
     if (!mTcpServer->listen(addr,  port)) {
         return false;
     }
     return true;
 }
 
+/**
+ * Stop the TCP server and clean up the connection.
+ * Closes the server, notifies about disconnection, and deletes the socket.
+ */
 void TcpServerSimple::stopServer()
 {
 //	qDebug() << "in TcpServerSimple::stoptServer";
+    // Close the server
     mTcpServer->close();
 
+    // Clean up the client connection
     if (mTcpSocket) {
+        // Notify about disconnection
         emit connectionChanged(false, mTcpSocket->peerAddress().toString());
+        
+        // Close and delete the socket
         mTcpSocket->close();
         delete mTcpSocket;
         mTcpSocket = 0;
     }
 }
 
+/**
+ * Send data to the connected client.
+ * Also forwards data to ROS 2 channel if available.
+ * 
+ * @param data Data to send
+ * @return true if data was sent successfully, false if no client connected
+ */
 bool TcpServerSimple::sendData(const QByteArray &data)
 {
 //    qDebug() << "in TcpServerSimple::sendData: " << data;
     bool res = false;
 
+    // Send data to connected client if available
     if (mTcpSocket) {
         mTcpSocket->write(data);
         sendMessageToRos2(data);
