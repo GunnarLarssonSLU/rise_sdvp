@@ -40,19 +40,29 @@ RtcmClient *RtcmClient::currentMsgHandler = 0;
 bool RtcmClient::gpsOnly = false;
 rtcm3_state RtcmClient::rtcmState;
 
+/**
+ * Constructor for RtcmClient.
+ * Initializes TCP socket, serial port, and RTCM decoder.
+ * 
+ * @param parent Parent QObject
+ */
 RtcmClient::RtcmClient(QObject *parent) : QObject(parent)
 {
+    // Create network and serial interfaces
     mTcpSocket = new QTcpSocket(this);
     mSerialPort = new QSerialPort(this);
 
+    // Register Qt meta types for RTCM data structures
     qRegisterMetaType<rtcm_obs_header_t>("rtcm_obs_header_t");
     qRegisterMetaType<rtcm_obs_t>("rtcm_obs_gps_t");
 
+    // Set up RTCM decoder
     currentMsgHandler = this;
     rtcm3_init_state(&rtcmState);
     rtcm3_set_rx_callback(rtcm_rx, &rtcmState);
     rtcm3_set_rx_callback_1005_1006(rtcm_rx_1006, &rtcmState);
 
+    // Connect signals
     connect(mTcpSocket, SIGNAL(readyRead()), this, SLOT(tcpInputDataAvailable()));
     connect(mTcpSocket, SIGNAL(connected()), this, SLOT(tcpInputConnected()));
     connect(mTcpSocket, SIGNAL(disconnected()),
@@ -64,13 +74,25 @@ RtcmClient::RtcmClient(QObject *parent) : QObject(parent)
             this, SLOT(serialPortError(QSerialPort::SerialPortError)));*/
 }
 
+/**
+ * Connect to NTRIP server for RTCM data.
+ * 
+ * @param server NTRIP server address
+ * @param stream RTCM data stream/mountpoint
+ * @param user Username for authentication (optional)
+ * @param pass Password for authentication (optional)
+ * @param port TCP port (default: 80)
+ * @return true if connection attempt was initiated
+ */
 bool RtcmClient::connectNtrip(QString server, QString stream, QString user, QString pass, int port)
 {
+    // Store connection parameters
     mNtripUser = user;
     mNtripPassword = pass;
     mNtripStream = stream;
     mNtripServer = server;
 
+    // Abort any existing connection and connect to server
     mTcpSocket->abort();
     mTcpSocket->connectToHost(server, port);
 

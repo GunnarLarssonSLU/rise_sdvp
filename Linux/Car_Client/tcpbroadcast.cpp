@@ -17,19 +17,39 @@
 
 #include "tcpbroadcast.h"
 
+/**
+ * Constructor for TcpBroadcast.
+ * Initializes TCP server and sets up signal-slot connections.
+ * 
+ * @param parent Parent QObject
+ */
 TcpBroadcast::TcpBroadcast(QObject *parent) : QObject(parent)
 {
+    // Create TCP server
     mTcpServer = new QTcpServer(this);
+    
+    // Connect new connection signal to slot
     connect(mTcpServer, SIGNAL(newConnection()), this, SLOT(newTcpConnection()));
 }
 
+/**
+ * Destructor for TcpBroadcast.
+ * Stops logging before destruction.
+ */
 TcpBroadcast::~TcpBroadcast()
 {
     logStop();
 }
 
+/**
+ * Start TCP server on specified port.
+ * 
+ * @param port TCP port to listen on
+ * @return true if server started successfully, false otherwise
+ */
 bool TcpBroadcast::startTcpServer(int port)
 {
+    // Start listening on specified port
     if (!mTcpServer->listen(QHostAddress::Any,  port)) {
         qWarning() << "Unable to start TCP server: " << mTcpServer->errorString();
         return false;
@@ -38,14 +58,26 @@ bool TcpBroadcast::startTcpServer(int port)
     return true;
 }
 
+/**
+ * Get the last error that occurred.
+ * 
+ * @return Error string describing the last error
+ */
 QString TcpBroadcast::getLastError()
 {
     return mTcpServer->errorString();
 }
 
+/**
+ * Stop the TCP server and clean up all connections.
+ * Closes the server and deletes all connected sockets.
+ */
 void TcpBroadcast::stopServer()
 {
+    // Close the server
     mTcpServer->close();
+    
+    // Clean up all connected sockets
     QMutableListIterator<QTcpSocket*> itr(mSockets);
 
     while(itr.hasNext()) {
