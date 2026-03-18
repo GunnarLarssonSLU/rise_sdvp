@@ -22,7 +22,6 @@
 #include "pwm_esc.h"
 #include "utils.h"
 #include "comm_can.h"
-#include "watchdog.h"
 #include <math.h>
 #ifdef SERVO_READ
 #define READING_TIMEOUT 1000
@@ -138,9 +137,9 @@ float hydraulic_get_distance(bool reset) {
  */
 void hydraulic_set_speed(float speed) {
     // Exit if no heartbeat
-    if (system_state != SYSTEM_STATE_OPERATIONAL) {
-        return;
-    }
+    //if (system_state != SYSTEM_STATE_OPERATIONAL) {
+	//    return;
+	//}
 
 	m_timeout_cnt = 0.0;
 

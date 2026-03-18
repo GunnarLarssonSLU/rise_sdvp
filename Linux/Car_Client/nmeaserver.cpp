@@ -104,11 +104,21 @@ static char* mystrsep(char** stringp, const char* delim) {
 #endif
 }
 
+/**
+ * Constructor for NmeaServer.
+ * Initializes TCP broadcast server and client socket, and sets up signal-slot connections.
+ * 
+ * @param parent Parent QObject
+ */
 NmeaServer::NmeaServer(QObject *parent) : QObject(parent)
 {
+    // Create TCP broadcast server for NMEA data
     mTcpBroadcast = new TcpBroadcast(this);
+    
+    // Create TCP client for connecting to NMEA servers
     mTcpClient = new QTcpSocket(this);
 
+    // Connect client signals to slots
     connect(mTcpClient, SIGNAL(readyRead()), this, SLOT(tcpInputDataAvailable()));
     connect(mTcpClient, SIGNAL(connected()), this, SLOT(tcpInputConnected()));
     connect(mTcpClient, SIGNAL(disconnected()),
@@ -117,13 +127,24 @@ NmeaServer::NmeaServer(QObject *parent) : QObject(parent)
             this, SLOT(tcpInputError(QAbstractSocket::SocketError)));
 }
 
+/**
+ * Destructor for NmeaServer.
+ * Stops logging before destruction.
+ */
 NmeaServer::~NmeaServer()
 {
     logStop();
 }
 
+/**
+ * Start TCP server for broadcasting NMEA data.
+ * 
+ * @param port TCP port to listen on (default: 2948)
+ * @return true if server started successfully, false otherwise
+ */
 bool NmeaServer::startTcpServer(int port)
 {
+    // Start TCP broadcast server
     if (!mTcpBroadcast->startTcpServer(port)) {
         qWarning() << "Unable to start TCP server: " << mTcpBroadcast->getLastError();
         return false;
@@ -132,8 +153,17 @@ bool NmeaServer::startTcpServer(int port)
     return true;
 }
 
+/**
+ * Send NMEA GGA sentence (Global Positioning System Fix Data).
+ * 
+ * Format: $GPGGA,hhmmss.ss,lat,lat_N/S,lon,lon_E/W,fix_quality,num_sats,HDOP,altitude,M,geoid,M,age,diff_ref
+ * 
+ * @param nmea NMEA GGA information structure
+ * @return true if sentence was sent successfully
+ */
 bool NmeaServer::sendNmeaGga(NmeaServer::nmea_gga_info_t &nmea)
 {
+    // Extract degrees and minutes from latitude
     qint16 lat_deg = nmea.lat;
     double lat_min = MINUTES(nmea.lat);
     qint16 lon_deg = nmea.lon;
@@ -141,15 +171,18 @@ bool NmeaServer::sendNmeaGga(NmeaServer::nmea_gga_info_t &nmea)
     lat_deg = abs(lat_deg);
     lon_deg = abs(lon_deg);
 
+    // Determine direction (N/S, E/W)
     char lat_dir = nmea.lat < 0.0 ? 'S' : 'N';
     char lon_dir = nmea.lon < 0.0 ? 'W' : 'E';
 
+    // Convert time of week to hhmmss format
     int t = (int)nmea.t_tow;
     int hour = (t / 3600) % 24;
     int min = (t / 60) % 60;
     int sec = t % 60;
     int frac_s = fmod(nmea.t_tow, 1.0) * 100.0;
 
+    // Format GGA sentence
     QString nmea_str;
     nmea_str.asprintf("$GPGGA,%02d%02d%02d.%02d,"
                      "%02d%010.7f,%c,%03d%010.7f,%c,"

@@ -100,7 +100,6 @@ static void correct_pos_gps(POS_STATE *pos);
 static void ubx_rx_rawx(ubx_rxm_rawx *rawx);
 
 int iDebug;
-extern float debugvalue6;
 
 static void mc_values_received(mc_values *val);
 static void vehicle_update_pos(float distance, float turn_rad_rear, float angle_diff, float speed);
@@ -1047,8 +1046,6 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 	float roll = ahrs_get_roll((ATTITUDE_INFO*)&m_att);
 	float pitch = ahrs_get_pitch((ATTITUDE_INFO*)&m_att);
 	float yaw = ahrs_get_yaw((ATTITUDE_INFO*)&m_att);
-
-	debugvalue6=yaw;
 
 //	yaw+=m_yaw_bias;
 	// Apply tilt compensation for magnetometer values and calculate magnetic

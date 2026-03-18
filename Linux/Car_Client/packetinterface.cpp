@@ -54,38 +54,53 @@ const unsigned short crc16_tab[] = { 0x0000, 0x1021, 0x2042, 0x3063, 0x4084,
                                      0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0 };
 }
 
+/**
+ * Constructor for PacketInterface.
+ * Initializes buffers, state variables, timers, and UDP socket.
+ * 
+ * @param parent Parent QObject
+ */
 PacketInterface::PacketInterface(QObject *parent) :
     QObject(parent)
 {
+    // Allocate buffers for packet handling
     mSendBuffer = new quint8[mMaxBufferLen];
     mRxBuffer = new unsigned char[mMaxBufferLen];
     mSendBufferAck = new unsigned char[mMaxBufferLen];
 
+    // Initialize receive state
     mRxState = 0;
     mRxTimer = 0;
 
-    // Packet state
+    // Packet state variables
     mPayloadLength = 0;
     mRxDataPtr = 0;
     mCrcLow = 0;
     mCrcHigh = 0;
     mWaitingAck = false;
 
+    // Set up timer for acknowledgment retries (10ms interval)
     mTimer = new QTimer(this);
     mTimer->setInterval(10);
     mTimer->start();
 
+    // Initialize network configuration
     mHostAddress = QHostAddress("0.0.0.0");
     mHostAddress2 = QHostAddress("0.0.0.0");
     mUdpPort = 0;
     mUdpSocket = new QUdpSocket(this);
     mUdpServer = false;
 
+    // Connect signals
     connect(mUdpSocket, SIGNAL(readyRead()),
             this, SLOT(readPendingDatagrams()));
     connect(mTimer, SIGNAL(timeout()), this, SLOT(timerSlot()));
 }
 
+/**
+ * Destructor for PacketInterface.
+ * Cleans up allocated buffers.
+ */
 PacketInterface::~PacketInterface()
 {
     delete[] mSendBuffer;
@@ -93,6 +108,20 @@ PacketInterface::~PacketInterface()
     delete[] mSendBufferAck;
 }
 
+/**
+ * Process incoming data and reassemble packets.
+ * Implements a state machine to handle packet reception.
+ * 
+ * State machine:
+ * 0: Looking for start byte
+ * 1: Reading length (high byte)
+ * 2: Reading length (low byte)
+ * 3: Reading payload
+ * 4: Reading CRC (low byte)
+ * 5: Reading CRC (high byte)
+ * 
+ * @param data Incoming byte array
+ */
 void PacketInterface::processData(QByteArray &data)
 {
     unsigned char rx_data;
@@ -101,35 +130,39 @@ void PacketInterface::processData(QByteArray &data)
     for(int i = 0;i < data.length();i++) {
         rx_data = data[i];
 
+        // State machine for packet reassembly
         switch (mRxState) {
         case 0:
+            // Looking for start byte
             if (rx_data == 2) {
-                mRxState += 3;
+                mRxState += 3;  // Skip to payload reading
                 mRxTimer = rx_timeout;
                 mRxDataPtr = 0;
                 mPayloadLength = 0;
             } else if (rx_data == 3) {
-                mRxState += 2;
+                mRxState += 2;  // Skip to length reading
                 mRxTimer = rx_timeout;
                 mRxDataPtr = 0;
                 mPayloadLength = 0;
             } else if (rx_data == 4) {
-                mRxState++;
+                mRxState++;  // Start reading length
                 mRxTimer = rx_timeout;
                 mRxDataPtr = 0;
                 mPayloadLength = 0;
             } else {
-                mRxState = 0;
+                mRxState = 0;  // Invalid start byte
             }
             break;
 
         case 1:
+            // Reading length (high byte)
             mPayloadLength |= (unsigned int)rx_data << 16;
             mRxState++;
             mRxTimer = rx_timeout;
             break;
 
         case 2:
+            // Reading length (low byte)
             mPayloadLength |= (unsigned int)rx_data << 8;
             mRxState++;
             mRxTimer = rx_timeout;
@@ -184,28 +217,42 @@ void PacketInterface::processData(QByteArray &data)
     }
 }
 
+/**
+ * Process a complete packet and extract command and data.
+ * Emits appropriate signals based on packet content.
+ * 
+ * @param data Packet data (excluding start byte and CRC)
+ * @param len Length of packet data
+ */
 void PacketInterface::processPacket(const unsigned char *data, int len)
 {
+    // Create QByteArray for the complete packet
     QByteArray pkt = QByteArray((const char*)data, len);
 
+    // Extract car ID (first byte)
     unsigned char id = data[0];
     data++;
     len--;
 
+    // Extract command (second byte)
     CMD_PACKET cmd = (CMD_PACKET)(quint8)data[0];
     data++;
     len--;
 
+    // Emit packet received signal
     emit packetReceived(id, cmd, pkt);
 
+    // Handle specific commands
     switch (cmd) {
     case CMD_PRINTF: {
+        // Print command - emit string signal
         QByteArray tmpArray((const char*)data, len);
         tmpArray.append('\0');
         emit printReceived(id, QString::fromLatin1(tmpArray));
     } break;
 
     case CMD_PRINTLOG: {
+        // Log command - emit string signal
 //        QByteArray tmpArray = QByteArray::fromRawData((const char*)data, len);
 //        emit printReceived(id, QString::fromLatin1(tmpArray));
         QByteArray tmpArray((const char*)data, len);
@@ -503,12 +550,20 @@ unsigned short PacketInterface::crc16(const unsigned char *buf, unsigned int len
     return cksum;
 }
 
+/**
+ * Send a packet with optional UDP or serial framing.
+ * Adds appropriate framing and CRC checksum based on destination.
+ * 
+ * @param data Packet data to send
+ * @param len_packet Length of packet data
+ * @return true if packet was queued for sending, false otherwise
+ */
 bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_packet)
 {
     unsigned int ind = 0;
 //    qDebug() << "in packetinterface::sendPacket";
 
-    // If the IP is valid, send the packet over UDP
+    // If the IP is valid, send the packet over UDP (no framing needed)
     if (QString::compare(mHostAddress.toString(), "0.0.0.0") != 0) {
         memcpy(mSendBufferAck + ind, data, len_packet);
         ind += len_packet;
@@ -519,6 +574,7 @@ bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_pac
         mUdpSocket->writeDatagram(toSend, mHostAddress, mUdpPort);
         //ros2 ...
 
+        // Send to secondary address if configured
         if (QString::compare(mHostAddress2.toString(), "0.0.0.0") != 0) {
             mUdpSocket->writeDatagram(toSend, mHostAddress2, mUdpPort);
         }
@@ -526,10 +582,12 @@ bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_pac
         return true;
     }
 
+    // For serial communication, add framing and CRC
     int len_tot = len_packet;
     unsigned int data_offs = 0;
 
  //   qDebug() << "Length: " << len_tot;
+    // Add start byte based on packet size
     if (len_tot <= 255) {
         mSendBufferAck[ind++] = 2;
         mSendBufferAck[ind++] = len_tot;
@@ -547,21 +605,29 @@ bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_pac
         data_offs = 4;
     }
 
+    // Copy packet data
     memcpy(mSendBufferAck + ind, data, len_packet);
     ind += len_packet;
 
+    // Calculate and add CRC checksum
     unsigned short crc = crc16(mSendBufferAck + data_offs, len_tot);
     mSendBufferAck[ind++] = crc >> 8;
     mSendBufferAck[ind++] = crc;
-    mSendBufferAck[ind++] = 3;
+    mSendBufferAck[ind++] = 3;  // End marker
 
+    // Emit signal to send the framed packet
     QByteArray sendData = QByteArray::fromRawData((char*)mSendBufferAck, ind);
-
     emit dataToSend(sendData);
 
     return true;
 }
 
+/**
+ * Convenience method to send a QByteArray packet.
+ * 
+ * @param data QByteArray containing packet data
+ * @return true if packet was sent successfully, false otherwise
+ */
 bool PacketInterface::sendPacket(QByteArray data)
 {
     return sendPacket((const unsigned char*)data.data(), data.size());

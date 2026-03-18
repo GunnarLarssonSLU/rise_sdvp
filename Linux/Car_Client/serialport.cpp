@@ -31,33 +31,60 @@
 
 #include "serialport.h"
 
+/**
+ * Constructor for SerialPort.
+ * Initializes serial port settings, buffers, and state variables.
+ * 
+ * @param parent Parent QObject
+ */
 SerialPort::SerialPort(QObject *parent) :
     QThread(parent)
 {
+    // Initialize state
     mIsOpen = false;
 
+    // Set default serial settings
     mSettings.dataBits = DATA_8;
     mSettings.parity = PARITY_NONE;
     mSettings.stopBits = STOP_1;
     mSettings.baudrate = 115200;
 
+    // Allocate circular buffer (32KB)
     mBufferSize = 32768;
     mReadBuffer = new char[mBufferSize];
     mBufferRead = 0;
     mBufferWrite = 0;
 
+    // Initialize capture buffer
     mCaptureBytes = 0;
     mCaptureBuffer = 0;
     mCaptureWrite = 0;
 }
 
+/**
+ * Destructor for SerialPort.
+ * Closes the port and cleans up allocated resources.
+ */
 SerialPort::~SerialPort()
 {
+    // Close port if open
     closePort();
+    
+    // Free circular buffer
     delete mReadBuffer;
     //std::cout << "SerialPort destructor called";
 }
 
+/**
+ * Open a serial port with specified settings.
+ * 
+ * @param port Port name (e.g., "/dev/ttyUSB0")
+ * @param baudrate Baud rate (default: 115200)
+ * @param dataBits Number of data bits (default: DATA_8)
+ * @param stopBits Number of stop bits (default: STOP_1)
+ * @param parity Parity setting (default: PARITY_NONE)
+ * @return 0 on success, negative error code on failure
+ */
 int SerialPort::openPort(
         const QString& port,
         int baudrate,
@@ -65,10 +92,12 @@ int SerialPort::openPort(
         SerialStopBits stopBits,
         SerialParity parity)
 {
+    // Close existing port if open
     if (mIsOpen) {
         closePort();
     }
 
+    // Open the serial port
     mFd = open(port.toLocal8Bit().data(), O_RDWR | O_NOCTTY | O_NDELAY);
     if (mFd == -1) {
         qCritical() << "Opening serial port failed.";
@@ -77,68 +106,68 @@ int SerialPort::openPort(
 
     mIsOpen = true;
 
-    // No-blocking reads
+    // Configure non-blocking I/O
     fcntl(mFd, F_SETFL, FNDELAY);
 
+    // Get current port settings
     struct termios options;
     if (0 != tcgetattr(mFd, &options)) {
         qCritical() << "Reading serial port options failed.";
         return -2;
     }
 
-    // Enable the receiver and set local mode...
+    // Configure basic settings
     options.c_cflag |= CLOCAL | CREAD;
-
-    // Raw input
     options.c_lflag &= ~(ICANON|ECHO|ECHOE|ECHOK|ECHONL|ISIG);
-
-    // Disable flow control
     options.c_cflag &= ~CRTSCTS;
     options.c_iflag &= ~(IXON|IXOFF|IXANY);
 
-    // ???
-    /*set up other port settings*/
+    // Additional port configuration
     options.c_cflag |= CREAD|CLOCAL;
     options.c_lflag &= (~(ICANON|ECHO|ECHOE|ECHOK|ECHONL|ISIG));
     options.c_iflag &= (~(INPCK|IGNPAR|PARMRK|ISTRIP|ICRNL|IXANY));
     options.c_oflag &= (~OPOST);
     options.c_cc[VMIN] = 0;
-#ifdef _POSIX_VDISABLE  // Is a disable character available on this system?
-    // Some systems allow for per-device disable-characters, so get the
-    //  proper value for the configured device
+
+    // Disable special characters if available
+#ifdef _POSIX_VDISABLE
     const long vdisable = ::fpathconf(mFd, _PC_VDISABLE);
     options.c_cc[VINTR] = vdisable;
     options.c_cc[VQUIT] = vdisable;
     options.c_cc[VSTART] = vdisable;
     options.c_cc[VSTOP] = vdisable;
     options.c_cc[VSUSP] = vdisable;
-#endif //_POSIX_VDISABLE
+#endif
 
-    //Set the new options for the port...
+    // Apply the new settings
     if (0 != tcsetattr(mFd, TCSANOW, &options)) {
         qCritical() << "Writing serial port options failed.";
         closePort();
         return -3;
     }
 
+    // Configure data bits
     if (false == setDataBits(dataBits)) {
         qCritical() << "Setting data bits failed.";
         closePort();
         return -4;
     }
 
+    // Configure stop bits
     if (false == setStopBits(stopBits)) {
         qCritical() << "Setting stopbits failed.";
         closePort();
         return -5;
     }
 
+    // Configure parity
     if (false == setParity(parity)) {
-        qCritical() << "Setting parity faield.";
+        qCritical() << "Setting parity failed.";
         closePort();
         return -6;
     }
 
+    // Configure baud rate
     if (false == setBaudrate(baudrate)) {
         qCritical() << "Setting baudrate failed.";
         closePort();
