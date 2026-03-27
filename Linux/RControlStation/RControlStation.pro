@@ -36,6 +36,41 @@ win32: LIBS += -lopengl32
 CONFIG-= windows
 QMAKE_LFLAGS += $$QMAKE_LFLAGS_WINDOWS
 
+
+CONFIG += static
+##LIBS += -L/usr/local/lib -lgdal -lz -lsqlite3 -lproj -lgeos_c -lzstd -ltiff -lcurl -lwebp -ljpeg -ldeflate -lssl -lcrypto -lexpat -lpng -llz4 -ljson-c -lgeotiff -lgif -lnetcdf -lhdf5
+#LIBS += -L/usr/local/lib -lgdal -lz -lsqlite3 -lproj -lgeos_c -lzstd -ltiff -lcurl -lwebp -ljpeg -ldeflate -lssl -lcrypto -lexpat -lpng -llz4 -ljson-c -lgeotiff -lgif -lnetcdf
+#LIBS += -L/usr/lib/x86_64-linux-gnu -lhdf5_serial -lhdf5_serial_hl
+#LIBS += -L/usr/lib/x86_64-linux-gnu -lmfhdf -ldf
+#LIBS += -L/usr/lib/x86_64-linux-gnu -lheif
+#LIBS += -L/usr/local/lib/openjpeg-2.5 -l:libopenjp2.a
+#LIBS += /usr/local/lib/libopenjp2.a
+#LIBS += -L/usr/local/lib -lopenjp2
+#LIBS += -lpq -lblosc -lxml2
+
+#LIBS += -L/usr/local/lib -lgdal -lz -lsqlite3 -lproj -lgeos_c -lzstd -ltiff -lcurl -lwebp -ljpeg -ldeflate -lssl -lcrypto -lexpat -lpng -llz4 -ljson-c -lgeotiff -lgif -lnetcdf
+#LIBS += -L/usr/lib/x86_64-linux-gnu -lhdf5_serial -lhdf5_serial_hl -lmfhdf -ldf -lheif
+#LIBS += /usr/local/lib/libopenjp2.a
+#LIBS += -lpq -lblosc -lxml2 -lpcre2-8 -lodbc -lxerces-c
+#LIBS += -lIlmImf -lIlmThread -lImath -lHalf -lIex
+#LIBS += -lkmlbase -lkmldom -lkmlengine -lqhull -lcfitsio
+#LIBS += -logdi -lfreexl
+
+LIBS += -L/usr/local/lib -lgdal -lz -lsqlite3 -lproj -lgeos_c -lzstd -ltiff -lcurl -lwebp -ljpeg -ldeflate -lssl -lcrypto -lexpat -lpng -llz4 -ljson-c -lgeotiff -lgif -lnetcdf
+LIBS += -L/usr/lib/x86_64-linux-gnu -lhdf5_serial -lhdf5_serial_hl -lmfhdf -ldf -lheif
+LIBS += -lpq -lblosc -lxml2 -lpcre2-8 -lxerces-c
+LIBS += -lIlmImf -lIlmThread -lImath -lHalf -lIex
+LIBS += -lkmlbase -lkmldom -lkmlengine -lqhull -lcfitsio
+LIBS += -logdi -lfreexl
+
+# Explicitly link OpenJPEG and unixODBC at the end
+LIBS += /usr/local/lib/libopenjp2.a
+LIBS += -L/usr/lib/x86_64-linux-gnu -lodbc
+
+INCLUDEPATH += /usr/local/include
+INCLUDEPATH += /usr/local/include/openjpeg-2.4
+#INCLUDEPATH += /usr/local/include/openjpeg-2.5
+
 # Simulation Scennarios
 #DEFINES += HAS_SIM_SCEN
 # Usage: From the RControlStation root do:

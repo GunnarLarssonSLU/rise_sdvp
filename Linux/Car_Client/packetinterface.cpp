@@ -239,6 +239,11 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     data++;
     len--;
 
+
+    if ((cmd!=63) && (cmd!=120))
+    {
+        qDebug() << cmd;
+    };
     // Emit packet received signal
     emit packetReceived(id, cmd, pkt);
 
@@ -453,7 +458,7 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         state.debug_value13 = utility::buffer_get_double32(data, 1e4, &ind);
         state.debug_value14 = utility::buffer_get_double32(data, 1e4, &ind);
         state.debug_value15 = utility::buffer_get_double32(data, 1e4, &ind);
-        qDebug() << "Servo output: " << state.servo_output << ", Debug value: " << state.debug_value << "::" << state.debug_value2 << "::" << state.debug_value3 << "::" << state.debug_value4 << "::" << state.debug_value5  << "::" << state.debug_value6  << "::" << state.debug_value7  << "::" << state.debug_value8  << "::" << state.debug_value9  << "::" << state.debug_value10   << "::" << state.debug_value11  << "::" << state.debug_value12   << "::" << state.debug_value13  << "::" << state.debug_value14  << "::" << state.debug_value15;
+//        qDebug() << "Servo output: " << state.servo_output << ", Debug value: " << state.debug_value << "::" << state.debug_value2 << "::" << state.debug_value3 << "::" << state.debug_value4 << "::" << state.debug_value5  << "::" << state.debug_value6  << "::" << state.debug_value7  << "::" << state.debug_value8  << "::" << state.debug_value9  << "::" << state.debug_value10   << "::" << state.debug_value11  << "::" << state.debug_value12   << "::" << state.debug_value13  << "::" << state.debug_value14  << "::" << state.debug_value15;
 //        qDebug() << "Sensor value: " << state.sensor_value;
         emit stateReceived(id, state);
     } break;
@@ -464,18 +469,22 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
 
         // Acks
     case CMD_AP_ADD_POINTS:
+        qDebug() << "CMD_AP_ADD_POINTS";
         emit ackReceived(id, cmd, "CMD_AP_ADD_POINTS");
         break;
     case CMD_AP_REMOVE_LAST_POINT:
         emit ackReceived(id, cmd, "CMD_AP_REMOVE_LAST_POINT");
         break;
     case CMD_AP_CLEAR_POINTS:
+        qDebug() << "CMD_AP_CLEAR_POINTS";
         emit ackReceived(id, cmd, "CMD_AP_CLEAR_POINTS");
         break;
     case CMD_AP_SET_ACTIVE:
+        qDebug() << "CMD_AP_SET_ACTIVE";
         emit ackReceived(id, cmd, "CMD_AP_SET_ACTIVE");
         break;
     case CMD_AP_REPLACE_ROUTE:
+        qDebug() << "CMD_AP_REPLACE_ROUTE";
         emit ackReceived(id, cmd, "CMD_AP_REPLACE_ROUTE");
         break;
     case CMD_AP_SYNC_POINT:

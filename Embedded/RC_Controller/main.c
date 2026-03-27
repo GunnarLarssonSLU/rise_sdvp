@@ -106,6 +106,10 @@ int main(void) {
 #if HAS_HYDRAULIC_DRIVE
 	hydraulic_init();
 #endif
+#if HAS_PWM_ESC
+	pwm_esc_init();
+	pwm_esc_set_all(0.5);
+#endif
 	comm_usb_init();
 	commands_init();
 //	watchdog_init();

@@ -64,13 +64,6 @@ static float m_turn_rad_now;
 #endif
 
 extern int iDebug;
-extern float debugvalue6;
-extern float debugvalue7;
-extern float debugvalue8;
-extern float debugvalue9;
-extern float debugvalue10;
-extern float debugvalue11;
-extern float debugvalue12;
 //extern float i_term;
 
 // Private functions
@@ -886,13 +879,13 @@ static THD_FUNCTION(ap_thread, arg) {
 				float steering_angle = 0.0;
 				float circle_radius = 1000.0;
 
-				debugvalue8=-pos_now.yaw * M_PI / 180.0;
+				//debugvalue8=-pos_now.yaw * M_PI / 180.0;
 
 				steering_angle_to_point(pos_now.px, pos_now.py, -pos_now.yaw * M_PI / 180.0, rp_now.px,
 						rp_now.py, &steering_angle, &distance, &circle_radius);
-				debugvalue7=distance;
-				debugvalue11=pos_now.px;
-				debugvalue12=pos_now.py;
+				//debugvalue7=distance;
+				//debugvalue11=pos_now.px;
+				//debugvalue12=pos_now.py;
 
 #if !HAS_DIFF_STEERING
 				// Scale maximum steering by speed
@@ -908,8 +901,8 @@ static THD_FUNCTION(ap_thread, arg) {
 						/ ((2.0 * main_config.vehicle.steering_max_angle_rad)
 								/ main_config.vehicle.steering_range)
 								+ main_config.vehicle.steering_center;
-				debugvalue9=steering_angle;
-				debugvalue10=servo_pos;
+				//debugvalue9=steering_angle;
+				//debugvalue10=servo_pos;
 #endif
 
 				float speed = 0.0;

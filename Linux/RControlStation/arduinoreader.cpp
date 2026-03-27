@@ -18,8 +18,6 @@ ArduinoReader::ArduinoReader(const QString &portName, qint32 baudRate, QObject *
     timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &ArduinoReader::checkSignal);
     timer->start(1000); // Check every second
-
-
 }
 
 ArduinoReader::~ArduinoReader()
@@ -49,4 +47,3 @@ void ArduinoReader::checkSignal()
     }
     receivedOne = false; // Reset for the next check
 }
-

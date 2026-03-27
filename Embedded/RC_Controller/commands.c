@@ -840,14 +840,12 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			}
 			buffer_append_float32(m_send_buffer, pos.speed, 1e6, &send_index); // 64
 			#ifdef USE_ADCONV_FOR_VIN
-				buffer_append_float32(m_send_buffer, adconv_get_vin(), 1e6, &send_index); // 68
+			//	buffer_append_float32(m_send_buffer, adconv_get_vin(), 1e6, &send_index); // 68
 			#else
-				#ifdef IS_DRANGEN
-						buffer_append_float32(m_send_buffer, mcval.v_in, 1e6, &send_index); // 68
-				#else
-						buffer_append_float32(m_send_buffer, mcval.v_in, 1e6, &send_index); // 68
-				#endif
+			//	buffer_append_float32(m_send_buffer, mcval.v_in, 1e6, &send_index); // 68
 			#endif
+			buffer_append_float32(m_send_buffer, debugvalue, 1e6, &send_index); // 111
+
 			buffer_append_float32(m_send_buffer, mcval.temp_mos, 1e6, &send_index); // 72
 			m_send_buffer[send_index++] = mcval.fault_code; // 73
 			buffer_append_float32(m_send_buffer, pos.px_gps, 1e4, &send_index); // 77
@@ -864,10 +862,12 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				buffer_append_float32(m_send_buffer, pos_uwb.px, 1e4, &send_index); // 103
 				buffer_append_float32(m_send_buffer, pos_uwb.py, 1e4, &send_index); // 107
 			}
-//			buffer_append_float32(m_send_buffer, (float) packet_id , 1e4, &send_index); // 111
-			buffer_append_float32(m_send_buffer, io_board_as5047_angle, 1e4, &send_index); // 111
-			buffer_append_float32(m_send_buffer, servo_output, 1e4, &send_index); // 115
-			buffer_append_uint16(m_send_buffer, last_sensorvalue, &send_index); // 119
+			buffer_append_float32(m_send_buffer, debugvalue2, 1e4, &send_index); // 111
+			buffer_append_float32(m_send_buffer, debugvalue3, 1e4, &send_index); // 115
+			buffer_append_float32(m_send_buffer, debugvalue4, 1e4, &send_index); // 119
+//			buffer_append_float32(m_send_buffer, io_board_as5047_angle, 1e4, &send_index); // 111
+//			buffer_append_float32(m_send_buffer, servo_output, 1e4, &send_index); // 115
+//			buffer_append_uint16(m_send_buffer, last_sensorvalue, &send_index); // 119
 			buffer_append_float32(m_send_buffer, debugvalue, 1e4, &send_index); // 121
 			buffer_append_float32(m_send_buffer, debugvalue2, 1e4, &send_index); // 125
 			buffer_append_float32(m_send_buffer, debugvalue3, 1e4, &send_index); // 129

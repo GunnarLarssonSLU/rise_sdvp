@@ -214,6 +214,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     fileModel = new QStringListModel(this);
     ui->listLogfilesView->setModel(fileModel);  // Link the model to the view
+    ui->listLogfilesView->installEventFilter(this);  // Install event filter for delete key
 
     mVersion = "0.8";
     mSupportedFirmwares.append(qMakePair(12, 3));
@@ -551,6 +552,22 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
     if (e->type() == QEvent::KeyPress || e->type() == QEvent::KeyRelease) {
         QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
         bool isPress = e->type() == QEvent::KeyPress;
+
+        // Handle delete key for listLogfilesView - remove selected items immediately
+        if (object == ui->listLogfilesView && e->type() == QEvent::KeyPress && keyEvent->key() == Qt::Key_Delete) {
+            QItemSelectionModel* selectionModel = ui->listLogfilesView->selectionModel();
+            QModelIndexList selection = selectionModel->selectedIndexes();
+            
+            // Remove selected items from the end to avoid index shifting
+            for(int i = selection.count() - 1; i >= 0; i--) {
+                QModelIndex index = selection.at(i);
+                if (index.isValid()) {
+                    fileList.removeAt(index.row());
+                }
+            }
+            fileModel->setStringList(fileList);  // Update the model
+            return true;  // Event handled
+        }
 
         switch(keyEvent->key()) {
         case Qt::Key_Up:
@@ -2590,11 +2607,11 @@ void MainWindow::onAnalysisSelectionChanged()
     if (analysisType == "Length") {
         calculateAndDisplayPathLengths();
     } else if (analysisType == "Angle") {
-        qDebug() << "DEBUG: Angle analysis selected (not yet implemented)";
-        // calculateAndDisplayPathAngles();
+        qDebug() << "DEBUG: Angle analysis selected";
+        calculateAndDisplayPathAngles();
     } else if (analysisType == "Root-Mean-Square") {
-        qDebug() << "DEBUG: RMS analysis selected (not yet implemented)";
-        // calculateAndDisplayPathRMS();
+        qDebug() << "DEBUG: RMS analysis selected";
+        calculateAndDisplayPathRMS();
     }
 }
 
@@ -2681,13 +2698,11 @@ void MainWindow::updateCurrentAnalysis()
     if (analysisType == "Length") {
         calculateAndDisplayPathLengths();
     } else if (analysisType == "Angle") {
-        qDebug() << "DEBUG: Angle analysis update requested (not yet implemented)";
-        ui->textAnalysis->setText("📊 Statistical Analysis\n\nAngle analysis: Not yet implemented");
-        // calculateAndDisplayPathAngles();
+        qDebug() << "DEBUG: Angle analysis update requested";
+        calculateAndDisplayPathAngles();
     } else if (analysisType == "Root-Mean-Square") {
-        qDebug() << "DEBUG: RMS analysis update requested (not yet implemented)";
-        ui->textAnalysis->setText("📊 Statistical Analysis\n\nRMS analysis: Not yet implemented");
-        // calculateAndDisplayPathRMS();
+        qDebug() << "DEBUG: RMS analysis update requested";
+        calculateAndDisplayPathRMS();
     } else {
         qDebug() << "DEBUG: Unknown analysis type:" << analysisType << ", defaulting to Length";
         calculateAndDisplayPathLengths();
@@ -2839,6 +2854,268 @@ void MainWindow::calculateAndDisplayPathLengths()
     // Update statistics display with the calculated values
     if (!lengthValues.isEmpty()) {
         updateStatisticsDisplay(lengthValues, "units");
+    } else {
+        ui->textAnalysis->setText("No valid path data available for statistical analysis.");
+    }
+}
+
+void MainWindow::calculateAndDisplayPathAngles()
+{
+    qDebug() << "DEBUG: Calculating path closing angles...";
+    
+    // Check if we have any paths to analyze
+    if (ui->mapWidgetAnalysisResult->mPaths->size() == 0) {
+        qDebug() << "DEBUG: No paths available for angle analysis";
+        QMessageBox::information(this, "Analysis", "No paths available for angle analysis.");
+        ui->textAnalysis->setText("No paths available for statistical analysis.");
+        return;
+    }
+    
+    // Create a bar chart to display the angles
+    QChart* chart = new QChart();
+    chart->setTitle("Path Closing Angles");
+    chart->setAnimationOptions(QChart::SeriesAnimations);
+    
+    QBarSeries* series = new QBarSeries();
+    QList<double> angleValues; // Store values for statistics
+    
+    // Calculate closing angle for each path and add to the chart
+    for (int i = 0; i < ui->mapWidgetAnalysisResult->mPaths->size(); i++) {
+        MapRoute& route = ui->mapWidgetAnalysisResult->getPath(i);
+        
+        if (route.isEmpty()) {
+            qDebug() << "DEBUG: Path" << i << "is empty, skipping";
+            continue;
+        }
+        
+        // Calculate the closing angle of this path (angle between first and last point)
+        LocPoint firstPoint = route.first();
+        LocPoint lastPoint = route.last();
+        double angleRadians = LocPoint::calculateAngle(firstPoint, lastPoint);
+        double angleDegrees = angleRadians * (180.0 / M_PI);
+        if (angleDegrees<0)  angleDegrees+=180.0;
+        qDebug() << "DEBUG: Path" << i << "closing angle:" << angleDegrees << "degrees";
+        
+        // Add this path's angle to the chart
+        QBarSet* set = new QBarSet(QString("%1").arg(i));
+        set->append(angleDegrees);
+        series->append(set);
+        
+        // Store the value for statistics calculation
+        angleValues.append(angleDegrees);
+    }
+    
+    if (series->count() == 0) {
+        qDebug() << "DEBUG: No valid paths found for angle analysis";
+        QMessageBox::information(this, "Analysis", "No valid paths found for angle analysis.");
+        ui->textAnalysis->setText("No valid paths found for statistical analysis.");
+        delete series;
+        delete chart;
+        return;
+    }
+    
+    // Add the series to the chart
+    chart->addSeries(series);
+    
+    // Customize the chart
+    chart->setTitle("Path Closing Angles");
+    chart->legend()->setVisible(true);
+    chart->legend()->setAlignment(Qt::AlignBottom);
+    
+    // Create axis
+    QValueAxis* axisY = new QValueAxis();
+    axisY->setTitleText("Angle (degrees)");
+    chart->addAxis(axisY, Qt::AlignLeft);
+    series->attachAxis(axisY);
+    
+    QBarCategoryAxis* axisX = new QBarCategoryAxis();
+    chart->addAxis(axisX, Qt::AlignBottom);
+    series->attachAxis(axisX);
+    
+    // Display the chart in the existing Graph widget
+    QChartView* chartView = ui->Graph;
+    qDebug() << "DEBUG: Chart view pointer:" << chartView;
+    if (chartView) {
+        qDebug() << "DEBUG: Chart view is valid";
+        // Clear any existing chart
+        QChart* existingChart = chartView->chart();
+        if (existingChart) {
+            delete existingChart;
+        }
+        
+        // Set the new chart
+        chartView->setChart(chart);
+        chartView->setRenderHint(QPainter::Antialiasing);
+        
+        // Connect to bar series clicked signal for proper bar click handling
+        QBarSeries* barSeries = static_cast<QBarSeries*>(chart->series().first());
+        if (barSeries) {
+            connect(barSeries, &QBarSeries::clicked, [this, barSeries](int index, QBarSet* barSet) {
+                qDebug() << "DEBUG: Bar series clicked, index:" << index;
+                index = barSet->label().toInt();
+                qDebug() << "DEBUG: New index:" << index;
+                
+                // Handle the click
+                if (index >= 0 && index < ui->mapWidgetAnalysisResult->mPaths->size()) {
+                    qDebug() << "DEBUG: Setting path index to:" << index;
+                    ui->mapWidgetAnalysisResult->setPathNow(index);
+                    ui->mapWidgetAnalysisResult->update();
+                    ui->spinBoxResultPath->setValue(index);
+                } else {
+                    qDebug() << "DEBUG: Index out of bounds:" << index;
+                }
+            });
+        }
+    } else {
+        qDebug() << "DEBUG: Chart view is invalid!";
+    }
+    
+    // Update statistics display with the calculated values
+    if (!angleValues.isEmpty()) {
+        updateStatisticsDisplay(angleValues, "degrees");
+    } else {
+        ui->textAnalysis->setText("No valid path data available for statistical analysis.");
+    }
+}
+
+void MainWindow::calculateAndDisplayPathRMS()
+{
+    qDebug() << "DEBUG: Calculating path angle RMS...";
+    
+    // Check if we have any paths to analyze
+    if (ui->mapWidgetAnalysisResult->mPaths->size() == 0) {
+        qDebug() << "DEBUG: No paths available for RMS analysis";
+        QMessageBox::information(this, "Analysis", "No paths available for RMS analysis.");
+        ui->textAnalysis->setText("No paths available for statistical analysis.");
+        return;
+    }
+    
+    // Create a bar chart to display the RMS values
+    QChart* chart = new QChart();
+    chart->setTitle("Path Angle RMS Analysis");
+    chart->setAnimationOptions(QChart::SeriesAnimations);
+    
+    QBarSeries* series = new QBarSeries();
+    QList<double> rmsValues; // Store values for statistics
+    
+    // Calculate RMS for each path and add to the chart
+    for (int i = 0; i < ui->mapWidgetAnalysisResult->mPaths->size(); i++) {
+        MapRoute& route = ui->mapWidgetAnalysisResult->getPath(i);
+        
+        if (route.isEmpty()) {
+            qDebug() << "DEBUG: Path" << i << "is empty, skipping";
+            continue;
+        }
+        
+        // Calculate the average closing angle (first to last point)
+        LocPoint firstPoint = route.first();
+        LocPoint lastPoint = route.last();
+        double averageAngleRadians = LocPoint::calculateAngle(firstPoint, lastPoint);
+        double averageAngleDegrees = averageAngleRadians * (180.0 / M_PI);
+        
+        // Calculate angles for all segments and their deviations from the average
+        QList<double> segmentAngles;
+        for (int j = 1; j < route.size(); j++) {
+            LocPoint prevPoint = route.at(j-1);
+            LocPoint currentPoint = route.at(j);
+            double segmentAngleRadians = LocPoint::calculateAngle(prevPoint, currentPoint);
+            double segmentAngleDegrees = segmentAngleRadians * (180.0 / M_PI);
+            segmentAngles.append(segmentAngleDegrees);
+        }
+        
+        // Calculate RMS of deviations from the average angle
+        double sumSquaredDeviations = 0.0;
+        foreach (double angle, segmentAngles) {
+            double deviation = angle - averageAngleDegrees;
+            sumSquaredDeviations += deviation * deviation;
+        }
+        
+        double rms = 0.0;
+        if (!segmentAngles.isEmpty()) {
+            rms = std::sqrt(sumSquaredDeviations / segmentAngles.size());
+        }
+        
+        qDebug() << "DEBUG: Path" << i << "RMS angle:" << rms << "degrees";
+        qDebug() << "DEBUG: Path" << i << "average angle:" << averageAngleDegrees << "degrees";
+        qDebug() << "DEBUG: Path" << i << "number of segments:" << segmentAngles.size();
+        
+        // Add this path's RMS to the chart
+        QBarSet* set = new QBarSet(QString("%1").arg(i));
+        set->append(rms);
+        series->append(set);
+        
+        // Store the value for statistics calculation
+        rmsValues.append(rms);
+    }
+    
+    if (series->count() == 0) {
+        qDebug() << "DEBUG: No valid paths found for RMS analysis";
+        QMessageBox::information(this, "Analysis", "No valid paths found for RMS analysis.");
+        ui->textAnalysis->setText("No valid paths found for statistical analysis.");
+        delete series;
+        delete chart;
+        return;
+    }
+    
+    // Add the series to the chart
+    chart->addSeries(series);
+    
+    // Customize the chart
+    chart->setTitle("Path Angle RMS Analysis");
+    chart->legend()->setVisible(true);
+    chart->legend()->setAlignment(Qt::AlignBottom);
+    
+    // Create axis
+    QValueAxis* axisY = new QValueAxis();
+    axisY->setTitleText("RMS Angle (degrees)");
+    chart->addAxis(axisY, Qt::AlignLeft);
+    series->attachAxis(axisY);
+    
+    QBarCategoryAxis* axisX = new QBarCategoryAxis();
+    chart->addAxis(axisX, Qt::AlignBottom);
+    series->attachAxis(axisX);
+    
+    // Display the chart in the existing Graph widget
+    QChartView* chartView = ui->Graph;
+    qDebug() << "DEBUG: Chart view pointer:" << chartView;
+    if (chartView) {
+        qDebug() << "DEBUG: Chart view is valid";
+        // Clear any existing chart
+        QChart* existingChart = chartView->chart();
+        if (existingChart) {
+            delete existingChart;
+        }
+        
+        // Set the new chart
+        chartView->setChart(chart);
+        chartView->setRenderHint(QPainter::Antialiasing);
+        
+        // Connect to bar series clicked signal for proper bar click handling
+        QBarSeries* barSeries = static_cast<QBarSeries*>(chart->series().first());
+        if (barSeries) {
+            connect(barSeries, &QBarSeries::clicked, [this, barSeries](int index, QBarSet* barSet) {
+                qDebug() << "DEBUG: Bar series clicked, index:" << index;
+                index = barSet->label().toInt();
+                qDebug() << "DEBUG: New index:" << index;
+                
+                // Handle the click
+                if (index >= 0 && index < ui->mapWidgetAnalysisResult->mPaths->size()) {
+                    qDebug() << "DEBUG: Setting path index to:" << index;
+                    ui->mapWidgetAnalysisResult->setPathNow(index);
+                    ui->mapWidgetAnalysisResult->update();
+                    ui->spinBoxResultPath->setValue(index);
+                } else {
+                    qDebug() << "DEBUG: Index out of bounds:" << index;
+                }
+            });
+        }
+    } else {
+        qDebug() << "DEBUG: Chart view is invalid!";
+    }
+    
+    // Update statistics display with the calculated values
+    if (!rmsValues.isEmpty()) {
+        updateStatisticsDisplay(rmsValues, "degrees");
     } else {
         ui->textAnalysis->setText("No valid path data available for statistical analysis.");
     }

@@ -55,10 +55,10 @@ static float m_out_last = 0.0;
 
 float servo_output;
 extern float debugvalue;
-extern float debugvalue2;
-extern float debugvalue3;
-extern float debugvalue4;
-extern float debugvalue5;
+//extern float debugvalue2;
+//extern float debugvalue3;
+//extern float debugvalue4;
+//extern float debugvalue5;
 extern float debugvalue13;
 extern float debugvalue14;
 extern float debugvalue15;
@@ -220,10 +220,10 @@ if (1)
 			commands_printf("Deadband: %f",main_config.vehicle.deadband);
 		}
 		output += SIGN(output) * main_config.vehicle.deadband;
-		debugvalue2=p_term;
-		debugvalue3=i_term;
-		debugvalue4=d_term;
-		debugvalue5=SIGN(output) * main_config.vehicle.deadband;
+		//debugvalue2=p_term;
+		//debugvalue3=i_term;
+		//debugvalue4=d_term;
+		//debugvalue5=SIGN(output) * main_config.vehicle.deadband;
 		utils_truncate_number(&output, -1.0, 1.0);
 
 		if (ok) {

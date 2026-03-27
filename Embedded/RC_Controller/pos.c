@@ -905,8 +905,7 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 		mc_read_cnt = 0;
 		bldc_interface_get_values();
 
-		#if HAS_HYDRAULIC_DRIVE
-//--		commands_printf("has hydraulic drive");
+	//	#if HAS_HYDRAULIC_DRIVE
 		float turn_rad_rear = 0.0;
 		float angle_diff = 0.0;
 		float distance = hydraulic_get_distance(true);
@@ -934,7 +933,7 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 		vehicle_update_pos(distance, turn_rad_rear, angle_diff, speed);
 		#endif
 	}
-	#endif
+	//#endif
 //#endif
 
 	// Update time today
