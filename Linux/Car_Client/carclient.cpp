@@ -1139,8 +1139,8 @@ void CarClient::rxRawx(ubx_rxm_rawx rawx)
 
 void CarClient::tcpRx(QByteArray &data)
 {
-//    qDebug() << "In CarClient::tcpRx";
-//    qDebug() << "data: " << data;
+    qDebug() << "In CarClient::tcpRx";
+    qDebug() << "data: " << data;
     mPacketInterface->sendPacket(data);
 }
 

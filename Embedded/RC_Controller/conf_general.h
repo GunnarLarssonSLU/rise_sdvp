@@ -47,6 +47,7 @@
 // Valve: Low values: Turn right; high values: turn left
 #ifdef IS_MACTRAC
 #define HAS_HYDRAULIC_DRIVE			1
+#define HAS_PWM_ESC                 1
 #define WHEEL_SENSOR                1
 #define SERVO_VESC_S1				178.0 // Left
 #define SERVO_VESC_S2				240.0 // Right
@@ -61,6 +62,11 @@
 #define CAN_ADDIO					1
 #define SERVO_WRITE
 #define SERVO_READ
+#define MAX_RATIO                 2.0
+#define MIN_RATIO                 0.5
+#define MAX_RATIO_LOWSPEED        4.0
+#define MIN_RATIO_LOWSPEED        0.25
+#define LOWSPEED                  0.5
 #endif
 
 
@@ -84,8 +90,14 @@
 #define SERVO_WRITE
 #define SERVO_READ
 #define WHEEL_SENSOR                1
+#define HAS_PWM_ESC                 1
 //#define HAS_HYDRAULIC_DRIVE			1
 //#define TACHOATCARD
+#define MAX_RATIO                 999
+#define MIN_RATIO                 0.001
+#define MAX_RATIO_LOWSPEED        999
+#define MIN_RATIO_LOWSPEED        0.001
+#define LOWSPEED                  0.5
 #endif
 
 #ifdef CAN_ADDIO

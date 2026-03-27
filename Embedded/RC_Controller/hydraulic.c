@@ -74,6 +74,11 @@ extern int buf_count;
 
 #endif
 
+extern float debugvalue;
+extern float debugvalue2;
+extern float debugvalue3;
+extern float debugvalue4;
+extern float debugvalue5;
 // Threads
 static THD_WORKING_AREA(hydro_thread_wa, 1024);
 static THD_FUNCTION(hydro_thread, arg);
@@ -86,9 +91,6 @@ void hydraulic_init(void) {
 	main_config.mr.motor_pwm_min_us = 1000;
 	main_config.mr.motor_pwm_max_us = 2100;
 #endif
-
-	pwm_esc_init();
-	pwm_esc_set_all(0.5);
 
 	// prop_valve_init();
 
@@ -280,13 +282,19 @@ static THD_FUNCTION(hydro_thread, arg) {
 		cnt = *comm_can_io_board_adc0_cnt();
 #endif
 
-#ifdef UPDATE20250812
+        debugvalue=1.0;
+        debugvalue2=1.0;
+        debugvalue3=1.0;
+
         // Timeout → nolla
         if (chVTTimeElapsedSinceX(last_reading_time) > MS2ST(SPEED_TIMEOUT_MS)) {
             buf_count = 0;
             last_valid_time = 0.0f;
             m_speed_now = 0.0f;
             m_speed_filtered = 0.0f;
+            debugvalue=2.0;
+            debugvalue2=2.0;
+            debugvalue3=2.0;
         }
 
         // Om ny puls från ISR
@@ -294,10 +302,11 @@ static THD_FUNCTION(hydro_thread, arg) {
             syssts_t sts = chSysGetStatusAndLockX();
             new_pulse = false;
             chSysRestoreStatusX(sts);
-
+            debugvalue=3.0;
+            debugvalue2=3.0;
+            debugvalue3=3.0;
             m_speed_now=m_speed_pwm;
         }
-#endif
 
 #ifdef IS_MACTRAC
 		// Control hydraulic actuators

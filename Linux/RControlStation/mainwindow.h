@@ -232,6 +232,8 @@ private slots:
     void onResultPathChanged(int pathIndex); // Handle result path spinbox changes
     void onAnalysisSelectionChanged(); // Handle analysis table selection changes
     void calculateAndDisplayPathLengths();
+    void calculateAndDisplayPathAngles();
+    void calculateAndDisplayPathRMS();
     void updateCurrentAnalysis(); // Update the currently selected analysis
     void updateStatisticsDisplay(const QList<double>& values, const QString& unit = ""); // Update statistics display
 

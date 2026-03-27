@@ -30,9 +30,6 @@
 #include "chvt.h"
 #include <math.h>
 
-extern float debugvalue6;
-extern float debugvalue7;
-
 
 // #include "io_board_adc.h"  // or wherever ADC_CNT_t is defined
 
@@ -256,21 +253,29 @@ void pwm_esc_set(uint8_t channel, float pulse_width) {
 
 static void update_speed_buffer(float period, float unused) {
     // Simplified version: just use the period directly
+    // Debug: Print when we receive a pulse
+  //  static uint32_t pulse_count = 0;
+//    if (pulse_count++ % 3 == 0) {
+//        commands_printf("In update_speed\n");
+//		commands_printf("period: %f",period);
+//        commands_printf("In update_speed: period=%lu us\n", delta);
+//    }
     float time_last = period;
-    debugvalue6=time_last;
+   // debugvalue2=time_last;
     if (time_last <= 0.0f) return;
 
     // Dynamiska toleranser beroende på hastighet
-    float max_factor = 2.0f;
-    float min_factor = 0.5f;
-    if (m_speed_filtered < 0.5f) { // vid låg fart, tillåt större variation
-        max_factor = 4.0f;
-        min_factor = 0.25f;
+    float max_factor = MAX_RATIO;
+    float min_factor = MIN_RATIO;
+    if (m_speed_filtered < LOWSPEED) { // vid låg fart, tillåt större variation
+        max_factor = MAX_RATIO_LOWSPEED;
+        min_factor = MIN_RATIO_LOWSPEED;
     }
 
     // Kontrollera om värdet är rimligt jämfört med senaste giltiga
     if (last_valid_time > 0.0f) {
         float ratio = time_last / last_valid_time;
+//		commands_printf("ratio: %f",ratio);
         if ((m_speed_filtered > 0.0f) && (ratio > max_factor || ratio < min_factor)) {
             return; // orimligt → ignorera
         }
@@ -289,15 +294,19 @@ static void update_speed_buffer(float period, float unused) {
     for (int i = 0; i < buf_count; i++) {
         sum_time += time_buffer[i];
     }
-    float avg_time = sum_time / buf_count;
 
+    float avg_time = sum_time / buf_count;
+//	commands_printf("avt_time: %f",avg_time);
     // Ny hastighet
     float new_speed = SIGN(m_throttle_set) * (wheel_diam * M_PI) / (avg_time * cnts_per_rev);
+//	commands_printf("new_speed: %f",new_speed);
     // Lågpassfilter
     const float alpha = 0.3f;
     m_speed_filtered = m_speed_filtered * (1.0f - alpha) + new_speed * alpha;
     m_speed_pwm = m_speed_filtered;
-    debugvalue7=m_speed_pwm;
+//	commands_printf("m_speed_pwm: %f",m_speed_pwm);
+
+	//    debugvalue2=m_speed_pwm;
 //    m_speed_pwm = new_speed;
 };
 
@@ -338,13 +347,12 @@ void tach_input_init(void) {
     io_board_adc0_cnt.toggle_high_cnt = 0;
     io_board_adc0_cnt.toggle_low_cnt = 0;
 
+
     // Debug: Print initialization complete
     commands_printf("Tachometer input initialized\n");
     commands_printf("TIM2->CCER = 0x%08X\n", TIM2->CCER);
     commands_printf("TIM2->DIER = 0x%08X\n", TIM2->DIER);
 }
-
-
 
 CH_IRQ_HANDLER(STM32_TIM2_HANDLER) {
     CH_IRQ_PROLOGUE();
@@ -363,20 +371,14 @@ CH_IRQ_HANDLER(STM32_TIM2_HANDLER) {
 
         last_reading_time = chVTGetSystemTimeX();
 
-        // Debug: Print when we receive a pulse
-        static uint32_t pulse_count = 0;
-        if (pulse_count++ % 100 == 0) {
-            commands_printf("Tach pulse: delta=%lu us\n", delta);
-        }
-
         // Simplified: Just measure the time between rising edges (period)
         // This is simpler and more reliable than trying to measure both high and low times
+ //       debugvalue2=delta;
         float period = 0.00001f * delta;  // Convert to seconds
         
         // Update speed buffer with the period
         // For a square wave, the period is the sum of high and low times
         update_speed_buffer(period, 0.0f);
-
         new_pulse = true;  // signalera till tråden
 
         TIM2->SR &= ~TIM_SR_CC3IF;
