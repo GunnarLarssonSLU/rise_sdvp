@@ -28,9 +28,6 @@ void pwm_esc_init(void);
 void pwm_esc_set(uint8_t id, float pulse_width);
 void pwm_esc_set_all(float pulse_width);
 
-void read_adc_test(void);
-static void update_speed_buffer(float high_t, float low_t);
-
 
 extern volatile bool new_pulse;
 

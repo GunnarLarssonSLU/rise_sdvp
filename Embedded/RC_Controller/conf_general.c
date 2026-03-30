@@ -39,6 +39,16 @@ uint16_t VirtAddVarTab[NB_OF_VAR];
 static void terminal_cmd_set_id(int argc, const char **argv);
 static void terminal_cmd_set_id_quiet(int argc, const char **argv);
 
+#ifdef IS_MACTRAC
+		const float wheel_diam = 0.65;
+		const float cnts_per_rev = 16.0;
+#endif
+
+#ifdef IS_DRANGEN
+		const float wheel_diam = 0.30;
+		const float cnts_per_rev = 16.0;
+#endif
+
 void conf_general_init(void) {
 #if HAS_ID_SW
 	palSetPadMode(GPIOE, 8, PAL_MODE_INPUT_PULLUP);

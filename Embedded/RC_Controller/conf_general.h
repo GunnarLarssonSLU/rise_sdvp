@@ -36,11 +36,21 @@
 #define FW_VERSION_MINOR			1
 
 // IO BOARD
-// #define IO_BOARD
 
+//SELECT MACHINE!!
 #define IS_DRANGEN
-//#define IS_MACTRAC
-#define UPDATE20250812
+
+#ifdef IS_MACTRAC_EIP
+#define IS_MACTRAC
+#define ADDIO
+#define CAN_ADDIO					1
+#endif
+
+#ifdef IS_MACTRAC_SLF
+#define IS_MACTRAC
+#define IO_BOARD
+#endif
+
 
 // MacTrac
 // Steering Center: 210
@@ -58,8 +68,6 @@
 #define SERVO_VESC_INVERTED			0
 //#define SERVO_VESC_DEADBAND_COMP    0.2
 #define IS_F9_BOARD					1
-#define ADDIO
-#define CAN_ADDIO					1
 #define SERVO_WRITE
 #define SERVO_READ
 #define MAX_RATIO                 2.0
@@ -69,8 +77,8 @@
 #define LOWSPEED                  0.5
 #endif
 
-
 #ifdef IS_DRANGEN
+#define HAS_HYDRAULIC_DRIVE			1
 #define DIFF_THROTTLE_VESC_LEFT 28
 #define DIFF_THROTTLE_VESC_RIGHT 36
 #define DIFF_STEERING 16
@@ -91,7 +99,6 @@
 #define SERVO_READ
 #define WHEEL_SENSOR                1
 #define HAS_PWM_ESC                 1
-//#define HAS_HYDRAULIC_DRIVE			1
 //#define TACHOATCARD
 #define MAX_RATIO                 999
 #define MIN_RATIO                 0.001

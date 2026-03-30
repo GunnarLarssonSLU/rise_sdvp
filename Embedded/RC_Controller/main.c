@@ -50,6 +50,7 @@
 #include "fi.h"
 #include "hydraulic.h"
 #include "timer.h"
+#include "wheel_speed.h"
 // #include "watchdog.h"
 
 //event_source_t emergency_event;
@@ -114,6 +115,9 @@ int main(void) {
 	commands_init();
 //	watchdog_init();
 
+#ifdef WHEEL_SENSOR
+	tach_input_init();
+#endif
 #if UBLOX_EN
 	ublox_init();
 #endif

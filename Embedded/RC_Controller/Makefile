@@ -166,7 +166,8 @@ CSRC = $(STARTUPSRC) \
        servo_vesc.c \
        hydraulic.c \
        i2c_bb.c \
-       timer.c
+       timer.c \
+       wheel_speed.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.

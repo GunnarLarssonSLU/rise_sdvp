@@ -38,6 +38,11 @@
 #include "hydraulic.h"
 #include "pos.h"
 #include "bmi160_wrapper.h"
+#include "comm_usb.h"
+
+#ifdef WHEEL_SENSOR
+#include "wheel_speed.h"
+#endif
 
 // Defines
 #define ITERATION_TIMER_FREQ			50000
@@ -908,10 +913,17 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 	//	#if HAS_HYDRAULIC_DRIVE
 		float turn_rad_rear = 0.0;
 		float angle_diff = 0.0;
-		float distance = hydraulic_get_distance(true);
+#ifdef WHEEL_SENSOR
+		float distance = get_distance(true);
+#else
+		float distace = 9999.9;
+#endif
 
-		float speed = hydraulic_get_speed();
-
+#ifdef WHEEL_SENSOR
+		float speed = get_speed();
+#else
+		float speed = 9999.9;
+#endif
 		float steering_angle = (servo_simple_get_pos_now()
 				- main_config.vehicle.steering_center)
 							* ((2.0 * main_config.vehicle.steering_max_angle_rad)
