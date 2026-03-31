@@ -27,6 +27,6 @@ void hydraulic_set_speed(float speed);
 void hydraulic_set_throttle_raw(float throttle);
 void hydraulic_move(HYDRAULIC_POS pos, HYDRAULIC_MOVE move);
 
-static volatile float m_speed_now = 0.0;
+extern volatile float m_speed_now;
 
 #endif /* HYDRAULIC_H_ */
