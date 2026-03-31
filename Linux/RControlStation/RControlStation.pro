@@ -22,6 +22,8 @@ DEFINES += HAS_JOYSTICK
 # Qt 6 include paths
 QT += core5compat
 
+QMAKE_RPATHDIR += $$[QT_INSTALL_LIBS]
+
 # Ubuntu
 # sudo apt-get install libassimp-dev
 #DEFINES += HAS_ASSIMP
