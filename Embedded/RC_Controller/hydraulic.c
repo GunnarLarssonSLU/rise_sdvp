@@ -144,7 +144,7 @@ void hydraulic_set_speed(float speed) {
 
 		// TODO: Update this
 		m_throttle_set = SIGN(speed) * throttle_val;
-#ifndef HYDRAULIC_HAS_SPEED_SENSOR
+#ifndef WHEEL_SENSOR
 		m_speed_now = SIGN(speed) * SPEED_M_S;
 #endif
 	}
