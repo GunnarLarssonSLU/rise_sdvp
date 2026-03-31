@@ -49,7 +49,6 @@
 #define TIMEOUT_SECONDS_MOVE	10.0
 
 // Private variables
-static volatile float m_speed_now = 0.0;
 static volatile float m_distance_now = 0.0;
 static volatile float m_timeout_cnt = 0.0;
 static volatile HYDRAULIC_MOVE m_move_front = HYDRAULIC_MOVE_STOP;
@@ -64,21 +63,12 @@ extern int iDebug;
 #ifdef SERVO_READ
 extern ADC_CNT_t io_board_adc0_cnt;
 //extern time_t last_reading_time = 0;
-extern systime_t last_reading_time;
 //static const time_t READING_TIMEOUT = 1.0; // Timeout in seconds
-extern float m_speed_pwm;
-extern float m_speed_filtered;
-extern float last_valid_time;
-extern int buf_count;
-#define SPEED_TIMEOUT_MS   400
+
 
 #endif
 
-extern float debugvalue;
-extern float debugvalue2;
-extern float debugvalue3;
-extern float debugvalue4;
-extern float debugvalue5;
+
 // Threads
 static THD_WORKING_AREA(hydro_thread_wa, 1024);
 static THD_FUNCTION(hydro_thread, arg);
@@ -282,31 +272,11 @@ static THD_FUNCTION(hydro_thread, arg) {
 		cnt = *comm_can_io_board_adc0_cnt();
 #endif
 
-        debugvalue=1.0;
+ /*       debugvalue=1.0;
         debugvalue2=1.0;
-        debugvalue3=1.0;
+        debugvalue3=1.0;*/
 
-        // Timeout → nolla
-        if (chVTTimeElapsedSinceX(last_reading_time) > MS2ST(SPEED_TIMEOUT_MS)) {
-            buf_count = 0;
-            last_valid_time = 0.0f;
-            m_speed_now = 0.0f;
-            m_speed_filtered = 0.0f;
-            debugvalue=2.0;
-            debugvalue2=2.0;
-            debugvalue3=2.0;
-        }
 
-        // Om ny puls från ISR
-        if (new_pulse) {
-            syssts_t sts = chSysGetStatusAndLockX();
-            new_pulse = false;
-            chSysRestoreStatusX(sts);
-            debugvalue=3.0;
-            debugvalue2=3.0;
-            debugvalue3=3.0;
-            m_speed_now=m_speed_pwm;
-        }
 
 #ifdef IS_MACTRAC
 		// Control hydraulic actuators

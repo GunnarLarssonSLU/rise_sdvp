@@ -904,7 +904,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			mode = data[ind++];
 			throttle = buffer_get_float32(data, 1e4, &ind);
 			steering = buffer_get_float32(data, 1e6, &ind);
-	
 			utils_truncate_number(&steering, -1.0, 1.0);
 
 			//TODO: Could be an issue without speed sensor 
@@ -916,6 +915,10 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			case RC_MODE_CURRENT:
 				if (!main_config.vehicle.disable_motor) {
 					#if IS_ALL_ELECTRIC
+						if (abs(throttle)>0.1)
+						{
+							commands_printf("Driving");
+						}
 						float okdirections=sign(angle)==-sign(steering);
 						float nottooextreme=fabs(angle)<25.0;
 						comm_can_lock_vesc();
@@ -969,6 +972,9 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 								hydraulic_set_throttle_raw(throttle / 0.15);
 							#endif
 						#else
+								debugvalue=throttle;
+								debugvalue2=throttle;
+								debugvalue3=throttle;
 							comm_can_lock_vesc();
 							comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
 							bldc_interface_set_duty_cycle(throttle);

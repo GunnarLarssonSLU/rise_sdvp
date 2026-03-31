@@ -71,6 +71,7 @@
 
 
 #ifdef IS_DRANGEN
+//#define HAS_HYDRAULIC_DRIVE			1
 #define DIFF_THROTTLE_VESC_LEFT 28
 #define DIFF_THROTTLE_VESC_RIGHT 36
 #define DIFF_STEERING 16
@@ -87,8 +88,8 @@
 #define IS_F9_BOARD					1
 #define IS_ALL_ELECTRIC             1
 #define ANALOG_ANGLE
-#define SERVO_WRITE
-#define SERVO_READ
+#define SERVO_WRITE                 1
+#define SERVO_READ                  1
 #define WHEEL_SENSOR                1
 #define HAS_PWM_ESC                 1
 //#define HAS_HYDRAULIC_DRIVE			1

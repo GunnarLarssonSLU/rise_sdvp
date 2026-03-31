@@ -50,6 +50,7 @@
 #include "fi.h"
 #include "hydraulic.h"
 #include "timer.h"
+#include "wheelspeed.h"
 // #include "watchdog.h"
 
 //event_source_t emergency_event;
@@ -103,15 +104,20 @@ int main(void) {
 	timeout_init();
 	log_init();
 	motor_sim_init();
+	commands_init();
 #if HAS_HYDRAULIC_DRIVE
 	hydraulic_init();
+#endif
+#if WHEEL_SENSOR
+	hydraulic_init();
+	tach_input_init();
+	wheelspeed_init();
 #endif
 #if HAS_PWM_ESC
 	pwm_esc_init();
 	pwm_esc_set_all(0.5);
 #endif
 	comm_usb_init();
-	commands_init();
 //	watchdog_init();
 
 #if UBLOX_EN

@@ -29,23 +29,15 @@
 #include "chsys.h"
 #include "chvt.h"
 #include <math.h>
+#include "commands.h"
+#include "wheelspeed.h"
 
 
 // #include "io_board_adc.h"  // or wherever ADC_CNT_t is defined
 
 //extern ADC_CNT_t io_board_adc0_cnt;
-volatile bool new_pulse = false;
 
-#ifdef IS_MACTRAC
-		// Measure speed
-		const float wheel_diam = 0.65;
-		const float cnts_per_rev = 16.0;
-#endif
-#ifdef IS_DRANGEN
-		// Measure speed
-		const float wheel_diam = 0.30;
-		const float cnts_per_rev = 16.0;
-#endif
+
 
 
 #ifdef SERVO_READ
@@ -57,18 +49,6 @@ static volatile uint32_t timer_overflow_count = 0; // antal overflow
 static volatile uint32_t last_capture = 0;         // 32-bitars senaste capture
 static systime_t last_tick = 0;
 //extern float time_last;
-float m_speed_pwm = 0;
-
-#define SPEED_BUFFER_LEN   6      // antal senaste mätningar att använda i medel
-#define MAX_FACTOR_CHANGE  2.0f   // tillåten förändring mellan mätningar (högsta/lägsta tid)
-#define MIN_FACTOR_CHANGE  0.5f   // lägsta tillåten förändring (för kort tid)
-
-static float time_buffer[SPEED_BUFFER_LEN];
-static int buf_index = 0;
-int buf_count = 0; // hur många giltiga värden i bufferten
-float last_valid_time = 0.0f;
-float m_speed_filtered = 0.0f;
-extern float m_throttle_set;
 
 
 #endif
@@ -197,8 +177,10 @@ void pwm_esc_init(void) {
     palSetPadMode(TACHO_INPUT_PORT, TACHO_INPUT_PAD, PAL_MODE_INPUT_PULLDOWN);
 
     // Start a debug thread
-    static THD_WORKING_AREA(waTachoDebug, 128);
-    chThdCreateStatic(waTachoDebug, sizeof(waTachoDebug), NORMALPRIO, tacho_debug_thread, NULL);
+    //static THD_WORKING_AREA(waTachoDebug, 128);
+    //chThdCreateStatic(waTachoDebug, sizeof(waTachoDebug), NORMALPRIO, tacho_debug_thread, NULL);
+
+
 #endif
 }
 
@@ -249,69 +231,8 @@ void pwm_esc_set(uint8_t channel, float pulse_width) {
 	}
 }
 
-#ifdef SERVO_READ
-
-static void update_speed_buffer(float period, float unused) {
-    // Simplified version: just use the period directly
-    // Debug: Print when we receive a pulse
-  //  static uint32_t pulse_count = 0;
-//    if (pulse_count++ % 3 == 0) {
-//        commands_printf("In update_speed\n");
-//		commands_printf("period: %f",period);
-//        commands_printf("In update_speed: period=%lu us\n", delta);
-//    }
-    float time_last = period;
-   // debugvalue2=time_last;
-    if (time_last <= 0.0f) return;
-
-    // Dynamiska toleranser beroende på hastighet
-    float max_factor = MAX_RATIO;
-    float min_factor = MIN_RATIO;
-    if (m_speed_filtered < LOWSPEED) { // vid låg fart, tillåt större variation
-        max_factor = MAX_RATIO_LOWSPEED;
-        min_factor = MIN_RATIO_LOWSPEED;
-    }
-
-    // Kontrollera om värdet är rimligt jämfört med senaste giltiga
-    if (last_valid_time > 0.0f) {
-        float ratio = time_last / last_valid_time;
-//		commands_printf("ratio: %f",ratio);
-        if ((m_speed_filtered > 0.0f) && (ratio > max_factor || ratio < min_factor)) {
-            return; // orimligt → ignorera
-        }
-    }
-
-    // Spara som senaste giltiga
-    last_valid_time = time_last;
-
-    // Lägg in i ringbuffert
-    time_buffer[buf_index] = time_last;
-    buf_index = (buf_index + 1) % SPEED_BUFFER_LEN;
-    if (buf_count < SPEED_BUFFER_LEN) buf_count++;
-
-    // Beräkna medelvärde
-    float sum_time = 0.0f;
-    for (int i = 0; i < buf_count; i++) {
-        sum_time += time_buffer[i];
-    }
-
-    float avg_time = sum_time / buf_count;
-//	commands_printf("avt_time: %f",avg_time);
-    // Ny hastighet
-    float new_speed = SIGN(m_throttle_set) * (wheel_diam * M_PI) / (avg_time * cnts_per_rev);
-//	commands_printf("new_speed: %f",new_speed);
-    // Lågpassfilter
-    const float alpha = 0.3f;
-    m_speed_filtered = m_speed_filtered * (1.0f - alpha) + new_speed * alpha;
-    m_speed_pwm = m_speed_filtered;
-//	commands_printf("m_speed_pwm: %f",m_speed_pwm);
-
-	//    debugvalue2=m_speed_pwm;
-//    m_speed_pwm = new_speed;
-};
-
-
 void tach_input_init(void) {
+
     // Enable TIM2 clock
     rccEnableTIM2(TRUE);
 
@@ -347,7 +268,6 @@ void tach_input_init(void) {
     io_board_adc0_cnt.toggle_high_cnt = 0;
     io_board_adc0_cnt.toggle_low_cnt = 0;
 
-
     // Debug: Print initialization complete
     commands_printf("Tachometer input initialized\n");
     commands_printf("TIM2->CCER = 0x%08X\n", TIM2->CCER);
@@ -356,7 +276,6 @@ void tach_input_init(void) {
 
 CH_IRQ_HANDLER(STM32_TIM2_HANDLER) {
     CH_IRQ_PROLOGUE();
-
     if (TIM2->SR & TIM_SR_UIF) {
         TIM2->SR &= ~TIM_SR_UIF; // rensa flagga
         timer_overflow_count++;
@@ -386,7 +305,6 @@ CH_IRQ_HANDLER(STM32_TIM2_HANDLER) {
 
     CH_IRQ_EPILOGUE();
 }
-#endif
 
 #ifdef PWMTEST
 void read_adc_test(void) {

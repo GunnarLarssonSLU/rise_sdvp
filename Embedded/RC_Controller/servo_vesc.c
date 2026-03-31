@@ -54,14 +54,6 @@ static int m_not_ok_cnt = 0;
 static float m_out_last = 0.0;
 
 float servo_output;
-extern float debugvalue;
-//extern float debugvalue2;
-//extern float debugvalue3;
-//extern float debugvalue4;
-//extern float debugvalue5;
-extern float debugvalue13;
-extern float debugvalue14;
-extern float debugvalue15;
 extern int iDebug;
 extern bool m_is_active;
 extern bool m_kb_active;
@@ -140,9 +132,7 @@ if (1)
 
 		(void)as5047_read;
 	#ifdef ADDIO
-//		float pos_addio = comm_can_ftr2_angle() - (8.0);
 		float pos_addio = comm_can_ftr2_angle();
-		debugvalue= pos_addio;
 
 //		bool ok = pos_addio != m_pos_now_raw;
 		bool ok = true;
@@ -175,9 +165,9 @@ if (1)
 		m_pos_now = utils_map(pos, 0.0, end, 0.0, 1.0);
 		// Run PID-controller on the output
 		float error = m_pos_set - m_pos_now;
-		debugvalue13=m_pos_set;
-		debugvalue14=m_pos_now;
-		debugvalue15=error;
+		//debugvalue13=m_pos_set;
+		//debugvalue14=m_pos_now;
+		//debugvalue15=error;
 		if (iDebug==81)
 		{
 			commands_printf("m_pos_set: %f",m_pos_set);
