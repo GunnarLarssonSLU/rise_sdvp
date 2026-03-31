@@ -56,15 +56,6 @@ static systime_t last_tick = 0;
 extern int iDebug;
 
 
-#ifdef PWMTEST
-// Pin definition for PA2
-#define TACHO_INPUT_PAD       2
-
-static adcsample_t samplePWM = 0;
-static ADCConversionGroup adcgrpcfg;
-
-#endif
-
 // Settings
 #define ESC_UPDATE_RATE			200	// Hz
 #define TIM_CLOCK				5e6 // Hz
@@ -156,31 +147,6 @@ void pwm_esc_init(void) {
 #endif
 #ifdef SERVO_READ
 	tach_input_init();
-#endif
-#ifdef PWMTEST
-	adcgrpcfg.circular     = FALSE;
-	adcgrpcfg.num_channels = 1;
-	adcgrpcfg.end_cb       = NULL;
-	adcgrpcfg.error_cb     = NULL;
-	adcgrpcfg.cr1          = 0;
-	adcgrpcfg.cr2          = ADC_CR2_SWSTART;
-	adcgrpcfg.smpr1 = 0;       // Channel 2 isn't in SMPR1
-	adcgrpcfg.smpr2 = 6 << 6;  // Set sample time for channel 2 (bits 8:6)
-	adcgrpcfg.sqr1         = ADC_SQR1_NUM_CH(1);
-	adcgrpcfg.sqr2         = 0;
-	adcgrpcfg.sqr3         = ADC_SQR3_SQ1_N(ADC_CHANNEL_IN2);
-
-
-	  adcStart(&ADCD1, NULL);  // Start ADC driver
-
-    // Configure the pin as input with pull-down
-    palSetPadMode(TACHO_INPUT_PORT, TACHO_INPUT_PAD, PAL_MODE_INPUT_PULLDOWN);
-
-    // Start a debug thread
-    //static THD_WORKING_AREA(waTachoDebug, 128);
-    //chThdCreateStatic(waTachoDebug, sizeof(waTachoDebug), NORMALPRIO, tacho_debug_thread, NULL);
-
-
 #endif
 }
 
@@ -305,23 +271,3 @@ CH_IRQ_HANDLER(STM32_TIM2_HANDLER) {
 
     CH_IRQ_EPILOGUE();
 }
-
-#ifdef PWMTEST
-void read_adc_test(void) {
-		adcConvert(&ADCD1, &adcgrpcfg, &samplePWM, 1);
-//		commands_printf("Raw ADC value: %d", samplePWM);
-
-}
-
-
-static void tacho_debug_thread(void *arg) {
-    (void)arg;
-    chRegSetThreadName("tacho_debug");
-    palSetPadMode(GPIOA, 2, PAL_MODE_INPUT_ANALOG); // Set PA2 to analog input
-
-    while (true) {
-        read_adc_test();
-        chThdSleepMilliseconds(1000); // Adjust as needed
-    }
-}
-#endif
