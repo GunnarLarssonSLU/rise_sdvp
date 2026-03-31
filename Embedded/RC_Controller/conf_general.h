@@ -64,10 +64,8 @@
 #define SERVO_VESC_S2				240.0 // Right
 #define USE_ADCONV_FOR_VIN
 #define SERVO_VESC_HYDRAULIC
-#define HYDRAULIC_HAS_SPEED_SENSOR
 #define SERVO_VESC_ID				0
 #define SERVO_VESC_INVERTED			0
-//#define SERVO_VESC_DEADBAND_COMP    0.2
 #define IS_F9_BOARD					1
 #define SERVO_WRITE
 #define SERVO_READ
@@ -80,7 +78,6 @@
 
 
 #ifdef IS_DRANGEN
-//#define HAS_HYDRAULIC_DRIVE			1
 #define DIFF_THROTTLE_VESC_LEFT 28
 #define DIFF_THROTTLE_VESC_RIGHT 36
 #define DIFF_STEERING 16
@@ -91,9 +88,7 @@
 #define SERVO_VESC_S2				237.7 // Right
 #define USE_ADCONV_FOR_VIN
 #define SERVO_VESC_HYDRAULIC
-#define HYDRAULIC_HAS_SPEED_SENSOR
 #define SERVO_VESC_INVERTED			0
-#define SERVO_VESC_DEADBAND_COMP    0.2
 #define IS_F9_BOARD					1
 #define IS_ALL_ELECTRIC             1
 #define ANALOG_ANGLE
@@ -145,15 +140,6 @@
 #ifndef SERVO_VESC_S2
 #define SERVO_VESC_S2				30.0
 #endif
-#ifndef SERVO_VESC_P_GAIN
-#define SERVO_VESC_P_GAIN			2.0
-#endif
-#ifndef SERVO_VESC_I_GAIN
-#define SERVO_VESC_I_GAIN			1.0
-#endif
-#ifndef SERVO_VESC_D_GAIN
-#define SERVO_VESC_D_GAIN			0.1
-#endif
 #ifndef SERVO_VESC_D_FILTER
 #define SERVO_VESC_D_FILTER			0.05
 #endif
@@ -162,9 +148,6 @@
 #endif
 #ifndef SERVO_VESC_ANGLE_INVERTED
 #define SERVO_VESC_ANGLE_INVERTED	0
-#endif
-#ifndef SERVO_VESC_DEADBAND_COMP
-#define SERVO_VESC_DEADBAND_COMP	0.0 // Range 0 - 1
 #endif
 
 // Ublox settings

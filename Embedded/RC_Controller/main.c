@@ -110,7 +110,6 @@ int main(void) {
 #endif
 #if WHEEL_SENSOR
 	hydraulic_init();
-	tach_input_init();
 	wheelspeed_init();
 #endif
 #if HAS_PWM_ESC
