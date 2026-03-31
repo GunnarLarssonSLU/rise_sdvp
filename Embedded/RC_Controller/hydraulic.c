@@ -23,13 +23,8 @@
 #include "utils.h"
 #include "comm_can.h"
 #include <math.h>
-#ifdef SERVO_READ
-#define READING_TIMEOUT 1000
-#endif
 
 #include "pos.h"
-
-//thread_t *hydro_thread = NULL;
 
 // Settings
 #ifdef IS_MACTRAC
@@ -41,9 +36,6 @@
 #define SERVO_RIGHT				2
 #define SPEED_M_S				0.6
 #endif
-
-//float time_last =0;
-
 
 #define TIMEOUT_SECONDS			2.0
 #define TIMEOUT_SECONDS_MOVE	10.0
@@ -63,10 +55,6 @@ extern int iDebug;
 
 #ifdef SERVO_READ
 extern ADC_CNT_t io_board_adc0_cnt;
-//extern time_t last_reading_time = 0;
-//static const time_t READING_TIMEOUT = 1.0; // Timeout in seconds
-
-
 #endif
 
 
@@ -218,10 +206,6 @@ static THD_FUNCTION(hydro_thread, arg) {
 	int move_repeat_cnt = 0;
 
 //   chEvtRegister(&emergency_event, &el, EMERGENCY_STOP_EVENT);
-
-#ifdef SERVO_READ
-//    const systime_t READING_TIMEOUT = TIME_MS2I(1000);// Timeout in milli seconds
-#endif
 
     while (!chThdShouldTerminateX()) {
 /*

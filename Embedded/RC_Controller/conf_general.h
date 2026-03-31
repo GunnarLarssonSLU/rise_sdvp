@@ -38,6 +38,18 @@
 // IO BOARD
 // #define IO_BOARD
 
+#ifdef IS_MACTRAC_EIP
+#define IS_MACTRAC
+#define ADDIO
+#define CAN_ADDIO					1
+#define WHEEL_SENSOR                1
+#endif
+
+#ifdef IS_MACTRAC_SLF
+#define IS_MACTRAC
+#define IO_BOARD
+#endif
+
 #define IS_DRANGEN
 //#define IS_MACTRAC
 #define UPDATE20250812
@@ -48,7 +60,6 @@
 #ifdef IS_MACTRAC
 #define HAS_HYDRAULIC_DRIVE			1
 #define HAS_PWM_ESC                 1
-#define WHEEL_SENSOR                1
 #define SERVO_VESC_S1				178.0 // Left
 #define SERVO_VESC_S2				240.0 // Right
 #define USE_ADCONV_FOR_VIN
@@ -58,8 +69,6 @@
 #define SERVO_VESC_INVERTED			0
 //#define SERVO_VESC_DEADBAND_COMP    0.2
 #define IS_F9_BOARD					1
-#define ADDIO
-#define CAN_ADDIO					1
 #define SERVO_WRITE
 #define SERVO_READ
 #define MAX_RATIO                 2.0
@@ -92,8 +101,6 @@
 #define SERVO_READ                  1
 #define WHEEL_SENSOR                1
 #define HAS_PWM_ESC                 1
-//#define HAS_HYDRAULIC_DRIVE			1
-//#define TACHOATCARD
 #define MAX_RATIO                 999
 #define MIN_RATIO                 0.001
 #define MAX_RATIO_LOWSPEED        999
