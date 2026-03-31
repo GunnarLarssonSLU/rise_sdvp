@@ -26,6 +26,7 @@ float hydraulic_get_distance(bool reset);
 void hydraulic_set_speed(float speed);
 void hydraulic_set_throttle_raw(float throttle);
 void hydraulic_move(HYDRAULIC_POS pos, HYDRAULIC_MOVE move);
-static void update_speed_buffer(float high_t, float low_t);
+
+static volatile float m_speed_now = 0.0;
 
 #endif /* HYDRAULIC_H_ */
