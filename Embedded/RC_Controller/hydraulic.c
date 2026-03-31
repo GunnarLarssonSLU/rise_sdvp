@@ -56,6 +56,7 @@ static volatile HYDRAULIC_MOVE m_move_rear = HYDRAULIC_MOVE_STOP;
 static volatile HYDRAULIC_MOVE m_move_extra = HYDRAULIC_MOVE_STOP;
 static volatile float m_move_timeout_cnt = 0.0;
 volatile float m_throttle_set = 0.0;
+volatile float m_speed_now = 1.0;
 
 //extern event_source_t emergency_event;
 extern int iDebug;
@@ -139,7 +140,7 @@ void hydraulic_set_speed(float speed) {
 		pwm_esc_set(SERVO_LEFT, 0.5);
 		pwm_esc_set(SERVO_RIGHT, 0.5);
 		m_throttle_set = 0.0;
-#ifndef HYDRAULIC_HAS_SPEED_SENSOR
+#ifndef WHEEL_SENSOR
 		m_speed_now = 0.0;
 #endif
 	} else {
@@ -166,7 +167,7 @@ void hydraulic_set_throttle_raw(float throttle) {
 	utils_truncate_number_abs(&throttle, 1.0);
 	m_throttle_set = throttle;
 
-#ifndef HYDRAULIC_HAS_SPEED_SENSOR
+#ifndef WHEEL_SENSOR
 	if (fabsf(throttle) > 0.9) {
 		m_speed_now = SIGN(throttle) * SPEED_M_S;
 	} else {
@@ -244,7 +245,7 @@ static THD_FUNCTION(hydro_thread, arg) {
 			pwm_esc_set(SERVO_LEFT, 0.5);
 			pwm_esc_set(SERVO_RIGHT, 0.5);
 			m_throttle_set = 0.0;
-#ifndef HYDRAULIC_HAS_SPEED_SENSOR
+#ifndef WHEEL_SENSOR
 			m_speed_now = 0.0;
 #endif
 		}
