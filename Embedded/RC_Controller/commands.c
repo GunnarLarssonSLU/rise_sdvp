@@ -972,9 +972,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 								hydraulic_set_throttle_raw(throttle / 0.15);
 							#endif
 						#else
-								debugvalue=throttle;
-								debugvalue2=throttle;
-								debugvalue3=throttle;
 							comm_can_lock_vesc();
 							comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
 							bldc_interface_set_duty_cycle(throttle);
