@@ -144,7 +144,7 @@ void hydraulic_set_speed(float speed) {
 
 		// TODO: Update this
 		m_throttle_set = SIGN(speed) * throttle_val;
-#ifndef WHEEL_SENSOR
+#ifndef HYDRAULIC_HAS_SPEED_SENSOR
 		m_speed_now = SIGN(speed) * SPEED_M_S;
 #endif
 	}
@@ -230,7 +230,7 @@ static THD_FUNCTION(hydro_thread, arg) {
 			pwm_esc_set(SERVO_RIGHT, 0.5);
 			m_throttle_set = 0.0;
 #ifndef WHEEL_SENSOR
-			m_speed_now = 0.0;
+			m_speed_now = 1.0;
 #endif
 		}
 
@@ -256,11 +256,6 @@ static THD_FUNCTION(hydro_thread, arg) {
 #else
 		cnt = *comm_can_io_board_adc0_cnt();
 #endif
-
- /*       debugvalue=1.0;
-        debugvalue2=1.0;
-        debugvalue3=1.0;*/
-
 
 
 #ifdef IS_MACTRAC

@@ -1193,11 +1193,19 @@ void MainWindow::timerSlot()
     // Joystick connected
 #ifdef HAS_JOYSTICK
     static bool jsWasconn = false;
-    if (JSconnected() != jsWasconn) {
-        jsWasconn = JSconnected();
+    bool jsCurrentlyConnected = JSconnected();
+    
+    if (jsCurrentlyConnected != jsWasconn) {
+        jsWasconn = jsCurrentlyConnected;
 
         if (jsWasconn) {
             ui->jsConnectedLabel->setText("Connected");
+            // Reconnect joystick if it was disconnected and now reconnected
+            #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+            if (mController == nullptr || !SDL_GameControllerGetAttached(mController)) {
+                connectJoystick();
+            }
+            #endif
         } else {
             ui->jsConnectedLabel->setText("Not connected");
             // STOP STOP STOP
@@ -1223,8 +1231,10 @@ void MainWindow::timerSlot()
 bool MainWindow::JSconnected()
 {
     #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        int joystickIndex=0;
-        return SDL_JoystickGetAttached(SDL_JoystickOpen(joystickIndex)) == SDL_TRUE;
+        if (mController == nullptr) {
+            return false;
+        }
+        return SDL_GameControllerGetAttached(mController) == SDL_TRUE;
     #else
     return mJoystick->isConnected();
     #endif

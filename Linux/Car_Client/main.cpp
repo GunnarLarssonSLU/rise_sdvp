@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
     bool inputRtcm = true;
 //    QString ttyPortRtcm = "/dev/ttyACM1";
     QString ttyPortRtcm = "/dev/vehicle";
-    bool inputArduino = false;
+    bool inputArduino = true;
 //    QString ttyPortArduino = "/dev/tty0";
     QString ttyPortArduino = "/dev/arduino";
 //    QString ttyPortArduino = "NOTHING";

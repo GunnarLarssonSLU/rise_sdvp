@@ -302,6 +302,7 @@ void CarClient::connectSerialArduino(QString port, int baudrate)
         packet.append((char)CMD_ARDUINO_STATUS);
         packet.append((char)1);
         mPacketInterface->sendPacket(packet);
+        qDebug() << "Arduino connected";
 
             // Tell RC_Controller about it
         } else
@@ -313,6 +314,7 @@ void CarClient::connectSerialArduino(QString port, int baudrate)
         packet.append((char)CMD_ARDUINO_STATUS);
         packet.append((char)0);
         mPacketInterface->sendPacket(packet);
+        qDebug() << "Arduino not connected";
         return;
         }
 
@@ -712,6 +714,7 @@ void CarClient::serialArduinoDataAvailable()
 #define ARDUINO_INTEGER
 
 #ifdef ARDUINO_INTEGER
+    /*
     while (mSerialPortArduino->bytesAvailable() >= 2) {
         QByteArray data = mSerialPortArduino->read(2);
         if (data.size() == 2) {
@@ -720,9 +723,63 @@ void CarClient::serialArduinoDataAvailable()
                 packet.append(this->mCarId);
                 packet.append((char)CMD_GETANGLE);
                 packet.append(data);
+                qDebug() << "===Arduino data===";
+                qDebug() << data[0];
+                qDebug() << data[1];
 
                 mPacketInterface->sendPacket(packet);
 //            mPacketInterface->sendPacket(data);
+        }
+    }
+    */
+    QByteArray buffer;
+    while (mSerialPortArduino->bytesAvailable()) {
+        buffer.append(mSerialPortArduino->read(1));
+        if (buffer.size() >= 4) {
+            // Check start byte
+            if (static_cast<uint8_t>(buffer[0]) == 0xAA) {
+                // Extract data
+                int16_t scaledVoltage = (static_cast<uint8_t>(buffer[1]) << 8) | static_cast<uint8_t>(buffer[2]);
+                uint8_t checksum = static_cast<uint8_t>(buffer[3]);
+                uint8_t calculatedChecksum = static_cast<uint8_t>(buffer[0]) ^ static_cast<uint8_t>(buffer[1]) ^ static_cast<uint8_t>(buffer[2]);
+
+                if (checksum == calculatedChecksum) {
+                    float voltage = scaledVoltage / 1000.0f;
+                    qDebug() << "Voltage:" << voltage;
+                    // Process further...
+                    // After validating the checksum and extracting scaledVoltage:
+                    QByteArray packet;
+                    packet.clear();
+                    packet.append(this->mCarId);              // Car ID (1 byte)
+                    packet.append(static_cast<char>(CMD_GETANGLE)); // Command (1 byte)
+                    packet.append(static_cast<char>(0xAA));  // Start byte (1 byte)
+                    // Append the 2-byte scaledVoltage (big-endian)
+                    packet.append(static_cast<char>((scaledVoltage >> 8) & 0xFF)); // High byte
+                    packet.append(static_cast<char>(scaledVoltage & 0xFF));        // Low byte
+
+                    // Calculate checksum (XOR of start byte + 2 data bytes)
+                    char checksum = 0;
+                    checksum ^= packet[2]; // Start byte
+                    checksum ^= packet[3]; // High byte
+                    checksum ^= packet[4]; // Low byte
+                    packet.append(checksum); // Append checksum
+
+                    qDebug() << "===Sending packet===";
+                    qDebug() << "Car ID:" << (uint8_t)packet[0];
+                    qDebug() << "Command:" << (uint8_t)packet[1];
+                    qDebug() << "Start byte:" << (uint8_t)packet[2];
+                    qDebug() << "High byte:" << (uint8_t)packet[3];
+                    qDebug() << "Low byte:" << (uint8_t)packet[4];
+                    qDebug() << "Checksum:" << (uint8_t)packet[5];
+
+                    mPacketInterface->sendPacket(packet);
+                } else {
+                    qDebug() << "Checksum error!";
+                }
+                buffer.clear();
+            } else {
+                buffer.remove(0, 1); // Discard invalid start byte
+            }
         }
     }
 #endif

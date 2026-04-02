@@ -97,6 +97,7 @@ int main(void) {
 	conf_general_init();
 	adconv_init();
 	servo_simple_init();
+	commands_init();
 	pos_init();
 	pos_uwb_init();
 	comm_can_init();
@@ -104,12 +105,12 @@ int main(void) {
 	timeout_init();
 	log_init();
 	motor_sim_init();
-	commands_init();
 #if HAS_HYDRAULIC_DRIVE
 	hydraulic_init();
 #endif
 #if WHEEL_SENSOR
 	hydraulic_init();
+	pwm_esc_init();
 	wheelspeed_init();
 #endif
 #if HAS_PWM_ESC

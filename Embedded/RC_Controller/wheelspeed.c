@@ -20,7 +20,6 @@ int buf_count = 0; // hur många giltiga värden i bufferten
 float last_valid_time = 0.0f;
 float m_speed_filtered = 0.0f;
 float m_speed_pwm = 0;
-extern systime_t last_reading_time;
 
 extern volatile float m_speed_now;
 extern float m_speed_pwm;
@@ -33,11 +32,22 @@ volatile bool new_pulse = false;
 
 extern float m_throttle_set;
 
-extern float debugvalue;
-extern float debugvalue2;
-extern float debugvalue3;
-extern float debugvalue4;
-extern float debugvalue5;
+#ifdef SERVO_READ
+	#define TACHO_INPUT_PORT      GPIOA
+	ADC_CNT_t io_board_adc0_cnt = {1};
+	systime_t last_reading_time = 0;
+	static volatile uint32_t timer_overflow_count = 0; // antal overflow
+	static volatile uint32_t last_capture = 0;         // 32-bitars senaste capture
+//	static systime_t last_tick = 0;
+#endif
+
+#ifndef CORTEX_PRIORITY_BITS
+#define CORTEX_PRIORITY_BITS 4
+#endif
+
+#ifndef CORTEX_PRIORITY_MASK
+#define CORTEX_PRIORITY_MASK(n) ((n) << (8 - CORTEX_PRIORITY_BITS))
+#endif
 
 #ifdef IS_MACTRAC
 	// Measure speed
@@ -50,30 +60,11 @@ extern float debugvalue5;
 	const float cnts_per_rev = 16.0;
 #endif
 
-#ifndef CORTEX_PRIORITY_BITS
-#define CORTEX_PRIORITY_BITS 4
-#endif
-
-#ifndef CORTEX_PRIORITY_MASK
-#define CORTEX_PRIORITY_MASK(n) ((n) << (8 - CORTEX_PRIORITY_BITS))
-#endif
-
-
-#ifdef SERVO_READ
-//#include <time.h> // For time functions
-#define TACHO_INPUT_PORT      GPIOA
-ADC_CNT_t io_board_adc0_cnt = {1};
-systime_t last_reading_time = 0;
-static volatile uint32_t timer_overflow_count = 0; // antal overflow
-static volatile uint32_t last_capture = 0;         // 32-bitars senaste capture
-static systime_t last_tick = 0;
-//extern float time_last;
-#endif
-
 static THD_WORKING_AREA(wheelspeed_thread_wa, 1024);
 static THD_FUNCTION(wheelspeed_thread, arg);
 
 void wheelspeed_init(void) {
+
     // Enable TIM2 clock
     rccEnableTIM2(TRUE);
 
@@ -110,11 +101,7 @@ void wheelspeed_init(void) {
     io_board_adc0_cnt.toggle_low_cnt = 0;
 
     // Debug: Print initialization complete
-    commands_printf("Tachometer input initialized\n");
-    commands_printf("TIM2->CCER = 0x%08X\n", TIM2->CCER);
-    commands_printf("TIM2->DIER = 0x%08X\n", TIM2->DIER);
-
-	chThdCreateStatic(wheelspeed_thread_wa, sizeof(wheelspeed_thread_wa), NORMALPRIO, wheelspeed_thread, NULL);
+    chThdCreateStatic(wheelspeed_thread_wa, sizeof(wheelspeed_thread_wa), NORMALPRIO, wheelspeed_thread, NULL);
 }
 
 void update_speed_buffer(float period, float unused) {
@@ -192,42 +179,10 @@ void update_speed_buffer(float period, float unused) {
     chSysUnlockFromISR();
 };
 
-CH_IRQ_HANDLER(STM32_TIM2_HANDLER) {
-    CH_IRQ_PROLOGUE();
-    if (TIM2->SR & TIM_SR_UIF) {
-        TIM2->SR &= ~TIM_SR_UIF; // rensa flagga
-        timer_overflow_count++;
-    }
-
-    if (TIM2->SR & TIM_SR_CC3IF) {
-        uint16_t capture16 = TIM2->CCR3;
-        uint32_t capture32 = ((uint32_t)timer_overflow_count << 16) | capture16;
-
-        uint32_t delta = capture32 - last_capture;
-        last_capture = capture32;
-
-        last_reading_time = chVTGetSystemTimeX();
-
-        // Simplified: Just measure the time between rising edges (period)
-        // This is simpler and more reliable than trying to measure both high and low times
- //       debugvalue2=delta;
-        float period = 0.00001f * delta;  // Convert to seconds
-
-        // Update speed buffer with the period
-        // For a square wave, the period is the sum of high and low times
-        update_speed_buffer(period, 0.0f);
-        new_pulse = true;  // signalera till tråden
-
-        TIM2->SR &= ~TIM_SR_CC3IF;
-    }
-
-    CH_IRQ_EPILOGUE();
-}
 
 
 static THD_FUNCTION(wheelspeed_thread, arg) {
 	(void)arg;
-
 	chRegSetThreadName("WheelSpeed");
     
 	/*
@@ -256,11 +211,40 @@ static THD_FUNCTION(wheelspeed_thread, arg) {
             chSysLock();
             new_pulse = false;
             m_speed_now = m_speed_pwm;
-            debugvalue=m_speed_now+1.0;
-            debugvalue2=m_speed_now+2.0;
-            debugvalue3=m_speed_now+3.0;
             chSysUnlock();
         }
     }
+}
+
+CH_IRQ_HANDLER(STM32_TIM2_HANDLER) {
+    CH_IRQ_PROLOGUE();
+
+    if (TIM2->SR & TIM_SR_UIF) {
+        TIM2->SR &= ~TIM_SR_UIF; // rensa flagga
+        timer_overflow_count++;
+    }
+
+    if (TIM2->SR & TIM_SR_CC3IF) {
+        uint16_t capture16 = TIM2->CCR3;
+        uint32_t capture32 = ((uint32_t)timer_overflow_count << 16) | capture16;
+
+        uint32_t delta = capture32 - last_capture;
+        last_capture = capture32;
+
+        last_reading_time = chVTGetSystemTimeX();
+
+        // Simplified: Just measure the time between rising edges (period)
+        // This is simpler and more reliable than trying to measure both high and low times
+        float period = 0.00001f * delta;  // Convert to seconds
+
+        // Update speed buffer with the period
+        // For a square wave, the period is the sum of high and low times
+        update_speed_buffer(period, 0.0f);
+        new_pulse = true;  // signalera till tråden
+
+        TIM2->SR &= ~TIM_SR_CC3IF;
+    }
+
+    CH_IRQ_EPILOGUE();
 }
 

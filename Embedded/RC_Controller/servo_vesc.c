@@ -210,10 +210,6 @@ if (1)
 			commands_printf("Deadband: %f",main_config.vehicle.deadband);
 		}
 		output += SIGN(output) * main_config.vehicle.deadband;
-		//debugvalue2=p_term;
-		//debugvalue3=i_term;
-		//debugvalue4=d_term;
-		//debugvalue5=SIGN(output) * main_config.vehicle.deadband;
 		utils_truncate_number(&output, -1.0, 1.0);
 
 		if (ok) {

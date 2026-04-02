@@ -29,7 +29,5 @@ void pwm_esc_set(uint8_t id, float pulse_width);
 void pwm_esc_set_all(float pulse_width);
 
 void read_adc_test(void);
-void update_speed_buffer(float period, float unused);
-void tach_input_init(void);
 
 #endif /* PWM_ESC_H_ */

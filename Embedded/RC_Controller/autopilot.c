@@ -956,7 +956,7 @@ static THD_FUNCTION(ap_thread, arg) {
 				#else
 					#ifdef IS_DRANGEN
 
-					comm_can_set_vesc_id(DIFF_STEERING);
+					comm_can_set_vesc_id(ELECTROHYDRAULICBAR_VESC_ID);
 					bldc_interface_set_duty_cycle(servo_pos);
 
 					#endif
