@@ -127,7 +127,6 @@ if (1)
 	}
 		// Map s1 to 0.0 and s2 to 1.0
 #ifdef SERVO_VESC_HYDRAULIC
-//		commands_printf("SERVO_VESC_HYDRAULIC %d\n",SERVO_VESC_ID);
 		comm_can_set_vesc_id(SERVO_VESC_ID);
 
 		(void)as5047_read;

@@ -37,9 +37,6 @@
 #define SPEED_M_S				0.6
 #endif
 
-#define TIMEOUT_SECONDS			2.0
-#define TIMEOUT_SECONDS_MOVE	10.0
-
 // Private variables
 static volatile float m_distance_now = 0.0;
 static volatile float m_timeout_cnt = 0.0;

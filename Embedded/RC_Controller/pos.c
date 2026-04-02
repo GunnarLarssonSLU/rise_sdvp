@@ -900,10 +900,10 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 		comm_can_lock_vesc();
 		if (m_vesc_left_now) {
 			m_vesc_left_now = false;
-			comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
+			comm_can_set_vesc_id(VESC_RIGHT);
 		} else {
 			m_vesc_left_now = true;
-			comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
+			comm_can_set_vesc_id(VESC_LEFT);
 		}
 		bldc_interface_get_values();
 		comm_can_unlock_vesc();
@@ -1385,7 +1385,7 @@ static void ubx_rx_rawx(ubx_rxm_rawx *rawx) {
 #if MAIN_MODE == MAIN_MODE_VEHICLE
 static void mc_values_received(mc_values *val) {
 	#if HAS_DIFF_STEERING
-    if (val->vesc_id == DIFF_STEERING_VESC_RIGHT || !m_vesc_left_now) {
+    if (val->vesc_id == VESC_RIGHT || !m_vesc_left_now) {
         m_mc_val_right = *val;
         return;
     }
