@@ -147,6 +147,15 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 	conf->vehicle.gear_ratio = (1.0 / 3.0) * (21.0 / 37.0);
 	conf->vehicle.wheel_diam = 0.11;
 	conf->vehicle.motor_poles = 4.0;
+	// Only the SLU testbot for now
+#if HAS_DIFF_STEERING
+	conf->vehicle.gear_ratio = 1.0;
+	conf->vehicle.axis_distance = 0.5;
+//	conf->vehicle.wheel_diam = 0.3;
+	conf->vehicle.motor_poles = 22.0;
+//	conf->gps_ant_x = 0.5;
+#endif
+
 
 	conf->vehicle.steering_max_angle_rad = 0.42041;
 	conf->vehicle.steering_center = 0.5;
@@ -158,12 +167,16 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 	conf->vehicle.vesc_i_gain = 0.0;
 	conf->vehicle.vesc_d_gain = 0.0;
 
+#ifdef IS_MACTRAC
 	conf->vehicle.sensorinterval = 160;
 	conf->vehicle.degreeinterval = 68;
 	conf->vehicle.sensorcentre = 580;
+#endif
+#ifdef IS_DRANGEN
 	conf->vehicle.sensorinterval = 0.745;
 	conf->vehicle.degreeinterval = 65.22;
 	conf->vehicle.sensorcentre = 2.475;
+#endif
 	conf->vehicle.deadband = 0.05;
 
 	/*
@@ -178,16 +191,6 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 		break;
 	}
 	*/
-
-	// Only the SLU testbot for now
-#if HAS_DIFF_STEERING
-	conf->vehicle.gear_ratio = 1.0;
-	conf->vehicle.axis_distance = 0.5;
-//	conf->vehicle.wheel_diam = 0.3;
-	conf->vehicle.motor_poles = 22.0;
-//	conf->gps_ant_x = 0.5;
-#endif
-
 
 
 #ifdef IS_DRANGEN
@@ -230,11 +233,11 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 
 	conf->gps_ant_x = 1.25;
 	conf->gps_ant_y = 0.3;
+#endif
 
 	conf->log_en = true;
 	conf->log_mode_ext = LOG_EXT_ETHERNET;
 	conf->log_rate_hz = 10;
-#endif
 }
 
 /**

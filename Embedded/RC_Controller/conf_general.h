@@ -38,7 +38,7 @@
 // IO BOARD
 // #define IO_BOARD
 
-#define IS_MACTRAC_SLF
+#define IS_DRANGEN
 
 #ifdef IS_MACTRAC_EIP
 #define IS_MACTRAC
@@ -52,8 +52,6 @@
 #define IO_BOARD
 #endif
 
-#define UPDATE20250812
-
 // MacTrac
 // Steering Center: 210
 // Valve: Low values: Turn right; high values: turn left
@@ -62,13 +60,13 @@
 #define HAS_PWM_ESC                 1
 #define SERVO_VESC_S1				178.0 // Left
 #define SERVO_VESC_S2				240.0 // Right
-#define USE_ADCONV_FOR_VIN
 #define SERVO_VESC_HYDRAULIC
 #define HYDRAULIC_HAS_SPEED_SENSOR
 #define SERVO_VESC_ID				0
 #define SERVO_VESC_INVERTED			0
 //#define SERVO_VESC_DEADBAND_COMP    0.2
 #define IS_F9_BOARD					1
+#define WHEEL_SENSOR                1
 #define SERVO_WRITE
 #define SERVO_READ
 #define MAX_RATIO                 2.0
@@ -81,15 +79,14 @@
 
 #ifdef IS_DRANGEN
 //#define HAS_HYDRAULIC_DRIVE			1
-#define DIFF_THROTTLE_VESC_LEFT 28
-#define DIFF_THROTTLE_VESC_RIGHT 36
+#define VESC_LEFT 28
+#define VESC_RIGHT 36
 #define ELECTROHYDRAULICBAR_VESC_ID 16
 #define SERVO_VESC_ID				0
 #define VESC_ID				0
 #define VOLTAGEFRACTION 1
 #define SERVO_VESC_S1				180.7 // Left
 #define SERVO_VESC_S2				237.7 // Right
-#define USE_ADCONV_FOR_VIN
 #define SERVO_VESC_HYDRAULIC
 #define HYDRAULIC_HAS_SPEED_SENSOR
 #define SERVO_VESC_INVERTED			0
@@ -110,17 +107,6 @@
 
 #ifdef CAN_ADDIO
 #define FTR2_ANGLE                  1
-#endif
-
-// Differential steering
-#ifndef HAS_DIFF_STEERING
-#define HAS_DIFF_STEERING			0
-#endif
-#ifndef DIFF_STEERING_VESC_LEFT
-#define DIFF_STEERING_VESC_LEFT		0
-#endif
-#ifndef DIFF_STEERING_VESC_RIGHT
-#define DIFF_STEERING_VESC_RIGHT	1
 #endif
 
 // Hydraulic drive
@@ -144,15 +130,6 @@
 #endif
 #ifndef SERVO_VESC_S2
 #define SERVO_VESC_S2				30.0
-#endif
-#ifndef SERVO_VESC_P_GAIN
-#define SERVO_VESC_P_GAIN			2.0
-#endif
-#ifndef SERVO_VESC_I_GAIN
-#define SERVO_VESC_I_GAIN			1.0
-#endif
-#ifndef SERVO_VESC_D_GAIN
-#define SERVO_VESC_D_GAIN			0.1
 #endif
 #ifndef SERVO_VESC_D_FILTER
 #define SERVO_VESC_D_FILTER			0.05
@@ -207,6 +184,11 @@
 
 // Autopilot settings
 #define AP_ROUTE_SIZE				2000
+
+// From hydraulics
+#define TIMEOUT_SECONDS			2.0
+#define TIMEOUT_SECONDS_MOVE	10.0
+
 
 // Board-dependent settings
 #if IS_F9_BOARD

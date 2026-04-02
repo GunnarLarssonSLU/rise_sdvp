@@ -406,9 +406,9 @@ void autopilot_set_motor_speed(float speed) {
 /*#if IS_DRANGEN
 		// TODO
 		comm_can_lock_vesc();
-		comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
+		comm_can_set_vesc_id(VESC_LEFT);
 		bldc_interface_set_rpm((int)speed);
-		comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
+		comm_can_set_vesc_id(VESC_RIGHT);
 		bldc_interface_set_rpm((int)rpm_r);
 		comm_can_unlock_vesc();
 #endif */
@@ -429,9 +429,9 @@ void autopilot_set_motor_speed(float speed) {
 				* (2.0 / main_config.vehicle.motor_poles) * (1.0 / 60.0)
 				* main_config.vehicle.wheel_diam * M_PI);
 		comm_can_lock_vesc();
-		comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
+		comm_can_set_vesc_id(VESC_LEFT);
 //			bldc_interface_set_rpm((int)rpm_l);
-		comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
+		comm_can_set_vesc_id(VESC_RIGHT);
 		bldc_interface_set_rpm((int)rpm_r);
 		comm_can_unlock_vesc();
 #else
@@ -446,9 +446,9 @@ void autopilot_set_motor_speed(float speed) {
 		comm_can_lock_vesc();
 		#ifdef IS_DRANGEN
 //				comm_can_lock_vesc();
-				comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
+				comm_can_set_vesc_id(VESC_LEFT);
 				bldc_interface_set_rpm((int)(rpm*200));
-				comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
+				comm_can_set_vesc_id(VESC_RIGHT);
 				bldc_interface_set_rpm((int)(rpm*200));
 //				comm_can_unlock_vesc();
 			#else
@@ -955,10 +955,8 @@ static THD_FUNCTION(ap_thread, arg) {
 					autopilot_set_turn_rad(circle_radius);
 				#else
 					#ifdef IS_DRANGEN
-
-					comm_can_set_vesc_id(ELECTROHYDRAULICBAR_VESC_ID);
-					bldc_interface_set_duty_cycle(servo_pos);
-
+						comm_can_set_vesc_id(ELECTROHYDRAULICBAR_VESC_ID);
+						bldc_interface_set_duty_cycle(servo_pos);
 					#endif
 					#ifdef IS_MACTRAC
 						servo_simple_set_pos_ramp(servo_pos, true); //GL - Bättre?
