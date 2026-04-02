@@ -25,7 +25,7 @@
         <enum>QTabWidget::TabShape::Triangular</enum>
        </property>
        <property name="currentIndex">
-        <number>5</number>
+        <number>6</number>
        </property>
        <property name="tabsClosable">
         <bool>false</bool>
@@ -762,7 +762,7 @@
                <string/>
               </property>
               <property name="decimals">
-               <number>0</number>
+               <number>3</number>
               </property>
               <property name="minimum">
                <double>0.000000000000000</double>
@@ -923,13 +923,13 @@
                <string/>
               </property>
               <property name="decimals">
-               <number>0</number>
+               <number>3</number>
               </property>
               <property name="minimum">
                <double>0.000000000000000</double>
               </property>
               <property name="maximum">
-               <double>1024.000000000000000</double>
+               <double>1021.000000000000000</double>
               </property>
              </widget>
             </item>

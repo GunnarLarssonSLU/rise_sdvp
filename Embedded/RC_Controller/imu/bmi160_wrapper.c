@@ -41,6 +41,8 @@ static void(*read_callback)(float *accel, float *gyro, float *mag) = 0;
 static struct bmi160_dev sensor;
 static int rate_hz;
 
+extern float debugvalue;
+
 void bmi160_wrapper_init(int samp_rate_hz) {
 	rate_hz = samp_rate_hz;
 
@@ -59,6 +61,7 @@ void bmi160_wrapper_init(int samp_rate_hz) {
 		chThdCreateStatic(bmi_thread_wa, sizeof(bmi_thread_wa),
 				NORMALPRIO, bmi_thread, NULL);
 	}
+	debugvalue=5;
 }
 
 void bmi160_wrapper_set_read_callback(

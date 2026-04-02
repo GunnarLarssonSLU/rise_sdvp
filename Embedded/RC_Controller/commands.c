@@ -216,14 +216,50 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			}
 			break;
 
-		case CMD_GETANGLE:
-			uint16_t sensorvalue=data[0]*256+data[1];
-//			uint16_t sensorvalue=data[1]*256+data[0];
-            angle=(sensorvalue-main_config.vehicle.sensorcentre)*(main_config.vehicle.degreeinterval/main_config.vehicle.sensorinterval);
-            //GUNNAR CHECK
-            comm_can_io_board_as5047_setangle(angle);
-			break;
 
+		case CMD_GETANGLE: {
+		    // Check packet length (6 bytes: car_id, cmd, start, 2 data bytes, checksum)
+		    if (len < 4) {
+		    	commands_printf("Error: Packet too short\n");
+		        break;
+		    }
+
+		    // Check start byte (third byte in the packet)
+		    if (data[0] != 0xAA) {
+		    	commands_printf("Error: Invalid start byte\n");
+		        break;
+		    }
+
+		    // Calculate checksum (XOR of start byte + 2 data bytes)
+		    char calculatedChecksum = 0;
+		    calculatedChecksum ^= data[0]; // Start byte
+		    calculatedChecksum ^= data[1]; // High byte
+		    calculatedChecksum ^= data[2]; // Low byte
+
+		    // Validate checksum
+		    if (calculatedChecksum != data[3]) {
+		    	commands_printf("Error: Checksum mismatch\n");
+		        break;
+		    }
+
+		    // Extract the 2-byte scaled voltage (big-endian)
+		    uint16_t scaledVoltage = (data[1] << 8) | data[2];
+		    float voltage = scaledVoltage / 1000.0f;
+
+
+		    // Calculate angle
+			last_sensorvalue = voltage;
+
+		    angle = (voltage - main_config.vehicle.sensorcentre) * (main_config.vehicle.degreeinterval / main_config.vehicle.sensorinterval);
+		    comm_can_io_board_as5047_setangle(angle);
+		    if (iDebug==31)
+		    {
+		    	commands_printf("Voltage: %u : %.3f, Angle: %.3f, centre: : %.3f, degreeinterval:%.3f, sensorinterval:%.3f\n",
+					scaledVoltage, voltage,  angle, main_config.vehicle.sensorcentre, main_config.vehicle.degreeinterval, main_config.vehicle.sensorinterval);
+		    };
+		    // Debug output
+		    break;
+		}
 		case CMD_SET_POS:
 		case CMD_SET_POS_ACK: {
 			timeout_reset();
@@ -862,12 +898,15 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				buffer_append_float32(m_send_buffer, pos_uwb.px, 1e4, &send_index); // 103
 				buffer_append_float32(m_send_buffer, pos_uwb.py, 1e4, &send_index); // 107
 			}
-/*			buffer_append_float32(m_send_buffer, debugvalue2, 1e4, &send_index); // 111
-			buffer_append_float32(m_send_buffer, debugvalue3, 1e4, &send_index); // 115
-			buffer_append_float32(m_send_buffer, debugvalue4, 1e4, &send_index); // 119 */
-			buffer_append_float32(m_send_buffer, io_board_as5047_angle, 1e4, &send_index); // 111
+			buffer_append_float32(m_send_buffer, debugvalue, 1e4, &send_index); // 121
+			buffer_append_float32(m_send_buffer, debugvalue2, 1e4, &send_index); // 125
+			buffer_append_float32(m_send_buffer, debugvalue3, 1e4, &send_index); // 129
+/*			buffer_append_float32(m_send_buffer,main_config.vehicle.sensorcentre, 1e4, &send_index); // 111
+			buffer_append_float32(m_send_buffer, main_config.vehicle.degreeinterval, 1e4, &send_index); // 115
+			buffer_append_float32(m_send_buffer, main_config.vehicle.sensorinterval, 1e4, &send_index); // 119*/
+/*			buffer_append_float32(m_send_buffer, io_board_as5047_angle, 1e4, &send_index); // 111
 			buffer_append_float32(m_send_buffer, servo_output, 1e4, &send_index); // 115
-			buffer_append_uint16(m_send_buffer, last_sensorvalue, &send_index); // 119
+			buffer_append_uint16(m_send_buffer, last_sensorvalue, &send_index); // 119*/
 			buffer_append_float32(m_send_buffer, debugvalue, 1e4, &send_index); // 121
 			buffer_append_float32(m_send_buffer, debugvalue2, 1e4, &send_index); // 125
 			buffer_append_float32(m_send_buffer, debugvalue3, 1e4, &send_index); // 129
@@ -930,7 +969,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 
 //						if ( (iDebug==10) && ((okdirections) || (nottooextreme)))
 //						{
-							comm_can_set_vesc_id(DIFF_STEERING);
+							comm_can_set_vesc_id(ELECTROHYDRAULICBAR_VESC_ID);
 							bldc_interface_set_duty_cycle(steering*VOLTAGEFRACTION);
 //						}
 						comm_can_unlock_vesc();
@@ -980,7 +1019,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 //							if ((io_board_as5047_angle>-30) && (io_board_as5047_angle<30))
 //							if (1==2)
 //							{
-							comm_can_set_vesc_id(DIFF_STEERING);
+							comm_can_set_vesc_id(ELECTROHYDRAULICBAR_VESC_ID);
 							bldc_interface_set_duty_cycle(steering*VOLTAGEFRACTION);
 //							}
 							comm_can_unlock_vesc();

@@ -38,6 +38,10 @@
 //extern ADC_CNT_t io_board_adc0_cnt;
 
 
+
+
+
+
 extern int iDebug;
 
 
@@ -62,6 +66,7 @@ extern int iDebug;
 #define SERVO4_GPIO				GPIOE
 #define SERVO4_PIN				6
 #endif
+
 
 static PWMConfig pwmcfg3 = {
 		TIM_CLOCK,
@@ -169,3 +174,4 @@ void pwm_esc_set(uint8_t channel, float pulse_width) {
 		break;
 	}
 }
+
