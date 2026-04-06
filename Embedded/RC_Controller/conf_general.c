@@ -145,13 +145,11 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 	conf->vehicle.use_uwb_pos = false;
 
 	conf->vehicle.gear_ratio = (1.0 / 3.0) * (21.0 / 37.0);
-	conf->vehicle.wheel_diam = 0.11;
 	conf->vehicle.motor_poles = 4.0;
 	// Only the SLU testbot for now
 #if HAS_DIFF_STEERING
 	conf->vehicle.gear_ratio = 1.0;
 	conf->vehicle.axis_distance = 0.5;
-//	conf->vehicle.wheel_diam = 0.3;
 	conf->vehicle.motor_poles = 22.0;
 //	conf->gps_ant_x = 0.5;
 #endif
@@ -203,9 +201,9 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 	conf->vehicle.steering_max_angle_rad = atanf(conf->vehicle.axis_distance / 1.5);
 	conf->vehicle.steering_max_angle_rad =
 	conf->vehicle.wheel_diam = 0.47;
-//	conf->vehicle.wheel_diam = 0.8;
 	conf->gps_ant_x = 0; // TODO: IMU_ROT_180 sign?
 	conf->gps_ant_y = 0.25;
+	conf->vehicle.yaw_use_odometry = true;
 
 	// Mellan hjul fram back 145 cm
 	// Mellan hjul höger vänster 122 cm

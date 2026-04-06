@@ -169,9 +169,9 @@ if (1)
 		//debugvalue15=error;
 		if (iDebug==81)
 		{
-			commands_printf("m_pos_set: %f",m_pos_set);
-			commands_printf("m_pos_now: %f",m_pos_now);
-			commands_printf("error: %f",error);
+			commands_printf("m_pos_set: %f",(double)m_pos_set);
+			commands_printf("m_pos_now: %f",(double)m_pos_now);
+			commands_printf("error: %f",(double)error);
 		}
 		float dt = 0.01;
 		float p_term = error * main_config.vehicle.vesc_p_gain;
@@ -205,8 +205,8 @@ if (1)
 		float output = p_term + i_term + d_term;
 		if (iDebug==80)
 		{
-			commands_printf("i gain: %f",main_config.vehicle.vesc_i_gain);
-			commands_printf("Deadband: %f",main_config.vehicle.deadband);
+			commands_printf("i gain: %f",(double)main_config.vehicle.vesc_i_gain);
+			commands_printf("Deadband: %f",(double)main_config.vehicle.deadband);
 		}
 		output += SIGN(output) * main_config.vehicle.deadband;
 		utils_truncate_number(&output, -1.0, 1.0);

@@ -32,14 +32,12 @@ volatile bool new_pulse = false;
 
 extern float m_throttle_set;
 
-#ifdef SERVO_READ
-	#define TACHO_INPUT_PORT      GPIOA
-	ADC_CNT_t io_board_adc0_cnt = {1};
-	systime_t last_reading_time = 0;
-	static volatile uint32_t timer_overflow_count = 0; // antal overflow
-	static volatile uint32_t last_capture = 0;         // 32-bitars senaste capture
+#define TACHO_INPUT_PORT      GPIOA
+ADC_CNT_t io_board_adc0_cnt = {1};
+systime_t last_reading_time = 0;
+static volatile uint32_t timer_overflow_count = 0; // antal overflow
+static volatile uint32_t last_capture = 0;         // 32-bitars senaste capture
 //	static systime_t last_tick = 0;
-#endif
 
 #ifndef CORTEX_PRIORITY_BITS
 #define CORTEX_PRIORITY_BITS 4
@@ -49,16 +47,7 @@ extern float m_throttle_set;
 #define CORTEX_PRIORITY_MASK(n) ((n) << (8 - CORTEX_PRIORITY_BITS))
 #endif
 
-#ifdef IS_MACTRAC
-	// Measure speed
-	const float wheel_diam = 0.65;
-	const float cnts_per_rev = 16.0;
-#endif
-#ifdef IS_DRANGEN
-	// Measure speed
-	const float wheel_diam = 0.30;
-	const float cnts_per_rev = 16.0;
-#endif
+const float cnts_per_rev = 16.0;
 
 static THD_WORKING_AREA(wheelspeed_thread_wa, 1024);
 static THD_FUNCTION(wheelspeed_thread, arg);
@@ -169,7 +158,7 @@ void update_speed_buffer(float period, float unused) {
         return;
     }
 
-    float new_speed = SIGN(m_throttle_set) * (wheel_diam * M_PI) / (avg_time * cnts_per_rev);
+    float new_speed = SIGN(m_throttle_set) * (main_config.vehicle.wheel_diam * M_PI) / (avg_time * cnts_per_rev);
     
     // Update shared speed variables
     chSysLockFromISR();
