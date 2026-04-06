@@ -67,8 +67,6 @@
 //#define SERVO_VESC_DEADBAND_COMP    0.2
 #define IS_F9_BOARD					1
 #define WHEEL_SENSOR                1
-#define SERVO_WRITE
-#define SERVO_READ
 #define MAX_RATIO                 2.0
 #define MIN_RATIO                 0.5
 #define MAX_RATIO_LOWSPEED        4.0
@@ -94,8 +92,6 @@
 #define IS_F9_BOARD					1
 #define IS_ALL_ELECTRIC             1
 #define ANALOG_ANGLE
-#define SERVO_WRITE                 1
-#define SERVO_READ                  1
 #define WHEEL_SENSOR                1
 #define HAS_PWM_ESC                 1
 #define MAX_RATIO                 999

@@ -69,7 +69,7 @@ static bool io_board_lim_sw[8] = {0};
 float io_board_as5047_angle = 0.0; //static?
 static float can_ftr2_angle = 0.0;
 
-#ifndef SERVO_READ
+#ifndef WHEEL_SENSOR
 ADC_CNT_t io_board_adc0_cnt = {1};
 #endif
 
@@ -803,7 +803,7 @@ bool comm_can_io_board_lim_sw(int sw) {
 	return io_board_lim_sw[sw];
 }
 
-#ifndef SERVO_READ
+#ifndef WHEEL_SENSOR
 ADC_CNT_t* comm_can_io_board_adc0_cnt(void) {
 	return &io_board_adc0_cnt;
 }
