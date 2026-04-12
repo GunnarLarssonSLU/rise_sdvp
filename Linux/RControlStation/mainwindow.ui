@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
@@ -38,7 +38,7 @@
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,2">
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1">
+     <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1,0,0,0,0">
       <item>
        <widget class="QToolBox" name="toolBox">
         <property name="enabled">
@@ -64,7 +64,7 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>207</width>
+           <width>180</width>
            <height>71</height>
           </rect>
          </property>
@@ -107,7 +107,7 @@
                <string>Connect</string>
               </property>
               <property name="text">
-               <string />
+               <string/>
               </property>
               <property name="icon">
                <iconset resource="resources.qrc">
@@ -137,7 +137,7 @@
                <string>Disconnect</string>
               </property>
               <property name="text">
-               <string />
+               <string/>
               </property>
               <property name="icon">
                <iconset resource="resources.qrc">
@@ -207,7 +207,7 @@
          <item row="0" column="0">
           <widget class="QPushButton" name="jsDisconnectButton">
            <property name="text">
-            <string />
+            <string/>
            </property>
            <property name="icon">
             <iconset resource="resources.qrc">
@@ -244,7 +244,7 @@
          <item row="0" column="1">
           <widget class="QPushButton" name="jsConnectButton">
            <property name="text">
-            <string />
+            <string/>
            </property>
            <property name="icon">
             <iconset resource="resources.qrc">
@@ -424,7 +424,7 @@
             <string>Keyboard gain</string>
            </property>
            <property name="prefix">
-            <string />
+            <string/>
            </property>
            <property name="decimals">
             <number>3</number>
@@ -449,7 +449,7 @@
             <string>Keyboard gain</string>
            </property>
            <property name="prefix">
-            <string />
+            <string/>
            </property>
            <property name="decimals">
             <number>3</number>
@@ -505,7 +505,7 @@
          <string>Stop all cars</string>
         </property>
         <property name="text">
-         <string />
+         <string/>
         </property>
         <property name="icon">
          <iconset resource="resources.qrc">
@@ -524,7 +524,7 @@
     <item>
      <widget class="QTabWidget" name="mainTabWidget">
       <property name="toolTip">
-       <string />
+       <string/>
       </property>
       <property name="tabPosition">
        <enum>QTabWidget::TabPosition::North</enum>
@@ -538,7 +538,7 @@
          <normaloff>:/models/Icons/Car-96.png</normaloff>:/models/Icons/Car-96.png</iconset>
        </attribute>
        <attribute name="title">
-        <string />
+        <string/>
        </attribute>
        <attribute name="toolTip">
         <string>Cars</string>
@@ -562,7 +562,7 @@
          <normaloff>:/models/Icons/Waypoint Map-96.png</normaloff>:/models/Icons/Waypoint Map-96.png</iconset>
        </attribute>
        <attribute name="title">
-        <string />
+        <string/>
        </attribute>
        <attribute name="toolTip">
         <string>Map</string>
@@ -631,7 +631,7 @@
                     <string>Remove trace</string>
                    </property>
                    <property name="text">
-                    <string />
+                    <string/>
                    </property>
                    <property name="icon">
                     <iconset resource="resources.qrc">
@@ -651,7 +651,7 @@
                     <string>Center map</string>
                    </property>
                    <property name="text">
-                    <string />
+                    <string/>
                    </property>
                    <property name="icon">
                     <iconset resource="resources.qrc">
@@ -675,7 +675,7 @@
                     </sizepolicy>
                    </property>
                    <property name="text">
-                    <string />
+                    <string/>
                    </property>
                    <property name="icon">
                     <iconset resource="resources.qrc">
@@ -705,7 +705,7 @@
                     <string>Remove trace</string>
                    </property>
                    <property name="text">
-                    <string />
+                    <string/>
                    </property>
                    <property name="icon">
                     <iconset resource="resources.qrc">
@@ -722,7 +722,7 @@
                     </sizepolicy>
                    </property>
                    <property name="text">
-                    <string />
+                    <string/>
                    </property>
                    <property name="icon">
                     <iconset resource="resources.qrc">
@@ -756,7 +756,7 @@
                     <string>Remove Info Trace</string>
                    </property>
                    <property name="text">
-                    <string />
+                    <string/>
                    </property>
                    <property name="icon">
                     <iconset resource="resources.qrc">
@@ -824,7 +824,7 @@
                   <string>Autopilot</string>
                  </property>
                  <property name="text">
-                  <string />
+                  <string/>
                  </property>
                  <property name="icon">
                   <iconset resource="resources.qrc">
@@ -844,7 +844,7 @@
                   <string>Manual control</string>
                  </property>
                  <property name="text">
-                  <string />
+                  <string/>
                  </property>
                  <property name="icon">
                   <iconset resource="resources.qrc">
@@ -864,7 +864,7 @@
                   <string>Stop</string>
                  </property>
                  <property name="text">
-                  <string />
+                  <string/>
                  </property>
                  <property name="icon">
                   <iconset resource="resources.qrc">
@@ -884,7 +884,7 @@
             <item>
              <widget class="QTabWidget" name="tabWidget_2">
               <property name="toolTip">
-               <string />
+               <string/>
               </property>
               <property name="tabPosition">
                <enum>QTabWidget::TabPosition::South</enum>
@@ -904,7 +904,7 @@
                  <normaloff>:/models/Icons/Sedan-96.png</normaloff>:/models/Icons/Sedan-96.png</iconset>
                </attribute>
                <attribute name="title">
-                <string />
+                <string/>
                </attribute>
                <attribute name="toolTip">
                 <string>Car control</string>
@@ -942,7 +942,7 @@
                         <string>Reset &amp; Start</string>
                        </property>
                        <property name="text">
-                        <string />
+                        <string/>
                        </property>
                        <property name="icon">
                         <iconset resource="resources.qrc">
@@ -956,7 +956,7 @@
                         <string>Start</string>
                        </property>
                        <property name="text">
-                        <string />
+                        <string/>
                        </property>
                        <property name="icon">
                         <iconset resource="resources.qrc">
@@ -970,7 +970,7 @@
                         <string>Pause (keep state)</string>
                        </property>
                        <property name="text">
-                        <string />
+                        <string/>
                        </property>
                        <property name="icon">
                         <iconset resource="resources.qrc">
@@ -984,7 +984,7 @@
                         <string>Stop (reset state)</string>
                        </property>
                        <property name="text">
-                        <string />
+                        <string/>
                        </property>
                        <property name="icon">
                         <iconset resource="resources.qrc">
@@ -1000,7 +1000,7 @@
                       <string>Settings</string>
                      </property>
                      <property name="text">
-                      <string />
+                      <string/>
                      </property>
                      <property name="icon">
                       <iconset>
@@ -1011,7 +1011,7 @@
                    <item>
                     <widget class="QGroupBox" name="ap_modes">
                      <property name="title">
-                      <string />
+                      <string/>
                      </property>
                      <layout class="QHBoxLayout" name="horizontalLayout_19">
                       <item>
@@ -1064,7 +1064,7 @@
                       <string>Get enu reference point from car and use it</string>
                      </property>
                      <property name="text">
-                      <string />
+                      <string/>
                      </property>
                      <property name="icon">
                       <iconset resource="resources.qrc">
@@ -1078,7 +1078,7 @@
                       <string>Set current ENU reference point</string>
                      </property>
                      <property name="text">
-                      <string />
+                      <string/>
                      </property>
                      <property name="icon">
                       <iconset resource="resources.qrc">
@@ -1148,7 +1148,7 @@
                       <string>Set</string>
                      </property>
                      <property name="text">
-                      <string />
+                      <string/>
                      </property>
                      <property name="icon">
                       <iconset resource="resources.qrc">
@@ -1180,7 +1180,7 @@
                  <normaloff>:/models/Icons/Pencil-96.png</normaloff>:/models/Icons/Pencil-96.png</iconset>
                </attribute>
                <attribute name="title">
-                <string />
+                <string/>
                </attribute>
                <attribute name="toolTip">
                 <string>Edit</string>
@@ -1222,7 +1222,7 @@
                        <string>Show keyboard shortcuts</string>
                       </property>
                       <property name="text">
-                       <string />
+                       <string/>
                       </property>
                       <property name="icon">
                        <iconset resource="resources.qrc">
@@ -1330,7 +1330,7 @@
                           <string>Read route from car</string>
                          </property>
                          <property name="text">
-                          <string />
+                          <string/>
                          </property>
                          <property name="icon">
                           <iconset resource="resources.qrc">
@@ -1357,7 +1357,7 @@
                           <string>Write route to car</string>
                          </property>
                          <property name="text">
-                          <string />
+                          <string/>
                          </property>
                          <property name="icon">
                           <iconset resource="resources.qrc">
@@ -1411,7 +1411,7 @@
                           <string>Set selected speed on all points</string>
                          </property>
                          <property name="text">
-                          <string />
+                          <string/>
                          </property>
                          <property name="icon">
                           <iconset resource="resources.qrc">
@@ -1425,7 +1425,7 @@
                           <string>Set start time to a specified time from now</string>
                          </property>
                          <property name="text">
-                          <string />
+                          <string/>
                          </property>
                          <property name="icon">
                           <iconset resource="resources.qrc">
@@ -1534,7 +1534,7 @@
                  <normaloff>:/models/Icons/Import-96.png</normaloff>:/models/Icons/Import-96.png</iconset>
                </attribute>
                <attribute name="title">
-                <string />
+                <string/>
                </attribute>
                <attribute name="toolTip">
                 <string>Import</string>
@@ -1603,7 +1603,7 @@
                           <string>Process</string>
                          </property>
                          <property name="text">
-                          <string />
+                          <string/>
                          </property>
                          <property name="icon">
                           <iconset resource="resources.qrc">
@@ -1630,7 +1630,7 @@
                           <string>Choose</string>
                          </property>
                          <property name="text">
-                          <string />
+                          <string/>
                          </property>
                          <property name="icon">
                           <iconset resource="resources.qrc">
@@ -1639,7 +1639,7 @@
                         </widget>
                        </item>
                        <item row="0" column="0" colspan="2">
-                        <widget class="QLineEdit" name="mapImportNmeaEdit" />
+                        <widget class="QLineEdit" name="mapImportNmeaEdit"/>
                        </item>
                       </layout>
                      </widget>
@@ -1726,7 +1726,7 @@
                             <string>Clear trace</string>
                            </property>
                            <property name="text">
-                            <string />
+                            <string/>
                            </property>
                            <property name="icon">
                             <iconset resource="resources.qrc">
@@ -1740,7 +1740,7 @@
                             <string>Disconnect</string>
                            </property>
                            <property name="text">
-                            <string />
+                            <string/>
                            </property>
                            <property name="icon">
                             <iconset resource="resources.qrc">
@@ -1754,7 +1754,7 @@
                             <string>Connect</string>
                            </property>
                            <property name="text">
-                            <string />
+                            <string/>
                            </property>
                            <property name="icon">
                             <iconset resource="resources.qrc">
@@ -1826,7 +1826,7 @@
                  <normaloff>:/models/Icons/Visible-96.png</normaloff>:/models/Icons/Visible-96.png</iconset>
                </attribute>
                <attribute name="title">
-                <string />
+                <string/>
                </attribute>
                <attribute name="toolTip">
                 <string>View</string>
@@ -1977,7 +1977,7 @@
                           <string>Clear cached tiles</string>
                          </property>
                          <property name="text">
-                          <string />
+                          <string/>
                          </property>
                          <property name="icon">
                           <iconset resource="resources.qrc">
@@ -2217,7 +2217,7 @@
                           <string>Car trace</string>
                          </property>
                          <property name="text">
-                          <string />
+                          <string/>
                          </property>
                          <property name="icon">
                           <iconset resource="resources.qrc">
@@ -2231,7 +2231,7 @@
                           <string>All routes</string>
                          </property>
                          <property name="text">
-                          <string />
+                          <string/>
                          </property>
                          <property name="icon">
                           <iconset resource="resources.qrc">
@@ -2245,7 +2245,7 @@
                           <string>All info traces</string>
                          </property>
                          <property name="text">
-                          <string />
+                          <string/>
                          </property>
                          <property name="icon">
                           <iconset resource="resources.qrc">
@@ -2259,7 +2259,7 @@
                           <string>Imported pixmaps</string>
                          </property>
                          <property name="text">
-                          <string />
+                          <string/>
                          </property>
                          <property name="icon">
                           <iconset resource="resources.qrc">
@@ -2295,7 +2295,7 @@
                  <normaloff>:/models/Icons/Polygon-96.png</normaloff>:/models/Icons/Polygon-96.png</iconset>
                </attribute>
                <attribute name="title">
-                <string />
+                <string/>
                </attribute>
                <attribute name="toolTip">
                 <string>Route Generation</string>
@@ -2804,7 +2804,7 @@
                   <item row="5" column="1">
                    <widget class="QLineEdit" name="implementWidthLineEdit">
                     <property name="locale">
-                     <locale language="English" country="UnitedKingdom" />
+                     <locale language="English" country="UnitedKingdom"/>
                     </property>
                     <property name="text">
                      <string>2.4</string>
@@ -2813,7 +2813,7 @@
                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                     </property>
                     <property name="placeholderText">
-                     <string />
+                     <string/>
                     </property>
                    </widget>
                   </item>
@@ -2905,7 +2905,7 @@
                   <item row="12" column="0">
                    <widget class="QLabel" name="flipSideLabel">
                     <property name="toolTip">
-                     <string extracomment="Test" />
+                     <string extracomment="Test"/>
                     </property>
                     <property name="text">
                      <string extracomment="Standard is on the right side">Flip side</string>
@@ -2927,7 +2927,7 @@
                    </widget>
                   </item>
                   <item row="13" column="1">
-                   <widget class="QCheckBox" name="switchStartpointCheckBox" />
+                   <widget class="QCheckBox" name="switchStartpointCheckBox"/>
                   </item>
                   <item row="14" column="0">
                    <widget class="QLabel" name="hastighetkmhLabel">
@@ -3023,7 +3023,7 @@
                    </widget>
                   </item>
                   <item row="19" column="1">
-                   <widget class="QCheckBox" name="addInsertDriveCheckBox" />
+                   <widget class="QCheckBox" name="addInsertDriveCheckBox"/>
                   </item>
                   <item row="21" column="1">
                    <widget class="QDoubleSpinBox" name="prependRouteSpinBox">
@@ -3136,7 +3136,7 @@
                    </widget>
                   </item>
                   <item row="6" column="1">
-                   <widget class="QCheckBox" name="createNewPathCheckBox" />
+                   <widget class="QCheckBox" name="createNewPathCheckBox"/>
                   </item>
                   <item row="4" column="1">
                    <widget class="QDoubleSpinBox" name="removeBeforeSpinBox">
@@ -3178,7 +3178,7 @@
       </widget>
       <widget class="QWidget" name="tabFarm">
        <attribute name="title">
-        <string />
+        <string/>
        </attribute>
        <attribute name="toolTip">
         <string>Fields</string>
@@ -3187,7 +3187,7 @@
         <item>
          <layout class="QGridLayout" name="gridLayout_3">
           <item row="5" column="2">
-           <widget class="QLineEdit" name="filenameEdit" />
+           <widget class="QLineEdit" name="filenameEdit"/>
           </item>
           <item row="4" column="2">
            <widget class="QLineEdit" name="fieldnameEdit">
@@ -3204,7 +3204,7 @@
            </widget>
           </item>
           <item row="12" column="2">
-           <widget class="QLineEdit" name="pathnameEdit" />
+           <widget class="QLineEdit" name="pathnameEdit"/>
           </item>
           <item row="13" column="2">
            <widget class="QPushButton" name="pushButton_path">
@@ -3216,7 +3216,7 @@
           <item row="10" column="2">
            <widget class="QLabel" name="label_area_ha">
             <property name="text">
-             <string />
+             <string/>
             </property>
            </widget>
           </item>
@@ -3312,7 +3312,7 @@
           <item row="1" column="0">
            <widget class="QLabel" name="label_16">
             <property name="text">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=" font-weight:700;"&gt;Name:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Name:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
            </widget>
           </item>
@@ -3364,14 +3364,14 @@
          <normaloff>:/models/Icons/Satellite-96.png</normaloff>:/models/Icons/Satellite-96.png</iconset>
        </attribute>
        <attribute name="title">
-        <string />
+        <string/>
        </attribute>
        <attribute name="toolTip">
         <string>RTCM Client</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
-         <widget class="RtcmWidget" name="rtcmWidget" native="true" />
+         <widget class="RtcmWidget" name="rtcmWidget" native="true"/>
         </item>
        </layout>
       </widget>
@@ -3381,14 +3381,14 @@
          <normaloff>:/models/Icons/GPS Receiving-96.png</normaloff>:/models/Icons/GPS Receiving-96.png</iconset>
        </attribute>
        <attribute name="title">
-        <string />
+        <string/>
        </attribute>
        <attribute name="toolTip">
         <string>Base Station</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_6">
         <item>
-         <widget class="BaseStation" name="baseStationWidget" native="true" />
+         <widget class="BaseStation" name="baseStationWidget" native="true"/>
         </item>
        </layout>
       </widget>
@@ -3398,14 +3398,14 @@
          <normaloff>:/models/Icons/VPN-96.png</normaloff>:/models/Icons/VPN-96.png</iconset>
        </attribute>
        <attribute name="title">
-        <string />
+        <string/>
        </attribute>
        <attribute name="toolTip">
         <string>Network Interface</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_14">
         <item>
-         <widget class="NetworkInterface" name="networkInterface" native="true" />
+         <widget class="NetworkInterface" name="networkInterface" native="true"/>
         </item>
        </layout>
       </widget>
@@ -3415,14 +3415,14 @@
          <normaloff>:/models/Icons/Radio Tower-96.png</normaloff>:/models/Icons/Radio Tower-96.png</iconset>
        </attribute>
        <attribute name="title">
-        <string />
+        <string/>
        </attribute>
        <attribute name="toolTip">
         <string>Mote</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_19">
         <item>
-         <widget class="MoteConfig" name="moteWidget" native="true" />
+         <widget class="MoteConfig" name="moteWidget" native="true"/>
         </item>
        </layout>
       </widget>
@@ -3432,14 +3432,14 @@
          <normaloff>:/models/Icons/Gyroscope-96.png</normaloff>:/models/Icons/Gyroscope-96.png</iconset>
        </attribute>
        <attribute name="title">
-        <string />
+        <string/>
        </attribute>
        <attribute name="toolTip">
         <string>NCom Client</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_20">
         <item>
-         <widget class="NCom" name="nComWidget" native="true" />
+         <widget class="NCom" name="nComWidget" native="true"/>
         </item>
        </layout>
       </widget>
@@ -3449,7 +3449,7 @@
          <normaloff>:/models/Icons/Electrical Sensor-96.png</normaloff>:/models/Icons/Electrical Sensor-96.png</iconset>
        </attribute>
        <attribute name="title">
-        <string />
+        <string/>
        </attribute>
        <attribute name="toolTip">
         <string>Logging and Analysis</string>
@@ -3472,14 +3472,14 @@
              <normaloff>:/models/Icons/Wi-Fi-96.png</normaloff>:/models/Icons/Wi-Fi-96.png</iconset>
            </attribute>
            <attribute name="title">
-            <string />
+            <string/>
            </attribute>
            <attribute name="toolTip">
             <string>Network Logger</string>
            </attribute>
            <layout class="QVBoxLayout" name="verticalLayout_22">
             <item>
-             <widget class="NetworkLogger" name="networkLoggerWidget" native="true" />
+             <widget class="NetworkLogger" name="networkLoggerWidget" native="true"/>
             </item>
            </layout>
           </widget>
@@ -3489,14 +3489,14 @@
              <normaloff>:/models/Icons/Polyline-96.png</normaloff>:/models/Icons/Polyline-96.png</iconset>
            </attribute>
            <attribute name="title">
-            <string />
+            <string/>
            </attribute>
            <attribute name="toolTip">
             <string>Correction Analysis</string>
            </attribute>
            <layout class="QVBoxLayout" name="verticalLayout_2">
             <item>
-             <widget class="CorrectionAnalysis" name="widget" native="true" />
+             <widget class="CorrectionAnalysis" name="widget" native="true"/>
             </item>
            </layout>
           </widget>
@@ -3514,9 +3514,30 @@
        <attribute name="title">
         <string>Log</string>
        </attribute>
-       <layout class="QVBoxLayout" name="vBoxLayoutMain" stretch="">
+       <layout class="QVBoxLayout" name="vBoxLayoutMain">
         <item>
-         <layout class="QHBoxLayout" name="hBoxDisplay" stretch="0,0,0,0,1,0,1,0,0,0">
+         <layout class="QHBoxLayout" name="hBoxDisplay" stretch="0,0,0,0,1,0,1,0,0,0,0">
+          <property name="sizeConstraint">
+           <enum>QLayout::SizeConstraint::SetFixedSize</enum>
+          </property>
+          <item>
+          <layout class="QVBoxLayout" name="vBoxLayoutMain">
+           <item>
+           <widget class="QTableView" name="logFarmTable">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+              <horstretch>1</horstretch>
+              <verstretch>1</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>300</width>
+              <height>200</height>
+             </size>
+            </property>
+           </widget>
+          </item>
           <item>
            <widget class="QPushButton" name="pushButtonLoadLogFile">
             <property name="text">
@@ -3524,10 +3545,14 @@
             </property>
            </widget>
           </item>
-          <item>
-           <widget class="QListView" name="listLogfilesView" />
+          </layout>
           </item>
           <item>
+           <widget class="QListView" name="listLogfilesView"/>
+          </item>
+          <item>
+          <layout class="QVBoxLayout" name="vBoxLayoutMain">
+           <item>
            <widget class="QLabel" name="labelAreaFile">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -3616,6 +3641,10 @@
             </property>
            </widget>
           </item>
+          </layout>
+          </item>
+
+
           <item>
            <widget class="MapWidget" name="mapWidgetAnalysis" native="true">
             <property name="sizePolicy">
@@ -3637,7 +3666,7 @@
                <string>Cutting Result (Area Filtered)</string>
               </property>
               <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+               <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
               </property>
              </widget>
             </item>
@@ -3650,14 +3679,14 @@
             </item>
             <item>
              <widget class="QSpinBox" name="spinBoxResultPath">
+              <property name="toolTip">
+               <string>Select which path to focus on in the Results map</string>
+              </property>
               <property name="minimum">
                <number>0</number>
               </property>
               <property name="maximum">
                <number>99</number>
-              </property>
-              <property name="toolTip">
-               <string>Select which path to focus on in the Results map</string>
               </property>
              </widget>
             </item>
@@ -3686,13 +3715,7 @@
             </property>
            </widget>
           </item>
-         <property name="sizeConstraint">
-          <enum>QLayout::SizeConstraint::SetFixedSize</enum>
-         </property>
-         <property name="maximumHeight">
-          <number>200</number>
-         </property>
-        </layout>
+         </layout>
         </item>
         <item>
          <layout class="QVBoxLayout" name="vBoxTools">
@@ -3711,20 +3734,12 @@
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
-            <property name="maximumHeight">
-             <number>150</number>
-            </property>
             <property name="selectionMode">
-             <enum>QAbstractItemView::SingleSelection</enum>
+             <enum>QAbstractItemView::SelectionMode::SingleSelection</enum>
             </property>
             <property name="selectionBehavior">
-             <enum>QAbstractItemView::SelectRows</enum>
+             <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
             </property>
-            <column>
-             <property name="text">
-              <string>Analysis Type</string>
-             </property>
-            </column>
             <row>
              <property name="text">
               <string>Length</string>
@@ -3740,6 +3755,11 @@
               <string>Root-Mean-Square</string>
              </property>
             </row>
+            <column>
+             <property name="text">
+              <string>Analysis Type</string>
+             </property>
+            </column>
            </widget>
           </item>
           <item>
@@ -3750,20 +3770,20 @@
               <height>200</height>
              </size>
             </property>
+            <property name="frameShape">
+             <enum>QFrame::Shape::Panel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Shadow::Sunken</enum>
+            </property>
             <property name="textFormat">
-             <enum>Qt::RichText</enum>
+             <enum>Qt::TextFormat::RichText</enum>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-            </property>
-            <property name="frameShape">
-             <enum>QFrame::Panel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Sunken</enum>
             </property>
            </widget>
           </item>
@@ -3818,27 +3838,27 @@
     <property name="title">
      <string>Help</string>
     </property>
-    <addaction name="actionAbout" />
-    <addaction name="actionAboutLibrariesUsed" />
-    <addaction name="actionAboutQt" />
+    <addaction name="actionAbout"/>
+    <addaction name="actionAboutLibrariesUsed"/>
+    <addaction name="actionAboutQt"/>
    </widget>
    <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>Fi&amp;le</string>
     </property>
-    <addaction name="actionSaveRoutes" />
-    <addaction name="actionSaveRouteswithIDs" />
-    <addaction name="actionLoadRoutes" />
-    <addaction name="separator" />
-    <addaction name="actionToggleFullscreen" />
-    <addaction name="actionToggleCameraFullscreen" />
-    <addaction name="separator" />
-    <addaction name="actionExit" />
+    <addaction name="actionSaveRoutes"/>
+    <addaction name="actionSaveRouteswithIDs"/>
+    <addaction name="actionLoadRoutes"/>
+    <addaction name="separator"/>
+    <addaction name="actionToggleFullscreen"/>
+    <addaction name="actionToggleCameraFullscreen"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
    </widget>
-   <addaction name="menuFile" />
-   <addaction name="menuHelp" />
+   <addaction name="menuFile"/>
+   <addaction name="menuHelp"/>
   </widget>
-  <widget class="QStatusBar" name="statusBar" />
+  <widget class="QStatusBar" name="statusBar"/>
   <action name="actionAbout">
    <property name="icon">
     <iconset resource="resources.qrc">
@@ -3969,7 +3989,7 @@
    </property>
   </action>
  </widget>
- <layoutdefault spacing="6" margin="11" />
+ <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
   <customwidget>
    <class>MapWidget</class>
@@ -4032,7 +4052,7 @@
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="resources.qrc" />
+  <include location="resources.qrc"/>
  </resources>
- <connections />
+ <connections/>
 </ui>

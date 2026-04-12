@@ -45,11 +45,17 @@
 
 #define UNREMOVE_REMOVEDBYGUNNAR20250317
 
-extern float debugvalue;
-extern float debugvalue2;
-extern float debugvalue3;
-extern float debugvalue4;
 extern float debugvalue5;
+extern float debugvalue6;
+extern float debugvalue7;
+extern float debugvalue8;
+extern float debugvalue9;
+extern float debugvalue10;
+extern float debugvalue11;
+extern float debugvalue12;
+extern float debugvalue13;
+extern float debugvalue14;
+extern float debugvalue15;
 
 // Private variables
 static ATTITUDE_INFO m_att;
@@ -875,6 +881,15 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 	cnt_last = cnt;
 	float dt = (float)time_elapsed / (float)ITERATION_TIMER_FREQ;
 
+	// Debug: Store IMU values in debug variables
+	debugvalue5 = accel[0]; // X acceleration
+	debugvalue6 = accel[1]; // Y acceleration  
+	debugvalue7 = accel[2]; // Z acceleration (should be ~9.81 when stationary)
+	debugvalue8 = gyro[2];   // Z gyro rate (yaw rate)
+	debugvalue9 = mag[0];    // X magnetometer
+	debugvalue10 = mag[1];   // Y magnetometer
+	debugvalue11 = mag[2];   // Z magnetometer
+
 	if (iDebug==55)
 	{
 	commands_printf("in mpu9150_read");
@@ -884,6 +899,34 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 	accel,
 	gyro,
 	mag);
+	};
+	if (iCounterShow==25)
+	{
+
+
+	if (iDebug==9)
+	{
+	commands_printf("debugvalue5			     : %f\n",debugvalue5);
+	commands_printf("debugvalue6			     : %f\n",debugvalue6);
+	commands_printf("debugvalue7			     : %f\n",debugvalue7);
+	};
+	if (iDebug==10)
+	{
+	commands_printf("debugvalue8			     : %f\n",
+	debugvalue8);
+	};
+	if (iDebug==11)
+	{
+		commands_printf("debugvalue9			     : %f\n",debugvalue9);
+		commands_printf("debugvalue10			     : %f\n",debugvalue10);
+		commands_printf("debugvalue11			     : %f\n",debugvalue11);
+	};
+	if (iDebug==12)
+	{
+		commands_printf("debugvalue12			     : %f\n",debugvalue12);
+		commands_printf("debugvalue13			     : %f\n",debugvalue13);
+		commands_printf("debugvalue14			     : %f\n",debugvalue14);
+	};
 	};
 
 	update_orientation_angles(accel, gyro, mag, dt);
@@ -1054,17 +1097,26 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 	m_mag[2] = mag[2];
 
 	if (!m_attitude_init_done) {
-		ahrs_update_initial_orientation(m_accel, m_mag, (ATTITUDE_INFO*)&m_att);
-//		m_yaw_bias=0.02;
+		// BMI160 doesn't have magnetometer, so initialize with zero yaw and use accel for roll/pitch
+		m_att.q0 = 1.0f; // Initialize to identity quaternion
+		m_att.q1 = 0.0f;
+		m_att.q2 = 0.0f;
+		m_att.q3 = 0.0f;
 		m_attitude_init_done = true;
 	} else {
 		//		ahrs_update_mahony_imu(gyro, accel, dt, (ATTITUDE_INFO*)&m_att);
-		ahrs_update_madgwick_imu(m_gyro, m_accel, dt, (ATTITUDE_INFO*)&m_att);
+			ahrs_update_madgwick_imu(m_gyro, m_accel, dt, (ATTITUDE_INFO*)&m_att);
 	}
 
 	float roll = ahrs_get_roll((ATTITUDE_INFO*)&m_att);
 	float pitch = ahrs_get_pitch((ATTITUDE_INFO*)&m_att);
 	float yaw = ahrs_get_yaw((ATTITUDE_INFO*)&m_att);
+
+	// Debug: Store orientation values
+	debugvalue12 = roll * 180.0f / M_PI; // Roll in degrees
+	debugvalue13 = pitch * 180.0f / M_PI; // Pitch in degrees
+	debugvalue14 = yaw * 180.0f / M_PI; // Yaw in degrees
+	debugvalue15 = m_pos.yaw_imu; // IMU yaw before offset
 
 //	yaw+=m_yaw_bias;
 	// Apply tilt compensation for magnetometer values and calculate magnetic
@@ -1111,10 +1163,10 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 	}
 	utils_norm_angle(&m_pos.yaw_imu);
 	m_pos.yaw_rate = -m_gyro[2] * 180.0 / M_PI ;
-	if ((iDebug==8))
+	iCounter=(iCounter+1);
+	iCounterShow=(iCounterShow+1) % 100;
+	if ((iDebug==7))
 	{
-		iCounter=(iCounter+1);
-		iCounterShow=(iCounterShow+1) % 50;
 		if (iCounterShow==5)
 		{
 			commands_printf("Yaw imu: %.2f,m_pos.yaw_imu");
@@ -1132,8 +1184,10 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 
 		if (main_config.vehicle.clamp_imu_yaw_stationary && fabsf(m_pos.speed) < 0.05) {
 			m_imu_yaw_offset = m_pos.yaw_imu - m_yaw_imu_clamp;
+			debugvalue15 = 1; // Yaw clamping active
 		} else {
 			m_yaw_imu_clamp = m_pos.yaw_imu - m_imu_yaw_offset;
+			debugvalue15 = 2; // Yaw clamping inactive
 		}
 	}
 
@@ -1161,6 +1215,7 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 	} else {
 		m_pos.yaw = m_pos.yaw_imu - m_imu_yaw_offset;
 		utils_norm_angle(&m_pos.yaw);
+		debugvalue14 = m_imu_yaw_offset; // Store the yaw offset for debugging
 	}
 
 	if ((iDebug==6))
@@ -1182,11 +1237,10 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 
 static void init_gps_local(GPS_STATE *gps) {
 	//Initiate GPS, which basically sets the reference frame work
-	if ((iDebug==1) || (iDebug==11))
-	{
-		commands_printf("init_gps_local ( %.5f,%.5f )", (double) gps->lon, (double) gps->lat);
-
-	}
+	//if ((iDebug==1) || (iDebug==11))
+	//{
+	//	commands_printf("init_gps_local ( %.5f,%.5f )", (double) gps->lon, (double) gps->lat);
+	//}
 	//	commands_printf("In init gps local:\n");
 	gps->ix = gps->x;
 	gps->iy = gps->y;

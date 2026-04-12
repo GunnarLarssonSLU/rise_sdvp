@@ -177,20 +177,6 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 #endif
 	conf->vehicle.deadband = 0.05;
 
-	/*
-	// Custom parameters based on ID
-	switch (main_id) {
-	case 1:
-		conf->vehicle.steering_center = 0.5;
-		conf->gps_ant_x = 0.42;
-		break;
-
-	default:
-		break;
-	}
-	*/
-
-
 #ifdef IS_DRANGEN
 	conf->vehicle.steering_center = 0.0;
 	conf->vehicle.steering_range = -2.0;

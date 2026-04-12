@@ -250,6 +250,7 @@ private:
     int mAreaBorderIndex = -1; // Index of the border used for area filtering
 
     QSqlRelationalTableModel *modelFarm;
+    QSqlRelationalTableModel *modelFarmLog;
     QSqlRelationalTableModel *modelField;
     QSqlRelationalTableModel *modelPath;
     CheckBoxDelegate* checkboxdelegate;
