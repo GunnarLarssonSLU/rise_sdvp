@@ -941,17 +941,9 @@ static THD_FUNCTION(process_thread, arg) {
 	reset_decoder_state();		// Sets various variables related to rtcm3 to 0
 
 	for(;;) {
-		if (iDebug==11)
-		{
-			commands_printf("Ok.\n");
-		}
 		chEvtWaitAny((eventmask_t) 1);
 
 		while (m_serial_rx_read_pos != m_serial_rx_write_pos) {
-			if (iDebug==11)
-			{
-				commands_printf("m_serial_rx_read_pos != m_serial_rx_write_pos\n");
-			}
 			uint8_t ch = m_serial_rx_buffer[m_serial_rx_read_pos++];
 			bool ch_used = false;
 
@@ -966,10 +958,6 @@ static THD_FUNCTION(process_thread, arg) {
 
 			// Ubx
 			if (!ch_used && m_decoder_state.line_pos == 0) {
-				if (iDebug==11)
-				{
-					commands_printf("(!ch_used && m_decoder_state.line_pos == 0)\n");
-				}
 				int ubx_pos_last = m_decoder_state.ubx_pos;
 
 				if (m_decoder_state.ubx_pos == 0) {

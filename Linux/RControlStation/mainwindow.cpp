@@ -357,6 +357,7 @@ MainWindow::MainWindow(QWidget *parent) :
                 );
 
     modelFarm=setupFarmTable(ui->farmTable,"locations");
+    modelFarmLog=setupFarmTable(ui->logFarmTable,"locations");
     modelField=setupFieldTable(ui->fieldTable,"fields");
     modelPath=setupPathTable(ui->pathTable,"paths");
 

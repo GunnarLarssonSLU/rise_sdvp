@@ -42,15 +42,20 @@ static struct bmi160_dev sensor;
 static int rate_hz;
 
 extern float debugvalue;
+extern float debugvalue2;
+extern float debugvalue3;
+extern float debugvalue4;
 
 void bmi160_wrapper_init(int samp_rate_hz) {
 	rate_hz = samp_rate_hz;
+	debugvalue = 1; // Starting BMI160 initialization
 
 	m_i2c_bb.sda_gpio = GPIOB;
 	m_i2c_bb.sda_pin = 11;
 	m_i2c_bb.scl_gpio = GPIOB;
 	m_i2c_bb.scl_pin = 10;
 	i2c_bb_init(&m_i2c_bb);
+	debugvalue = 2; // I2C bit-banging initialized
 
 	sensor.id = BMI160_I2C_ADDR;
 	sensor.interface = BMI160_I2C_INTF;
@@ -58,10 +63,13 @@ void bmi160_wrapper_init(int samp_rate_hz) {
 	sensor.write = user_i2c_write;
 
 	if (reset_init_bmi()) {
+		debugvalue = 3; // BMI160 initialized successfully
 		chThdCreateStatic(bmi_thread_wa, sizeof(bmi_thread_wa),
 				NORMALPRIO, bmi_thread, NULL);
+		debugvalue = 4; // Thread created
+	} else {
+		debugvalue = -1; // BMI160 initialization failed
 	}
-	debugvalue=5;
 }
 
 void bmi160_wrapper_set_read_callback(
@@ -71,8 +79,14 @@ void bmi160_wrapper_set_read_callback(
 
 static bool reset_init_bmi(void) {
 	sensor.delay_ms = user_delay_ms;
+	debugvalue = 31; // About to call bmi160_init
 
-	bmi160_init(&sensor);
+	int8_t init_res = bmi160_init(&sensor);
+	if (init_res != BMI160_OK) {
+		debugvalue = 32; // bmi160_init failed
+		return false;
+	}
+	debugvalue = 33; // bmi160_init succeeded
 
 	sensor.accel_cfg.odr = BMI160_ACCEL_ODR_200HZ;
 	sensor.accel_cfg.range = BMI160_ACCEL_RANGE_16G;
@@ -85,6 +99,7 @@ static bool reset_init_bmi(void) {
 	sensor.gyro_cfg.power = BMI160_GYRO_NORMAL_MODE;
 
 	int8_t res = bmi160_set_sens_conf(&sensor);
+	debugvalue = 34; // Sensor configuration set
 
 	return res == BMI160_OK;
 }
@@ -97,6 +112,7 @@ static THD_FUNCTION(bmi_thread, arg) {
 	(void)arg;
 
 	chRegSetThreadName("BMI Sampling");
+	debugvalue = 5; // Sampling thread started
 
 	for(;;) {
 		struct bmi160_sensor_data accel;
@@ -106,6 +122,29 @@ static THD_FUNCTION(bmi_thread, arg) {
 				&accel, &gyro, &sensor);
 
 		if (res != BMI160_OK) {
+			debugvalue = -5; // Sensor data read failed
+			chThdSleepMilliseconds(5);
+			continue;
+		}
+		debugvalue = 6; // Sensor data read successfully
+
+		// Debug: Check raw sensor values
+		debugvalue2 = accel.x; // Store raw X acceleration for debugging
+		debugvalue3 = gyro.z;  // Store raw Z gyro for debugging
+		debugvalue4 = accel.z; // Store raw Z acceleration (should be ~1g when stationary)
+
+		// Validate data ranges
+		bool data_valid = true;
+		if (abs(accel.x) > 30000 || abs(accel.y) > 30000 || abs(accel.z) > 30000) {
+			data_valid = false;
+			debugvalue = -10; // Invalid accelerometer data
+		}
+		if (abs(gyro.x) > 30000 || abs(gyro.y) > 30000 || abs(gyro.z) > 30000) {
+			data_valid = false;
+			debugvalue = -11; // Invalid gyroscope data
+		}
+
+		if (!data_valid) {
 			chThdSleepMilliseconds(5);
 			continue;
 		}

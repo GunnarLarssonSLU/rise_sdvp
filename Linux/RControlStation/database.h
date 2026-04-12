@@ -15,6 +15,11 @@ public:
     void addField(QString fieldname,int farmid,QString filename);
     void updateFarmLocation(int farmid,double latitude, double longitude);
     void showError(const QSqlError &err);
+    
+    // New methods for file info table
+    void createFileInfoTable();
+    void addFileInfo(const QString &filename, int value);
+    void populateFromDirectory(const QString &directoryPath);
 private:
     QSqlError initDb();
     QWidget* qw;
