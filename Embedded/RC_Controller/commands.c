@@ -900,7 +900,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			buffer_append_float32(m_send_buffer, main_config.vehicle.sensorinterval, 1e4, &send_index); // 119*/
 /*			buffer_append_float32(m_send_buffer, io_board_as5047_angle, 1e4, &send_index); // 111
 			buffer_append_float32(m_send_buffer, servo_output, 1e4, &send_index); // 115
-			buffer_append_uint16(m_send_buffer, last_sensorvalue, &send_index); // 119*/
+			buffer_append_uint16(m_send_buffer, last_sensorvalue, &send_index);*/ // 119
 			buffer_append_float32(m_send_buffer, debugvalue, 1e4, &send_index); // 121
 			buffer_append_float32(m_send_buffer, debugvalue2, 1e4, &send_index); // 125
 			buffer_append_float32(m_send_buffer, debugvalue3, 1e4, &send_index); // 129

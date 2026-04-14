@@ -98,6 +98,7 @@ static void cmd_terminal_delay_info(int argc, const char **argv);
 static void cmd_terminal_gps_corr_info(int argc, const char **argv);
 static void cmd_terminal_delay_comp(int argc, const char **argv);
 static void cmd_terminal_print_sat_info(int argc, const char **argv);
+static void cmd_terminal_print_positions(int argc, const char **argv);
 static void cmd_terminal_sat_info(int argc, const char **argv);
 static void cmd_terminal_testGL(int argc, const char **argv);
 static void cmd_terminal_setpos(int argc, const char **argv);
@@ -153,18 +154,15 @@ void pos_init(void) {
 	chMtxObjectInit(&m_mutex_gps);
 
 #if HAS_BMI160
-	commands_printf("Has BMI 160\n");
 	bmi160_wrapper_init(500);
 	bmi160_wrapper_set_read_callback(mpu9150_read);
 #else
-	commands_printf("Uses MPU 9150\n");
 	mpu9150_init();							// Initiates MPU9150 (both sets values to zeros and start thread & low level inititation
 	chThdSleepMilliseconds(1000);
 	led_write(LED_RED, 1);
 	mpu9150_sample_gyro_offsets(100);		// Reads initial values I think
 	led_write(LED_RED, 0);
 	mpu9150_set_read_callback(mpu9150_read);
-	debugvalue=4;
 #endif
 
 	// Iteration timer (ITERATION_TIMER_FREQ Hz)
@@ -182,7 +180,6 @@ void pos_init(void) {
 	ublox_set_rx_callback_relposned(ublox_relposned_rx);
 	ublox_set_rx_callback_rawx(ubx_rx_rawx);
 
-	commands_printf("Communicate VESC\n");
 
 	bldc_interface_set_rx_value_func(mc_values_received);
 
@@ -229,6 +226,12 @@ void pos_init(void) {
 			"Output log data to understand how the IMU etc. work.",
 			0,
 			cmd_terminal_testGL);
+
+	terminal_register_command_callback(
+			"pos_print_positions",
+			"Print car position (calculated and gps).",
+			0,
+			cmd_terminal_print_positions);
 
 	terminal_register_command_callback(
 			"setpos",
@@ -797,6 +800,57 @@ static void cmd_terminal_debug(int argc, const char **argv) {
 	commands_printf("Debug: %i\n",iDebug);
 }
 
+float separation_car_gps(void)
+{
+	float dx=m_pos.px_gps-m_pos.px;
+	float dy=m_pos.py_gps-m_pos.py;
+	return sqrt(dx*dx+dy*dy);
+}
+
+
+static void cmd_terminal_print_positions(int argc, const char **argv) {
+	commands_printf("GPS\n"
+			"latitude:       : %f\n"
+			"longitude   	 : %f\n"
+			"height			 : %f\n"
+			"x			     : %f\n"
+			"y			     : %f\n"
+			"z			     : %f\n",
+			(double) m_gps.lat,
+			(double) m_gps.lon,
+			(double) m_gps.height,
+			(double) m_gps.x,
+			(double) m_gps.y,
+			(double) m_gps.z);
+
+	commands_printf("POS\n"
+			"roll:       : %f\n"
+			"pitch   	 : %f\n"
+			"yaw			 : %f\n"
+			"speed			     : %f\n"
+			"vx			     : %f\n"
+			"vy			     : %f\n"
+			"px			     : %f\n"
+			"py			     : %f\n"
+			"pz			     : %f\n"
+			"px_gps			     : %f\n"
+			"py_gps			     : %f\n",
+			(double) m_pos.roll,
+			(double) m_pos.pitch,
+			(double) m_pos.yaw,
+			(double) m_pos.speed,
+			(double) m_pos.vx,
+			(double) m_pos.vy,
+			(double) m_pos.px,
+			(double) m_pos.py,
+			(double) m_pos.pz,
+			(double) m_pos.px_gps,
+			(double) m_pos.py_gps);
+	commands_printf("Distance: %f\n",separation_car_gps());
+
+};
+
+
 static void cmd_terminal_testGL(int argc, const char **argv) {
 	commands_printf(
 			"m_mag[0]       : %f\n"
@@ -1322,12 +1376,6 @@ static void correct_pos_gps(POS_STATE *pos)
 		sample = 0;
 	}
 
-	if(iDebug==44)
-	{
-		commands_printf("time gps: %f\n",(double) pos->gps_ms);
-		commands_printf("time gps last corr: %f\n",(double) pos->gps_ang_corr_last_gps_ms);
-	}
-
 	// If has a speed of at least 0.5 km/h
 	// Yaw = Angle on the x/y plane (i.e. the angle that is most relevant on you are on ground)
 	// Angle
@@ -1398,6 +1446,15 @@ static void correct_pos_gps(POS_STATE *pos)
 	// Move position the same amount as closest_corr was moved
 	pos->px += closest_corr.px - closest.px;
 	pos->py += closest_corr.py - closest.py;
+
+	// If car positions from the the gps differs by more than 500 meters from the
+	// calcaulated car position then move the calculated car position to the gps position
+	if (separation_car_gps()>500)
+	{
+		pos->px=pos->px_gps;
+		pos->py=pos->py_gps;
+	}
+
 
 	if(iDebug==2)
 	{

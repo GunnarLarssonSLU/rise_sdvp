@@ -164,9 +164,6 @@ if (1)
 		m_pos_now = utils_map(pos, 0.0, end, 0.0, 1.0);
 		// Run PID-controller on the output
 		float error = m_pos_set - m_pos_now;
-		//debugvalue13=m_pos_set;
-		//debugvalue14=m_pos_now;
-		//debugvalue15=error;
 		if (iDebug==81)
 		{
 			commands_printf("m_pos_set: %f",(double)m_pos_set);
