@@ -21,6 +21,10 @@ float last_valid_time = 0.0f;
 float m_speed_filtered = 0.0f;
 float m_speed_pwm = 0;
 
+extern float debugvalue;
+extern float debugvalue2;
+extern float debugvalue3;
+
 extern volatile float m_speed_now;
 extern float m_speed_pwm;
 extern float m_speed_filtered;
@@ -181,6 +185,10 @@ static THD_FUNCTION(wheelspeed_thread, arg) {
             commands_printf("WARNING: WheelSpeed thread low on stack!\n");
         }
     }*/
+
+	//debugvalue=2;
+	//debugvalue2=2;
+	//debugvalue3=2;
     
     while (!chThdShouldTerminateX()) {
         chThdSleepMilliseconds(50);
@@ -192,6 +200,9 @@ static THD_FUNCTION(wheelspeed_thread, arg) {
             last_valid_time = 0.0f;
             m_speed_now = 0.0f;
             m_speed_filtered = 0.0f;
+        	//debugvalue=7;
+            //debugvalue2=7;
+            //debugvalue3=7;
             chSysUnlock();
         }
 
@@ -200,6 +211,9 @@ static THD_FUNCTION(wheelspeed_thread, arg) {
             chSysLock();
             new_pulse = false;
             m_speed_now = m_speed_pwm;
+            //debugvalue=8;
+            //debugvalue2=8;
+            //debugvalue3=8;
             chSysUnlock();
         }
     }
@@ -208,12 +222,23 @@ static THD_FUNCTION(wheelspeed_thread, arg) {
 CH_IRQ_HANDLER(STM32_TIM2_HANDLER) {
     CH_IRQ_PROLOGUE();
 
+	debugvalue=1;
+	debugvalue2=1;
+	debugvalue3=1;
+
     if (TIM2->SR & TIM_SR_UIF) {
         TIM2->SR &= ~TIM_SR_UIF; // rensa flagga
         timer_overflow_count++;
+    	debugvalue=2;
+    	debugvalue2=2;
+    	debugvalue3=2;
     }
 
     if (TIM2->SR & TIM_SR_CC3IF) {
+    	commands_printf("New pulse");
+    	debugvalue=3;
+    	debugvalue2=3;
+    	debugvalue3=3;
         uint16_t capture16 = TIM2->CCR3;
         uint32_t capture32 = ((uint32_t)timer_overflow_count << 16) | capture16;
 

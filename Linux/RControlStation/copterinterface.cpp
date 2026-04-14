@@ -195,7 +195,7 @@ void CopterInterface::setStateData(MULTIROTOR_STATE data)
         QTime current = QTime::currentTime().addSecs(-date.offsetFromUtc());
 
         int diff = data.ms_today - current.msecsSinceStartOfDay();
-        ui->clockLabel->setText(time.toString("HH:mm:ss:zzz") + " " +
+        ui->clockLabel->setText("GPS time " + time.toString("HH:mm:ss:zzz") + " " +
                                 QString("%1").arg(diff, 6, 10, QChar('0')) + " ms");
     } else {
         ui->clockLabel->setText("00:00:00:000");

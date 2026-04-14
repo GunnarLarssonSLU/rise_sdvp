@@ -116,7 +116,6 @@ void mpu9150_init(void) {
 
 	chThdCreateStatic(mpu_thread_wa, sizeof(mpu_thread_wa), NORMALPRIO + 1,
 			mpu_thread, NULL );				// Start thread (the THD_FUNCTION)
-	debugvalue=1;
 }
 
 /**
@@ -235,7 +234,7 @@ void mpu9150_sample_gyro_offsets(uint32_t iteratons) {
 	mpu9150_gyro_offsets[1] = offsets[1];
 	mpu9150_gyro_offsets[2] = offsets[2];
 
-	debugvalue2=2;
+	// debugvalue2=2;
 }
 
 void mpu9150_get_raw_accel_gyro_mag(int16_t *accel_gyro_mag) {
