@@ -22,9 +22,7 @@
 #include "pwm_esc.h"
 #include "utils.h"
 #include "comm_can.h"
-#include "commands.h"
 #include <math.h>
-
 
 #include "pos.h"
 
@@ -33,11 +31,14 @@
 #define SERVO_LEFT				10 // Only one servo
 #define SERVO_RIGHT				1
 #define SPEED_M_S				1.1
-#else // Ever relevant?
+#else
 #define SERVO_LEFT				1
 #define SERVO_RIGHT				2
 #define SPEED_M_S				0.6
 #endif
+
+#define TIMEOUT_SECONDS			2.0
+#define TIMEOUT_SECONDS_MOVE	10.0
 
 // Private variables
 static volatile float m_distance_now = 0.0;
@@ -52,7 +53,7 @@ volatile float m_speed_now = 1.0;
 //extern event_source_t emergency_event;
 extern int iDebug;
 
-#ifdef WHEEL_SENSOR
+#ifdef SERVO_READ
 extern ADC_CNT_t io_board_adc0_cnt;
 #endif
 
@@ -250,7 +251,7 @@ static THD_FUNCTION(hydro_thread, arg) {
 
 
 		ADC_CNT_t cnt;
-#ifdef WHEEL_SENSOR
+#ifdef SERVO_READ
 		cnt=io_board_adc0_cnt;
 #else
 		cnt = *comm_can_io_board_adc0_cnt();

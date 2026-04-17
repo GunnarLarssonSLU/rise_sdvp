@@ -45,17 +45,11 @@
 
 #define UNREMOVE_REMOVEDBYGUNNAR20250317
 
+extern float debugvalue;
+extern float debugvalue2;
+extern float debugvalue3;
+extern float debugvalue4;
 extern float debugvalue5;
-extern float debugvalue6;
-extern float debugvalue7;
-extern float debugvalue8;
-extern float debugvalue9;
-extern float debugvalue10;
-extern float debugvalue11;
-extern float debugvalue12;
-extern float debugvalue13;
-extern float debugvalue14;
-extern float debugvalue15;
 
 // Private variables
 static ATTITUDE_INFO m_att;
@@ -98,7 +92,6 @@ static void cmd_terminal_delay_info(int argc, const char **argv);
 static void cmd_terminal_gps_corr_info(int argc, const char **argv);
 static void cmd_terminal_delay_comp(int argc, const char **argv);
 static void cmd_terminal_print_sat_info(int argc, const char **argv);
-static void cmd_terminal_print_positions(int argc, const char **argv);
 static void cmd_terminal_sat_info(int argc, const char **argv);
 static void cmd_terminal_testGL(int argc, const char **argv);
 static void cmd_terminal_setpos(int argc, const char **argv);
@@ -154,15 +147,18 @@ void pos_init(void) {
 	chMtxObjectInit(&m_mutex_gps);
 
 #if HAS_BMI160
+	commands_printf("Has BMI 160\n");
 	bmi160_wrapper_init(500);
 	bmi160_wrapper_set_read_callback(mpu9150_read);
 #else
+	commands_printf("Uses MPU 9150\n");
 	mpu9150_init();							// Initiates MPU9150 (both sets values to zeros and start thread & low level inititation
 	chThdSleepMilliseconds(1000);
 	led_write(LED_RED, 1);
 	mpu9150_sample_gyro_offsets(100);		// Reads initial values I think
 	led_write(LED_RED, 0);
 	mpu9150_set_read_callback(mpu9150_read);
+	debugvalue=4;
 #endif
 
 	// Iteration timer (ITERATION_TIMER_FREQ Hz)
@@ -180,6 +176,7 @@ void pos_init(void) {
 	ublox_set_rx_callback_relposned(ublox_relposned_rx);
 	ublox_set_rx_callback_rawx(ubx_rx_rawx);
 
+	commands_printf("Communicate VESC\n");
 
 	bldc_interface_set_rx_value_func(mc_values_received);
 
@@ -226,12 +223,6 @@ void pos_init(void) {
 			"Output log data to understand how the IMU etc. work.",
 			0,
 			cmd_terminal_testGL);
-
-	terminal_register_command_callback(
-			"pos_print_positions",
-			"Print car position (calculated and gps).",
-			0,
-			cmd_terminal_print_positions);
 
 	terminal_register_command_callback(
 			"setpos",
@@ -800,57 +791,6 @@ static void cmd_terminal_debug(int argc, const char **argv) {
 	commands_printf("Debug: %i\n",iDebug);
 }
 
-float separation_car_gps(void)
-{
-	float dx=m_pos.px_gps-m_pos.px;
-	float dy=m_pos.py_gps-m_pos.py;
-	return sqrt(dx*dx+dy*dy);
-}
-
-
-static void cmd_terminal_print_positions(int argc, const char **argv) {
-	commands_printf("GPS\n"
-			"latitude:       : %f\n"
-			"longitude   	 : %f\n"
-			"height			 : %f\n"
-			"x			     : %f\n"
-			"y			     : %f\n"
-			"z			     : %f\n",
-			(double) m_gps.lat,
-			(double) m_gps.lon,
-			(double) m_gps.height,
-			(double) m_gps.x,
-			(double) m_gps.y,
-			(double) m_gps.z);
-
-	commands_printf("POS\n"
-			"roll:       : %f\n"
-			"pitch   	 : %f\n"
-			"yaw			 : %f\n"
-			"speed			     : %f\n"
-			"vx			     : %f\n"
-			"vy			     : %f\n"
-			"px			     : %f\n"
-			"py			     : %f\n"
-			"pz			     : %f\n"
-			"px_gps			     : %f\n"
-			"py_gps			     : %f\n",
-			(double) m_pos.roll,
-			(double) m_pos.pitch,
-			(double) m_pos.yaw,
-			(double) m_pos.speed,
-			(double) m_pos.vx,
-			(double) m_pos.vy,
-			(double) m_pos.px,
-			(double) m_pos.py,
-			(double) m_pos.pz,
-			(double) m_pos.px_gps,
-			(double) m_pos.py_gps);
-	commands_printf("Distance: %f\n",separation_car_gps());
-
-};
-
-
 static void cmd_terminal_testGL(int argc, const char **argv) {
 	commands_printf(
 			"m_mag[0]       : %f\n"
@@ -935,15 +875,6 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 	cnt_last = cnt;
 	float dt = (float)time_elapsed / (float)ITERATION_TIMER_FREQ;
 
-	// Debug: Store IMU values in debug variables
-	debugvalue5 = accel[0]; // X acceleration
-	debugvalue6 = accel[1]; // Y acceleration  
-	debugvalue7 = accel[2]; // Z acceleration (should be ~9.81 when stationary)
-	debugvalue8 = gyro[2];   // Z gyro rate (yaw rate)
-	debugvalue9 = mag[0];    // X magnetometer
-	debugvalue10 = mag[1];   // Y magnetometer
-	debugvalue11 = mag[2];   // Z magnetometer
-
 	if (iDebug==55)
 	{
 	commands_printf("in mpu9150_read");
@@ -953,34 +884,6 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 	accel,
 	gyro,
 	mag);
-	};
-	if (iCounterShow==25)
-	{
-
-
-	if (iDebug==9)
-	{
-	commands_printf("debugvalue5			     : %f\n",debugvalue5);
-	commands_printf("debugvalue6			     : %f\n",debugvalue6);
-	commands_printf("debugvalue7			     : %f\n",debugvalue7);
-	};
-	if (iDebug==10)
-	{
-	commands_printf("debugvalue8			     : %f\n",
-	debugvalue8);
-	};
-	if (iDebug==11)
-	{
-		commands_printf("debugvalue9			     : %f\n",debugvalue9);
-		commands_printf("debugvalue10			     : %f\n",debugvalue10);
-		commands_printf("debugvalue11			     : %f\n",debugvalue11);
-	};
-	if (iDebug==12)
-	{
-		commands_printf("debugvalue12			     : %f\n",debugvalue12);
-		commands_printf("debugvalue13			     : %f\n",debugvalue13);
-		commands_printf("debugvalue14			     : %f\n",debugvalue14);
-	};
 	};
 
 	update_orientation_angles(accel, gyro, mag, dt);
@@ -997,10 +900,10 @@ static void mpu9150_read(float *accel, float *gyro, float *mag) {
 		comm_can_lock_vesc();
 		if (m_vesc_left_now) {
 			m_vesc_left_now = false;
-			comm_can_set_vesc_id(VESC_RIGHT);
+			comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
 		} else {
 			m_vesc_left_now = true;
-			comm_can_set_vesc_id(VESC_LEFT);
+			comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
 		}
 		bldc_interface_get_values();
 		comm_can_unlock_vesc();
@@ -1151,26 +1054,17 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 	m_mag[2] = mag[2];
 
 	if (!m_attitude_init_done) {
-		// BMI160 doesn't have magnetometer, so initialize with zero yaw and use accel for roll/pitch
-		m_att.q0 = 1.0f; // Initialize to identity quaternion
-		m_att.q1 = 0.0f;
-		m_att.q2 = 0.0f;
-		m_att.q3 = 0.0f;
+		ahrs_update_initial_orientation(m_accel, m_mag, (ATTITUDE_INFO*)&m_att);
+//		m_yaw_bias=0.02;
 		m_attitude_init_done = true;
 	} else {
 		//		ahrs_update_mahony_imu(gyro, accel, dt, (ATTITUDE_INFO*)&m_att);
-			ahrs_update_madgwick_imu(m_gyro, m_accel, dt, (ATTITUDE_INFO*)&m_att);
+		ahrs_update_madgwick_imu(m_gyro, m_accel, dt, (ATTITUDE_INFO*)&m_att);
 	}
 
 	float roll = ahrs_get_roll((ATTITUDE_INFO*)&m_att);
 	float pitch = ahrs_get_pitch((ATTITUDE_INFO*)&m_att);
 	float yaw = ahrs_get_yaw((ATTITUDE_INFO*)&m_att);
-
-	// Debug: Store orientation values
-	debugvalue12 = roll * 180.0f / M_PI; // Roll in degrees
-	debugvalue13 = pitch * 180.0f / M_PI; // Pitch in degrees
-	debugvalue14 = yaw * 180.0f / M_PI; // Yaw in degrees
-	debugvalue15 = m_pos.yaw_imu; // IMU yaw before offset
 
 //	yaw+=m_yaw_bias;
 	// Apply tilt compensation for magnetometer values and calculate magnetic
@@ -1217,10 +1111,10 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 	}
 	utils_norm_angle(&m_pos.yaw_imu);
 	m_pos.yaw_rate = -m_gyro[2] * 180.0 / M_PI ;
-	iCounter=(iCounter+1);
-	iCounterShow=(iCounterShow+1) % 100;
-	if ((iDebug==7))
+	if ((iDebug==8))
 	{
+		iCounter=(iCounter+1);
+		iCounterShow=(iCounterShow+1) % 50;
 		if (iCounterShow==5)
 		{
 			commands_printf("Yaw imu: %.2f,m_pos.yaw_imu");
@@ -1238,10 +1132,8 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 
 		if (main_config.vehicle.clamp_imu_yaw_stationary && fabsf(m_pos.speed) < 0.05) {
 			m_imu_yaw_offset = m_pos.yaw_imu - m_yaw_imu_clamp;
-			debugvalue15 = 1; // Yaw clamping active
 		} else {
 			m_yaw_imu_clamp = m_pos.yaw_imu - m_imu_yaw_offset;
-			debugvalue15 = 2; // Yaw clamping inactive
 		}
 	}
 
@@ -1269,7 +1161,6 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 	} else {
 		m_pos.yaw = m_pos.yaw_imu - m_imu_yaw_offset;
 		utils_norm_angle(&m_pos.yaw);
-		debugvalue14 = m_imu_yaw_offset; // Store the yaw offset for debugging
 	}
 
 	if ((iDebug==6))
@@ -1291,10 +1182,11 @@ static void update_orientation_angles(float *accel, float *gyro, float *mag, flo
 
 static void init_gps_local(GPS_STATE *gps) {
 	//Initiate GPS, which basically sets the reference frame work
-	//if ((iDebug==1) || (iDebug==11))
-	//{
-	//	commands_printf("init_gps_local ( %.5f,%.5f )", (double) gps->lon, (double) gps->lat);
-	//}
+	if ((iDebug==1) || (iDebug==11))
+	{
+		commands_printf("init_gps_local ( %.5f,%.5f )", (double) gps->lon, (double) gps->lat);
+
+	}
 	//	commands_printf("In init gps local:\n");
 	gps->ix = gps->x;
 	gps->iy = gps->y;
@@ -1376,6 +1268,12 @@ static void correct_pos_gps(POS_STATE *pos)
 		sample = 0;
 	}
 
+	if(iDebug==44)
+	{
+		commands_printf("time gps: %f\n",(double) pos->gps_ms);
+		commands_printf("time gps last corr: %f\n",(double) pos->gps_ang_corr_last_gps_ms);
+	}
+
 	// If has a speed of at least 0.5 km/h
 	// Yaw = Angle on the x/y plane (i.e. the angle that is most relevant on you are on ground)
 	// Angle
@@ -1447,15 +1345,6 @@ static void correct_pos_gps(POS_STATE *pos)
 	pos->px += closest_corr.px - closest.px;
 	pos->py += closest_corr.py - closest.py;
 
-	// If car positions from the the gps differs by more than 500 meters from the
-	// calcaulated car position then move the calculated car position to the gps position
-	if (separation_car_gps()>500)
-	{
-		pos->px=pos->px_gps;
-		pos->py=pos->py_gps;
-	}
-
-
 	if(iDebug==2)
 	{
 	commands_printf("pos [aft]: %.1f m, Py: %.1f m",
@@ -1496,7 +1385,7 @@ static void ubx_rx_rawx(ubx_rxm_rawx *rawx) {
 #if MAIN_MODE == MAIN_MODE_VEHICLE
 static void mc_values_received(mc_values *val) {
 	#if HAS_DIFF_STEERING
-    if (val->vesc_id == VESC_RIGHT || !m_vesc_left_now) {
+    if (val->vesc_id == DIFF_STEERING_VESC_RIGHT || !m_vesc_left_now) {
         m_mc_val_right = *val;
         return;
     }
