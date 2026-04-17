@@ -711,6 +711,27 @@ void CarClient::readRos2Command() {
 
 void CarClient::serialArduinoDataAvailable()
 {
+#define ARDUINO_INTEGER
+
+#ifdef ARDUINO_INTEGER
+    /*
+    while (mSerialPortArduino->bytesAvailable() >= 2) {
+        QByteArray data = mSerialPortArduino->read(2);
+        if (data.size() == 2) {
+                QByteArray packet;
+                packet.clear();
+                packet.append(this->mCarId);
+                packet.append((char)CMD_GETANGLE);
+                packet.append(data);
+                qDebug() << "===Arduino data===";
+                qDebug() << data[0];
+                qDebug() << data[1];
+
+                mPacketInterface->sendPacket(packet);
+//            mPacketInterface->sendPacket(data);
+        }
+    }
+    */
     QByteArray buffer;
     while (mSerialPortArduino->bytesAvailable()) {
         buffer.append(mSerialPortArduino->read(1));
@@ -724,6 +745,7 @@ void CarClient::serialArduinoDataAvailable()
 
                 if (checksum == calculatedChecksum) {
                     float voltage = scaledVoltage / 1000.0f;
+                    qDebug() << "Voltage:" << voltage;
                     // Process further...
                     // After validating the checksum and extracting scaledVoltage:
                     QByteArray packet;
@@ -742,6 +764,14 @@ void CarClient::serialArduinoDataAvailable()
                     checksum ^= packet[4]; // Low byte
                     packet.append(checksum); // Append checksum
 
+                    qDebug() << "===Sending packet===";
+                    qDebug() << "Car ID:" << (uint8_t)packet[0];
+                    qDebug() << "Command:" << (uint8_t)packet[1];
+                    qDebug() << "Start byte:" << (uint8_t)packet[2];
+                    qDebug() << "High byte:" << (uint8_t)packet[3];
+                    qDebug() << "Low byte:" << (uint8_t)packet[4];
+                    qDebug() << "Checksum:" << (uint8_t)packet[5];
+
                     mPacketInterface->sendPacket(packet);
                 } else {
                     qDebug() << "Checksum error!";
@@ -752,6 +782,48 @@ void CarClient::serialArduinoDataAvailable()
             }
         }
     }
+#endif
+
+#ifdef ARDUINO_FLOAT
+    qDebug() << "Receiving floats!!";
+
+    while (static_cast<quint64>(mSerialPortArduino->bytesAvailable()) >= sizeof(float)) {
+        QByteArray data = mSerialPortArduino->read(sizeof(float));
+
+        if (data.size() == sizeof(float)) {
+            float value;
+            memcpy(&value, data.constData(), sizeof(float));
+            qDebug() << "Received float:" << value;
+
+            // Create a QByteArray with the marker byte and the float data
+            QByteArray message;
+            message.append(static_cast<char>(100)); // Add the marker byte
+            message.append((const char*)&value, sizeof(float)); // Add the float data
+
+            // Call tcpRx with the modified message
+            tcpRx(message);
+        } else {
+            qDebug() << "Incomplete data received";
+        }
+    }
+
+/*
+    qDebug() << "Receiving floats!!";
+
+while (static_cast<quint64>(mSerialPortArduino->bytesAvailable()) >= sizeof(float)) {
+        QByteArray data = mSerialPortArduino->read(sizeof(float));
+
+        if (data.size() == sizeof(float)) {
+            float value;
+            memcpy(&value, data.constData(), sizeof(float));
+            qDebug() << "Received float:" << value;
+        } else {
+            qDebug() << "Incomplete data received";
+        }
+    }
+*/
+#endif
+
 }
 
 void CarClient::serialRtcmPortError(QSerialPort::SerialPortError error)

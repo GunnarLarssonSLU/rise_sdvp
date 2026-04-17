@@ -41,14 +41,10 @@ static void(*read_callback)(float *accel, float *gyro, float *mag) = 0;
 static struct bmi160_dev sensor;
 static int rate_hz;
 
-//extern float debugvalue;
-//extern float debugvalue2;
-//extern float debugvalue3;
-//extern float debugvalue4;
+extern float debugvalue;
 
 void bmi160_wrapper_init(int samp_rate_hz) {
 	rate_hz = samp_rate_hz;
-	// debugvalue = 1; // Starting BMI160 initialization
 
 	m_i2c_bb.sda_gpio = GPIOB;
 	m_i2c_bb.sda_pin = 11;
@@ -64,8 +60,8 @@ void bmi160_wrapper_init(int samp_rate_hz) {
 	if (reset_init_bmi()) {
 		chThdCreateStatic(bmi_thread_wa, sizeof(bmi_thread_wa),
 				NORMALPRIO, bmi_thread, NULL);
-	} else {
 	}
+	debugvalue=5;
 }
 
 void bmi160_wrapper_set_read_callback(
@@ -76,10 +72,7 @@ void bmi160_wrapper_set_read_callback(
 static bool reset_init_bmi(void) {
 	sensor.delay_ms = user_delay_ms;
 
-	int8_t init_res = bmi160_init(&sensor);
-	if (init_res != BMI160_OK) {
-		return false;
-	}
+	bmi160_init(&sensor);
 
 	sensor.accel_cfg.odr = BMI160_ACCEL_ODR_200HZ;
 	sensor.accel_cfg.range = BMI160_ACCEL_RANGE_16G;
@@ -113,26 +106,6 @@ static THD_FUNCTION(bmi_thread, arg) {
 				&accel, &gyro, &sensor);
 
 		if (res != BMI160_OK) {
-			chThdSleepMilliseconds(5);
-			continue;
-		}
-		//debugvalue = 6; // Sensor data read successfully
-
-		// Debug: Check raw sensor values
-		//debugvalue2 = accel.x; // Store raw X acceleration for debugging
-		//debugvalue3 = gyro.z;  // Store raw Z gyro for debugging
-		//debugvalue4 = accel.z; // Store raw Z acceleration (should be ~1g when stationary)
-
-		// Validate data ranges
-		bool data_valid = true;
-		if (abs(accel.x) > 30000 || abs(accel.y) > 30000 || abs(accel.z) > 30000) {
-			data_valid = false;
-		}
-		if (abs(gyro.x) > 30000 || abs(gyro.y) > 30000 || abs(gyro.z) > 30000) {
-			data_valid = false;
-		}
-
-		if (!data_valid) {
 			chThdSleepMilliseconds(5);
 			continue;
 		}

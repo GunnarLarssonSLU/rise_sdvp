@@ -127,6 +127,7 @@ if (1)
 	}
 		// Map s1 to 0.0 and s2 to 1.0
 #ifdef SERVO_VESC_HYDRAULIC
+//		commands_printf("SERVO_VESC_HYDRAULIC %d\n",SERVO_VESC_ID);
 		comm_can_set_vesc_id(SERVO_VESC_ID);
 
 		(void)as5047_read;
@@ -164,11 +165,14 @@ if (1)
 		m_pos_now = utils_map(pos, 0.0, end, 0.0, 1.0);
 		// Run PID-controller on the output
 		float error = m_pos_set - m_pos_now;
+		//debugvalue13=m_pos_set;
+		//debugvalue14=m_pos_now;
+		//debugvalue15=error;
 		if (iDebug==81)
 		{
-			commands_printf("m_pos_set: %f",(double)m_pos_set);
-			commands_printf("m_pos_now: %f",(double)m_pos_now);
-			commands_printf("error: %f",(double)error);
+			commands_printf("m_pos_set: %f",m_pos_set);
+			commands_printf("m_pos_now: %f",m_pos_now);
+			commands_printf("error: %f",error);
 		}
 		float dt = 0.01;
 		float p_term = error * main_config.vehicle.vesc_p_gain;
@@ -202,8 +206,8 @@ if (1)
 		float output = p_term + i_term + d_term;
 		if (iDebug==80)
 		{
-			commands_printf("i gain: %f",(double)main_config.vehicle.vesc_i_gain);
-			commands_printf("Deadband: %f",(double)main_config.vehicle.deadband);
+			commands_printf("i gain: %f",main_config.vehicle.vesc_i_gain);
+			commands_printf("Deadband: %f",main_config.vehicle.deadband);
 		}
 		output += SIGN(output) * main_config.vehicle.deadband;
 		utils_truncate_number(&output, -1.0, 1.0);

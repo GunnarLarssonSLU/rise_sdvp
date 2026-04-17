@@ -21,10 +21,6 @@ float last_valid_time = 0.0f;
 float m_speed_filtered = 0.0f;
 float m_speed_pwm = 0;
 
-extern float debugvalue;
-extern float debugvalue2;
-extern float debugvalue3;
-
 extern volatile float m_speed_now;
 extern float m_speed_pwm;
 extern float m_speed_filtered;
@@ -36,12 +32,14 @@ volatile bool new_pulse = false;
 
 extern float m_throttle_set;
 
-#define TACHO_INPUT_PORT      GPIOA
-ADC_CNT_t io_board_adc0_cnt = {1};
-systime_t last_reading_time = 0;
-static volatile uint32_t timer_overflow_count = 0; // antal overflow
-static volatile uint32_t last_capture = 0;         // 32-bitars senaste capture
+#ifdef SERVO_READ
+	#define TACHO_INPUT_PORT      GPIOA
+	ADC_CNT_t io_board_adc0_cnt = {1};
+	systime_t last_reading_time = 0;
+	static volatile uint32_t timer_overflow_count = 0; // antal overflow
+	static volatile uint32_t last_capture = 0;         // 32-bitars senaste capture
 //	static systime_t last_tick = 0;
+#endif
 
 #ifndef CORTEX_PRIORITY_BITS
 #define CORTEX_PRIORITY_BITS 4
@@ -51,7 +49,16 @@ static volatile uint32_t last_capture = 0;         // 32-bitars senaste capture
 #define CORTEX_PRIORITY_MASK(n) ((n) << (8 - CORTEX_PRIORITY_BITS))
 #endif
 
-const float cnts_per_rev = 16.0;
+#ifdef IS_MACTRAC
+	// Measure speed
+	const float wheel_diam = 0.65;
+	const float cnts_per_rev = 16.0;
+#endif
+#ifdef IS_DRANGEN
+	// Measure speed
+	const float wheel_diam = 0.30;
+	const float cnts_per_rev = 16.0;
+#endif
 
 static THD_WORKING_AREA(wheelspeed_thread_wa, 1024);
 static THD_FUNCTION(wheelspeed_thread, arg);
@@ -162,7 +169,7 @@ void update_speed_buffer(float period, float unused) {
         return;
     }
 
-    float new_speed = SIGN(m_throttle_set) * (main_config.vehicle.wheel_diam * M_PI) / (avg_time * cnts_per_rev);
+    float new_speed = SIGN(m_throttle_set) * (wheel_diam * M_PI) / (avg_time * cnts_per_rev);
     
     // Update shared speed variables
     chSysLockFromISR();
@@ -185,10 +192,6 @@ static THD_FUNCTION(wheelspeed_thread, arg) {
             commands_printf("WARNING: WheelSpeed thread low on stack!\n");
         }
     }*/
-
-	//debugvalue=2;
-	//debugvalue2=2;
-	//debugvalue3=2;
     
     while (!chThdShouldTerminateX()) {
         chThdSleepMilliseconds(50);
@@ -200,9 +203,6 @@ static THD_FUNCTION(wheelspeed_thread, arg) {
             last_valid_time = 0.0f;
             m_speed_now = 0.0f;
             m_speed_filtered = 0.0f;
-        	//debugvalue=7;
-            //debugvalue2=7;
-            //debugvalue3=7;
             chSysUnlock();
         }
 
@@ -211,9 +211,6 @@ static THD_FUNCTION(wheelspeed_thread, arg) {
             chSysLock();
             new_pulse = false;
             m_speed_now = m_speed_pwm;
-            //debugvalue=8;
-            //debugvalue2=8;
-            //debugvalue3=8;
             chSysUnlock();
         }
     }
@@ -222,23 +219,12 @@ static THD_FUNCTION(wheelspeed_thread, arg) {
 CH_IRQ_HANDLER(STM32_TIM2_HANDLER) {
     CH_IRQ_PROLOGUE();
 
-	debugvalue=1;
-	debugvalue2=1;
-	debugvalue3=1;
-
     if (TIM2->SR & TIM_SR_UIF) {
         TIM2->SR &= ~TIM_SR_UIF; // rensa flagga
         timer_overflow_count++;
-    	debugvalue=2;
-    	debugvalue2=2;
-    	debugvalue3=2;
     }
 
     if (TIM2->SR & TIM_SR_CC3IF) {
-    	commands_printf("New pulse");
-    	debugvalue=3;
-    	debugvalue2=3;
-    	debugvalue3=3;
         uint16_t capture16 = TIM2->CCR3;
         uint32_t capture32 = ((uint32_t)timer_overflow_count << 16) | capture16;
 

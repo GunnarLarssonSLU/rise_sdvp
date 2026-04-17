@@ -69,7 +69,7 @@ static bool io_board_lim_sw[8] = {0};
 float io_board_as5047_angle = 0.0; //static?
 static float can_ftr2_angle = 0.0;
 
-#ifndef WHEEL_SENSOR
+#ifndef SERVO_READ
 ADC_CNT_t io_board_adc0_cnt = {1};
 #endif
 
@@ -155,9 +155,9 @@ void comm_can_init(void) {
 void comm_can_set_vesc_id(int id) {
 	vesc_id = id;
 
-	if (vesc_id == VESC_LEFT) {
+	if (vesc_id == DIFF_STEERING_VESC_LEFT) {
 		motor_sim_set_motor(0);
-	} else if (vesc_id == VESC_RIGHT) {
+	} else if (vesc_id == DIFF_STEERING_VESC_RIGHT) {
 		motor_sim_set_motor(1);
 	}
 }
@@ -803,7 +803,7 @@ bool comm_can_io_board_lim_sw(int sw) {
 	return io_board_lim_sw[sw];
 }
 
-#ifndef WHEEL_SENSOR
+#ifndef SERVO_READ
 ADC_CNT_t* comm_can_io_board_adc0_cnt(void) {
 	return &io_board_adc0_cnt;
 }

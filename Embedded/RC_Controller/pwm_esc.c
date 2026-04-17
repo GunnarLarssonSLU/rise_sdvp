@@ -103,6 +103,7 @@ static PWMConfig pwmcfg9 = {
 };
 
 void pwm_esc_init(void) {
+#ifdef SERVO_WRITE
 	pwmStart(&PWMD3, &pwmcfg3);
 	pwmStart(&PWMD9, &pwmcfg9);
 
@@ -124,6 +125,7 @@ void pwm_esc_init(void) {
 			PAL_STM32_OSPEED_MID1);
 
 	pwm_esc_set_all(0);
+#endif
 }
 
 void pwm_esc_set_all(float pulse_width) {

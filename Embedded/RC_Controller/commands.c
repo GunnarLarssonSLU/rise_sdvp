@@ -77,8 +77,7 @@ float debugvalue12;
 float debugvalue13;
 float debugvalue14;
 float debugvalue15;
-
-float frontangle;
+float angle;
 static bool arduino_connected = false;
 bool m_kb_active;
 
@@ -251,12 +250,12 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 		    // Calculate angle
 			last_sensorvalue = voltage;
 
-		    frontangle = (voltage - main_config.vehicle.sensorcentre) * (main_config.vehicle.degreeinterval / main_config.vehicle.sensorinterval);
-		    comm_can_io_board_as5047_setangle(frontangle);
+		    angle = (voltage - main_config.vehicle.sensorcentre) * (main_config.vehicle.degreeinterval / main_config.vehicle.sensorinterval);
+		    comm_can_io_board_as5047_setangle(angle);
 		    if (iDebug==31)
 		    {
 		    	commands_printf("Voltage: %u : %.3f, Angle: %.3f, centre: : %.3f, degreeinterval:%.3f, sensorinterval:%.3f\n",
-					scaledVoltage, voltage,  frontangle, main_config.vehicle.sensorcentre, main_config.vehicle.degreeinterval, main_config.vehicle.sensorinterval);
+					scaledVoltage, voltage,  angle, main_config.vehicle.sensorcentre, main_config.vehicle.degreeinterval, main_config.vehicle.sensorinterval);
 		    };
 		    // Debug output
 		    break;
@@ -759,7 +758,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.sensorinterval, &send_index);
 		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.degreeinterval, &send_index);
 		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.deadband, &send_index);
-		    commands_printf("read deadband: %f",(double)main_cfg_tmp.vehicle.deadband);
+		    commands_printf("read deadband: %f",main_cfg_tmp.vehicle.deadband);
 			commands_send_packet(m_send_buffer, send_index);
 		} break;
 
@@ -819,7 +818,10 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			hydraulic_move(data[0], data[1]);
 			break;
 
-
+		case CMD_GET_ANGLE:
+//			io_board_as5047_angle = buffer_get_float32(data, 1e3, &ind);
+			// io_board_as5047_angle = buffer_get_float32_auto(data, &ind);
+			break;
 
 		// ==================== vehicle commands ==================== //
 		case CMD_GET_STATE: {
@@ -873,7 +875,11 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				buffer_append_float32(m_send_buffer, pos.py, 1e4, &send_index); // 60
 			}
 			buffer_append_float32(m_send_buffer, pos.speed, 1e6, &send_index); // 64
+			#ifdef USE_ADCONV_FOR_VIN
 			buffer_append_float32(m_send_buffer, adconv_get_vin(), 1e6, &send_index); // 68
+			#else
+			buffer_append_float32(m_send_buffer, mcval.v_in, 1e6, &send_index); // 68
+			#endif
 //			buffer_append_float32(m_send_buffer, debugvalue, 1e6, &send_index); // 111
 
 			buffer_append_float32(m_send_buffer, mcval.temp_mos, 1e6, &send_index); // 72
@@ -900,7 +906,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			buffer_append_float32(m_send_buffer, main_config.vehicle.sensorinterval, 1e4, &send_index); // 119*/
 /*			buffer_append_float32(m_send_buffer, io_board_as5047_angle, 1e4, &send_index); // 111
 			buffer_append_float32(m_send_buffer, servo_output, 1e4, &send_index); // 115
-			buffer_append_uint16(m_send_buffer, last_sensorvalue, &send_index);*/ // 119
+			buffer_append_uint16(m_send_buffer, last_sensorvalue, &send_index); // 119*/
 			buffer_append_float32(m_send_buffer, debugvalue, 1e4, &send_index); // 121
 			buffer_append_float32(m_send_buffer, debugvalue2, 1e4, &send_index); // 125
 			buffer_append_float32(m_send_buffer, debugvalue3, 1e4, &send_index); // 129
@@ -943,8 +949,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			// steering *= autopilot_get_steering_scale();
 
 			autopilot_set_active(false);
-			float okdirections=sign(frontangle)==-sign(steering);
-			//float nottooextreme=fabs(frontangle)<25.0;
 
 			switch (mode) {
 			case RC_MODE_CURRENT:
@@ -954,26 +958,28 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 						{
 							commands_printf("Driving");
 						}
+						float okdirections=sign(angle)==-sign(steering);
+						float nottooextreme=fabs(angle)<25.0;
 						comm_can_lock_vesc();
-						comm_can_set_vesc_id(VESC_LEFT);
+						comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
 						bldc_interface_set_current(throttle);
-						comm_can_set_vesc_id(VESC_RIGHT);
+						comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
 						bldc_interface_set_current(throttle);
-						if ((abs(frontangle)<30) || okdirections)
+//						if ((angle>-30) && (angle<30)) && (angle<30))
 
 //						if ( (iDebug==10) && ((okdirections) || (nottooextreme)))
-						{
+//						{
 							comm_can_set_vesc_id(ELECTROHYDRAULICBAR_VESC_ID);
 							bldc_interface_set_duty_cycle(steering*VOLTAGEFRACTION);
-						}
+//						}
 						comm_can_unlock_vesc();
 					#endif
 
 					#if HAS_DIFF_STEERING
 						comm_can_lock_vesc();
-						comm_can_set_vesc_id(VESC_LEFT);
+						comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
 						bldc_interface_set_current(throttle + throttle * steering);
-						comm_can_set_vesc_id(VESC_RIGHT);
+						comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
 						bldc_interface_set_current(throttle - throttle * steering);
 						comm_can_unlock_vesc();
 					#else
@@ -991,9 +997,9 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				if (!main_config.vehicle.disable_motor) {
 					#if HAS_DIFF_STEERING
 						comm_can_lock_vesc();
-						comm_can_set_vesc_id(VESC_LEFT);
+						comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
 						bldc_interface_set_duty_cycle(throttle + throttle * steering);
-//						comm_can_set_vesc_id(VESC_RIGHT);
+//						comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
 //						bldc_interface_set_duty_cycle(throttle - throttle * steering);
 						comm_can_unlock_vesc();
 					#else
@@ -1006,16 +1012,16 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 							#endif
 						#else
 							comm_can_lock_vesc();
-							comm_can_set_vesc_id(VESC_LEFT);
+							comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
 							bldc_interface_set_duty_cycle(throttle);
-							comm_can_set_vesc_id(VESC_RIGHT);
+							comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
 							bldc_interface_set_duty_cycle(throttle);
-							//							if (1==2)
-							if ((abs(frontangle<30)) || okdirections)
-							{
+//							if ((io_board_as5047_angle>-30) && (io_board_as5047_angle<30))
+//							if (1==2)
+//							{
 							comm_can_set_vesc_id(ELECTROHYDRAULICBAR_VESC_ID);
 							bldc_interface_set_duty_cycle(steering*VOLTAGEFRACTION);
-							}
+//							}
 							comm_can_unlock_vesc();
 
 						#endif

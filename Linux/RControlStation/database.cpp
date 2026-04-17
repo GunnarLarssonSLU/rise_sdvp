@@ -9,8 +9,6 @@ database::database(QWidget* _qw) {
         showError(err);
         return;
     }
-    // Create the file info table
-    createFileInfoTable();
 }
 
 QVariant database::addFarm(const QString &name)
@@ -130,64 +128,6 @@ void database::showError(const QSqlError &err)
                           "Error initializing database: " + err.text());
 }
 
-
-void database::createFileInfoTable()
-{
-    const auto CREATE_FILE_INFO_TABLE_SQL = QLatin1String(R"(
-        CREATE TABLE IF NOT EXISTS file_info (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            filename TEXT NOT NULL,
-            file_value INTEGER DEFAULT 0
-        )
-    )");
-    QSqlQuery q;
-    if (!q.exec(CREATE_FILE_INFO_TABLE_SQL)) {
-        qDebug() << "Failed to create file_info table:" << q.lastError().text();
-    }
-}
-
-void database::addFileInfo(const QString &filename, int value)
-{
-    const auto INSERT_FILE_INFO_SQL = QLatin1String(R"(
-        INSERT INTO file_info (filename, file_value)
-        VALUES (?, ?)
-    )");
-    QSqlQuery q;
-    if (q.prepare(INSERT_FILE_INFO_SQL)) {
-        q.addBindValue(filename);
-        q.addBindValue(value);
-        if (!q.exec()) {
-            qDebug() << "Failed to insert file info:" << q.lastError().text();
-        }
-    } else {
-        qDebug() << "Failed to prepare file info insert:" << q.lastError().text();
-    }
-}
-
-void database::populateFromDirectory(const QString &directoryPath)
-{
-    QDir dir(directoryPath);
-    if (!dir.exists()) {
-        qDebug() << "Directory does not exist:" << directoryPath;
-        return;
-    }
-
-    // Clear existing data first
-    QSqlQuery q;
-    if (!q.exec("DELETE FROM file_info")) {
-        qDebug() << "Failed to clear file_info table:" << q.lastError().text();
-    }
-
-    // Get all files in the directory (non-recursive)
-    QStringList files = dir.entryList(QDir::Files | QDir::NoDotAndDotDot);
-    
-    qDebug() << "Found" << files.size() << "files in" << directoryPath;
-    
-    // Insert each file with a placeholder value of 0
-    for (const QString &file : files) {
-        addFileInfo(file, 0); // Using 0 as placeholder value
-    }
-}
 
 QSqlError database::initDb()
 {
