@@ -48,6 +48,7 @@ static float dec_adc_voltage;
 static float dec_chuk;
 
 extern float showData;
+extern int iDebug;
 
 // Private functions
 void send_packet_no_fwd(unsigned char *data, unsigned int len);
@@ -361,6 +362,11 @@ void bldc_interface_terminal_cmd(char* cmd) {
 }
 
 void bldc_interface_set_duty_cycle(float dutyCycle) {
+	if (iDebug==43)
+	{
+		commands_printf("bldc action: %i",MOTOR_CONTROL_DUTY);
+		commands_printf("bldc DUTY: %f",dutyCycle);
+	}
 	if (motor_control_set_func) {
 		motor_control_set_func(MOTOR_CONTROL_DUTY, dutyCycle);
 		return;
@@ -372,6 +378,11 @@ void bldc_interface_set_duty_cycle(float dutyCycle) {
 }
 
 void bldc_interface_set_current(float current) {
+	if (iDebug==43)
+	{
+		commands_printf("bldc action: %i",MOTOR_CONTROL_CURRENT);
+		commands_printf("bldc CURRENT: %f",current);
+	}
 	if (motor_control_set_func) {
 		motor_control_set_func(MOTOR_CONTROL_CURRENT, current);
 		return;
@@ -383,6 +394,11 @@ void bldc_interface_set_current(float current) {
 }
 
 void bldc_interface_set_current_brake(float current) {
+	if (iDebug==43)
+	{
+		commands_printf("bldc action: %i",MOTOR_CONTROL_CURRENT);
+		commands_printf("bldc CURRENT BRAKE: %f",current);
+	}
 	if (motor_control_set_func) {
 		motor_control_set_func(MOTOR_CONTROL_CURRENT_BRAKE, current);
 		return;
@@ -394,6 +410,11 @@ void bldc_interface_set_current_brake(float current) {
 }
 
 void bldc_interface_set_rpm(int rpm) {
+	if (iDebug==43)
+	{
+		commands_printf("bldc action: %i",MOTOR_CONTROL_CURRENT);
+		commands_printf("bldc RPM: %f",rpm);
+	}
 	if (motor_control_set_func) {
 		motor_control_set_func(MOTOR_CONTROL_RPM, rpm);
 		return;

@@ -327,6 +327,7 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         conf.car.sensorinterval = utility::buffer_get_double32_auto(data, &ind);
         conf.car.degreeinterval = utility::buffer_get_double32_auto(data, &ind);
         conf.car.deadband = utility::buffer_get_double32_auto(data, &ind);
+        conf.car.heartbeat_maxtime = utility::buffer_get_double32_auto(data, &ind);
 
         // Multirotor settings
         conf.mr.vel_decay_e = utility::buffer_get_double32_auto(data, &ind);
@@ -877,6 +878,7 @@ bool PacketInterface::setConfiguration(quint8 id, MAIN_CONFIG &conf, int retries
     utility::buffer_append_double32_auto(mSendBuffer, conf.car.degreeinterval, &send_index);
 
     utility::buffer_append_double32_auto(mSendBuffer, conf.car.deadband, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.car.heartbeat_maxtime, &send_index);
 
     // Multirotor settings
     utility::buffer_append_double32_auto(mSendBuffer, conf.mr.vel_decay_e, &send_index);

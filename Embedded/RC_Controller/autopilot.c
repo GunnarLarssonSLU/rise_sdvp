@@ -25,10 +25,11 @@
 #include "utils.h"
 #include "pos.h"
 #include "bldc_interface.h"
+#include "motor_control.h"
 #include "commands.h"
 #include "terminal.h"
 #include "comm_can.h"
-#include "hydraulic.h"
+//#include "hydraulic.h"
 #include "pos_uwb.h"
 #include "attributes_masks.h"
 //#include "servo_vesc.h"
@@ -59,9 +60,8 @@ static int m_route_look_ahead;
 static int m_route_left;
 static bool m_route_end;
 
-#if HAS_DIFF_STEERING
-static float m_turn_rad_now;
-#endif
+// Front wheel angle feedback (used for both differential steering and electric steering with feedback)
+float m_turn_rad_now = 1e6; // Initialize to large value indicating no valid reading
 
 extern int iDebug;
 //extern float i_term;
@@ -407,58 +407,14 @@ void autopilot_set_motor_speed(float speed) {
 		// TODO
 		comm_can_lock_vesc();
 		comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
-		bldc_interface_set_rpm((int)speed);
+		motor_set_rpm((int)speed);
 		comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
-		bldc_interface_set_rpm((int)rpm_r);
+		motor_set_rpm((int)rpm_r);
 		comm_can_unlock_vesc();
 #endif */
 		/*
 */
-#if HAS_DIFF_STEERING
-		float diff_speed_half = 0.0;
-
-		if (fabsf(m_turn_rad_now) > 0.1) {
-			diff_speed_half = speed * (main_config.vehicle.axis_distance / (2.0 * m_turn_rad_now));
-		}
-
-		float rpm_r = (speed + diff_speed_half) / (main_config.vehicle.gear_ratio
-				* (2.0 / main_config.vehicle.motor_poles) * (1.0 / 60.0)
-				* main_config.vehicle.wheel_diam * M_PI);
-
-		float rpm_l = (speed - diff_speed_half) / (main_config.vehicle.gear_ratio
-				* (2.0 / main_config.vehicle.motor_poles) * (1.0 / 60.0)
-				* main_config.vehicle.wheel_diam * M_PI);
-		comm_can_lock_vesc();
-		comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
-//			bldc_interface_set_rpm((int)rpm_l);
-		comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
-		bldc_interface_set_rpm((int)rpm_r);
-		comm_can_unlock_vesc();
-#else
-#if HAS_HYDRAULIC_DRIVE
-		// MacTrac uses this
-		hydraulic_set_speed(speed);
-#else
-		float rpm = speed / (main_config.vehicle.gear_ratio
-					* (2.0 / main_config.vehicle.motor_poles) * (1.0 / 60.0)
-					* main_config.vehicle.wheel_diam * M_PI);
-
-		comm_can_lock_vesc();
-		#ifdef IS_DRANGEN
-//				comm_can_lock_vesc();
-				comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
-				bldc_interface_set_rpm((int)(rpm*200));
-				comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
-				bldc_interface_set_rpm((int)(rpm*200));
-//				comm_can_unlock_vesc();
-			#else
-				comm_can_set_vesc_id(VESC_ID); //ÄNDRA HÄR
-				bldc_interface_set_rpm((int)(rpm));
-		#endif
-		comm_can_unlock_vesc();
-
-#endif
-#endif
+		motor_set_speed_autopilot(speed);
 	}
 }
 
@@ -951,28 +907,14 @@ static THD_FUNCTION(ap_thread, arg) {
 
 				utils_truncate_number_abs(&speed, main_config.ap_max_speed);
 
-				#if HAS_DIFF_STEERING
-					autopilot_set_turn_rad(circle_radius);
-				#else
-					#ifdef IS_DRANGEN
-
-					comm_can_set_vesc_id(ELECTROHYDRAULICBAR_VESC_ID);
-					bldc_interface_set_duty_cycle(servo_pos);
-
-					#endif
-					#ifdef IS_MACTRAC
-						servo_simple_set_pos_ramp(servo_pos, true); //GL - Bättre?
-					#endif
-				#endif
-				autopilot_set_motor_speed(speed);
+				// All vehicle-specific control moved to motor_control
+				motor_set_steering_autopilot(steering_angle, circle_radius);
+				motor_set_speed_autopilot(speed);
 			}
 		}
 
 		if (m_route_end) {
-			servo_simple_set_pos_ramp(main_config.vehicle.steering_center, false);
-			if (!main_config.vehicle.disable_motor) {
-				bldc_interface_set_current_brake(10.0);
-			}
+			motor_handle_route_end();
 			m_rad_now = -1.0;
 			m_is_active = false;
 			reset_state();

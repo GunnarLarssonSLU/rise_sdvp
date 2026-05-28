@@ -219,11 +219,12 @@ void MapRoute::paintLine(int i, bool isSelected, bool isAnalysed, QPainter &pain
     pen.setColor(defaultDarkColor);
     painter.setBrush(defaultColor);
 
+    /*
     bool isImplementsDownAndPathSelected=isSelected && (mRoute[i - 1].getAttributes() & ATTR_HYDRAULIC_FRONT_DOWN) && (mRoute[i].getAttributes() & ATTR_HYDRAULIC_FRONT_DOWN);
     if (isImplementsDownAndPathSelected) {
         pen.setColor(Qt::darkCyan);
         painter.setBrush(Qt::cyan);
-    }
+    } */
     if (isAnalysed) {
         qDebug() << "show analysis line: " << i;
         pen.setColor(Qt::darkBlue);
@@ -250,17 +251,24 @@ void MapRoute::paintPoint(QPointF p, quint32 attr, bool isSelected, bool isAnaly
     painter.setTransform(drawTrans);
 
     if (highQuality) {
+        qDebug() << "quality value: " << attr;
         if (isSelected) {
-            if ((attr & ATTR_POSITIONING_MASK) == 2) {
+            /*if ((attr & ATTR_POSITIONING_MASK) == 2) {
                 pen.setColor(Qt::darkGreen);
                 painter.setBrush(Qt::green);
-            } else if ((attr & ATTR_HYDRAULIC_FRONT_DOWN) != 0) {
+            } else*/ if (attr == ATTR_HYDRAULIC_FRONT_DOWN) {
                 pen.setColor(Qt::darkCyan);
                 painter.setBrush(Qt::cyan);
-                //                showSowing=true;
-            } else if ((attr & ATTR_HYDRAULIC_FRONT_UP) != 0) {
+            } else if (attr == ATTR_HYDRAULIC_FRONT_UP) {
                 pen.setColor(Qt::darkYellow);
-                painter.setBrush(Qt::green);
+                painter.setBrush(Qt::yellow);
+            } else if (attr == ATTR_HYDRAULIC_REAR_DOWN) {
+                pen.setColor(Qt::darkBlue);
+                painter.setBrush(Qt::blue);
+                //                showSowing=true;
+            } else if (attr == ATTR_HYDRAULIC_REAR_UP) {
+                pen.setColor(Qt::darkGray);
+                painter.setBrush(Qt::gray);
             } else {
                 pen.setColor(Qt::darkYellow);
                 painter.setBrush(Qt::yellow);
@@ -281,8 +289,9 @@ void MapRoute::paintPoint(QPointF p, quint32 attr, bool isSelected, bool isAnaly
         painter.drawEllipse(p, 10.0 / mScaleFactor,
                             10.0 / mScaleFactor);
     } else {
+        // qDebug() << "low quality value: " << attr;
         drawCircleFast(painter, p, 10.0 / mScaleFactor, isSelected ?
-                                                                       ((attr & ATTR_POSITIONING_MASK) == 2 ? 2 : ((attr & ATTR_HYDRAULIC_FRONT_DOWN) != 0 ? 3 : ((attr & ATTR_HYDRAULIC_FRONT_UP) != 0 ? 4 : 0))) : 1);
+                                                            ((attr & ATTR_POSITIONING_MASK) == 2 ? 2 : ((attr == ATTR_HYDRAULIC_FRONT_DOWN) ? 3 : ((attr == ATTR_HYDRAULIC_FRONT_UP) ? 4 : ((attr == ATTR_HYDRAULIC_REAR_DOWN) ? 6 :  ((attr == ATTR_HYDRAULIC_REAR_UP) ? 5 : 0))))) : 1);
     }
 }
 
@@ -448,7 +457,7 @@ const QList<QPixmap>& MapRoute::getPixmaps() {
 
 void MapRoute::initPixmaps() {
     qDebug() << "Initializing mPixmaps";
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 7; i++) {
         QPixmap pix(24, 24);
         pix.fill(Qt::transparent);
         QPainter p(&pix);
@@ -482,6 +491,18 @@ void MapRoute::initPixmaps() {
         case 4: {
             pen.setColor(Qt::darkYellow);
             p.setBrush(Qt::green);
+            p.setPen(pen);
+            p.drawEllipse(2, 2, 20, 20);
+        } break;
+        case 5: {
+            pen.setColor(Qt::darkBlue);
+            p.setBrush(Qt::blue);
+            p.setPen(pen);
+            p.drawEllipse(2, 2, 20, 20);
+        } break;
+        case 6: {
+            pen.setColor(Qt::darkGray);
+            p.setBrush(Qt::gray);
             p.setPen(pen);
             p.drawEllipse(2, 2, 20, 20);
         } break;

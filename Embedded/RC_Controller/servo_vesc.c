@@ -19,7 +19,7 @@
 #include "ch.h"
 #include "hal.h"
 #include "conf_general.h"
-#include "bldc_interface.h"
+#include "motor_control.h"
 #include "terminal.h"
 #include "utils.h"
 #include "comm_can.h"
@@ -210,6 +210,10 @@ if (1)
 			commands_printf("Deadband: %f",main_config.vehicle.deadband);
 		}
 		output += SIGN(output) * main_config.vehicle.deadband;
+		//debugvalue2=p_term;
+		//debugvalue3=i_term;
+		//debugvalue4=d_term;
+		//debugvalue5=SIGN(output) * main_config.vehicle.deadband;
 		utils_truncate_number(&output, -1.0, 1.0);
 
 		if (ok) {
@@ -245,7 +249,7 @@ if (1)
 #else
 		if (m_not_ok_cnt < 100) {
 			m_out_last = SERVO_VESC_INVERTED ? output : -output;
-			bldc_interface_set_duty_cycle(m_out_last);
+			motor_set_duty_cycle(m_out_last);
 		} else {
 //			bldc_interface_set_current(0.0);
 //			bldc_interface_set_current(0.1);

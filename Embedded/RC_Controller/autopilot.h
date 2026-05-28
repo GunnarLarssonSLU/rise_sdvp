@@ -44,4 +44,7 @@ void autopilot_get_goal_now(ROUTE_POINT *rp);
 void autopilot_set_turn_rad(float rad);
 #endif
 
+// External variables
+extern float m_turn_rad_now;
+
 #endif /* AUTOPILOT_H_ */

@@ -44,6 +44,8 @@ static THD_WORKING_AREA(cancom_process_thread_wa, 4096);
 static THD_FUNCTION(cancom_read_thread, arg);
 static THD_FUNCTION(cancom_process_thread, arg);
 
+extern int iDebug;
+
 // Functions
 //static void cmd_terminal_useeid(int argc, const char **argv);
 
@@ -153,6 +155,11 @@ void comm_can_init(void) {
 }
 
 void comm_can_set_vesc_id(int id) {
+	if (iDebug==43)
+	{
+		commands_printf("motor: %i",id);
+	}
+
 	vesc_id = id;
 
 	if (vesc_id == DIFF_STEERING_VESC_LEFT) {

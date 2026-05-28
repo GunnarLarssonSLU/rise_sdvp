@@ -762,7 +762,7 @@
                <string/>
               </property>
               <property name="decimals">
-               <number>3</number>
+               <number>0</number>
               </property>
               <property name="minimum">
                <double>0.000000000000000</double>
@@ -814,7 +814,7 @@
                <string>Servo Range: </string>
               </property>
               <property name="decimals">
-               <number>3</number>
+               <number>4</number>
               </property>
               <property name="minimum">
                <double>-1.000000000000000</double>
@@ -890,7 +890,7 @@
                <string>Servo Center: </string>
               </property>
               <property name="decimals">
-               <number>3</number>
+               <number>4</number>
               </property>
               <property name="maximum">
                <double>1.000000000000000</double>
@@ -923,13 +923,13 @@
                <string/>
               </property>
               <property name="decimals">
-               <number>3</number>
+               <number>0</number>
               </property>
               <property name="minimum">
                <double>0.000000000000000</double>
               </property>
               <property name="maximum">
-               <double>1021.000000000000000</double>
+               <double>1024.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -937,6 +937,19 @@
              <widget class="QDoubleSpinBox" name="confDeadBandBox">
               <property name="prefix">
                <string>Dead band: </string>
+              </property>
+              <property name="decimals">
+               <number>3</number>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="QDoubleSpinBox" name="confTimeLimitBox">
+              <property name="prefix">
+               <string>Heartbeat max time: </string>
+              </property>
+              <property name="suffix">
+               <string> s</string>
               </property>
              </widget>
             </item>

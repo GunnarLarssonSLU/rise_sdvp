@@ -743,7 +743,7 @@ void CarInterface::getConfGui(MAIN_CONFIG &conf)
 
     conf.car.steering_max_angle_rad = atan(ui->confAxisDistanceBox->value() / ui->confTurnRadBox->value());
     conf.car.deadband=ui->confDeadBandBox->value();
-    qDebug() << "Deadband: " << ui->confDeadBandBox->value();
+    conf.car.heartbeat_maxtime=ui->confTimeLimitBox->value();
     ui->confCommonWidget->getConfGui(conf);
 }
 
@@ -770,6 +770,7 @@ void CarInterface::setConfGui(MAIN_CONFIG &conf)
     ui->confSensorIntervalBox->setValue(conf.car.sensorinterval);
     ui->confDegreeIntervalBox->setValue(conf.car.degreeinterval);
     ui->confDeadBandBox->setValue(conf.car.deadband);
+    ui->confTimeLimitBox->setValue(conf.car.heartbeat_maxtime);
 
     ui->confTurnRadBox->setValue(conf.car.axis_distance / tan(conf.car.steering_max_angle_rad));
 

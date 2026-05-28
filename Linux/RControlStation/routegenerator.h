@@ -7,8 +7,9 @@
 
 class RouteGenerator {
 public:
-    RouteGenerator(double c_plotLength_m, double c_plotWidth_m, double c_implementLength_m, double c_implementWidth_m,int plots_DrivingDirection, int plots_NonDrivingDirection ,double distancebetweenplots_drivingdirection_m ,double distancebetweenplots_nondrivingdirection_m, LocPoint p1,LocPoint p2,double speed_km__h,double c_turnDiameterX, int c_turnSteps, bool c_flipSide);
+    RouteGenerator(double c_plotLength_m, double c_plotWidth_m, double c_implementLength_m, double c_implementWidth_m,int plots_DrivingDirection, int plots_NonDrivingDirection ,double distancebetweenplots_drivingdirection_m ,double distancebetweenplots_nondrivingdirection_m, LocPoint p1,LocPoint p2,double speed_km__h,double c_turnDiameterX, int c_turnSteps, bool c_flipSide,bool c_isFieldTrial, int c_iTask,bool pieces);
     void generateXmlFile();
+    int checkFieldTrial(int x,int y,int task);
 
 private:
     double implementLength_m, implementWidth_m, plotAngle, startX, startY;
@@ -17,6 +18,9 @@ private:
     double distanceBetweenPlotsX, distanceBetweenPlotsY, turnDiameterX, speed;
     double flipSide;
     bool valid;
+    bool isFieldTrial;
+    bool pieces;
+    int iTask;
     std::string xmlFileName;
 
     std::vector<double> xs, ys;

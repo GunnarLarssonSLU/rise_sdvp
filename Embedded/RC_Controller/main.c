@@ -48,10 +48,11 @@
 #include "m8t_base.h"
 #include "pos_uwb.h"
 #include "fi.h"
+#include "motor_control.h"
 #include "hydraulic.h"
 #include "timer.h"
 #include "wheelspeed.h"
-// #include "watchdog.h"
+#include "watchdog.h"
 
 //event_source_t emergency_event;
 
@@ -97,20 +98,22 @@ int main(void) {
 	conf_general_init();
 	adconv_init();
 	servo_simple_init();
-	commands_init();
 	pos_init();
 	pos_uwb_init();
 	comm_can_init();
 	autopilot_init();
+	watchdog_init();
+	motor_control_init();
 	timeout_init();
 	log_init();
 	motor_sim_init();
+	commands_init();
 #if HAS_HYDRAULIC_DRIVE
 	hydraulic_init();
 #endif
 #if WHEEL_SENSOR
 	hydraulic_init();
-	pwm_esc_init();
+	tach_input_init();
 	wheelspeed_init();
 #endif
 #if HAS_PWM_ESC
@@ -130,7 +133,7 @@ int main(void) {
 
 	fi_init();
 
-	timeout_configure(2000, 40.0);
+	timeout_configure(main_config.vehicle.heartbeat_maxtime, 40.0);
 	log_set_rate(main_config.log_rate_hz);
 	log_set_enabled(main_config.log_en);
 	log_set_name(main_config.log_name);

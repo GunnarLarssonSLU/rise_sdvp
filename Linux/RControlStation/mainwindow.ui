@@ -2980,39 +2980,40 @@
                     </property>
                    </widget>
                   </item>
-                  <item row="20" column="0" colspan="2">
-                   <widget class="QPushButton" name="buttonGenerate">
+                  <item row="17" column="0">
+                   <widget class="QLabel" name="fieldtrialLabel">
                     <property name="text">
-                     <string>Generate path</string>
+                     <string>Field Trial?</string>
                     </property>
                    </widget>
                   </item>
-                  <item row="21" column="0">
-                   <widget class="QLabel" name="label_2">
+                  <item row="17" column="1">
+                   <widget class="QCheckBox" name="fieldtrialCheckBox"/>
+                  </item>
+                  <item row="18" column="0">
+                   <widget class="QLabel" name="agriculttaskLabel">
                     <property name="text">
-                     <string>Route</string>
+                     <string>Task</string>
                     </property>
                    </widget>
                   </item>
-                  <item row="22" column="0" colspan="2">
-                   <widget class="QPushButton" name="buttonPrependRoute">
-                    <property name="text">
-                     <string>Prepend route</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="23" column="0" colspan="2">
-                   <widget class="QPushButton" name="buttonAppendRoute">
-                    <property name="text">
-                     <string>Append route</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="108" column="0" colspan="2">
-                   <widget class="QPushButton" name="buttonShowShapefile">
-                    <property name="text">
-                     <string>Show Shapefile</string>
-                    </property>
+                  <item row="18" column="1">
+                   <widget class="QComboBox" name="agriculttaskBox">
+                    <item>
+                     <property name="text">
+                      <string>Sowing</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Cutting</string>
+                     </property>
+                    </item>
+                    <item>
+                     <property name="text">
+                      <string>Kantskar</string>
+                     </property>
+                    </item>
                    </widget>
                   </item>
                   <item row="19" column="0">
@@ -3025,7 +3026,48 @@
                   <item row="19" column="1">
                    <widget class="QCheckBox" name="addInsertDriveCheckBox"/>
                   </item>
+                  <item row="20" column="0">
+                   <widget class="QLabel" name="piecesLabel">
+                    <property name="text">
+                     <string>Produce pieces</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="20" column="1">
+                   <widget class="QCheckBox" name="piecesCheckBox"/>
+                  </item>
+                  <item row="21" column="0">
+                   <widget class="QLabel" name="extraLabel">
+                    <property name="text">
+                     <string>Extra</string>
+                    </property>
+                   </widget>
+                  </item>
                   <item row="21" column="1">
+                   <widget class="QLineEdit" name="extraEdit">
+                    <property name="text">
+                     <string>10</string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="30" column="0" colspan="2">
+                   <widget class="QPushButton" name="buttonGenerate">
+                    <property name="text">
+                     <string>Generate path</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="41" column="0">
+                   <widget class="QLabel" name="label_2">
+                    <property name="text">
+                     <string>Route</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="41" column="1">
                    <widget class="QDoubleSpinBox" name="prependRouteSpinBox">
                     <property name="alignment">
                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -3035,6 +3077,27 @@
                     </property>
                     <property name="value">
                      <double>2.000000000000000</double>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="106" column="0" colspan="2">
+                   <widget class="QPushButton" name="buttonPrependRoute">
+                    <property name="text">
+                     <string>Prepend route</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="107" column="0" colspan="2">
+                   <widget class="QPushButton" name="buttonAppendRoute">
+                    <property name="text">
+                     <string>Append route</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="108" column="0" colspan="2">
+                   <widget class="QPushButton" name="buttonShowShapefile">
+                    <property name="text">
+                     <string>Show Shapefile</string>
                     </property>
                    </widget>
                   </item>

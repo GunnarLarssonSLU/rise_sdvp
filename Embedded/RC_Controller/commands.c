@@ -22,7 +22,7 @@
 #include "pos.h"
 #include "buffer.h"
 #include "terminal.h"
-#include "bldc_interface.h"
+#include "motor_control.h"
 #include "servo_simple.h"
 #include "utils.h"
 #include "autopilot.h"
@@ -37,6 +37,7 @@
 #include "fi.h"
 #include "comm_can.h"
 #include "hydraulic.h"
+#include "watchdog.h"
 
 #include <math.h>
 #include <string.h>
@@ -77,13 +78,14 @@ float debugvalue12;
 float debugvalue13;
 float debugvalue14;
 float debugvalue15;
-float angle;
+float frontangle;
 static bool arduino_connected = false;
 bool m_kb_active;
 
 extern float io_board_as5047_angle;
 extern float servo_output;
 extern int iDebug;
+int iCounterCommands=0;
 
 //extern event_source_t emergency_event;
 
@@ -204,7 +206,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 
 
 		case CMD_HEARTBEAT:
-            // chEvtBroadcast(&heartbeat_event); // Signal heartbeat
+            chEvtBroadcast(&heartbeat_event); // Signal heartbeat to watchdog
 	        break;
 		case CMD_ARDUINO_STATUS   :
 			if (data[0])
@@ -215,7 +217,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				arduino_connected=false;
 			}
 			break;
-
 
 		case CMD_GETANGLE: {
 		    // Check packet length (6 bytes: car_id, cmd, start, 2 data bytes, checksum)
@@ -250,16 +251,17 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 		    // Calculate angle
 			last_sensorvalue = voltage;
 
-		    angle = (voltage - main_config.vehicle.sensorcentre) * (main_config.vehicle.degreeinterval / main_config.vehicle.sensorinterval);
-		    comm_can_io_board_as5047_setangle(angle);
+		    frontangle = (voltage - main_config.vehicle.sensorcentre) * (main_config.vehicle.degreeinterval / main_config.vehicle.sensorinterval);
+		    comm_can_io_board_as5047_setangle(frontangle);
 		    if (iDebug==31)
 		    {
 		    	commands_printf("Voltage: %u : %.3f, Angle: %.3f, centre: : %.3f, degreeinterval:%.3f, sensorinterval:%.3f\n",
-					scaledVoltage, voltage,  angle, main_config.vehicle.sensorcentre, main_config.vehicle.degreeinterval, main_config.vehicle.sensorinterval);
+					scaledVoltage, voltage,  frontangle, main_config.vehicle.sensorcentre, main_config.vehicle.degreeinterval, main_config.vehicle.sensorinterval);
 		    };
 		    // Debug output
 		    break;
 		}
+
 		case CMD_SET_POS:
 		case CMD_SET_POS_ACK: {
 			timeout_reset();
@@ -655,9 +657,8 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			main_config.vehicle.sensorinterval = buffer_get_float32_auto(data, &ind);
 			main_config.vehicle.degreeinterval = buffer_get_float32_auto(data, &ind);
 			float deadband= buffer_get_float32_auto(data, &ind);
-			commands_printf("setting deadband: %f",deadband);
 			main_config.vehicle.deadband =deadband;
-			commands_printf("setting deadband (in struct 1): %f",main_config.vehicle.deadband);
+			main_config.vehicle.heartbeat_maxtime = buffer_get_float32_auto(data, &ind);
 
 			motor_sim_set_running(main_config.vehicle.simulate_motor);
 			conf_general_store_main_config(&main_config);
@@ -758,6 +759,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.sensorinterval, &send_index);
 		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.degreeinterval, &send_index);
 		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.deadband, &send_index);
+		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.heartbeat_maxtime, &send_index);
 		    commands_printf("read deadband: %f",main_cfg_tmp.vehicle.deadband);
 			commands_send_packet(m_send_buffer, send_index);
 		} break;
@@ -898,15 +900,12 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				buffer_append_float32(m_send_buffer, pos_uwb.px, 1e4, &send_index); // 103
 				buffer_append_float32(m_send_buffer, pos_uwb.py, 1e4, &send_index); // 107
 			}
-			buffer_append_float32(m_send_buffer, debugvalue, 1e4, &send_index); // 121
-			buffer_append_float32(m_send_buffer, debugvalue2, 1e4, &send_index); // 125
-			buffer_append_float32(m_send_buffer, debugvalue3, 1e4, &send_index); // 129
-/*			buffer_append_float32(m_send_buffer,main_config.vehicle.sensorcentre, 1e4, &send_index); // 111
-			buffer_append_float32(m_send_buffer, main_config.vehicle.degreeinterval, 1e4, &send_index); // 115
-			buffer_append_float32(m_send_buffer, main_config.vehicle.sensorinterval, 1e4, &send_index); // 119*/
-/*			buffer_append_float32(m_send_buffer, io_board_as5047_angle, 1e4, &send_index); // 111
+			buffer_append_float32(m_send_buffer, debugvalue, 1e4, &send_index); // 111
+			buffer_append_float32(m_send_buffer, debugvalue, 1e4, &send_index); // 115
+			buffer_append_float32(m_send_buffer, debugvalue, 1e4, &send_index); // 119 */
+			buffer_append_float32(m_send_buffer, io_board_as5047_angle, 1e4, &send_index); // 111
 			buffer_append_float32(m_send_buffer, servo_output, 1e4, &send_index); // 115
-			buffer_append_uint16(m_send_buffer, last_sensorvalue, &send_index); // 119*/
+			buffer_append_uint16(m_send_buffer, last_sensorvalue, &send_index); // 119 */
 			buffer_append_float32(m_send_buffer, debugvalue, 1e4, &send_index); // 121
 			buffer_append_float32(m_send_buffer, debugvalue2, 1e4, &send_index); // 125
 			buffer_append_float32(m_send_buffer, debugvalue3, 1e4, &send_index); // 129
@@ -943,91 +942,31 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			mode = data[ind++];
 			throttle = buffer_get_float32(data, 1e4, &ind);
 			steering = buffer_get_float32(data, 1e6, &ind);
+			debugvalue=steering;
 			utils_truncate_number(&steering, -1.0, 1.0);
 
 			//TODO: Could be an issue without speed sensor 
 			// steering *= autopilot_get_steering_scale();
 
 			autopilot_set_active(false);
-
-			switch (mode) {
-			case RC_MODE_CURRENT:
-				if (!main_config.vehicle.disable_motor) {
-					#if IS_ALL_ELECTRIC
-						if (abs(throttle)>0.1)
-						{
-							commands_printf("Driving");
-						}
-						float okdirections=sign(angle)==-sign(steering);
-						float nottooextreme=fabs(angle)<25.0;
-						comm_can_lock_vesc();
-						comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
-						bldc_interface_set_current(throttle);
-						comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
-						bldc_interface_set_current(throttle);
-//						if ((angle>-30) && (angle<30)) && (angle<30))
-
-//						if ( (iDebug==10) && ((okdirections) || (nottooextreme)))
-//						{
-							comm_can_set_vesc_id(ELECTROHYDRAULICBAR_VESC_ID);
-							bldc_interface_set_duty_cycle(steering*VOLTAGEFRACTION);
-//						}
-						comm_can_unlock_vesc();
-					#endif
-
-					#if HAS_DIFF_STEERING
-						comm_can_lock_vesc();
-						comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
-						bldc_interface_set_current(throttle + throttle * steering);
-						comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
-						bldc_interface_set_current(throttle - throttle * steering);
-						comm_can_unlock_vesc();
-					#else
-						#if HAS_HYDRAULIC_DRIVE
-							//KAN VARA HÄR
-							hydraulic_set_speed(throttle / 10);
-						#endif
-					#endif
+			debugvalue=mode;
+			/*if (iDebug==41)
+			{
+				iCounterCommands++;
+				if (iCounterCommands == 50)
+				{
+					commands_printf("Mode: %i",RC_MODE_CURRENT);
+					commands_printf("Throttle: %f",throttle);
+					commands_printf("Steering: %f",steering);
+					iCounterCommands=0;
 				}
-				break;
-
-			case RC_MODE_DUTY:
-				// Left stick up/down Movement
+			}*/
+			motor_set_mode(mode);
+			if (!main_config.vehicle.disable_motor) {
 				utils_truncate_number(&throttle, -1.0, 1.0);
-				if (!main_config.vehicle.disable_motor) {
-					#if HAS_DIFF_STEERING
-						comm_can_lock_vesc();
-						comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
-						bldc_interface_set_duty_cycle(throttle + throttle * steering);
-//						comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
-//						bldc_interface_set_duty_cycle(throttle - throttle * steering);
-						comm_can_unlock_vesc();
-					#else
-						#if HAS_HYDRAULIC_DRIVE
-						//					hydraulic_set_speed(throttle * 10);
-							#ifdef IS_MACTRAC
-								hydraulic_set_throttle_raw(throttle);
-							#else
-								hydraulic_set_throttle_raw(throttle / 0.15);
-							#endif
-						#else
-							comm_can_lock_vesc();
-							comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
-							bldc_interface_set_duty_cycle(throttle);
-							comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
-							bldc_interface_set_duty_cycle(throttle);
-//							if ((io_board_as5047_angle>-30) && (io_board_as5047_angle<30))
-//							if (1==2)
-//							{
-							comm_can_set_vesc_id(ELECTROHYDRAULICBAR_VESC_ID);
-							bldc_interface_set_duty_cycle(steering*VOLTAGEFRACTION);
-//							}
-							comm_can_unlock_vesc();
-
-						#endif
-					#endif
-				}
-				break;
+				motor_set_throttle_and_steering(throttle,steering,frontangle);
+			};
+			break;
 
 			case RC_MODE_PID: // In m/s
 				#if HAS_DIFF_STEERING
@@ -1037,41 +976,9 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 						autopilot_set_turn_rad(1.0 / steering);
 					}
 				#endif
-				autopilot_set_motor_speed(throttle);
+				motor_set_speed(throttle);
 				break;
 
-			case RC_MODE_CURRENT_BRAKE:
-				if (!main_config.vehicle.disable_motor) {
-					#if HAS_DIFF_STEERING
-						comm_can_lock_vesc();
-						comm_can_set_vesc_id(ID_ALL);
-						bldc_interface_set_current_brake(throttle);
-						comm_can_unlock_vesc();
-					#else
-						#if HAS_HYDRAULIC_DRIVE
-							hydraulic_set_speed(0.0);
-						#else
-							comm_can_set_vesc_id(VESC_ID);
-							bldc_interface_set_current_brake(throttle);
-						#endif
-					#endif
-				}
-				break;
-
-			default:
-				break;
-			}
-
-			#if !HAS_DIFF_STEERING
-
-			steering = utils_map(steering, -1.0, 1.0,
-				main_config.vehicle.steering_center + (main_config.vehicle.steering_range / 2.0),
-				main_config.vehicle.steering_center - (main_config.vehicle.steering_range / 2.0));
-			
-			//Steering between 0-1
-			servo_simple_set_pos_ramp(steering, true);
-				
-			#endif
 		} break;
 
 		case CMD_SET_SERVO_DIRECT: {

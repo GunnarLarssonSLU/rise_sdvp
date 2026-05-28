@@ -22,9 +22,15 @@
 #include "pwm_esc.h"
 #include "utils.h"
 #include "comm_can.h"
+#include "watchdog.h"
 #include <math.h>
+#ifdef SERVO_READ
+#define READING_TIMEOUT 1000
+#endif
 
 #include "pos.h"
+
+//thread_t *hydro_thread = NULL;
 
 // Settings
 #ifdef IS_MACTRAC
@@ -36,6 +42,9 @@
 #define SERVO_RIGHT				2
 #define SPEED_M_S				0.6
 #endif
+
+//float time_last =0;
+
 
 #define TIMEOUT_SECONDS			2.0
 #define TIMEOUT_SECONDS_MOVE	10.0
@@ -55,6 +64,10 @@ extern int iDebug;
 
 #ifdef SERVO_READ
 extern ADC_CNT_t io_board_adc0_cnt;
+//extern time_t last_reading_time = 0;
+//static const time_t READING_TIMEOUT = 1.0; // Timeout in seconds
+
+
 #endif
 
 
@@ -118,9 +131,10 @@ float hydraulic_get_distance(bool reset) {
  */
 void hydraulic_set_speed(float speed) {
     // Exit if no heartbeat
-    //if (system_state != SYSTEM_STATE_OPERATIONAL) {
-	//    return;
-	//}
+    if (system_state != SYSTEM_STATE_OPERATIONAL) {
+        // Force speed to 0 if watchdog indicates unsafe state
+        speed = 0.0f;
+    }
 
 	m_timeout_cnt = 0.0;
 
@@ -207,6 +221,10 @@ static THD_FUNCTION(hydro_thread, arg) {
 
 //   chEvtRegister(&emergency_event, &el, EMERGENCY_STOP_EVENT);
 
+#ifdef SERVO_READ
+//    const systime_t READING_TIMEOUT = TIME_MS2I(1000);// Timeout in milli seconds
+#endif
+
     while (!chThdShouldTerminateX()) {
 /*
 		events = chEvtWaitAnyTimeout(EMERGENCY_STOP_EVENT, MS2ST(100));
@@ -230,7 +248,7 @@ static THD_FUNCTION(hydro_thread, arg) {
 			pwm_esc_set(SERVO_RIGHT, 0.5);
 			m_throttle_set = 0.0;
 #ifndef WHEEL_SENSOR
-			m_speed_now = 1.0;
+			m_speed_now = 0.0;
 #endif
 		}
 
@@ -256,6 +274,11 @@ static THD_FUNCTION(hydro_thread, arg) {
 #else
 		cnt = *comm_can_io_board_adc0_cnt();
 #endif
+
+ /*       debugvalue=1.0;
+        debugvalue2=1.0;
+        debugvalue3=1.0;*/
+
 
 
 #ifdef IS_MACTRAC

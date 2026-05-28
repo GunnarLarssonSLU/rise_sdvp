@@ -289,6 +289,7 @@ typedef struct {
     float degreeinterval;
     float sensorcentre;
     float deadband;
+    float heartbeat_maxtime;
 } MAIN_CONFIG_VEHICLE;
 
 

@@ -38,20 +38,28 @@
 // IO BOARD
 // #define IO_BOARD
 
-#define IS_MACTRAC_SLF
-
-#ifdef IS_MACTRAC_EIP
 #define IS_MACTRAC
-#define ADDIO
-#define CAN_ADDIO					1
-#define WHEEL_SENSOR                1
+//#define DRANGEN_NY
+#define COMMUNICATION_TIMEOUT_MSEC 6000
+
+
+#ifdef DRANGEN_NY
+#define IS_DRANGEN
+#define DIFF_THROTTLE_VESC_LEFT 94
+#define DIFF_THROTTLE_VESC_RIGHT 125
+#define DIFF_STEERING 8
+#define LOADING 9
+
 #endif
 
-#ifdef IS_MACTRAC_SLF
-#define IS_MACTRAC
-#define IO_BOARD
+#ifdef DRANGEN_GAMMAL
+#define IS_DRANGEN
+#define DIFF_THROTTLE_VESC_LEFT 28
+#define DIFF_THROTTLE_VESC_RIGHT 36
+#define DIFF_STEERING 16
 #endif
 
+//#define IS_MACTRAC
 #define UPDATE20250812
 
 // MacTrac
@@ -60,6 +68,7 @@
 #ifdef IS_MACTRAC
 #define HAS_HYDRAULIC_DRIVE			1
 #define HAS_PWM_ESC                 1
+#define WHEEL_SENSOR                1
 #define SERVO_VESC_S1				178.0 // Left
 #define SERVO_VESC_S2				240.0 // Right
 #define USE_ADCONV_FOR_VIN
@@ -69,6 +78,8 @@
 #define SERVO_VESC_INVERTED			0
 //#define SERVO_VESC_DEADBAND_COMP    0.2
 #define IS_F9_BOARD					1
+#define ADDIO
+#define CAN_ADDIO					1
 #define SERVO_WRITE
 #define SERVO_READ
 #define MAX_RATIO                 2.0
@@ -81,9 +92,6 @@
 
 #ifdef IS_DRANGEN
 //#define HAS_HYDRAULIC_DRIVE			1
-#define DIFF_THROTTLE_VESC_LEFT 28
-#define DIFF_THROTTLE_VESC_RIGHT 36
-#define ELECTROHYDRAULICBAR_VESC_ID 16
 #define SERVO_VESC_ID				0
 #define VESC_ID				0
 #define VOLTAGEFRACTION 1
@@ -101,6 +109,9 @@
 #define SERVO_READ                  1
 #define WHEEL_SENSOR                1
 #define HAS_PWM_ESC                 1
+#define STEERINGANGLE_MAX           25.0
+//#define HAS_HYDRAULIC_DRIVE			1
+//#define TACHOATCARD
 #define MAX_RATIO                 999
 #define MIN_RATIO                 0.001
 #define MAX_RATIO_LOWSPEED        999
@@ -239,6 +250,9 @@
 #define VIN_R2						1500.0
 #endif
 
+#ifndef M_PI
+#define M_PI						D(3.14159265358979323846)
+#endif
 // Global variables
 extern MAIN_CONFIG main_config;
 extern int main_id;

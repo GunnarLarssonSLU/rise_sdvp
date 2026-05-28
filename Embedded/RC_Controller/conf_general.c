@@ -137,7 +137,6 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 
 	// Default vehicle settings
 	conf->vehicle.yaw_use_odometry = false;
-//	conf->vehicle.yaw_use_odometry = true;
 	conf->vehicle.yaw_imu_gain = 0.5;
 	conf->vehicle.disable_motor = false;
 	conf->vehicle.simulate_motor = false;
@@ -161,10 +160,8 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 	conf->vehicle.sensorinterval = 160;
 	conf->vehicle.degreeinterval = 68;
 	conf->vehicle.sensorcentre = 580;
-	conf->vehicle.sensorinterval = 0.745;
-	conf->vehicle.degreeinterval = 65.22;
-	conf->vehicle.sensorcentre = 2.475;
 	conf->vehicle.deadband = 0.05;
+	conf->vehicle.heartbeat_maxtime = 3.0;
 
 	/*
 	// Custom parameters based on ID

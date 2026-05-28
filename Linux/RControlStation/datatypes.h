@@ -230,6 +230,8 @@ typedef struct {
     float sensorinterval;
     float degreeinterval;
     float deadband;
+    float heartbeat_maxtime;
+
 } MAIN_CONFIG_CAR;
 
 typedef struct {

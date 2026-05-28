@@ -1193,19 +1193,11 @@ void MainWindow::timerSlot()
     // Joystick connected
 #ifdef HAS_JOYSTICK
     static bool jsWasconn = false;
-    bool jsCurrentlyConnected = JSconnected();
-    
-    if (jsCurrentlyConnected != jsWasconn) {
-        jsWasconn = jsCurrentlyConnected;
+    if (JSconnected() != jsWasconn) {
+        jsWasconn = JSconnected();
 
         if (jsWasconn) {
             ui->jsConnectedLabel->setText("Connected");
-            // Reconnect joystick if it was disconnected and now reconnected
-            #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            if (mController == nullptr || !SDL_GameControllerGetAttached(mController)) {
-                connectJoystick();
-            }
-            #endif
         } else {
             ui->jsConnectedLabel->setText("Not connected");
             // STOP STOP STOP
@@ -1231,10 +1223,8 @@ void MainWindow::timerSlot()
 bool MainWindow::JSconnected()
 {
     #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        if (mController == nullptr) {
-            return false;
-        }
-        return SDL_GameControllerGetAttached(mController) == SDL_TRUE;
+        int joystickIndex=0;
+        return SDL_JoystickGetAttached(SDL_JoystickOpen(joystickIndex)) == SDL_TRUE;
     #else
     return mJoystick->isConnected();
     #endif
@@ -1985,7 +1975,9 @@ void MainWindow::onGeneratePathButtonClicked()
 
     double turnDiameterX_m = ui->turnRadiusMDdLineEdit->text().toDouble();
     int turnSteps = ui->turnStepsLineEdit->text().toInt();
-
+    bool isFieldTrial = ui->fieldtrialCheckBox->isChecked();
+    int iTask = ui->agriculttaskBox->currentIndex();
+    bool pieces=ui->piecesCheckBox->isChecked();
     if (ui->mapLiveWidget->getPathNum()>0)
     {
         MapRoute activeRoute=ui->mapLiveWidget->getCurrentPath();
@@ -2000,7 +1992,7 @@ void MainWindow::onGeneratePathButtonClicked()
             p2=activeRoute[1];
         }
 
-        RouteGenerator rg(fieldLength_m,fieldWidth_m,implementLength_m,implementWidth_m,plots_DrivingDirection,plots_NonDrivingDirection,distancebetweenplots_drivingdirection_m,distancebetweenplots_nondrivingdirection_m,p1,p2,speed_m__s,turnDiameterX_m, turnSteps,ui->flipSideCheckBox->isChecked());
+        RouteGenerator rg(fieldLength_m,fieldWidth_m,implementLength_m,implementWidth_m,plots_DrivingDirection,plots_NonDrivingDirection,distancebetweenplots_drivingdirection_m,distancebetweenplots_nondrivingdirection_m,p1,p2,speed_m__s,turnDiameterX_m, turnSteps,ui->flipSideCheckBox->isChecked(),isFieldTrial,iTask,pieces);
         rg.generateXmlFile();
 
         QString filePath="output.xml";
@@ -3990,36 +3982,7 @@ void MainWindow::on_boundsFillPushButton_clicked()
     ui->mapRouteBox->setValue(r);
     ui->mapLiveWidget->repaint();
 }
-/*
-void MainWindow::on_boundsFillPushButton_clicked()
-{
-    QList<LocPoint> bounds = ui->mapWidget->getRoute(ui->boundsRouteSpinBox->value());
 
-    double spacing = ui->boundsFillSpacingSpinBox->value();
-    if (spacing < 0.5) return;
-
-    QList<LocPoint> route;
-    if (ui->generateFrameCheckBox->isChecked())
-        route = RouteMagic::fillConvexPolygonWithFramedZigZag(bounds, spacing, ui->boundsFillKeepTurnsInBoundsCheckBox->isChecked(), ui->boundsFillSpeedSpinBox->value()/3.6,
-                                                              ui->boundsFillSpeedInTurnsSpinBox->value()/3.6, ui->stepsForTurningSpinBox->value(), ui->visitEverySpinBox->value(),
-                                                              ui->lowerToolsCheckBox->isChecked() ? ATTR_HYDRAULIC_FRONT_DOWN : 0, ui->raiseToolsCheckBox->isChecked() ? ATTR_HYDRAULIC_FRONT_UP : 0,
-                                                              ui->lowerToolsDistanceSpinBox->value()*2, ui->raiseToolsDistanceSpinBox->value()*2);
-                                                              // attribute changes at half distance
-    else
-        route = RouteMagic::fillConvexPolygonWithZigZag(bounds, spacing, ui->boundsFillKeepTurnsInBoundsCheckBox->isChecked(), ui->boundsFillSpeedSpinBox->value()/3.6,
-                                                        ui->boundsFillSpeedInTurnsSpinBox->value()/3.6, ui->stepsForTurningSpinBox->value(), ui->visitEverySpinBox->value(),
-                                                        ui->lowerToolsCheckBox->isChecked() ? ATTR_HYDRAULIC_FRONT_DOWN : 0, ui->raiseToolsCheckBox->isChecked() ? ATTR_HYDRAULIC_FRONT_UP : 0,
-                                                        ui->lowerToolsDistanceSpinBox->value()*2, ui->raiseToolsDistanceSpinBox->value()*2);
-
-    ui->mapWidget->addRoute(route);
-    int r = ui->mapWidget->getRoutes().size()-1;
-    ui->mapWidget->setRouteNow(r);
-    ui->mapRouteBox->setValue(r);
-    ui->mapWidget->repaint();
-
-}
-
-*/
 void MainWindow::on_lowerToolsCheckBox_stateChanged(int arg1)
 {
     ui->lowerToolsDistanceSpinBox->setEnabled(arg1 != 0);

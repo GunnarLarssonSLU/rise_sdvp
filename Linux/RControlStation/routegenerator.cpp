@@ -1,8 +1,43 @@
 #include <QDebug>
 #include <QMessageBox>
+#include <array>
 #include "routegenerator.h"
 
-RouteGenerator::RouteGenerator(double c_plotLength_m, double c_plotWidth_m, double c_implementLength_m, double c_implementWidth_m,int plots_DrivingDirection, int plots_NonDrivingDirection ,double distancebetweenplots_drivingdirection_m ,double distancebetweenplots_nondrivingdirection_m, LocPoint p1,LocPoint p2,double speed_km__h,double c_turnDiameterX, int c_turnSteps, bool c_flipSide)
+//int VE_random[40]={3,8,1,3,8,1,2,9,7,8,10,2,10,2,2,6,7,1,8,6,7,4,10,4,3,1,9,5,7,4,5,9,4,10,5,9,3,6,6,5};
+
+
+int RouteGenerator::checkFieldTrial(int x,int y,int task)
+{
+    if ((x<0) || (x>7) || (y<0) || (y> 4))
+    {
+        return 0;
+    };
+
+    int fieldtrial_random[5][8]={
+                                   {3,8,1,3,8,1,2,9},
+                                   {6,5,4,7,5,6,2,4},
+                                   {6,2,2,10,2,10,8,7},
+                                   {4,10,5,9,3,6,6,5},
+                                   {7,1,8,6,7,4,10,4}};
+
+    std::array<int, 10> sowing = {1,1,1,1,0,0,0,0,0,1};
+    std::array<int, 10> cutting_intense = {1,1,0,0,1,1,0,0,2,1};
+    std::array<int, 10> kant = {1,0,1,0,1,0,1,0,2,1};
+    std::array<int, 10> plan;
+
+    switch (task)
+    {
+    case 0: plan = sowing; qDebug() << "Sowing!" ; break;
+    case 1: plan = cutting_intense; break;
+    case 2: plan = kant; break;
+    }
+
+    int no=fieldtrial_random[y][x];
+    qDebug() << "x: " << x << ", y: " << y << ", act: " << plan[no];
+    return plan[no];
+}
+
+RouteGenerator::RouteGenerator(double c_plotLength_m, double c_plotWidth_m, double c_implementLength_m, double c_implementWidth_m,int plots_DrivingDirection, int plots_NonDrivingDirection ,double distancebetweenplots_drivingdirection_m ,double distancebetweenplots_nondrivingdirection_m, LocPoint p1,LocPoint p2,double speed_km__h,double c_turnDiameterX, int c_turnSteps, bool c_flipSide,bool c_isFieldTrial,int c_iTask,bool c_pieces)
 {
     // Initialize with example values
     implementLength_m = c_implementLength_m;
@@ -25,6 +60,9 @@ RouteGenerator::RouteGenerator(double c_plotLength_m, double c_plotWidth_m, doub
     turnDiameterX=c_turnDiameterX;
     turnSteps=c_turnSteps;
     valid=false; // valid set by generateCoordinates() if the path is valid
+    isFieldTrial=c_isFieldTrial;
+    iTask=c_iTask;
+    pieces=c_pieces;
 //    /*
     qDebug() << "startX: " << startX;
     qDebug() << "startY: " << startY;
@@ -82,31 +120,36 @@ void RouteGenerator::generateXmlFile() {
 }
 
 void RouteGenerator::generateCoordinates() {
-    const int up = 8;
-    const int down = 16;
+    const int front_up = 8;
+    const int front_down = 16;
+    const int rear_up = 24;
+    const int rear_down = 32;
 
-    PlotSegment beforePlot = { distanceBetweenPlotsX - 2 * implementLength_m, up };
-    PlotSegment startPlot = { implementLength_m, down };
-    PlotSegment endPlot = { plotSizeX, down };
-    PlotSegment afterPlot = { implementLength_m, up };
+    /*    PlotSegment beforePlot = { distanceBetweenPlotsX - 2 * implementLength_m, rear_up };
+    PlotSegment startPlot = { implementLength_m, rear_down };
+    PlotSegment endPlot = { plotSizeX, rear_down };
+    PlotSegment afterPlot = { implementLength_m, rear_up };*/
+
+    PlotSegment beforePlot = { distanceBetweenPlotsX - 2 * implementLength_m, rear_up };
+    PlotSegment startPlot = { implementLength_m, rear_down };
+    PlotSegment endPlot = { plotSizeX, rear_down };
+    PlotSegment afterPlot = { implementLength_m, rear_up };
+
 
     std::vector<double> arrayDistance = { beforePlot.distance, startPlot.distance, endPlot.distance, afterPlot.distance   };
     std::vector<int> arrayAttribute = { beforePlot.attribute, startPlot.attribute, endPlot.attribute, afterPlot.attribute };
     int action = 2;
     int plotsDoneX = 0, plotsDoneY = 0;
+    int oldPlotsDoneX = 0, oldPlatsDoneY =0;
     int directionUD = -1, directionLR = -1;
     bool inHeadRow = true;
     double currentTurnRadiusY = plotSizeY + distanceBetweenPlotsY;
-    qDebug() << "currentTurnRadiusY: " << currentTurnRadiusY;
-    qDebug() << "plotSizeY: " << plotSizeY;
-    qDebug() << "distanceBetweenPlotsY: " << distanceBetweenPlotsY;
     int neededRepeats = plotSizeY / implementWidth_m;
-    qDebug() << "neededRepeats*implementWidth_m: " << neededRepeats*implementWidth_m;
-    qDebug() << "neededRepeats: " << neededRepeats;
     if (neededRepeats*implementWidth_m < plotSizeY)     // if the plot size and implements to not match return (i.e. there is no valid path)
     {
         return;
     }
+    //neededRepeats = 2; // Temporary for debuging!!
     double x = implementLength_m, y = implementWidth_m / 2;
     double oldx=2,oldy=y;
     double lastXInHeader = 0, lastYInHeader = 0;
@@ -124,8 +167,6 @@ void RouteGenerator::generateCoordinates() {
     int counter=0;
     qDebug() << "neededRepeats: " << neededRepeats;
     while (repeats < neededRepeats) {
-//        qDebug() << "inHeadRow: " << inHeadRow;
-//        qDebug() << "action: " << action;
         if (inHeadRow) {
             x += arrayDistance[action-1] * directionLR;           // Move forward a set distance based on the current plotsegment
             attribute = arrayAttribute[action-1];                 // Set the right attribute based on the current plotsegment
@@ -161,7 +202,7 @@ void RouteGenerator::generateCoordinates() {
             if (action == 0) action = 4;
         } else {
             double angle = M_PI * (1.5 - turnCounter / static_cast<double>(turnSteps));
-            attribute = up;
+            attribute = front_up;
             dx = -(turnDiameterX * cos(angle)) * directionLR;
             x = lastXInHeader + dx + implementLength_m  * directionLR;
             dy = currentTurnRadiusY * directionUD * (1 + sin(angle)) / 2;
@@ -170,7 +211,7 @@ void RouteGenerator::generateCoordinates() {
             y = lastYInHeader + dy;
             if (turnCounter == turnSteps) {
                 inHeadRow = true;
-                attribute = down;
+                attribute = front_down;
                 x=x-implementLength_m * directionLR; // to balance the expression a few lines above
                 directionLR = -directionLR;
                 action = 3;
@@ -193,9 +234,18 @@ void RouteGenerator::generateCoordinates() {
         qDebug() << "x: " << x+ddx;
         qDebug() << "y: " << y+ddy;
         */
-        xs.push_back(x+ddx);
-        ys.push_back(y+ddy);
-        attributes.push_back(attribute);
+        int plotsDoneX_pos=(directionLR == -1 ) ? plotsDoneX : 8-plotsDoneX;
+        qDebug() << "plotsDoneX_pos: " << plotsDoneX_pos;
+        qDebug() << "yorder: " << yorder;
+        qDebug() << "directionUD: " << directionUD;
+        qDebug() << "directionLR: " << directionLR;
+
+        if ((!isFieldTrial) || (!inHeadRow) || checkFieldTrial(plotsDoneX_pos-1,yorder,iTask))
+        {
+            xs.push_back(x+ddx);
+            ys.push_back(y+ddy);
+            attributes.push_back(attribute);
+        }
     }
 
     if (flipSide)
