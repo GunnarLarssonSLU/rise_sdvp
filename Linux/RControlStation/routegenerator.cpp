@@ -92,21 +92,26 @@ void RouteGenerator::generateXmlFile() {
             xmlWriter.setAutoFormatting(true);
             xmlWriter.writeStartDocument();
             xmlWriter.writeStartElement("routes");
-            xmlWriter.writeStartElement("route");
 
-            double t = 0;
-            for (size_t i = 0; i < xs.size(); ++i) {
-                xmlWriter.writeStartElement("point");
-                xmlWriter.writeTextElement("x", QString::number(xs[i]));
-                xmlWriter.writeTextElement("y", QString::number(ys[i]));
-                xmlWriter.writeTextElement("attributes", QString::number(attributes[i]));
-                xmlWriter.writeTextElement("speed", QString::number(speed));
-                xmlWriter.writeTextElement("time", QString::number(t));
-                t += 2000;
-                xmlWriter.writeEndElement(); // point
+            // Loop through all routes
+            for (size_t routeIdx = 0; routeIdx < all_xs.size(); ++routeIdx) {
+                xmlWriter.writeStartElement("route");
+
+                double t = 0;
+                for (size_t i = 0; i < all_xs[routeIdx].size(); ++i) {
+                    xmlWriter.writeStartElement("point");
+                    xmlWriter.writeTextElement("x", QString::number(all_xs[routeIdx][i]));
+                    xmlWriter.writeTextElement("y", QString::number(all_ys[routeIdx][i]));
+                    xmlWriter.writeTextElement("attributes", QString::number(all_attributes[routeIdx][i]));
+                    xmlWriter.writeTextElement("speed", QString::number(speed));
+                    xmlWriter.writeTextElement("time", QString::number(t));
+                    t += 2000;
+                    xmlWriter.writeEndElement(); // point
+                }
+
+                xmlWriter.writeEndElement(); // route
             }
 
-            xmlWriter.writeEndElement(); // route
             xmlWriter.writeEndElement(); // routes
             xmlWriter.writeEndDocument();
             file.close();
@@ -166,6 +171,11 @@ void RouteGenerator::generateCoordinates() {
     double ddx=0,ddy=0;
     int counter=0;
     qDebug() << "neededRepeats: " << neededRepeats;
+    
+    // Store coordinates for each repeat
+    std::vector<double> xs, ys;
+    std::vector<int> attributes;
+    
     while (repeats < neededRepeats) {
         if (inHeadRow) {
             x += arrayDistance[action-1] * directionLR;           // Move forward a set distance based on the current plotsegment
@@ -268,6 +278,12 @@ void RouteGenerator::generateCoordinates() {
         xs[i] = matrix[i].first + relPosX + startX;
         ys[i] = matrix[i].second + relPosY + startY;
     }
+    
+    // Store this route
+    all_xs.push_back(xs);
+    all_ys.push_back(ys);
+    all_attributes.push_back(attributes);
+    
     valid=true;
 }
 

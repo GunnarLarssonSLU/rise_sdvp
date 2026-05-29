@@ -23,8 +23,8 @@ private:
     int iTask;
     std::string xmlFileName;
 
-    std::vector<double> xs, ys;
-    std::vector<int> attributes;
+    std::vector<std::vector<double>> all_xs, all_ys;
+    std::vector<std::vector<int>> all_attributes;
 
     void generateCoordinates();
     void rotateGeometry2(std::vector<std::pair<double, double>>& matrix, double angle, double aroundx, double aroundy);
