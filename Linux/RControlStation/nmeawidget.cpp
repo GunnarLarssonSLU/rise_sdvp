@@ -40,6 +40,7 @@ NmeaWidget::NmeaWidget(QWidget *parent) :
     // Format as a valid filename (e.g., "2025-08-22_14-30-45")
     QString filename = now.toString("yyyy-MM-dd_hh-mm-ss") + ".txt";
     ui->nmeaLogEdit->setText(filename);
+    on_nmeaLogActiveBox_toggled(true);
 }
 
 NmeaWidget::~NmeaWidget()

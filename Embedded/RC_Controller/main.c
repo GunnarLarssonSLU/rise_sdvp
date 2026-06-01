@@ -102,8 +102,8 @@ int main(void) {
 	pos_uwb_init();
 	comm_can_init();
 	autopilot_init();
-	watchdog_init();
-	motor_control_init();
+//	watchdog_init();
+//	motor_control_init();
 	timeout_init();
 	log_init();
 	motor_sim_init();

@@ -47,8 +47,8 @@
 #define IS_DRANGEN
 #define DIFF_THROTTLE_VESC_LEFT 94
 #define DIFF_THROTTLE_VESC_RIGHT 125
-#define DIFF_STEERING 8
-#define LOADING 9
+#define DIFF_STEERING 9
+#define LOADING 8
 
 #endif
 

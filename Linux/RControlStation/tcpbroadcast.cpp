@@ -76,6 +76,7 @@ void TcpBroadcast::broadcastData(QByteArray data)
 
 bool TcpBroadcast::logToFile(QString file)
 {
+    qDebug() << "Start logging to: " << file;
     if (mLog.isOpen()) {
         mLog.close();
     }
