@@ -91,10 +91,11 @@ int iCounterCommands=0;
 
 //extern thread_t *hydro_thread;
 
+/*
 float sign(float input)
 	{
 	return input/fabs(input);
-	};
+	}; */
 
 void commands_init(void) {
 	m_send_func = 0;
@@ -205,9 +206,9 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 		// ==================== Vehicle commands ==================== //
 
 
-		case CMD_HEARTBEAT:
+/*		case CMD_HEARTBEAT:
             chEvtBroadcast(&heartbeat_event); // Signal heartbeat to watchdog
-	        break;
+	        break;*/
 		case CMD_ARDUINO_STATUS   :
 			if (data[0])
 			{

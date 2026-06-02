@@ -406,9 +406,9 @@ void autopilot_set_motor_speed(float speed) {
 /*#if IS_DRANGEN
 		// TODO
 		comm_can_lock_vesc();
-		comm_can_set_vesc_id(DIFF_STEERING_VESC_LEFT);
+		comm_can_set_vesc_id(VESC_STEERING_VESC_LEFT);
 		motor_set_rpm((int)speed);
-		comm_can_set_vesc_id(DIFF_STEERING_VESC_RIGHT);
+		comm_can_set_vesc_id(VESC_STEERING_VESC_RIGHT);
 		motor_set_rpm((int)rpm_r);
 		comm_can_unlock_vesc();
 #endif */

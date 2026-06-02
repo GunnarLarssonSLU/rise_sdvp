@@ -169,8 +169,7 @@ CSRC = $(STARTUPSRC) \
        timer.c \
        wheelspeed.c \
        motor_control.c \
-       steering_control.c \
-       watchdog.c
+       steering_control.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.

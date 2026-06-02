@@ -52,7 +52,7 @@
 #include "hydraulic.h"
 #include "timer.h"
 #include "wheelspeed.h"
-#include "watchdog.h"
+// #include "watchdog.h"
 
 //event_source_t emergency_event;
 
@@ -103,7 +103,8 @@ int main(void) {
 	comm_can_init();
 	autopilot_init();
 //	watchdog_init();
-//	motor_control_init();
+
+	motor_control_init();
 	timeout_init();
 	log_init();
 	motor_sim_init();

@@ -1361,10 +1361,10 @@ static void ubx_rx_rawx(ubx_rxm_rawx *rawx) {
 #if MAIN_MODE == MAIN_MODE_VEHICLE
 static void mc_values_received(mc_values *val) {
 	#if HAS_DIFF_STEERING
-    if (val->vesc_id == DIFF_STEERING_VESC_RIGHT || !m_vesc_left_now) {
-        m_mc_val_right = *val;
-        return;
-    }
+		if (val->vesc_id == DIFF_STEERING_VESC_RIGHT || !m_vesc_left_now) {
+			m_mc_val_right = *val;
+			return;
+		}
 	#endif
 
     m_mc_val = *val;

@@ -38,25 +38,25 @@
 // IO BOARD
 // #define IO_BOARD
 
-#define IS_MACTRAC
+#define DRANGEN_NY
 //#define DRANGEN_NY
 #define COMMUNICATION_TIMEOUT_MSEC 6000
 
 
 #ifdef DRANGEN_NY
 #define IS_DRANGEN
-#define DIFF_THROTTLE_VESC_LEFT 94
-#define DIFF_THROTTLE_VESC_RIGHT 125
-#define DIFF_STEERING 9
+#define VESC_LEFT 94
+#define VESC_RIGHT 125
+#define VESC_STEERING 9
 #define LOADING 8
-
+#define WHEEL_SENSOR                1
 #endif
 
 #ifdef DRANGEN_GAMMAL
 #define IS_DRANGEN
-#define DIFF_THROTTLE_VESC_LEFT 28
-#define DIFF_THROTTLE_VESC_RIGHT 36
-#define DIFF_STEERING 16
+#define VESC_LEFT 28
+#define VESC_RIGHT 36
+#define VESC_STEERING 16
 #endif
 
 //#define IS_MACTRAC
@@ -124,19 +124,11 @@
 #endif
 
 // Differential steering
-#ifndef HAS_DIFF_STEERING
-#define HAS_DIFF_STEERING			0
+#ifndef VESC_LEFT
+#define VESC_LEFT		0
 #endif
-#ifndef DIFF_STEERING_VESC_LEFT
-#define DIFF_STEERING_VESC_LEFT		0
-#endif
-#ifndef DIFF_STEERING_VESC_RIGHT
-#define DIFF_STEERING_VESC_RIGHT	1
-#endif
-
-// Hydraulic drive
-#ifndef HAS_HYDRAULIC_DRIVE
-#define HAS_HYDRAULIC_DRIVE			0
+#ifndef VESC_RIGHT
+#define VESC_RIGHT	1
 #endif
 
 // VESC for steering

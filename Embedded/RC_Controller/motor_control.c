@@ -22,7 +22,7 @@
 #include "conf_general.h"
 #include "autopilot.h"
 #include "steering_control.h"
-#include "watchdog.h"
+//#include "watchdog.h"
 
 // Current motor direction: +1 (forward) or -1 (backward)
 static volatile int current_motor_direction = 1;
@@ -57,11 +57,13 @@ void motor_control_init(void) {
 // Common motor control functions
 
 void motor_set_speed(float speed) {
+	/*
     // Check watchdog state - only allow motor operation if system is operational
     if (system_state != SYSTEM_STATE_OPERATIONAL) {
         // Force speed to 0 if watchdog indicates unsafe state
         speed = 0.0f;
     }
+    */
     
     if (speed > 0.01f) {
         current_motor_direction = 1;
@@ -83,20 +85,20 @@ void motor_set_speed(float speed) {
 		hydraulic_set_speed(speed);
 #else
 	#if HAS_DIFF_STEERING
-			float rpm_r ,rpm_l;
-			void motor_diff_rpms(float &rpm_r, float &rpm_l, float speed, float m_turn_rad_now);
+			float rpm_r=0.0 ,rpm_l=0.0;
+			void motor_diff_rpms(*rpm_r, *rpm_l, speed, m_turn_rad_now);
 			comm_can_lock_vesc();
-			comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
+			comm_can_set_vesc_id(VESC_LEFT);
 			bldc_interface_set_rpm((int)rpm_l);
-			comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
-			bldc_interface_rpm((int)rpm_r);
+			comm_can_set_vesc_id(VESC_RIGHT);
+			bldc_interface_set_rpm((int)rpm_r);
 			comm_can_unlock_vesc();
 	#else
 		float rpm = motor_rpm(speed);
 		comm_can_lock_vesc();
-		comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
+		comm_can_set_vesc_id(VESC_LEFT);
 		bldc_interface_set_rpm((int)(rpm));
-		comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
+		comm_can_set_vesc_id(VESC_RIGHT);
 		bldc_interface_set_rpm((int)(rpm));
 		comm_can_unlock_vesc();
 	#endif
@@ -141,22 +143,22 @@ void motor_set_throttle_and_steering(float throttle,float steering,float frontan
 	#endif
 }
 
-#ifndef HAS_HYDRAULIC_DRIVE
+#if !HAS_HYDRAULIC_DRIVE
 
 void motor_diff_control(float throttle, float steering)
 {
 	comm_can_lock_vesc();
 	switch (mode) {
 		case RC_MODE_CURRENT:
-			comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
+			comm_can_set_vesc_id(VESC_LEFT);
 			bldc_interface_set_current(throttle + throttle * steering);
-			comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
+			comm_can_set_vesc_id(VESC_RIGHT);
 			bldc_interface_set_current(throttle - throttle * steering);
 			break;
 		case RC_MODE_DUTY:
-			comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
+			comm_can_set_vesc_id(VESC_LEFT);
 			bldc_interface_set_duty_cycle(throttle + throttle * steering);
-			comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
+			comm_can_set_vesc_id(VESC_RIGHT);
 			bldc_interface_set_duty_cycle(throttle - throttle * steering);
 			break;
 	}
@@ -180,32 +182,32 @@ void motor_steering_control(float throttle, float steering,float  frontangle)
 					iCounterMotor=0;
 				}
 			}
-			comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
+			comm_can_set_vesc_id(VESC_LEFT);
 			bldc_interface_set_current(throttle);
-			comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
+			comm_can_set_vesc_id(VESC_RIGHT);
 			bldc_interface_set_current(throttle);
 			break;
 		case RC_MODE_DUTY:
-			comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
+			comm_can_set_vesc_id(VESC_LEFT);
 			bldc_interface_set_duty_cycle(throttle);
-			comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
+			comm_can_set_vesc_id(VESC_RIGHT);
 			bldc_interface_set_duty_cycle(throttle);
 			break;
 	}
 	comm_can_unlock_vesc();
-	float okdirections=sign(frontangle)==-sign(steering);
+	float okdirections=SIGN(frontangle)==-SIGN(steering);
 	bool nottooextreme;
 	#ifdef STEERINGANGLE_MAX
 		nottooextreme=fabs(frontangle)<STEERINGANGLE_MAX;
-		else
+	#else
 		nottooextreme=true;
-		#endif
+	#endif
 
 if (nottooextreme || okdirections)
 	{
 #if HAS_DIFF_STEERING
 	comm_can_lock_vesc();
-	comm_can_set_vesc_id(DIFF_STEERING);
+	comm_can_set_vesc_id(VESC_STEERING);
 	bldc_interface_set_duty_cycle(steering*VOLTAGEFRACTION);
 	comm_can_unlock_vesc();
 #endif
@@ -264,11 +266,8 @@ void motor_set_steering_autopilot(float steering_angle, float circle_radius) {
                             + main_config.vehicle.steering_center;
             servo_simple_set_pos_ramp(servo_pos, true);
         #else
-            #ifdef DIFF_STEERING
+            #if HAS_DIFF_STEERING
                 // Use generic steering control with frontangle feedback
-                if (!m_steering_control_initialized) {
-                    motor_control_init();
-                }
 
                 // Set target and get control output
                 steering_control_set_target(steering_angle);
@@ -276,7 +275,7 @@ void motor_set_steering_autopilot(float steering_angle, float circle_radius) {
 
                 // Apply control output to steering motor
                 comm_can_lock_vesc();
-                comm_can_set_vesc_id(DIFF_STEERING);
+                comm_can_set_vesc_id(VESC_STEERING);
                 bldc_interface_set_duty_cycle(control_output * VOLTAGEFRACTION);
                 comm_can_unlock_vesc();
             #endif
@@ -292,18 +291,18 @@ void motor_set_speed_autopilot(float speed) {
             float rpm_r, rpm_l;
             motor_diff_rpms(&rpm_r, &rpm_l, speed, m_turn_rad_now);
             comm_can_lock_vesc();
-            comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
+            comm_can_set_vesc_id(VESC_LEFT);
             bldc_interface_set_rpm((int)rpm_l);
-            comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
+            comm_can_set_vesc_id(VESC_RIGHT);
             bldc_interface_set_rpm((int)rpm_r);
             comm_can_unlock_vesc();
         #else
-            #ifdef DIFF_THROTTLE_VESC_LEFT
+            #ifdef VESC_LEFT
                 float rpm = motor_rpm(speed);
                 comm_can_lock_vesc();
-                comm_can_set_vesc_id(DIFF_THROTTLE_VESC_LEFT);
+                comm_can_set_vesc_id(VESC_LEFT);
                 bldc_interface_set_rpm((int)(rpm));
-                comm_can_set_vesc_id(DIFF_THROTTLE_VESC_RIGHT);
+                comm_can_set_vesc_id(VESC_RIGHT);
                 bldc_interface_set_rpm((int)(rpm));
                 comm_can_unlock_vesc();
             #endif
@@ -319,9 +318,9 @@ void motor_handle_route_end(void) {
         #if HAS_DIFF_STEERING
             // Differential steering vehicles don't need steering centering
         #else
-            #ifdef DIFF_STEERING
+            #ifdef VESC_STEERING
                 comm_can_lock_vesc();
-                comm_can_set_vesc_id(DIFF_STEERING);
+                comm_can_set_vesc_id(VESC_STEERING);
                 bldc_interface_set_duty_cycle(main_config.vehicle.steering_center * VOLTAGEFRACTION);
                 comm_can_unlock_vesc();
             #endif

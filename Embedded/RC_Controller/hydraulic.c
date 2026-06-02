@@ -22,7 +22,7 @@
 #include "pwm_esc.h"
 #include "utils.h"
 #include "comm_can.h"
-#include "watchdog.h"
+//#include "watchdog.h"
 #include <math.h>
 #ifdef SERVO_READ
 #define READING_TIMEOUT 1000
@@ -62,13 +62,13 @@ volatile float m_speed_now = 1.0;
 //extern event_source_t emergency_event;
 extern int iDebug;
 
-#ifdef SERVO_READ
+//#ifdef SERVO_READ
 extern ADC_CNT_t io_board_adc0_cnt;
 //extern time_t last_reading_time = 0;
 //static const time_t READING_TIMEOUT = 1.0; // Timeout in seconds
 
 
-#endif
+//#endif
 
 
 // Threads
@@ -130,12 +130,14 @@ float hydraulic_get_distance(bool reset) {
  * Speed in m/s
  */
 void hydraulic_set_speed(float speed) {
+	/*
     // Exit if no heartbeat
     if (system_state != SYSTEM_STATE_OPERATIONAL) {
         // Force speed to 0 if watchdog indicates unsafe state
         speed = 0.0f;
     }
 
+    */
 	m_timeout_cnt = 0.0;
 
 	if (fabsf(speed) < 0.01) {
@@ -212,12 +214,12 @@ static THD_FUNCTION(hydro_thread, arg) {
 
 //	event_listener_t el;
 //    eventmask_t events;
-
 	chRegSetThreadName("Hydraulic");
 	HYDRAULIC_MOVE move_last_front = HYDRAULIC_MOVE_STOP;
 	HYDRAULIC_MOVE move_last_rear = HYDRAULIC_MOVE_STOP;
 	HYDRAULIC_MOVE move_last_extra = HYDRAULIC_MOVE_STOP;
 	int move_repeat_cnt = 0;
+
 
 //   chEvtRegister(&emergency_event, &el, EMERGENCY_STOP_EVENT);
 
@@ -226,15 +228,15 @@ static THD_FUNCTION(hydro_thread, arg) {
 #endif
 
     while (!chThdShouldTerminateX()) {
-/*
-		events = chEvtWaitAnyTimeout(EMERGENCY_STOP_EVENT, MS2ST(100));
 
-		if (events & EMERGENCY_STOP_EVENT)
-		{// Perform cleanup if necessary
-            // ...
-            break;
-        }
-*/
+
+//		events = chEvtWaitAnyTimeout(EMERGENCY_STOP_EVENT, MS2ST(100));
+
+//		if (events & EMERGENCY_STOP_EVENT)
+//		{// Perform cleanup if necessary
+//            // ...
+//            break;
+//        }
 		if (fabsf(m_speed_now) > 0.01) {
 			m_distance_now += m_speed_now * 0.01;
 		}
@@ -275,9 +277,6 @@ static THD_FUNCTION(hydro_thread, arg) {
 		cnt = *comm_can_io_board_adc0_cnt();
 #endif
 
- /*       debugvalue=1.0;
-        debugvalue2=1.0;
-        debugvalue3=1.0;*/
 
 
 
@@ -347,7 +346,10 @@ static THD_FUNCTION(hydro_thread, arg) {
 		(void)move_last_rear;
 		(void)move_last_extra;
  #endif
+		/*
+ */
 	}
-//    chEvtUnregister(&emergency_event, &el);
+
+	//    chEvtUnregister(&emergency_event, &el);
 //    chThdExit(MSG_OK);
 }
