@@ -53,7 +53,7 @@
 #include "timer.h"
 #include "wheelspeed.h"
 // #include "watchdog.h"
-
+#include "actions.h"
 //event_source_t emergency_event;
 
 #define MS2ST(ms)   ((systime_t)((ms) * CH_CFG_ST_FREQUENCY / 1000))
@@ -96,6 +96,7 @@ int main(void) {
 	ext_cb_init();
 
 	conf_general_init();
+	actuators_init();
 	adconv_init();
 	servo_simple_init();
 	pos_init();

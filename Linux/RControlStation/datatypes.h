@@ -408,11 +408,8 @@ typedef enum {
     CMD_GET_STATE = 120,
     CMD_RC_CONTROL,
     CMD_SET_SERVO_DIRECT,
-
-    // Multirotor commands
-    CMD_MR_GET_STATE = 160,
-    CMD_MR_RC_CONTROL,
-    CMD_MR_OVERRIDE_POWER,
+    CMD_GET_ACTUATORS,
+    CMD_SET_ACTUATORS,
 
     // Mote commands
     CMD_MOTE_UBX_START_BASE = 200,

@@ -47,7 +47,7 @@
 #define IS_DRANGEN
 #define VESC_LEFT 94
 #define VESC_RIGHT 125
-#define VESC_STEERING 9
+#define VESC_STEERING 113 // 9
 #define LOADING 8
 #define WHEEL_SENSOR                1
 #endif

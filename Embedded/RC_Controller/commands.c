@@ -78,7 +78,7 @@ float debugvalue12;
 float debugvalue13;
 float debugvalue14;
 float debugvalue15;
-float frontangle;
+float frontangle=0.0;
 static bool arduino_connected = false;
 bool m_kb_active;
 
@@ -951,20 +951,20 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 
 			autopilot_set_active(false);
 			debugvalue=mode;
-			/*if (iDebug==41)
-			{
-				iCounterCommands++;
-				if (iCounterCommands == 50)
-				{
-					commands_printf("Mode: %i",RC_MODE_CURRENT);
-					commands_printf("Throttle: %f",throttle);
-					commands_printf("Steering: %f",steering);
-					iCounterCommands=0;
-				}
-			}*/
 			motor_set_mode(mode);
 			if (!main_config.vehicle.disable_motor) {
 				utils_truncate_number(&throttle, -1.0, 1.0);
+				if (iDebug==44)
+				{
+					iCounterCommands++;
+					if (iCounterCommands == 50)
+					{
+						commands_printf("Mode: %i",RC_MODE_CURRENT);
+						commands_printf("Throttle: %f",throttle);
+						commands_printf("Steering: %f",steering);
+						iCounterCommands=0;
+					}
+				}
 				motor_set_throttle_and_steering(throttle,steering,frontangle);
 			};
 			break;

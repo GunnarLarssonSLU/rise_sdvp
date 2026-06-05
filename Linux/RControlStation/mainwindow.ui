@@ -38,7 +38,7 @@
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,2">
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1">
+     <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1,0,0,0,0">
       <item>
        <widget class="QToolBox" name="toolBox">
         <property name="enabled">
@@ -530,7 +530,7 @@
        <enum>QTabWidget::TabPosition::North</enum>
       </property>
       <property name="currentIndex">
-       <number>9</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -1212,7 +1212,7 @@
                      <x>0</x>
                      <y>0</y>
                      <width>239</width>
-                     <height>388</height>
+                     <height>389</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_23">
@@ -3240,8 +3240,12 @@
        </layout>
       </widget>
       <widget class="QWidget" name="tabFarm">
+       <attribute name="icon">
+        <iconset>
+         <normaloff>../../../../Pictures/v252-bb-02_2-3913426450.jpg</normaloff>../../../../Pictures/v252-bb-02_2-3913426450.jpg</iconset>
+       </attribute>
        <attribute name="title">
-        <string/>
+        <string>Farm</string>
        </attribute>
        <attribute name="toolTip">
         <string>Fields</string>
@@ -3418,6 +3422,93 @@
            </sizepolicy>
           </property>
          </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_2">
+       <attribute name="title">
+        <string>Machines</string>
+       </attribute>
+       <layout class="QHBoxLayout" name="horizontalLayoutMa">
+        <item>
+         <layout class="QGridLayout" name="gridLayoutMa">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_allmachines">
+           <property name="text">
+            <string>All machines</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QTableView" name="tableViewMachines"/>
+         </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_addmachine">
+            <property name="text">
+             <string>Add</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QTextEdit" name="textEditAddMachine"/>
+          </item>
+          <item row="2" column="1">
+           <spacer name="verticalSpacer_10">
+            <property name="orientation">
+             <enum>Qt::Orientation::Vertical</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QGridLayout" name="gridLayoutMa2">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_allmotors">
+           <property name="text">
+            <string>All motors</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QTableView" name="tableViewMotor"/>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_addmotor">
+           <property name="text">
+            <string>Add</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QTextEdit" name="textEditAddMotor"/>
+         </item>
+         <item row="2" column="1">
+          <spacer name="verticalSpacer_11">
+           <property name="orientation">
+            <enum>Qt::Orientation::Vertical</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
         </item>
        </layout>
       </widget>
@@ -3703,7 +3794,7 @@
                <string>Cutting Result (Area Filtered)</string>
               </property>
               <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+               <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
               </property>
              </widget>
             </item>
@@ -3716,14 +3807,14 @@
             </item>
             <item>
              <widget class="QSpinBox" name="spinBoxResultPath">
+              <property name="toolTip">
+               <string>Select which path to focus on in the Results map</string>
+              </property>
               <property name="minimum">
                <number>0</number>
               </property>
               <property name="maximum">
                <number>99</number>
-              </property>
-              <property name="toolTip">
-               <string>Select which path to focus on in the Results map</string>
               </property>
              </widget>
             </item>
@@ -3771,20 +3862,12 @@
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
-            <property name="maximumHeight">
-             <number>150</number>
-            </property>
             <property name="selectionMode">
-             <enum>QAbstractItemView::SingleSelection</enum>
+             <enum>QAbstractItemView::SelectionMode::SingleSelection</enum>
             </property>
             <property name="selectionBehavior">
-             <enum>QAbstractItemView::SelectRows</enum>
+             <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
             </property>
-            <column>
-             <property name="text">
-              <string>Analysis Type</string>
-             </property>
-            </column>
             <row>
              <property name="text">
               <string>Length</string>
@@ -3800,6 +3883,11 @@
               <string>Root-Mean-Square</string>
              </property>
             </row>
+            <column>
+             <property name="text">
+              <string>Analysis Type</string>
+             </property>
+            </column>
            </widget>
           </item>
           <item>
@@ -3810,20 +3898,20 @@
               <height>200</height>
              </size>
             </property>
+            <property name="frameShape">
+             <enum>QFrame::Shape::Panel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Shadow::Sunken</enum>
+            </property>
             <property name="textFormat">
-             <enum>Qt::RichText</enum>
+             <enum>Qt::TextFormat::RichText</enum>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-            </property>
-            <property name="frameShape">
-             <enum>QFrame::Panel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Sunken</enum>
             </property>
            </widget>
           </item>

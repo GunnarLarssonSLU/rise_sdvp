@@ -56,7 +56,19 @@ void motor_control_init(void) {
 
 // Common motor control functions
 
-void motor_set_speed(float speed) {
+void motor_set_speed(float speed)
+{
+	if (iDebug==41)
+		{
+			iCounterMotor++;
+			if (iCounterMotor == 50)
+			{
+				commands_printf("set_speed");
+				commands_printf("Mode: %i",mode);
+				commands_printf("Speed: %f",speed);
+			iCounterMotor=0;
+			}
+		}
 	/*
     // Check watchdog state - only allow motor operation if system is operational
     if (system_state != SYSTEM_STATE_OPERATIONAL) {
@@ -106,7 +118,16 @@ void motor_set_speed(float speed) {
 }
 
 
-void motor_set_throttle_and_steering(float throttle,float steering,float frontangle) {
+void motor_set_throttle_and_steering(float throttle,float steering,float frontangle)
+{
+	if (iDebug==42)
+		{
+			commands_printf("set_throttle_and_steering");
+			commands_printf("Mode: %i",mode);
+			commands_printf("Throttle: %f",throttle);
+			commands_printf("Steering: %f",steering);
+		}
+
     // Update direction - must be exactly +1 or -1
     if (throttle > 0.01f) {
         current_motor_direction = 1;
@@ -147,6 +168,18 @@ void motor_set_throttle_and_steering(float throttle,float steering,float frontan
 
 void motor_diff_control(float throttle, float steering)
 {
+	if (iDebug==41)
+		{
+			iCounterMotor++;
+			if (iCounterMotor == 50)
+			{
+				commands_printf("motor_diff_control");
+				commands_printf("Mode: %i",mode);
+				commands_printf("Throttle: %f",throttle);
+				commands_printf("Steering: %f",steering);
+				iCounterMotor=0;
+			}
+		}
 	comm_can_lock_vesc();
 	switch (mode) {
 		case RC_MODE_CURRENT:
@@ -167,21 +200,22 @@ void motor_diff_control(float throttle, float steering)
 
 void motor_steering_control(float throttle, float steering,float  frontangle)
 {
+	if (iDebug==41)
+		{
+			iCounterMotor++;
+			if (iCounterMotor == 50)
+			{
+				commands_printf("motor_steering_control");
+				commands_printf("Mode: %i",mode);
+				commands_printf("Throttle: %f",throttle);
+				commands_printf("Steering: %f",steering);
+				iCounterMotor=0;
+			}
+		}
+
 	comm_can_lock_vesc();
 	switch (mode) {
 		case RC_MODE_CURRENT:
-			if (iDebug==41)
-			{
-				iCounterMotor++;
-				if (iCounterMotor == 50)
-				{
-					commands_printf("current");
-					commands_printf("Mode: %i",mode);
-					commands_printf("Throttle: %f",throttle);
-					commands_printf("Steering: %f",steering);
-					iCounterMotor=0;
-				}
-			}
 			comm_can_set_vesc_id(VESC_LEFT);
 			bldc_interface_set_current(throttle);
 			comm_can_set_vesc_id(VESC_RIGHT);
@@ -205,14 +239,11 @@ void motor_steering_control(float throttle, float steering,float  frontangle)
 
 if (nottooextreme || okdirections)
 	{
-#if HAS_DIFF_STEERING
-	comm_can_lock_vesc();
-	comm_can_set_vesc_id(VESC_STEERING);
-	bldc_interface_set_duty_cycle(steering*VOLTAGEFRACTION);
-	comm_can_unlock_vesc();
-#endif
+		comm_can_lock_vesc();
+		comm_can_set_vesc_id(VESC_STEERING);
+		bldc_interface_set_duty_cycle(steering*VOLTAGEFRACTION);
+		comm_can_unlock_vesc();
 	}
-
 }
 #endif
 

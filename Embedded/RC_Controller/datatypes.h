@@ -226,6 +226,8 @@ typedef enum {
 	CMD_GET_STATE = 120,
 	CMD_RC_CONTROL,
 	CMD_SET_SERVO_DIRECT,
+	CMD_GET_ACTUATORS,
+	CMD_SET_ACTUATORS,
 
 	// Mote commands
 	CMD_MOTE_UBX_START_BASE = 200,
@@ -1165,5 +1167,13 @@ typedef struct {
 	uint32_t toggle_high_cnt;
 	bool is_high;
 } ADC_CNT_t;
+
+// VESC Controller
+typedef struct {
+	int id;
+	int activity;
+	motor_control_mode mode;
+} ACTUATOR;
+
 
 #endif /* DATATYPES_H_ */
