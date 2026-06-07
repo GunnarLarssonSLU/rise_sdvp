@@ -266,6 +266,36 @@ typedef enum {
 	HYDRAULIC_MOVE_UNDEFINED
 } HYDRAULIC_MOVE;
 
+typedef enum {
+	MOTOR_CONTROL_DUTY = 0,
+	MOTOR_CONTROL_CURRENT,
+	MOTOR_CONTROL_CURRENT_BRAKE,
+	MOTOR_CONTROL_RPM,
+	MOTOR_CONTROL_POS
+} motor_control_mode;
+
+typedef enum
+{
+	AT_VESCMOTOR=0,
+	AT_HYDRAULIC=1
+} ACTUATOR_TYPE;
+
+typedef enum
+{
+	ACT_FORWARD=0,
+	ACT_STEERING,
+	ACT_LIFT
+} ACTIVITY_TYPE;
+
+// VESC Controller
+typedef struct {
+	ACTUATOR_TYPE type;
+	int vescid;
+	ACTIVITY_TYPE activity;
+	motor_control_mode mode;
+} ACTUATOR;
+
+
 typedef struct {
 	bool yaw_use_odometry; // Use odometry data for yaw angle correction.
 	float yaw_imu_gain; // Gain for yaw angle from IMU (vs odometry)
@@ -292,6 +322,8 @@ typedef struct {
     float sensorcentre;
     float deadband;
     float heartbeat_maxtime;
+    ACTUATOR actuator[4];
+    int actuators;
 } MAIN_CONFIG_VEHICLE;
 
 
@@ -1020,13 +1052,6 @@ typedef struct {
 	float duty;
 } can_status_msg;
 
-typedef enum {
-	MOTOR_CONTROL_DUTY = 0,
-	MOTOR_CONTROL_CURRENT,
-	MOTOR_CONTROL_CURRENT_BRAKE,
-	MOTOR_CONTROL_RPM,
-	MOTOR_CONTROL_POS
-} motor_control_mode;
 
 typedef enum {
 	FAULT_CODE_NONE = 0,
@@ -1167,13 +1192,5 @@ typedef struct {
 	uint32_t toggle_high_cnt;
 	bool is_high;
 } ADC_CNT_t;
-
-// VESC Controller
-typedef struct {
-	int id;
-	int activity;
-	motor_control_mode mode;
-} ACTUATOR;
-
 
 #endif /* DATATYPES_H_ */

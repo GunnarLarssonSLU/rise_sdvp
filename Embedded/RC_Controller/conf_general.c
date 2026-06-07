@@ -163,6 +163,28 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 	conf->vehicle.deadband = 0.05;
 	conf->vehicle.heartbeat_maxtime = 3.0;
 
+	conf->vehicle.actuators = 4;
+	conf->vehicle.actuator[0].type = AT_VESCMOTOR;
+	conf->vehicle.actuator[0].veas = 100;
+	conf->vehicle.actuator[0].activity = ACT_FORWARD;
+	conf->vehicle.actuator[0].mode = MOTOR_CONTROL_DUTY ;
+
+	conf->vehicle.actuator[1].type = AT_VESCMOTOR;
+	conf->vehicle.actuator[1].veas = 100;
+	conf->vehicle.actuator[1].activity = ACT_FORWARD;
+	conf->vehicle.actuator[1].mode = MOTOR_CONTROL_DUTY ;
+
+	conf->vehicle.actuator[2].type = AT_VESCMOTOR;
+	conf->vehicle.actuator[2].veas = 100;
+	conf->vehicle.actuator[2].activity = ACT_S;
+	conf->vehicle.actuator[2].mode = MOTOR_CONTROL_DUTY ;
+
+	conf->vehicle.actuator[3].type = AT_VESCMOTOR;
+	conf->vehicle.actuator[3].veas = 100;
+	conf->vehicle.actuator[3].activity = ACT_FORWARD;
+	conf->vehicle.actuator[3].mode = MOTOR_CONTROL_DUTY ;
+
+
 	/*
 	// Custom parameters based on ID
 	switch (main_id) {

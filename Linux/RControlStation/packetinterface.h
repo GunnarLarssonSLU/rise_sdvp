@@ -102,7 +102,6 @@ public slots:
     void readPendingDatagrams();
     void getState(quint8 id);
     void sendHeartbeat(quint8 id);
-    void getMrState(quint8 id);
     void sendTerminalCmd(quint8 id, QString cmd);
     void sendSetUserCmd(quint8 id, QString cmd);
     void sendSetPwdCmd(quint8 id, QString cmd);
@@ -121,8 +120,6 @@ public slots:
     void setYawOffset(quint8 id, double angle);
     void getEnuRef(quint8 id);
     void setMsToday(quint8 id, qint32 time);
-    void mrRcControl(quint8 id, double throttle, double roll, double pitch, double yaw);
-    void mrOverridePower(quint8 id, double fl_f, double bl_l, double fr_r, double br_b);
     void ioBoardSetPwmDuty(quint8 id, quint8 board, double duty);
     void ioBoardSetValve(quint8 id, quint8 board, quint8 valve, bool set);
     void hydraulicMove(quint8 id, HYDRAULIC_POS pos, HYDRAULIC_MOVE move);

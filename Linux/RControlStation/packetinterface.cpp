@@ -1167,14 +1167,6 @@ void PacketInterface::sendHeartbeat(quint8 id)
     sendPacket(packet);
 }
 
-void PacketInterface::getMrState(quint8 id)
-{
-    QByteArray packet;
-    packet.append(id);
-    packet.append(CMD_MR_GET_STATE);
-    sendPacket(packet);
-}
-
 void PacketInterface::sendTerminalCmd(quint8 id, QString cmd)
 {
     QByteArray packet;
@@ -1343,30 +1335,6 @@ void PacketInterface::setMsToday(quint8 id, qint32 time)
     mSendBuffer[send_index++] = id;
     mSendBuffer[send_index++] = CMD_SET_MS_TODAY;
     utility::buffer_append_int32(mSendBuffer, time, &send_index);
-    sendPacket(mSendBuffer, send_index);
-}
-
-void PacketInterface::mrRcControl(quint8 id, double throttle, double roll, double pitch, double yaw)
-{
-    qint32 send_index = 0;
-    mSendBuffer[send_index++] = id;
-    mSendBuffer[send_index++] = CMD_MR_RC_CONTROL;
-    utility::buffer_append_double32_auto(mSendBuffer, throttle, &send_index);
-    utility::buffer_append_double32_auto(mSendBuffer, roll, &send_index);
-    utility::buffer_append_double32_auto(mSendBuffer, pitch, &send_index);
-    utility::buffer_append_double32_auto(mSendBuffer, yaw, &send_index);
-    sendPacket(mSendBuffer, send_index);
-}
-
-void PacketInterface::mrOverridePower(quint8 id, double fl_f, double bl_l, double fr_r, double br_b)
-{
-    qint32 send_index = 0;
-    mSendBuffer[send_index++] = id;
-    mSendBuffer[send_index++] = CMD_MR_OVERRIDE_POWER;
-    utility::buffer_append_double32_auto(mSendBuffer, fl_f, &send_index);
-    utility::buffer_append_double32_auto(mSendBuffer, bl_l, &send_index);
-    utility::buffer_append_double32_auto(mSendBuffer, fr_r, &send_index);
-    utility::buffer_append_double32_auto(mSendBuffer, br_b, &send_index);
     sendPacket(mSendBuffer, send_index);
 }
 

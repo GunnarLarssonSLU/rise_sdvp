@@ -25,7 +25,7 @@
         <enum>QTabWidget::TabShape::Triangular</enum>
        </property>
        <property name="currentIndex">
-        <number>5</number>
+        <number>7</number>
        </property>
        <property name="tabsClosable">
         <bool>false</bool>
@@ -1026,6 +1026,14 @@
           </layout>
          </item>
         </layout>
+       </widget>
+       <widget class="QWidget" name="tab_7">
+        <attribute name="icon">
+         <iconset theme="QIcon::ThemeIcon::NetworkWired"/>
+        </attribute>
+        <attribute name="title">
+         <string>Motor</string>
+        </attribute>
        </widget>
       </widget>
      </item>

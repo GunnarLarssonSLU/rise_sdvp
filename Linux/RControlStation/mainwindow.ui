@@ -1212,7 +1212,7 @@
                      <x>0</x>
                      <y>0</y>
                      <width>239</width>
-                     <height>389</height>
+                     <height>388</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_23">
@@ -3432,16 +3432,16 @@
        <layout class="QHBoxLayout" name="horizontalLayoutMa">
         <item>
          <layout class="QGridLayout" name="gridLayoutMa">
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_allmachines">
-           <property name="text">
-            <string>All machines</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QTableView" name="tableViewMachines"/>
-         </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_allmachines">
+            <property name="text">
+             <string>All machines</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QTableView" name="tableViewMachines"/>
+          </item>
           <item row="1" column="0">
            <widget class="QLabel" name="label_addmachine">
             <property name="text">
@@ -3450,7 +3450,26 @@
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QTextEdit" name="textEditAddMachine"/>
+           <widget class="QTextEdit" name="textEditAddMachine">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>192</height>
+             </size>
+            </property>
+           </widget>
           </item>
           <item row="2" column="1">
            <spacer name="verticalSpacer_10">
@@ -3472,43 +3491,43 @@
         </item>
         <item>
          <layout class="QGridLayout" name="gridLayoutMa2">
-         <item row="0" column="0">
-          <widget class="QLabel" name="label_allmotors">
-           <property name="text">
-            <string>All motors</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QTableView" name="tableViewMotor"/>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_addmotor">
-           <property name="text">
-            <string>Add</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QTextEdit" name="textEditAddMotor"/>
-         </item>
-         <item row="2" column="1">
-          <spacer name="verticalSpacer_11">
-           <property name="orientation">
-            <enum>Qt::Orientation::Vertical</enum>
-           </property>
-           <property name="sizeType">
-            <enum>QSizePolicy::Policy::MinimumExpanding</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>20</width>
-             <height>40</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-        </layout>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_allmotors">
+            <property name="text">
+             <string>All motors</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QTableView" name="tableViewMotor"/>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_addmotor">
+            <property name="text">
+             <string>Add</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QTextEdit" name="textEditAddMotor"/>
+          </item>
+          <item row="2" column="1">
+           <spacer name="verticalSpacer_11">
+            <property name="orientation">
+             <enum>Qt::Orientation::Vertical</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
         </item>
        </layout>
       </widget>
