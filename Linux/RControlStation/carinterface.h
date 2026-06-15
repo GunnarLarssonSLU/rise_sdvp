@@ -67,6 +67,9 @@ public:
 
     bool getResetApOnEmergencyStop() const;
     void setResetApOnEmergencyStop(bool value);
+    void populateMotorTypeComboBoxes(const QList<QPair<int, QString>>& motorTypes);
+    void populateActionsComboBoxes(const QList<QPair<int, QString>>& actions);
+    void populateModesComboBoxes(const QList<QPair<int, QString>>& modes);
 
 signals:
     void terminalCmd(quint8 id, QString cmd);

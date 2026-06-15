@@ -33,6 +33,74 @@ ConfCommonWidget::~ConfCommonWidget()
     delete ui;
 }
 
+void ConfCommonWidget::populateMotorTypeComboBoxes(const QList<QPair<int, QString>>& motorTypes)
+{
+    qDebug() << "in populateMotorTypeComboBoxes";
+    // Clear existing items first
+    ui->comboBox_motor1_type->clear();
+    ui->comboBox_motor2_type->clear();
+    ui->comboBox_motor3_type->clear();
+    ui->comboBox_motor4_type->clear();
+
+    // Populate each combo box with motor types
+    for (const auto& motorType : motorTypes) {
+        int id = motorType.first;
+        QString name = motorType.second;
+        qDebug() << "reading id: " << id << ", name: " << name;
+        // Add item to all motor type combo boxes
+        ui->comboBox_motor1_type->addItem(name, QVariant(id));
+        ui->comboBox_motor2_type->addItem(name, QVariant(id));
+        ui->comboBox_motor3_type->addItem(name, QVariant(id));
+        ui->comboBox_motor4_type->addItem(name, QVariant(id));
+    }
+}
+
+void ConfCommonWidget::populateActionsComboBoxes(const QList<QPair<int, QString>>& actions)
+{
+    qDebug() << "in populateACtionsComboBoxes";
+    // Clear existing items first
+    ui->comboBox_motor1_action->clear();
+    ui->comboBox_motor2_action->clear();
+    ui->comboBox_motor3_action->clear();
+    ui->comboBox_motor4_action->clear();
+
+    // Populate each combo box with motor types
+    for (const auto& action : actions) {
+        int id = action.first;
+        QString name = action.second;
+        qDebug() << "reading id: " << id << ", name: " << name;
+        // Add item to all motor type combo boxes
+        ui->comboBox_motor1_action->addItem(name, QVariant(id));
+        ui->comboBox_motor2_action->addItem(name, QVariant(id));
+        ui->comboBox_motor3_action->addItem(name, QVariant(id));
+        ui->comboBox_motor4_action->addItem(name, QVariant(id));
+    }
+}
+
+void ConfCommonWidget::populateModesComboBoxes(const QList<QPair<int, QString>>& modes)
+{
+    qDebug() << "in populateModesComboBoxes";
+    // Clear existing items first
+    ui->comboBox_motor1_mode->clear();
+    ui->comboBox_motor2_mode->clear();
+    ui->comboBox_motor3_mode->clear();
+    ui->comboBox_motor4_mode->clear();
+
+    // Populate each combo box with motor types
+    for (const auto& mode : modes) {
+        int id = mode.first;
+        QString name = mode.second;
+        qDebug() << "reading id: " << id << ", name: " << name;
+        // Add item to all motor type combo boxes
+        ui->comboBox_motor1_mode->addItem(name, QVariant(id));
+        ui->comboBox_motor2_mode->addItem(name, QVariant(id));
+        ui->comboBox_motor3_mode->addItem(name, QVariant(id));
+        ui->comboBox_motor4_mode->addItem(name, QVariant(id));
+    }
+}
+
+
+
 void ConfCommonWidget::getConfGui(MAIN_CONFIG &conf)
 {
     conf.mag_use = ui->confMagUseBox->isChecked();

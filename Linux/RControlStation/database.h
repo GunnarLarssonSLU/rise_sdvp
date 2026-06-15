@@ -15,9 +15,11 @@ public:
     void addField(QString fieldname,int farmid,QString filename);
     void updateFarmLocation(int farmid,double latitude, double longitude);
     void showError(const QSqlError &err);
+    QSqlDatabase getDb();
 private:
     QSqlError initDb();
     QWidget* qw;
+    QSqlDatabase db;
 
 };
 

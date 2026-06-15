@@ -99,6 +99,10 @@ public:
     void setCurrentFarm(int farm);
     void updateFarms();
     QLabel* getLogLabel();
+    void populateControllerComboBoxes();
+    QList<QPair<int, QString>> getMotorTypesFromDatabase();
+    QList<QPair<int, QString>> getActionsFromDatabase();
+    QList<QPair<int, QString>> getModesFromDatabase();
 
 public slots:
 
@@ -244,6 +248,7 @@ private slots:
 private:
     // Helper methods
     bool isPointInsideBorder(const LocPoint& point, const MapRoute& border); // Check if point is inside border
+    void controllerAction(int car, int iController,float value);
 
     // Area definition storage - using existing border infrastructure
     bool mAreaLoaded = false;

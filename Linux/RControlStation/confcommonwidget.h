@@ -41,6 +41,9 @@ public:
     void setMagCompCenter(QVector<double> center);
 
     void showAutoPilotConfiguration();
+    void populateMotorTypeComboBoxes(const QList<QPair<int, QString>>& motorTypes);
+    void populateActionsComboBoxes(const QList<QPair<int, QString>>& actions);
+    void populateModesComboBoxes(const QList<QPair<int, QString>>& modes);
 
 signals:
     void loadMagCal();

@@ -400,6 +400,9 @@ MainWindow::MainWindow(QWidget *parent) :
     }
 
     qApp->installEventFilter(this);
+    
+    // Populate controller combo boxes from database
+    populateControllerComboBoxes();
 }
 
 MainWindow::~MainWindow()
@@ -601,6 +604,114 @@ void MainWindow::updateFarms()
 {
     modelFarm->select();
 }
+
+void MainWindow::populateControllerComboBoxes()
+{
+    qDebug() << "In Populate";
+    // Query to get all actions from database
+    QSqlQuery query("SELECT id, name FROM actions", db.getDb());
+    
+    if (!query.exec()) {
+        qDebug() << "Query error:" << query.lastError().text();
+        return;
+    }
+
+    // Clear existing items first
+    ui->comboBox_controller1->clear();
+    ui->comboBox_controller2->clear();
+    ui->comboBox_controller3->clear();
+    ui->comboBox_controller4->clear();
+    ui->comboBox_controller5->clear();
+    ui->comboBox_controller6->clear();
+
+    // Populate each combo box with database data
+    while (query.next()) {
+        int id = query.value(0).toInt();
+        QString name = query.value(1).toString();
+        qDebug() << "id: " << id << ", name: " << name;
+        
+        // Add item to all combo boxes with name as display text and id as user data
+        ui->comboBox_controller1->addItem(name, QVariant(id));
+        ui->comboBox_controller2->addItem(name, QVariant(id));
+        ui->comboBox_controller3->addItem(name, QVariant(id));
+        ui->comboBox_controller4->addItem(name, QVariant(id));
+        ui->comboBox_controller5->addItem(name, QVariant(id));
+        ui->comboBox_controller6->addItem(name, QVariant(id));
+    }
+}
+
+QList<QPair<int, QString>> MainWindow::getMotorTypesFromDatabase()
+{
+    qDebug() << "in getMotorTypesFromDatabase()";
+    QList<QPair<int, QString>> motorTypes;
+    
+    // Query to get all motor types from database
+    QSqlQuery query("SELECT id, name FROM motor_types", db.getDb());
+    
+    if (!query.exec()) {
+        qDebug() << "Motor types query error:" << query.lastError().text();
+        return motorTypes;
+    }
+
+    // Populate the list with database data
+    while (query.next()) {
+        int id = query.value(0).toInt();
+        QString name = query.value(1).toString();
+        qDebug() << "adding id: " << id << ", name: " << name;
+        motorTypes.append(QPair<int, QString>(id, name));
+    }
+
+    return motorTypes;
+}
+
+QList<QPair<int, QString>> MainWindow::getActionsFromDatabase()
+{
+    qDebug() << "in getActionsFromDatabase()";
+    QList<QPair<int, QString>> actions;
+
+    // Query to get all motor types from database
+    QSqlQuery query("SELECT id, name FROM actions", db.getDb());
+
+    if (!query.exec()) {
+        qDebug() << "Motor types query error:" << query.lastError().text();
+        return actions;
+    }
+
+    // Populate the list with database data
+    while (query.next()) {
+        int id = query.value(0).toInt();
+        QString name = query.value(1).toString();
+        qDebug() << "adding id: " << id << ", name: " << name;
+        actions.append(QPair<int, QString>(id, name));
+    }
+
+    return actions;
+}
+
+QList<QPair<int, QString>> MainWindow::getModesFromDatabase()
+{
+    qDebug() << "in getModesFromDatabase()";
+    QList<QPair<int, QString>> modes;
+
+    // Query to get all motor types from database
+    QSqlQuery query("SELECT id, name FROM modes", db.getDb());
+
+    if (!query.exec()) {
+        qDebug() << "Motor types query error:" << query.lastError().text();
+        return modes;
+    }
+
+    // Populate the list with database data
+    while (query.next()) {
+        int id = query.value(0).toInt();
+        QString name = query.value(1).toString();
+        qDebug() << "adding id: " << id << ", name: " << name;
+        modes.append(QPair<int, QString>(id, name));
+    }
+
+    return modes;
+}
+
 
 QSqlRelationalTableModel* MainWindow::setupFarmTable(QTableView* uiFarmTable,QString sqlTablename)
 {
@@ -911,6 +1022,14 @@ void MainWindow::addCar(int id, QString name, bool pollData)
     car->setPacketInterface(mPacketInterface);
     car->setPollData(pollData);
     connect(car, SIGNAL(showStatusInfo(QString,bool)), this, SLOT(showStatusInfo(QString,bool)));
+    
+    // Populate motor type combo boxes with data from database
+    QList<QPair<int, QString>> motorTypes = getMotorTypesFromDatabase();
+    car->populateMotorTypeComboBoxes(motorTypes);
+    QList<QPair<int, QString>> actions = getActionsFromDatabase();
+    car->populateActionsComboBoxes(actions);
+    QList<QPair<int, QString>> modes = getModesFromDatabase();
+    car->populateModesComboBoxes(modes);
 }
 
 void MainWindow::removeCars()
@@ -1508,6 +1627,29 @@ void MainWindow::infoTraceChanged(int traceNow)
     ui->mapInfoTraceBox->setValue(traceNow);
 }
 
+void MainWindow::controllerAction(int car, int iController,float value=0)
+{
+    switch (iController)
+    {
+    case FRONT_UP:
+        qDebug() << "Hydraulic, front up: " << value;
+        mPacketInterface->hydraulicMove(car, HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_UP);
+        break;
+    case FRONT_DOWN:
+        qDebug() << "Hydraulic, front down: " << value;
+        mPacketInterface->hydraulicMove(car, HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_DOWN);
+        break;
+    case REAR_UP:
+        qDebug() << "Hydraulic, rear up";
+        mPacketInterface->hydraulicMove(car, HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_UP);
+        break;
+    case REAR_DOWN:
+        qDebug() << "Hydraulic, rear down";
+        mPacketInterface->hydraulicMove(car, HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
+        break;
+    }
+}
+
 void MainWindow::jsButtonChanged(int button, bool pressed)
 {
         qDebug() << "JS BT:" << button << pressed;
@@ -1515,27 +1657,22 @@ void MainWindow::jsButtonChanged(int button, bool pressed)
     #ifdef HAS_JOYSTICK        
         if (1) {
             // 1: Extra out
+
             // 3: Extra in
-        qDebug() << "in logic 1";
 
             if (button == FRONT_UP || button == FRONT_DOWN || button == 1 ||
                     button == REAR_DOWN || button == REAR_UP || button == 6) {
-            qDebug() << "in logic 2";
                 for(QList<CarInterface*>::Iterator it_car = mCars.begin();it_car < mCars.end();it_car++) {
-                qDebug() << "in logic 3";
                     CarInterface *car = *it_car;
                     if (car->getCtrlKb()) {
-                    qDebug() << "in logic 4";
                         if (button == FRONT_UP || button == FRONT_DOWN) {
-                        qDebug() << "in logic 5";
+                            qDebug() << "Hydraulic, rear down";
+                            mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
                             if (pressed) {
-                            qDebug() << "pressed";
                                 if (button == FRONT_UP) {
-                                    qDebug() << "Hydraulic, front up";
-                                    mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_UP);
+                                    controllerAction(car->getId(),FRONT_UP);
                                 } else {
-                                    qDebug() << "Hydraulic, front down";
-                                    mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_DOWN);
+                                    controllerAction(car->getId(),FRONT_DOWN);
                                 }
                             } else {
                                 mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_STOP);
@@ -1543,16 +1680,18 @@ void MainWindow::jsButtonChanged(int button, bool pressed)
                         } else if (button == REAR_UP || button == REAR_DOWN) {
                             if (pressed) {
                                 if (button == REAR_UP) {
-                                    qDebug() << "Hydraulic, rear up";
-                                    mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_UP);
+                                    controllerAction(car->getId(),REAR_UP);
                                 } else {
-                                    qDebug() << "Hydraulic, rear down";
-                                    mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
+                                    controllerAction(car->getId(),REAR_DOWN);
                                 }
                             } else {
+                                qDebug() << "Hydraulic, rear down";
+                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
                                 mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_STOP);
                             }
                         } else if (button == 1 || button == 3) {
+                            qDebug() << "Hydraulic, rear down";
+                            mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
                             if (pressed) {
                                 if (button == 1) {
                                     mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_OUT);
@@ -1579,7 +1718,7 @@ void MainWindow::on_disconnectButton_clicked()
     if (mPacketInterface->isUdpConnected()) {
         mPacketInterface->stopUdpConnection();
     }
-
+MainWindow::
     mTcpClientMulti->disconnectAll();
     removeCars();
     ui->carsWidget->clear();
@@ -1930,29 +2069,21 @@ void MainWindow::onGenerateLineButtonClicked()
 
     if (ui->mapLiveWidget->mPaths->size()>0)
     {
-        qDebug() << "Existing route";
         currentRoute=&(ui->mapLiveWidget->mPaths->getCurrent());
         bHasCurrentRoute=true;
     } else
     {
-        qDebug() << "New route";
         currentRoute=new MapRoute();
     }
-    qDebug() << "Before append";
     currentRoute->append(first);
-    qDebug() << "After append";
     emit routePointAdded(first);
     currentRoute->prepend(second);
-    qDebug() << "After prepend";
     emit routePointAdded(second);
-    qDebug() << "ok";
     if (!bHasCurrentRoute)
     {
         ui->mapLiveWidget->mPaths->append(*currentRoute);
         ui->mapLiveWidget->mPaths->mRouteNow=ui->mapLiveWidget->mPaths->size()-1;
     }
-    qDebug() << "added path";
-
 
 //    ui->mapLiveWidget->addRoutePoint(first.getX(), first.getY());
 //    ui->mapLiveWidget->addRoutePoint(second.getX(), second.getY());
@@ -1975,7 +2106,8 @@ void MainWindow::onGeneratePathButtonClicked()
 
     double turnDiameterX_m = ui->turnRadiusMDdLineEdit->text().toDouble();
     int turnSteps = ui->turnStepsLineEdit->text().toInt();
-    bool isFieldTrial = ui->fieldtrialCheckBox->isChecked();
+    bool isResearchPlots = ui->researchplotsCheckBox->isChecked();
+    bool isFieldTrial = ui->randomizedCheckBox->isChecked();
     int iTask = ui->agriculttaskBox->currentIndex();
     bool pieces=ui->piecesCheckBox->isChecked();
     if (ui->mapLiveWidget->getPathNum()>0)
@@ -1992,7 +2124,7 @@ void MainWindow::onGeneratePathButtonClicked()
             p2=activeRoute[1];
         }
 
-        RouteGenerator rg(fieldLength_m,fieldWidth_m,implementLength_m,implementWidth_m,plots_DrivingDirection,plots_NonDrivingDirection,distancebetweenplots_drivingdirection_m,distancebetweenplots_nondrivingdirection_m,p1,p2,speed_m__s,turnDiameterX_m, turnSteps,ui->flipSideCheckBox->isChecked(),isFieldTrial,iTask,pieces);
+        RouteGenerator rg(fieldLength_m,fieldWidth_m,implementLength_m,implementWidth_m,plots_DrivingDirection,plots_NonDrivingDirection,distancebetweenplots_drivingdirection_m,distancebetweenplots_nondrivingdirection_m,p1,p2,speed_m__s,turnDiameterX_m, turnSteps,ui->flipSideCheckBox->isChecked(),isResearchPlots,isFieldTrial,iTask,pieces);
         rg.generateXmlFile();
 
         QString filePath="output.xml";

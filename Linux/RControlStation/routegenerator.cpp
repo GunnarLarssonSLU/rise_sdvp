@@ -27,9 +27,9 @@ int RouteGenerator::checkFieldTrial(int x,int y,int task)
 
     switch (task)
     {
-    case 0: plan = sowing; qDebug() << "Sowing!" ; break;
-    case 1: plan = cutting_intense; break;
-    case 2: plan = kant; break;
+        case 0: plan = sowing; qDebug() << "Sowing!" ; break;
+        case 1: plan = cutting_intense; break;
+        case 2: plan = kant; break;
     }
 
     int no=fieldtrial_random[y][x];
@@ -37,7 +37,7 @@ int RouteGenerator::checkFieldTrial(int x,int y,int task)
     return plan[no];
 }
 
-RouteGenerator::RouteGenerator(double c_plotLength_m, double c_plotWidth_m, double c_implementLength_m, double c_implementWidth_m,int plots_DrivingDirection, int plots_NonDrivingDirection ,double distancebetweenplots_drivingdirection_m ,double distancebetweenplots_nondrivingdirection_m, LocPoint p1,LocPoint p2,double speed_km__h,double c_turnDiameterX, int c_turnSteps, bool c_flipSide,bool c_isFieldTrial,int c_iTask,bool c_pieces)
+RouteGenerator::RouteGenerator(double c_plotLength_m, double c_plotWidth_m, double c_implementLength_m, double c_implementWidth_m,int plots_DrivingDirection, int plots_NonDrivingDirection ,double distancebetweenplots_drivingdirection_m ,double distancebetweenplots_nondrivingdirection_m, LocPoint p1,LocPoint p2,double speed_km__h,double c_turnDiameterX, int c_turnSteps, bool c_flipSide,bool c_isResearchPlots,bool c_isFieldTrial,int c_iTask,bool c_pieces)
 {
     // Initialize with example values
     implementLength_m = c_implementLength_m;
@@ -61,29 +61,14 @@ RouteGenerator::RouteGenerator(double c_plotLength_m, double c_plotWidth_m, doub
     turnSteps=c_turnSteps;
     valid=false; // valid set by generateCoordinates() if the path is valid
     isFieldTrial=c_isFieldTrial;
+    isResearchPlots=c_isResearchPlots;
     iTask=c_iTask;
     pieces=c_pieces;
-//    /*
-    qDebug() << "startX: " << startX;
-    qDebug() << "startY: " << startY;
-    qDebug() << "relPosX: " << relPosX;
-    qDebug() << "relPosY: " << relPosY;
-    qDebug() << "noPlotsX: " << noPlotsX;
-    qDebug() << "noPlotsY: " << noPlotsY;
-    qDebug() << "distanceBetweenPlotsX: " << distanceBetweenPlotsX;
-    qDebug() << "distanceBetweenPlotsY: " << distanceBetweenPlotsY;
-    qDebug() << "plotSizeX: " << plotSizeX;
-    qDebug() << "plotSizeY: " << plotSizeY;
-    qDebug() << "plotAngle: " << plotAngle;
-    qDebug() << "speed: " << speed;
-    qDebug() << "turnDiameterX: " << turnDiameterX;
-    qDebug() << "turnSteps: " << turnSteps;
-    qDebug() << "implementLength_m: " << implementLength_m;
-    qDebug() << "implementWidth_m: " << implementWidth_m; //*/
     generateCoordinates();
 };
 
 void RouteGenerator::generateXmlFile() {
+    qDebug() << "size of path (xml generation): " << all_xs.size();
     if (valid)  // Only produce a xml file if there is a valid path
     {
         QFile file(QString::fromStdString(xmlFileName));
@@ -125,15 +110,20 @@ void RouteGenerator::generateXmlFile() {
 }
 
 void RouteGenerator::generateCoordinates() {
+    if (isResearchPlots)
+    {
+        generateCoordinatesResearchPlots();
+    } else
+    {
+        generateCoordinatesWholeField();
+    }
+}
+
+void RouteGenerator::generateCoordinatesResearchPlots() {
     const int front_up = 8;
     const int front_down = 16;
     const int rear_up = 24;
     const int rear_down = 32;
-
-    /*    PlotSegment beforePlot = { distanceBetweenPlotsX - 2 * implementLength_m, rear_up };
-    PlotSegment startPlot = { implementLength_m, rear_down };
-    PlotSegment endPlot = { plotSizeX, rear_down };
-    PlotSegment afterPlot = { implementLength_m, rear_up };*/
 
     PlotSegment beforePlot = { distanceBetweenPlotsX - 2 * implementLength_m, rear_up };
     PlotSegment startPlot = { implementLength_m, rear_down };
@@ -237,13 +227,7 @@ void RouteGenerator::generateCoordinates() {
         oldy=y;
         ddx=-cos(angleImplements)*distancetoImplements;
         ddy=0;
-//        xs.push_back(x - directionLR * distancetoImplements);
-//        ys.push_back(y);
-        /*
-        qDebug() << "======= " << (counter++) << " ========";
-        qDebug() << "x: " << x+ddx;
-        qDebug() << "y: " << y+ddy;
-        */
+
         int plotsDoneX_pos=(directionLR == -1 ) ? plotsDoneX : 8-plotsDoneX;
         qDebug() << "plotsDoneX_pos: " << plotsDoneX_pos;
         qDebug() << "yorder: " << yorder;
@@ -260,11 +244,11 @@ void RouteGenerator::generateCoordinates() {
 
     if (flipSide)
     {
+
         for (size_t i = 0; i < xs.size(); ++i) {
             ys[i]=-ys[i];
         }
     }
-
 
     // Rotate geometry
     std::vector<std::pair<double, double>> matrix;
@@ -283,8 +267,160 @@ void RouteGenerator::generateCoordinates() {
     all_xs.push_back(xs);
     all_ys.push_back(ys);
     all_attributes.push_back(attributes);
-    
+
     valid=true;
+}
+
+void RouteGenerator::generateCoordinatesWholeField() {
+    const int front_up = 8;
+    const int front_down = 16;
+    const int rear_up = 24;
+    const int rear_down = 32;
+
+    int action = 2;
+    int directionUD = -1, directionLR = -1;
+    bool inHeadRow = true;
+    double currentTurnRadiusY = plotSizeY/2;
+    int neededRepeats = plotSizeY / implementWidth_m;
+    double x = implementLength_m, y = implementWidth_m / 2;
+    double oldx=2,oldy=y;
+    double lastXInHeader = 0, lastYInHeader = 0;
+    int turnCounter = 0;
+    int repeats = 0;
+    int attribute=0;
+    std::vector<int> yorder_array={1,2};
+    int yorder_counter=1;
+    int yorder=0;
+    int oldyorder=0;
+    float distancetoImplements=implementLength_m;
+    float angleImplements=0;
+    double dx=0,dy=0;
+    double ddx=0,ddy=0;
+    int counter=0;
+    qDebug() << "neededRepeats: " << neededRepeats;
+    noPlotsY=2;
+
+    turnSteps=floor(turnDiameterX);
+
+    qDebug() << "startX: " << startX;
+    qDebug() << "startY: " << startY;
+    qDebug() << "relPosX: " << relPosX;
+    qDebug() << "relPosY: " << relPosY;
+    qDebug() << "noPlotsX: " << noPlotsX;
+    qDebug() << "noPlotsY: " << noPlotsY;
+    qDebug() << "distanceBetweenPlotsX: " << distanceBetweenPlotsX;
+    qDebug() << "distanceBetweenPlotsY: " << distanceBetweenPlotsY;
+    qDebug() << "plotSizeX: " << plotSizeX;
+    qDebug() << "plotSizeY: " << plotSizeY;
+    qDebug() << "plotAngle: " << plotAngle;
+    qDebug() << "speed: " << speed;
+    qDebug() << "turnDiameterX: " << turnDiameterX;
+    qDebug() << "turnSteps: " << turnSteps;
+    qDebug() << "implementLength_m: " << implementLength_m;
+    qDebug() << "implementWidth_m: " << implementWidth_m; //*/
+    qDebug() << "currentTurnRadiusY: " << currentTurnRadiusY;
+
+    //    float startAngle=1.5*M_PI;
+//    float endAngle=0.5*M_PI;
+    float startAngle=1.7*M_PI;
+    float endAngle=0.3*M_PI;
+
+    // Store coordinates for each currentTurnRadiusYrepeat
+    std::vector<double> xs, ys;
+    std::vector<int> attributes;
+    int plotsDoneY=0;
+    while (repeats < neededRepeats) {
+        if (inHeadRow) {
+            x += plotSizeX * directionLR;           // Move forward a set distance based on the current plotsegment
+            attribute = front_down;                 // Set the right attribute based on the current plotsegment
+
+            inHeadRow = false;                              // no longer in the headrow (as needs to turn)
+            turnCounter = 0;                                // restart the counter for driving in the x (driving) direction
+            plotsDoneY++;                                   // increase the counter in the y direction
+
+            oldyorder=yorder;                               // keep history
+            yorder_counter++;                               // count up the yorder counter (that is used to control the order in which the rows are taken)
+            if (yorder_counter==(noPlotsY+1))
+            {
+                yorder_counter=1;
+            }
+            yorder=yorder_array[yorder_counter-1];          // set the correct row based on the yorder counter
+            ydistance(currentTurnRadiusY,directionUD,yorder,oldyorder,plotSizeY,distanceBetweenPlotsY); // set currentTurnRadiusY (how far the machine turn in the y-direction and the direction it is driving in (in the main driving direction)
+
+            if (plotsDoneY == noPlotsY) {                   // if have done all plots in the y direction (and hence all plots for this repetition) various logics will be used to cover the entire field
+                currentTurnRadiusY -= implementWidth_m;
+                repeats++;
+                plotsDoneY = 0;
+            };
+            lastXInHeader = x;
+            lastYInHeader = y;
+
+        } else {
+            qDebug() << "in turn: ";
+            double fraction_of_turn=turnCounter / static_cast<double>(turnSteps);
+            //double angle = M_PI * (1.5 - fraction_of_turn);
+            double angle = startAngle+(endAngle-startAngle)*fraction_of_turn;
+            attribute = front_up;
+            dx = -(turnDiameterX * cos(angle)) * directionLR;
+            x = lastXInHeader + dx + implementLength_m  * directionLR;
+           dy = (2*currentTurnRadiusY/(2*sin((endAngle-startAngle)/2))) * directionUD * (1 + sin(angle)) / 2;
+//            dy = currentTurnRadiusY * directionUD * (1 + sin(angle)) / 2;
+            y = lastYInHeader + dy;
+/*            qDebug() << "yorder: " << yorder;
+            qDebug() << "dx: currentTurnRadiusY" << dx;
+            qDebug() << "dy: " << dy;
+            qDebug() << "x: " << x;
+            qDebug() << "y: " << y;*/
+            if (turnCounter == turnSteps) {
+                inHeadRow = true;
+                attribute = front_down;
+                x=x-implementLength_m * directionLR; // to balance the expression a few lines above
+                directionLR = -directionLR;
+            }
+            turnCounter++;
+        }
+        dy=y-oldy;
+        dx=x-oldx;
+        angleImplements=atan2(dy,dx);
+        oldx=x;
+        oldy=y;
+        ddx=-cos(angleImplements)*distancetoImplements;
+        ddy=0;
+        xs.push_back(x+ddx);
+        ys.push_back(y+ddy);
+        attributes.push_back(attribute);
+
+    }
+
+    qDebug() << "size of path (path generation, step 1): " << xs.size();
+    if (flipSide)
+    {
+        for (size_t i = 0; i < xs.size(); ++i) {
+            ys[i]=-ys[i];
+        }
+    }
+
+    // Rotate geometry
+    std::vector<std::pair<double, double>> matrix;
+    for (size_t i = 0; i < xs.size(); ++i) {
+        matrix.emplace_back(xs[i], ys[i]);
+    }
+    rotateGeometry2(matrix, plotAngle, 0, 0);
+
+    // Update xs and ys after rotation
+    for (size_t i = 0; i < matrix.size(); ++i) {
+        xs[i] = matrix[i].first + relPosX + startX;
+        ys[i] = matrix[i].second + relPosY + startY;
+    }
+    qDebug() << "size of path (path generation, step 2): " << xs.size();
+
+    // Store this route
+    all_xs.push_back(xs);
+    all_ys.push_back(ys);
+    all_attributes.push_back(attributes);
+
+    valid=true;
+    qDebug() << "size of path (path generation): " << all_xs.size();
 }
 
 void RouteGenerator::rotateGeometry2(std::vector<std::pair<double, double>>& matrix, double angle, double aroundx, double aroundy) {

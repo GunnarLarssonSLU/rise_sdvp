@@ -1339,7 +1339,7 @@ void CarClient::startStr2Str(double lat,double lon )
     qDebug() << "Lat: " << lat << ", Lon: " << lon;
     QString strLat=QString("%1").arg(lat, 0, 'f', 14);
     QString strLon=QString("%1").arg(lon, 0, 'f', 14);
-        QString exec="str2str -in ntrip://"+mUsr+":"+mPwd+"@nrtk-swepos.lm.se:80/RTCM3_GNSS -p "+strLat+" "+strLon+" 17 -n 5 -out serial://rtk:115200:8:r:1 -msg ""1005,1074""";
+        QString exec="str2str -in ntrip://"+mUsr+":"+mPwd+"@nrtk-swepos.lm.se:8500/RTCM3_GNSS -p "+strLat+" "+strLon+" 17 -n 5 -out serial://rtk:115200:8:r:1 -msg ""1005,1074""";
     qDebug() << exec;
 
     QStringList args;

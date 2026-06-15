@@ -969,6 +969,16 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			};
 			break;
 
+		case CMD_RC_CONTROL_ADV: {
+			timeout_reset();
+			uint16_t action;
+			float magnitude;
+			action = buffer_get_uint16(data, &ind);
+			magnitude = buffer_get_float32(data, 1e4, &ind);
+
+			};
+			break;
+
 			case RC_MODE_PID: // In m/s
 				#if HAS_DIFF_STEERING
 					if (steering < 0.001) {

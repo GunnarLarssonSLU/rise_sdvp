@@ -458,6 +458,21 @@ void CarInterface::showAutoPilotConfiguration()
 
 }
 
+void CarInterface::populateMotorTypeComboBoxes(const QList<QPair<int, QString>>& motorTypes)
+{
+    ui->confCommonWidget->populateMotorTypeComboBoxes(motorTypes);
+}
+
+void CarInterface::populateActionsComboBoxes(const QList<QPair<int, QString>>& motorTypes)
+{
+    ui->confCommonWidget->populateActionsComboBoxes(motorTypes);
+}
+
+void CarInterface::populateModesComboBoxes(const QList<QPair<int, QString>>& modes)
+{
+    ui->confCommonWidget->populateModesComboBoxes(modes);
+}
+
 QPair<int,int> CarInterface::getFirmwareVersion()
 {
     return mFirmwareVersion;

@@ -131,9 +131,14 @@ void database::showError(const QSqlError &err)
 
 QSqlError database::initDb()
 {
-    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+    db = QSqlDatabase::addDatabase("QSQLITE");
     db.setDatabaseName("data.db");
     if (!db.open())
         return db.lastError();
     return QSqlError();
+}
+
+QSqlDatabase database::getDb()
+{
+    return db;
 }
