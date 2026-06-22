@@ -656,6 +656,23 @@ void MainWindow::populateControllerComboBoxes()
         ui->comboBox_controller5->addItem(name, QVariant(id));
         ui->comboBox_controller6->addItem(name, QVariant(id));
     }
+    
+    // Connect combo box change signals to save function
+    connect(ui->comboBox_controller1, QOverload<int>::of(&QComboBox::currentIndexChanged), 
+            this, &MainWindow::saveControllerSettingsToDatabase);
+    connect(ui->comboBox_controller2, QOverload<int>::of(&QComboBox::currentIndexChanged), 
+            this, &MainWindow::saveControllerSettingsToDatabase);
+    connect(ui->comboBox_controller3, QOverload<int>::of(&QComboBox::currentIndexChanged), 
+            this, &MainWindow::saveControllerSettingsToDatabase);
+    connect(ui->comboBox_controller4, QOverload<int>::of(&QComboBox::currentIndexChanged), 
+            this, &MainWindow::saveControllerSettingsToDatabase);
+    connect(ui->comboBox_controller5, QOverload<int>::of(&QComboBox::currentIndexChanged), 
+            this, &MainWindow::saveControllerSettingsToDatabase);
+    connect(ui->comboBox_controller6, QOverload<int>::of(&QComboBox::currentIndexChanged), 
+            this, &MainWindow::saveControllerSettingsToDatabase);
+    
+    // Load controller settings from database
+    loadControllerSettingsFromDatabase();
 }
 
 QList<QPair<int, QString>> MainWindow::getMotorTypesFromDatabase()
@@ -727,6 +744,92 @@ QList<QPair<int, QString>> MainWindow::getModesFromDatabase()
     return modes;
 }
 
+
+void MainWindow::loadControllerSettingsFromDatabase()
+{
+    qDebug() << "Loading controller settings from database";
+    
+    // Query to get all controller settings from database
+    QSqlQuery query("SELECT id, action FROM controllers", db.getDb());
+    
+    if (!query.exec()) {
+        qDebug() << "Controller query error:" << query.lastError().text();
+        return;
+    }
+    
+    // Create a map to store controller settings
+    QMap<int, int> controllerSettings;
+    while (query.next()) {
+        int controllerId = query.value(0).toInt();
+        int actionId = query.value(1).toInt();
+        controllerSettings[controllerId] = actionId;
+    }
+    
+    // Set the combo box values based on database settings
+    for (int i = 1; i <= 6; i++) {
+        QComboBox* comboBox = nullptr;
+        switch (i) {
+            case 1: comboBox = ui->comboBox_controller1; break;
+            case 2: comboBox = ui->comboBox_controller2; break;
+            case 3: comboBox = ui->comboBox_controller3; break;
+            case 4: comboBox = ui->comboBox_controller4; break;
+            case 5: comboBox = ui->comboBox_controller5; break;
+            case 6: comboBox = ui->comboBox_controller6; break;
+        }
+        
+        if (comboBox && controllerSettings.contains(i)) {
+            int actionId = controllerSettings[i];
+            // Find the index of the item with matching user data (actionId)
+            for (int j = 0; j < comboBox->count(); j++) {
+                if (comboBox->itemData(j).toInt() == actionId) {
+                    comboBox->setCurrentIndex(j);
+                    qDebug() << "Controller" << i << "set to action" << actionId;
+                    break;
+                }
+            }
+        }
+    }
+}
+
+void MainWindow::saveControllerSettingsToDatabase()
+{
+    qDebug() << "Saving controller settings to database";
+    
+    // Get database connection
+    QSqlDatabase database = db.getDb();
+    QSqlQuery query(database);
+    
+    // Prepare insert/replace query
+    if (!query.prepare("INSERT OR REPLACE INTO controllers (id, action) VALUES (:id, :action)")) {
+        qDebug() << "Prepare error:" << query.lastError().text();
+        return;
+    }
+    
+    // Save settings for each controller combo box
+    for (int i = 1; i <= 6; i++) {
+        QComboBox* comboBox = nullptr;
+        switch (i) {
+            case 1: comboBox = ui->comboBox_controller1; break;
+            case 2: comboBox = ui->comboBox_controller2; break;
+            case 3: comboBox = ui->comboBox_controller3; break;
+            case 4: comboBox = ui->comboBox_controller4; break;
+            case 5: comboBox = ui->comboBox_controller5; break;
+            case 6: comboBox = ui->comboBox_controller6; break;
+        }
+        
+        if (comboBox && comboBox->currentIndex() >= 0) {
+            int actionId = comboBox->itemData(comboBox->currentIndex()).toInt();
+            query.bindValue(":id", i);
+            query.bindValue(":action", actionId);
+            
+            if (!query.exec()) {
+                qDebug() << "Failed to save controller" << i << ":" << query.lastError().text();
+            } else {
+                qDebug() << "Saved controller" << i << "-> action" << actionId;
+            }
+        }
+    }
+}
 
 QSqlRelationalTableModel* MainWindow::setupFarmTable(QTableView* uiFarmTable,QString sqlTablename)
 {
@@ -1662,7 +1765,7 @@ void MainWindow::controllerAction(int car, int iController,float value=0)
         qDebug() << "Hydraulic, front down: " << value;
         mPacketInterface->hydraulicMove(car, HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_DOWN);
         break;
-    case REAR_UP:
+    case REAR_UP:jsButtonChange
         qDebug() << "Hydraulic, rear up";
         mPacketInterface->hydraulicMove(car, HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_UP);
         break;

@@ -127,6 +127,8 @@ private slots:
     void jsButtonChanged(int button, bool pressed);
     void onMapCarBoxChanged(int value);
     void setJoystickControlEnabled(bool enabled);
+    void loadControllerSettingsFromDatabase();
+    void saveControllerSettingsToDatabase();
 
     void onSelectedFarm(const QModelIndex& current, const QModelIndex& previous);
     void onSelectedField(const QModelIndex& current, const QModelIndex& previous);
