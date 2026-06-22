@@ -233,9 +233,9 @@ void MapRoute::paintLine(int i, bool isSelected, bool isAnalysed, QPainter &pain
             pen.setColor(Qt::darkYellow);
             painter.setBrush(Qt::yellow);
         } else {
-            // No match - use yellow colors
-            pen.setColor(Qt::darkYellow);
-            painter.setBrush(Qt::yellow);
+            // No match - use default colors (ignore this attribute)
+            pen.setColor(defaultDarkColor);
+            painter.setBrush(defaultColor);
         }
     } else {
         // Use default colors for unselected or when no specific attribute is selected
@@ -275,19 +275,19 @@ void MapRoute::paintPoint(QPointF p, quint32 attr, bool isSelected, bool isAnaly
                 pen.setColor(Qt::darkYellow);
                 painter.setBrush(Qt::yellow);
             } else {
-                // Check if the attribute matches the selected action attribute
+                // Check if the attribute matches the selected action attribute or its off state
                 if (attr == selectedActionAttribute) {
                     // Attribute is on - use cyan colors
                     pen.setColor(Qt::darkCyan);
                     painter.setBrush(Qt::cyan);
                 } else if (attr == (selectedActionAttribute - 8)) {
-                    // Attribute is off (selected attribute minus 8) - use yellow colors
+                    // Attribute is off - use yellow colors
                     pen.setColor(Qt::darkYellow);
                     painter.setBrush(Qt::yellow);
                 } else {
-                    // No match - use yellow colors
-                    pen.setColor(Qt::darkYellow);
-                    painter.setBrush(Qt::yellow);
+                    // No match - use existing default colors (ignore this attribute)
+                    pen.setColor(Qt::darkGray);
+                    painter.setBrush(Qt::gray);
                 }
             }
         } else {
@@ -303,13 +303,13 @@ void MapRoute::paintPoint(QPointF p, quint32 attr, bool isSelected, bool isAnaly
     } else {
         // qDebug() << "low quality value: " << attr;
         // Use simplified logic for low quality as well
-        int circleType = 1; // default
+        int circleType = 1; // default (gray)
         if (isSelected) {
             if (selectedActionAttribute == 0) {
-                // No specific attribute selected - use default (yellow = type 0)
+                // No specific attribute selected - use yellow (type 0)
                 circleType = 0;
             } else {
-                // Check if the attribute matches the selected action attribute
+                // Check if the attribute matches the selected action attribute or its off state
                 if (attr == selectedActionAttribute) {
                     // Attribute is on - use cyan (type 3)
                     circleType = 3;
@@ -317,8 +317,8 @@ void MapRoute::paintPoint(QPointF p, quint32 attr, bool isSelected, bool isAnaly
                     // Attribute is off - use yellow (type 0)
                     circleType = 0;
                 } else {
-                    // No match - use yellow (type 0)
-                    circleType = 0;
+                    // No match - use default gray (type 1)
+                    circleType = 1;
                 }
             }
         }
@@ -369,8 +369,7 @@ void MapRoute::paintInfoText(bool mDrawRouteText, int i, QPointF p, bool isSelec
 }
 void MapRoute::paintPath(QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawTrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool mDrawRouteText, bool highQuality, int selectedActionAttribute)
 {
-    qDebug() << "MapRoute::paintPath called with selectedActionAttribute:" << selectedActionAttribute << "isSelected:" << isSelected << "points:" << size();
-{
+//    qDebug() << "MapRoute::paintPath called with selectedActionAttribute:" << selectedActionAttribute << "isSelected:" << isSelected << "points:" << size();
     Qt::GlobalColor defaultDarkColor = Qt::darkGray;
     Qt::GlobalColor defaultColor = Qt::gray;
     bool showSowing=false;
