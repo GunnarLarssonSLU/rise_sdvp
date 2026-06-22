@@ -215,6 +215,7 @@ void MapRoute::paint(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool is
 
 void MapRoute::paintLine(int i, bool isSelected, bool isAnalysed, QPainter &painter, QPen &pen, Qt::GlobalColor defaultDarkColor, Qt::GlobalColor defaultColor, int selectedActionAttribute)
 {
+    qDebug() << "Line. isAnalysed = " << isAnalysed << ", isSelected = " << isSelected << ", selectedActionAttribute: " << selectedActionAttribute;
     if (isAnalysed) {
         qDebug() << "show analysis line: " << i;
         pen.setColor(Qt::darkBlue);
@@ -222,6 +223,7 @@ void MapRoute::paintLine(int i, bool isSelected, bool isAnalysed, QPainter &pain
     } else if (isSelected && selectedActionAttribute != 0) {
         // Use the new simplified logic based on selected action attribute
         quint32 attr = mRoute[i].getAttributes();
+        qDebug() << "Line. attr = " << attr << ", selectedActionAttribute: " << selectedActionAttribute;
         if (attr == selectedActionAttribute) {
             // Attribute is on - use cyan colors
             pen.setColor(Qt::darkCyan);
@@ -244,7 +246,7 @@ void MapRoute::paintLine(int i, bool isSelected, bool isAnalysed, QPainter &pain
     painter.setOpacity(0.7);
     painter.drawLine(mRoute[i - 1].getX() * 1000.0, mRoute[i - 1].getY() * 1000.0,
                      mRoute[i].getX() * 1000.0, mRoute[i].getY() * 1000.0);
-/*
+/*//
     if (isImplementsDownAndPathSelected) {
         pen.setBrush(Qt::red);
         painter.setPen(pen);
