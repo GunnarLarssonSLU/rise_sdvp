@@ -129,6 +129,7 @@ private slots:
     void setJoystickControlEnabled(bool enabled);
     void loadControllerSettingsFromDatabase();
     void saveControllerSettingsToDatabase();
+    void handleControllerInput(int controllerNumber, float value);
 
     void onSelectedFarm(const QModelIndex& current, const QModelIndex& previous);
     void onSelectedField(const QModelIndex& current, const QModelIndex& previous);
@@ -253,7 +254,7 @@ private slots:
 private:
     // Helper methods
     bool isPointInsideBorder(const LocPoint& point, const MapRoute& border); // Check if point is inside border
-    void controllerAction(int car, int iController,float value);
+    void controllerAction(int car, int iAction,float value);
 
     // Area definition storage - using existing border infrastructure
     bool mAreaLoaded = false;

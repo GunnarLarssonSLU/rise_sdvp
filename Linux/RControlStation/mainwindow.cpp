@@ -642,6 +642,14 @@ void MainWindow::populateControllerComboBoxes()
     ui->comboBox_controller7->clear();
     ui->comboBox_controller8->clear();
 
+    // Add "-- None --" option first (index 0)
+    ui->comboBox_controller1->addItem("-- None --", QVariant()); // NULL/QVariant() for empty
+    ui->comboBox_controller3->addItem("-- None --", QVariant());
+    ui->comboBox_controller5->addItem("-- None --", QVariant());
+    ui->comboBox_controller6->addItem("-- None --", QVariant());
+    ui->comboBox_controller7->addItem("-- None --", QVariant());
+    ui->comboBox_controller8->addItem("-- None --", QVariant());
+
     // Populate each combo box with database data
     while (query.next()) {
         int id = query.value(0).toInt();
@@ -774,9 +782,9 @@ void MainWindow::loadControllerSettingsFromDatabase()
         QComboBox* comboBox = nullptr;
         switch (i) {
             case 1: comboBox = ui->comboBox_controller1; break;
-            case 2: comboBox = ui->comboBox_controller2; break;
+  //          case 2: comboBox = ui->comboBox_controller2; break;
             case 3: comboBox = ui->comboBox_controller3; break;
-            case 4: comboBox = ui->comboBox_controller4; break;
+  //          case 4: comboBox = ui->comboBox_controller4; break;
             case 5: comboBox = ui->comboBox_controller5; break;
             case 6: comboBox = ui->comboBox_controller6; break;
             case 7: comboBox = ui->comboBox_controller7; break;
@@ -822,9 +830,9 @@ void MainWindow::saveControllerSettingsToDatabase()
         QComboBox* comboBox = nullptr;
         switch (i) {
             case 1: comboBox = ui->comboBox_controller1; break;
-            case 2: comboBox = ui->comboBox_controller2; break;
+//            case 2: comboBox = ui->comboBox_controller2; break;
             case 3: comboBox = ui->comboBox_controller3; break;
-            case 4: comboBox = ui->comboBox_controller4; break;
+//            case 4: comboBox = ui->comboBox_controller4; break;
             case 5: comboBox = ui->comboBox_controller5; break;
             case 6: comboBox = ui->comboBox_controller6; break;
             case 7: comboBox = ui->comboBox_controller7; break;
@@ -858,6 +866,42 @@ void MainWindow::saveControllerSettingsToDatabase()
                 }
             }
         }
+    }
+}
+
+void MainWindow::handleControllerInput(int controllerNumber, float value)
+{
+    // Validate controller number (1-8)
+    if (controllerNumber < 1 || controllerNumber > 8) {
+        qDebug() << "Invalid controller number:" << controllerNumber << "- must be 1-8";
+        return;
+    }
+    
+    // Get the action ID for this controller from the database
+    QSqlQuery query(db.getDb());
+    query.prepare("SELECT action FROM controllers WHERE id = :controllerId");
+    query.bindValue(":controllerId", controllerNumber);
+    
+    if (!query.exec()) {
+        qDebug() << "Failed to query controller action:" << query.lastError().text();
+        return;
+    }
+    
+    if (query.next()) {
+        // Controller has a configured action
+        int actionId = query.value(0).toInt();
+        qDebug() << "Controller" << controllerNumber << "has action" << actionId 
+                 << "with value" << value;
+        
+        // Call controllerAction with:
+        // - car: mActiveCarId (the currently selected active car)
+        // - iAction: the action ID from the database
+        // - value: the input value passed to this function
+        controllerAction(mActiveCarId, actionId, value);
+    } else {
+        // No action configured for this controller
+        qDebug() << "Controller" << controllerNumber << "has no configured action - ignoring input";
+        // Optionally: could play a sound or show notification that controller is unconfigured
     }
 }
 
@@ -1783,7 +1827,7 @@ void MainWindow::infoTraceChanged(int traceNow)
     ui->mapInfoTraceBox->setValue(traceNow);
 }
 
-void MainWindow::controllerAction(int car, int iController,float value=0)
+void MainWindow::controllerAction(int car, int iAction,float value=0)
 {
     switch (iController)
     {
