@@ -215,7 +215,9 @@ void MapRoute::paint(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool is
 
 void MapRoute::paintLine(int i, bool isSelected, bool isAnalysed, QPainter &painter, QPen &pen, Qt::GlobalColor defaultDarkColor, Qt::GlobalColor defaultColor, int selectedActionAttribute)
 {
-    // qDebug() << "MapRoute::paintLine called with selectedActionAttribute:" << selectedActionAttribute << "isSelected:" << isSelected << "isAnalysed:" << isAnalysed << "attr:" << mRoute[i].getAttributes();
+    // Store the original pen width to preserve it
+    qreal originalWidth = pen.widthF();
+    
     if (isAnalysed) {
         qDebug() << "show analysis line: " << i;
         pen.setColor(Qt::darkBlue);
@@ -243,6 +245,9 @@ void MapRoute::paintLine(int i, bool isSelected, bool isAnalysed, QPainter &pain
         painter.setBrush(defaultColor);
     }
 
+    // Set the pen with the preserved width
+    pen.setWidthF(originalWidth);
+    painter.setPen(pen);
     painter.setOpacity(0.7);
     painter.drawLine(mRoute[i - 1].getX() * 1000.0, mRoute[i - 1].getY() * 1000.0,
                      mRoute[i].getX() * 1000.0, mRoute[i].getY() * 1000.0);
