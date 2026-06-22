@@ -1687,55 +1687,55 @@ void MainWindow::jsButtonChanged(int button, bool pressed)
                     button == REAR_DOWN || button == REAR_UP || button == 6) {
                 // Use the cached active car ID
 
-                CarInterface *activeCar = nullptr;
+                bool activeCarExists = false;
                 
                 // Find the car with matching ID
                 for(QList<CarInterface*>::Iterator it_car = mCars.begin(); it_car < mCars.end(); it_car++) {
                     CarInterface *car = *it_car;
                     if (car->getId() == mActiveCarId) {
-                        activeCar = car;
+                        activeCarExists = true;
                         break;
                     }
                 }
                 
                 // Only send commands to the active car if joystick control is enabled globally
-                if (activeCar && mJoystickControlEnabled) {
-                    qDebug() << "Active car id: " << activeCar->getId();
+                if (activeCarExists && mJoystickControlEnabled) {
+                    qDebug() << "Active car id: " << mActiveCarId;
                         if (button == FRONT_UP || button == FRONT_DOWN) {
                             qDebug() << "Hydraulic, rear down";
-                            mPacketInterface->hydraulicMove(activeCar->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
+                            mPacketInterface->hydraulicMove(mActiveCarId, HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
                             if (pressed) {
                                 if (button == FRONT_UP) {
-                                    controllerAction(activeCar->getId(),FRONT_UP);
+                                    controllerAction(mActiveCarId,FRONT_UP);
                                 } else {
-                                    controllerAction(activeCar->getId(),FRONT_DOWN);
+                                    controllerAction(mActiveCarId,FRONT_DOWN);
                                 }
                             } else {
-                                mPacketInterface->hydraulicMove(activeCar->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_STOP);
+                                mPacketInterface->hydraulicMove(mActiveCarId, HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_STOP);
                             }
                         } else if (button == REAR_UP || button == REAR_DOWN) {
                             if (pressed) {
                                 if (button == REAR_UP) {
-                                    controllerAction(activeCar->getId(),REAR_UP);
+                                    controllerAction(mActiveCarId,REAR_UP);
                                 } else {
-                                    controllerAction(activeCar->getId(),REAR_DOWN);
+                                    controllerAction(mActiveCarId,REAR_DOWN);
                                 }
                             } else {
                                 qDebug() << "Hydraulic, rear down";
-                                mPacketInterface->hydraulicMove(activeCar->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
-                                mPacketInterface->hydraulicMove(activeCar->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_STOP);
+                                mPacketInterface->hydraulicMove(mActiveCarId, HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
+                                mPacketInterface->hydraulicMove(mActiveCarId, HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_STOP);
                             }
                         } else if (button == 1 || button == 3) {
                             qDebug() << "Hydraulic, rear down";
-                            mPacketInterface->hydraulicMove(activeCar->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
+                            mPacketInterface->hydraulicMove(mActiveCarId, HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
                             if (pressed) {
                                 if (button == 1) {
-                                    mPacketInterface->hydraulicMove(activeCar->getId(), HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_OUT);
+                                    mPacketInterface->hydraulicMove(mActiveCarId, HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_OUT);
                                 } else {
-                                    mPacketInterface->hydraulicMove(activeCar->getId(), HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_IN);
+                                    mPacketInterface->hydraulicMove(mActiveCarId, HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_IN);
                                 }
                             } else {
-                                mPacketInterface->hydraulicMove(activeCar->getId(), HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_STOP);
+                                mPacketInterface->hydraulicMove(mActiveCarId, HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_STOP);
                             }
                         }
                     }
