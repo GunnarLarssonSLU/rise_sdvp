@@ -259,6 +259,7 @@ void MapRoute::paintLine(int i, bool isSelected, bool isAnalysed, QPainter &pain
 
 void MapRoute::paintPoint(QPointF p, quint32 attr, bool isSelected, bool isAnalysed, QPainter &painter, QPen &pen, double mScaleFactor, QTransform drawTrans, bool highQuality, int selectedActionAttribute)
 {
+    qDebug() << "MapRoute::paintPoint called with selectedActionAttribute:" << selectedActionAttribute << "isSelected:" << isSelected << "attr:" << attr;
     painter.setTransform(drawTrans);
 
     if (highQuality) {
