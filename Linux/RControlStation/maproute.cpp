@@ -368,6 +368,8 @@ void MapRoute::paintInfoText(bool mDrawRouteText, int i, QPointF p, bool isSelec
 }
 void MapRoute::paintPath(QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawTrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool mDrawRouteText, bool highQuality, int selectedActionAttribute)
 {
+    qDebug() << "MapRoute::paintPath called with selectedActionAttribute:" << selectedActionAttribute << "isSelected:" << isSelected << "points:" << size();
+{
     Qt::GlobalColor defaultDarkColor = Qt::darkGray;
     Qt::GlobalColor defaultColor = Qt::gray;
     bool showSowing=false;
