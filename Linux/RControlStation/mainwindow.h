@@ -125,6 +125,7 @@ private slots:
     void routePointAdded(LocPoint pos);
     void infoTraceChanged(int traceNow);
     void jsButtonChanged(int button, bool pressed);
+    void onMapCarBoxChanged(int value);
 
     void onSelectedFarm(const QModelIndex& current, const QModelIndex& previous);
     void onSelectedField(const QModelIndex& current, const QModelIndex& previous);
@@ -271,6 +272,7 @@ private:
     QList<CarInterface*> mCars;
     QLabel *mStatusLabel;
     int mStatusInfoTime;
+    int mActiveCarId;
     bool mKeyUp;
     bool mKeyDown;
     bool mKeyRight;

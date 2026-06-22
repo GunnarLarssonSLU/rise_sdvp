@@ -245,6 +245,7 @@ MainWindow::MainWindow(QWidget *parent) :
     mStatusLabel = new QLabel(this);
     ui->statusBar->addPermanentWidget(mStatusLabel);
     mStatusInfoTime = 0;
+    mActiveCarId = 0;
     mPacketInterface = new PacketInterface(this);
     mSerialPort = new QSerialPort(this);
     mThrottle = 0.0;
@@ -323,6 +324,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->buttonTransform, &QPushButton::clicked, this, &MainWindow::onTransformButtonClicked);
     connect(ui->buttonCut, &QPushButton::clicked, this, &MainWindow::onCutButtonClicked);
     connect(ui->listLogfilesView, &QListView::clicked, this, &MainWindow::on_listLogFilesView_clicked);
+    connect(ui->mapCarBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::onMapCarBoxChanged);
 
     connect(ui->actionAboutQt, SIGNAL(triggered(bool)),
             qApp, SLOT(aboutQt()));
@@ -1682,52 +1684,69 @@ void MainWindow::jsButtonChanged(int button, bool pressed)
 
             if (button == FRONT_UP || button == FRONT_DOWN || button == 1 ||
                     button == REAR_DOWN || button == REAR_UP || button == 6) {
-                for(QList<CarInterface*>::Iterator it_car = mCars.begin();it_car < mCars.end();it_car++) {
+                // Use the cached active car ID
+                CarInterface *activeCar = nullptr;
+                
+                // Find the car with matching ID
+                for(QList<CarInterface*>::Iterator it_car = mCars.begin(); it_car < mCars.end(); it_car++) {
                     CarInterface *car = *it_car;
-                    qDebug() << "Car id: " << car->getId();
-                    if (car->getCtrlKb()) {
+                    if (car->getId() == mActiveCarId) {
+                        activeCar = car;
+                        break;
+                    }
+                }
+                
+                // Only send commands to the active car if it has keyboard control enabled
+                if (activeCar && activeCar->getCtrlKb()) {
+                    qDebug() << "Active car id: " << activeCar->getId();
                         if (button == FRONT_UP || button == FRONT_DOWN) {
                             qDebug() << "Hydraulic, rear down";
-                            mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
+                            mPacketInterface->hydraulicMove(activeCar->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
                             if (pressed) {
                                 if (button == FRONT_UP) {
-                                    controllerAction(car->getId(),FRONT_UP);
+                                    controllerAction(activeCar->getId(),FRONT_UP);
                                 } else {
-                                    controllerAction(car->getId(),FRONT_DOWN);
+                                    controllerAction(activeCar->getId(),FRONT_DOWN);
                                 }
                             } else {
-                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_STOP);
+                                mPacketInterface->hydraulicMove(activeCar->getId(), HYDRAULIC_POS_FRONT, HYDRAULIC_MOVE_STOP);
                             }
                         } else if (button == REAR_UP || button == REAR_DOWN) {
                             if (pressed) {
                                 if (button == REAR_UP) {
-                                    controllerAction(car->getId(),REAR_UP);
+                                    controllerAction(activeCar->getId(),REAR_UP);
                                 } else {
-                                    controllerAction(car->getId(),REAR_DOWN);
+                                    controllerAction(activeCar->getId(),REAR_DOWN);
                                 }
                             } else {
                                 qDebug() << "Hydraulic, rear down";
-                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
-                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_STOP);
+                                mPacketInterface->hydraulicMove(activeCar->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
+                                mPacketInterface->hydraulicMove(activeCar->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_STOP);
                             }
                         } else if (button == 1 || button == 3) {
                             qDebug() << "Hydraulic, rear down";
-                            mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
+                            mPacketInterface->hydraulicMove(activeCar->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
                             if (pressed) {
                                 if (button == 1) {
-                                    mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_OUT);
+                                    mPacketInterface->hydraulicMove(activeCar->getId(), HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_OUT);
                                 } else {
-                                    mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_IN);
+                                    mPacketInterface->hydraulicMove(activeCar->getId(), HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_IN);
                                 }
                             } else {
-                                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_STOP);
+                                mPacketInterface->hydraulicMove(activeCar->getId(), HYDRAULIC_POS_EXTRA, HYDRAULIC_MOVE_STOP);
                             }
                         }
                     }
                 }
             }
-        }
+//        }
     #endif
+}
+
+void MainWindow::onMapCarBoxChanged(int value)
+{
+    mActiveCarId = value;
+    qDebug() << "Active car changed to:" << mActiveCarId;
 }
 
 void MainWindow::on_disconnectButton_clicked()
