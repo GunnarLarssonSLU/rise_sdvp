@@ -4093,20 +4093,11 @@ void MainWindow::on_mapRoutePosAttrBox_currentIndexChanged(int index)
 
 void MainWindow::on_comboBoxAction_currentIndexChanged(int index)
 {
-    qDebug() << "comboBoxAction_currentIndexChanged called with index:" << index;
-    
-    // Debug: Check all combo box items
-    for (int i = 0; i < ui->comboBoxAction->count(); i++) {
-        qDebug() << "Item" << i << ":" << ui->comboBoxAction->itemText(i) << "data:" << ui->comboBoxAction->itemData(i).toInt();
-    }
-    
     // Get the userData from the comboBoxAction item which contains the attribute value
     int attributeValue = ui->comboBoxAction->itemData(index).toInt();
-    qDebug() << "comboBoxAction changed to index:" << index << "attribute value:" << attributeValue;
     
     // Set this value in the map widget so it uses this attribute for coloring
     ui->mapLiveWidget->setSelectedActionAttribute(attributeValue);
-    qDebug() << "Map widget selected action attribute set to:" << ui->mapLiveWidget->getSelectedActionAttribute();
 }
 
 void MainWindow::on_clearAnchorButton_clicked()

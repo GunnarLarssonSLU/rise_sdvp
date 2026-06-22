@@ -429,7 +429,6 @@ void MapWidget::setFieldNow(int fieldNow)
 
 void MapWidget::setSelectedActionAttribute(int attribute)
 {
-    qDebug() << "MapWidget::setSelectedActionAttribute called with:" << attribute << "on widget:" << this;
     mSelectedActionAttribute = attribute;
     update();
 }
@@ -1915,7 +1914,7 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
     for (int rn = 0;rn < mPaths->size();rn++) {
         MapRoute &routeNow = mPaths->at(rn);
         isSelected= (mPaths->mRouteNow == rn);
-        qDebug() << "Calling paintPath with selectedActionAttribute:" << mSelectedActionAttribute << "on widget:" << this << "paths:" << mPaths->size();
+        // qDebug() << "Calling paintPath with selectedActionAttribute:" << mSelectedActionAttribute << "on widget:" << this << "paths:" << mPaths->size();
         routeNow.paintPath(painter, pen, isSelected, mScaleFactor, drawTrans, txt, pt_txt, rect_txt, txtTrans,  mDrawRouteText, highQuality, mSelectedActionAttribute);
     }
 

@@ -215,7 +215,7 @@ void MapRoute::paint(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool is
 
 void MapRoute::paintLine(int i, bool isSelected, bool isAnalysed, QPainter &painter, QPen &pen, Qt::GlobalColor defaultDarkColor, Qt::GlobalColor defaultColor, int selectedActionAttribute)
 {
-    qDebug() << "MapRoute::paintLine called with selectedActionAttribute:" << selectedActionAttribute << "isSelected:" << isSelected << "isAnalysed:" << isAnalysed << "attr:" << mRoute[i].getAttributes();
+    // qDebug() << "MapRoute::paintLine called with selectedActionAttribute:" << selectedActionAttribute << "isSelected:" << isSelected << "isAnalysed:" << isAnalysed << "attr:" << mRoute[i].getAttributes();
     if (isAnalysed) {
         qDebug() << "show analysis line: " << i;
         pen.setColor(Qt::darkBlue);
@@ -259,7 +259,7 @@ void MapRoute::paintLine(int i, bool isSelected, bool isAnalysed, QPainter &pain
 
 void MapRoute::paintPoint(QPointF p, quint32 attr, bool isSelected, bool isAnalysed, QPainter &painter, QPen &pen, double mScaleFactor, QTransform drawTrans, bool highQuality, int selectedActionAttribute)
 {
-    qDebug() << "MapRoute::paintPoint called with selectedActionAttribute:" << selectedActionAttribute << "isSelected:" << isSelected << "attr:" << attr;
+    // qDebug() << "MapRoute::paintPoint called with selectedActionAttribute:" << selectedActionAttribute << "isSelected:" << isSelected << "attr:" << attr;
     painter.setTransform(drawTrans);
 
     if (highQuality) {
@@ -369,7 +369,6 @@ void MapRoute::paintInfoText(bool mDrawRouteText, int i, QPointF p, bool isSelec
 }
 void MapRoute::paintPath(QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawTrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool mDrawRouteText, bool highQuality, int selectedActionAttribute)
 {
-//    qDebug() << "MapRoute::paintPath called with selectedActionAttribute:" << selectedActionAttribute << "isSelected:" << isSelected << "points:" << size();
     Qt::GlobalColor defaultDarkColor = Qt::darkGray;
     Qt::GlobalColor defaultColor = Qt::gray;
     bool showSowing=false;
