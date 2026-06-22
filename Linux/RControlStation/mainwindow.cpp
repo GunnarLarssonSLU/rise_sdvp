@@ -642,14 +642,6 @@ void MainWindow::populateControllerComboBoxes()
     ui->comboBox_controller7->clear();
     ui->comboBox_controller8->clear();
 
-    // Add empty option first (index 0 will represent NULL/no action)
-    ui->comboBox_controller1->addItem("-- None --", QVariant()); // NULL/QVariant() for empty
-    ui->comboBox_controller3->addItem("-- None --", QVariant());
-    ui->comboBox_controller5->addItem("-- None --", QVariant());
-    ui->comboBox_controller6->addItem("-- None --", QVariant());
-    ui->comboBox_controller7->addItem("-- None --", QVariant());
-    ui->comboBox_controller8->addItem("-- None --", QVariant());
-    
     // Populate each combo box with database data
     while (query.next()) {
         int id = query.value(0).toInt();
@@ -782,9 +774,9 @@ void MainWindow::loadControllerSettingsFromDatabase()
         QComboBox* comboBox = nullptr;
         switch (i) {
             case 1: comboBox = ui->comboBox_controller1; break;
-  //          case 2: comboBox = ui->comboBox_controller2; break;
+            case 2: comboBox = ui->comboBox_controller2; break;
             case 3: comboBox = ui->comboBox_controller3; break;
-  //          case 4: comboBox = ui->comboBox_controller4; break;
+            case 4: comboBox = ui->comboBox_controller4; break;
             case 5: comboBox = ui->comboBox_controller5; break;
             case 6: comboBox = ui->comboBox_controller6; break;
             case 7: comboBox = ui->comboBox_controller7; break;
@@ -803,9 +795,9 @@ void MainWindow::loadControllerSettingsFromDatabase()
                     }
                 }
             } else {
-                // No action configured for this controller - show empty option (index 0)
-                comboBox->setCurrentIndex(0); // Index 0 is "-- None --"
-                qDebug() << "Controller" << i << "has no configured action - showing empty option";
+                // No action configured for this controller - show nothing
+                comboBox->setCurrentIndex(-1);
+                qDebug() << "Controller" << i << "has no configured action - showing empty selection";
             }
         }
     }
@@ -830,9 +822,9 @@ void MainWindow::saveControllerSettingsToDatabase()
         QComboBox* comboBox = nullptr;
         switch (i) {
             case 1: comboBox = ui->comboBox_controller1; break;
-   //         case 2: comboBox = ui->comboBox_controller2; break;
+            case 2: comboBox = ui->comboBox_controller2; break;
             case 3: comboBox = ui->comboBox_controller3; break;
-   //         case 4: comboBox = ui->comboBox_controller4; break;
+            case 4: comboBox = ui->comboBox_controller4; break;
             case 5: comboBox = ui->comboBox_controller5; break;
             case 6: comboBox = ui->comboBox_controller6; break;
             case 7: comboBox = ui->comboBox_controller7; break;
@@ -840,8 +832,8 @@ void MainWindow::saveControllerSettingsToDatabase()
         }
         
         if (comboBox) {
-            if (comboBox->currentIndex() > 0) {
-                // Valid action selection (index > 0, since index 0 is "-- None --")
+            if (comboBox->currentIndex() >= 0) {
+                // Valid selection - save to database
                 int actionId = comboBox->itemData(comboBox->currentIndex()).toInt();
                 query.bindValue(":id", i);
                 query.bindValue(":action", actionId);
@@ -851,8 +843,8 @@ void MainWindow::saveControllerSettingsToDatabase()
                 } else {
                     qDebug() << "Saved controller" << i << "-> action" << actionId;
                 }
-            } else if (comboBox->currentIndex() == 0) {
-                // Empty option selected (index 0) - remove from database or set to NULL
+            } else {
+                // No selection (index -1) - remove from database
                 QSqlQuery deleteQuery(db.getDb());
                 if (!deleteQuery.prepare("DELETE FROM controllers WHERE id = :id")) {
                     qDebug() << "Failed to prepare delete for controller" << i;
@@ -861,7 +853,7 @@ void MainWindow::saveControllerSettingsToDatabase()
                     if (!deleteQuery.exec()) {
                         qDebug() << "Failed to delete controller" << i << ":" << deleteQuery.lastError().text();
                     } else {
-                        qDebug() << "Cleared controller" << i << "from database (empty option selected)";
+                        qDebug() << "Cleared controller" << i << "from database (no action selected)";
                     }
                 }
             }
