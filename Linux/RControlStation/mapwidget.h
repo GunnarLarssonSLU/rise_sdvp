@@ -125,6 +125,9 @@ public:
     void clearField();
     void clearAllFields();
 
+    void setSelectedActionAttribute(int attribute);
+    int getSelectedActionAttribute() const;
+
     void setTrace(QVector<LocPoint> mTrace);
 
     void setRoutePointSpeed(double speed);
@@ -285,6 +288,7 @@ private:
     bool mAnchorMode;
     bool mDrawRouteText;
     bool mDrawUwbTrace;
+    int mSelectedActionAttribute;
     QImage mLastCameraImage;
     double mCameraImageWidth;
     double mCameraImageOpacity;

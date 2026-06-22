@@ -206,6 +206,7 @@ private slots:
     void on_routeZeroButton_clicked();
     void on_routeZeroAllButton_clicked();
     void on_mapRoutePosAttrBox_currentIndexChanged(int index);
+    void on_comboBoxAction_currentIndexChanged(int index);
     void on_clearAnchorButton_clicked();
     void on_setBoundsRoutePushButton_clicked();
     void on_boundsFillPushButton_clicked();

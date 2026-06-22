@@ -165,6 +165,7 @@ MapWidget::MapWidget(QWidget *parent) : QWidget(parent)
     mAnchorMode = false;
     mDrawRouteText = false;
     mDrawUwbTrace = false;
+    mSelectedActionAttribute = 0;
     mCameraImageWidth = 0.46;
     mCameraImageOpacity = 0.8;
     hasChanged=false;
@@ -424,6 +425,17 @@ void MapWidget::setFieldNow(int fieldNow)
 {
     mFields->setRouteNow(fieldNow);
     update();
+}
+
+void MapWidget::setSelectedActionAttribute(int attribute)
+{
+    mSelectedActionAttribute = attribute;
+    update();
+}
+
+int MapWidget::getSelectedActionAttribute() const
+{
+    return mSelectedActionAttribute;
 }
 
 
@@ -1902,7 +1914,7 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
     for (int rn = 0;rn < mPaths->size();rn++) {
         MapRoute &routeNow = mPaths->at(rn);
         isSelected= (mPaths->mRouteNow == rn);
-        routeNow.paintPath(painter, pen, isSelected, mScaleFactor, drawTrans, txt, pt_txt, rect_txt, txtTrans,  mDrawRouteText, highQuality);
+        routeNow.paintPath(painter, pen, isSelected, mScaleFactor, drawTrans, txt, pt_txt, rect_txt, txtTrans,  mDrawRouteText, highQuality, mSelectedActionAttribute);
     }
 
     //paintInfoTraces();

@@ -52,10 +52,10 @@ public:
     double getArea();
     double getLength(bool bForAnalysis);
     //    void paint(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawtrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool highQuality = false);
-    void paintPath(QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawtrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool mDrawRouteText, bool highQuality = false);
+    void paintPath(QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawtrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool mDrawRouteText, bool highQuality = false, int selectedActionAttribute = 0);
     void paintBorder(QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawtrans);
-    void paintLine(int i, bool isSelected, bool isSAnalyzed, QPainter &painter, QPen &pen, Qt::GlobalColor defaultDarkColor, Qt::GlobalColor defaultColor);
-    void paintPoint(QPointF p, quint32 attr, bool isSelected, bool isSAnalyzed, QPainter &painter, QPen &pen, double mScaleFactor, QTransform drawTrans, bool highQuality);
+    void paintLine(int i, bool isSelected, bool isSAnalyzed, QPainter &painter, QPen &pen, Qt::GlobalColor defaultDarkColor, Qt::GlobalColor defaultColor, int selectedActionAttribute = 0);
+    void paintPoint(QPointF p, quint32 attr, bool isSelected, bool isSAnalyzed, QPainter &painter, QPen &pen, double mScaleFactor, QTransform drawTrans, bool highQuality, int selectedActionAttribute = 0);
     void paintInfoText(bool mDrawRouteText, int i, QPointF p, bool isSelected, QPainter &painter, QPen &pen, double mScaleFactor, QTransform drawTrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans);
 
     void routeinfo(QPainter &painter,double start_txt,const double txtOffset,const double txt_row_h, int width, QString txt);

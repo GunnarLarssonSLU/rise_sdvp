@@ -213,24 +213,33 @@ void MapRoute::paint(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool is
 }
 */
 
-void MapRoute::paintLine(int i, bool isSelected, bool isAnalysed, QPainter &painter, QPen &pen, Qt::GlobalColor defaultDarkColor, Qt::GlobalColor defaultColor)
+void MapRoute::paintLine(int i, bool isSelected, bool isAnalysed, QPainter &painter, QPen &pen, Qt::GlobalColor defaultDarkColor, Qt::GlobalColor defaultColor, int selectedActionAttribute)
 {
-    //    Qt::GlobalColor sowingColor = Qt::red;
-    pen.setColor(defaultDarkColor);
-    painter.setBrush(defaultColor);
-
-    /*
-    bool isImplementsDownAndPathSelected=isSelected && (mRoute[i - 1].getAttributes() & ATTR_HYDRAULIC_FRONT_DOWN) && (mRoute[i].getAttributes() & ATTR_HYDRAULIC_FRONT_DOWN);
-    if (isImplementsDownAndPathSelected) {
-        pen.setColor(Qt::darkCyan);
-        painter.setBrush(Qt::cyan);
-    } */
     if (isAnalysed) {
         qDebug() << "show analysis line: " << i;
         pen.setColor(Qt::darkBlue);
         painter.setBrush(Qt::blue);
+    } else if (isSelected && selectedActionAttribute != 0) {
+        // Use the new simplified logic based on selected action attribute
+        quint32 attr = mRoute[i].getAttributes();
+        if (attr == selectedActionAttribute) {
+            // Attribute is on - use cyan colors
+            pen.setColor(Qt::darkCyan);
+            painter.setBrush(Qt::cyan);
+        } else if (attr == (selectedActionAttribute - 8)) {
+            // Attribute is off - use yellow colors
+            pen.setColor(Qt::darkYellow);
+            painter.setBrush(Qt::yellow);
+        } else {
+            // No match - use yellow colors
+            pen.setColor(Qt::darkYellow);
+            painter.setBrush(Qt::yellow);
+        }
+    } else {
+        // Use default colors for unselected or when no specific attribute is selected
+        pen.setColor(defaultDarkColor);
+        painter.setBrush(defaultColor);
     }
-    painter.setPen(pen);
 
     painter.setOpacity(0.7);
     painter.drawLine(mRoute[i - 1].getX() * 1000.0, mRoute[i - 1].getY() * 1000.0,
@@ -246,38 +255,38 @@ void MapRoute::paintLine(int i, bool isSelected, bool isAnalysed, QPainter &pain
     painter.setOpacity(1.0);
 }
 
-void MapRoute::paintPoint(QPointF p, quint32 attr, bool isSelected, bool isAnalysed, QPainter &painter, QPen &pen, double mScaleFactor, QTransform drawTrans, bool highQuality)
+void MapRoute::paintPoint(QPointF p, quint32 attr, bool isSelected, bool isAnalysed, QPainter &painter, QPen &pen, double mScaleFactor, QTransform drawTrans, bool highQuality, int selectedActionAttribute)
 {
     painter.setTransform(drawTrans);
 
     if (highQuality) {
-        qDebug() << "quality value: " << attr;
-        if (isSelected) {
-            /*if ((attr & ATTR_POSITIONING_MASK) == 2) {
-                pen.setColor(Qt::darkGreen);
-                painter.setBrush(Qt::green);
-            } else*/ if (attr == ATTR_HYDRAULIC_FRONT_DOWN) {
-                pen.setColor(Qt::darkCyan);
-                painter.setBrush(Qt::cyan);
-            } else if (attr == ATTR_HYDRAULIC_FRONT_UP) {
-                pen.setColor(Qt::darkYellow);
-                painter.setBrush(Qt::yellow);
-            } else if (attr == ATTR_HYDRAULIC_REAR_DOWN) {
-                pen.setColor(Qt::darkBlue);
-                painter.setBrush(Qt::blue);
-                //                showSowing=true;
-            } else if (attr == ATTR_HYDRAULIC_REAR_UP) {
-                pen.setColor(Qt::darkGray);
-                painter.setBrush(Qt::gray);
-            } else {
-                pen.setColor(Qt::darkYellow);
-                painter.setBrush(Qt::yellow);
-            }
-        } else if (isAnalysed)
+        if (isAnalysed)
         {
             qDebug() << "show analysis point";
             pen.setColor(Qt::darkBlue);
             painter.setBrush(Qt::blue);
+        } else if (isSelected) {
+            // Use the new simplified logic based on selected action attribute
+            if (selectedActionAttribute == 0) {
+                // No specific attribute selected - use default colors
+                pen.setColor(Qt::darkYellow);
+                painter.setBrush(Qt::yellow);
+            } else {
+                // Check if the attribute matches the selected action attribute
+                if (attr == selectedActionAttribute) {
+                    // Attribute is on - use cyan colors
+                    pen.setColor(Qt::darkCyan);
+                    painter.setBrush(Qt::cyan);
+                } else if (attr == (selectedActionAttribute - 8)) {
+                    // Attribute is off (selected attribute minus 8) - use yellow colors
+                    pen.setColor(Qt::darkYellow);
+                    painter.setBrush(Qt::yellow);
+                } else {
+                    // No match - use yellow colors
+                    pen.setColor(Qt::darkYellow);
+                    painter.setBrush(Qt::yellow);
+                }
+            }
         } else {
             pen.setColor(Qt::darkGray);
             painter.setBrush(Qt::gray);
@@ -290,8 +299,27 @@ void MapRoute::paintPoint(QPointF p, quint32 attr, bool isSelected, bool isAnaly
                             10.0 / mScaleFactor);
     } else {
         // qDebug() << "low quality value: " << attr;
-        drawCircleFast(painter, p, 10.0 / mScaleFactor, isSelected ?
-                                                            ((attr & ATTR_POSITIONING_MASK) == 2 ? 2 : ((attr == ATTR_HYDRAULIC_FRONT_DOWN) ? 3 : ((attr == ATTR_HYDRAULIC_FRONT_UP) ? 4 : ((attr == ATTR_HYDRAULIC_REAR_DOWN) ? 6 :  ((attr == ATTR_HYDRAULIC_REAR_UP) ? 5 : 0))))) : 1);
+        // Use simplified logic for low quality as well
+        int circleType = 1; // default
+        if (isSelected) {
+            if (selectedActionAttribute == 0) {
+                // No specific attribute selected - use default (yellow = type 0)
+                circleType = 0;
+            } else {
+                // Check if the attribute matches the selected action attribute
+                if (attr == selectedActionAttribute) {
+                    // Attribute is on - use cyan (type 3)
+                    circleType = 3;
+                } else if (attr == (selectedActionAttribute - 8)) {
+                    // Attribute is off - use yellow (type 0)
+                    circleType = 0;
+                } else {
+                    // No match - use yellow (type 0)
+                    circleType = 0;
+                }
+            }
+        }
+        drawCircleFast(painter, p, 10.0 / mScaleFactor, circleType);
     }
 }
 
@@ -336,7 +364,7 @@ void MapRoute::paintInfoText(bool mDrawRouteText, int i, QPointF p, bool isSelec
         painter.drawText(rect_txt, Qt::AlignCenter, txt);
     }
 }
-void MapRoute::paintPath(QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawTrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool mDrawRouteText, bool highQuality)
+void MapRoute::paintPath(QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawTrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool mDrawRouteText, bool highQuality, int selectedActionAttribute)
 {
     Qt::GlobalColor defaultDarkColor = Qt::darkGray;
     Qt::GlobalColor defaultColor = Qt::gray;
@@ -351,14 +379,14 @@ void MapRoute::paintPath(QPainter &painter, QPen &pen, bool isSelected, double m
     int nPoints=this->size();
     for (int i = 1;i < nPoints;i++) {
         bool isAnalysed=(iAnalysisStart!=-1) && (iAnalysisEnd!=-1) && (i>=iAnalysisStart) && (i<iAnalysisEnd);
-        paintLine(i,isSelected,isAnalysed,painter,pen,defaultDarkColor,defaultColor);
+        paintLine(i,isSelected,isAnalysed,painter,pen,defaultDarkColor,defaultColor, selectedActionAttribute);
     }
 
     for (int i = 0;i < nPoints;i++) {
         QPointF p = mRoute[i].getPointMm();
         quint32 attr = mRoute[i].getAttributes();
         bool isAnalysed=(iAnalysisStart!=-1) && (iAnalysisEnd!=-1) && (i>=iAnalysisStart) && (i<iAnalysisEnd);
-        paintPoint(p,attr,isSelected,isAnalysed,painter,pen,mScaleFactor,drawTrans, highQuality);
+        paintPoint(p,attr,isSelected,isAnalysed,painter,pen,mScaleFactor,drawTrans, highQuality, selectedActionAttribute);
 
         // Draw highlight for first and last point in active route
         if (isSelected && (i == 0 || i == nPoints-1)) {

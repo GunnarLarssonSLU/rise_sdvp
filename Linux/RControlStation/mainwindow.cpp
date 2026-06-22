@@ -132,6 +132,11 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->tableAnalysis->setItem(0, 0, new QTableWidgetItem("Length"));
     ui->tableAnalysis->setItem(1, 0, new QTableWidgetItem("Angle"));
     ui->tableAnalysis->setItem(2, 0, new QTableWidgetItem("Root-Mean-Square"));
+
+    // Initialize comboBoxAction with default value (0 = "all")
+    ui->comboBoxAction->setCurrentIndex(0);
+    // Connect the combo box to the map widget
+    on_comboBoxAction_currentIndexChanged(0);
     
     ui->mapLiveWidget->setMousePressEventHandler([this](QMouseEvent *e) {
         ui->mapLiveWidget->mousePressEventPaths(e);
@@ -607,7 +612,6 @@ void MainWindow::updateFarms()
 
 void MainWindow::populateControllerComboBoxes()
 {
-    qDebug() << "In Populate";
     // Query to get all actions from database
     QSqlQuery query("SELECT id, name FROM actions", db.getDb());
     
@@ -657,7 +661,6 @@ QList<QPair<int, QString>> MainWindow::getMotorTypesFromDatabase()
     while (query.next()) {
         int id = query.value(0).toInt();
         QString name = query.value(1).toString();
-        qDebug() << "adding id: " << id << ", name: " << name;
         motorTypes.append(QPair<int, QString>(id, name));
     }
 
@@ -681,7 +684,6 @@ QList<QPair<int, QString>> MainWindow::getActionsFromDatabase()
     while (query.next()) {
         int id = query.value(0).toInt();
         QString name = query.value(1).toString();
-        qDebug() << "adding id: " << id << ", name: " << name;
         actions.append(QPair<int, QString>(id, name));
     }
 
@@ -705,7 +707,6 @@ QList<QPair<int, QString>> MainWindow::getModesFromDatabase()
     while (query.next()) {
         int id = query.value(0).toInt();
         QString name = query.value(1).toString();
-        qDebug() << "adding id: " << id << ", name: " << name;
         modes.append(QPair<int, QString>(id, name));
     }
 
@@ -1076,7 +1077,15 @@ bool MainWindow::connectJoystick()
     if (gamepads.isEmpty()) {
         qDebug() << "Did not find any connected gamepads";
         //        return;
-    }
+    }                for(QList<CarInterface*>::Iterator it_car = mCars.begin();it_car < mCars.end();it_car++) {
+        CarInterface *car = *it_car;
+        if (car->getCtrlKb()) {
+            if (button == FRONT_UP || button == FRONT_DOWN) {
+                qDebug() << "Hydraulic, rear down";
+                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
+                if (pressed) {
+                    if (button == FRONT_UP) {
+                        controllerAction(car->getId(),FRONT_UP);
 
     mJoystick = new QGamepad(*gamepads.begin(), this);
 
@@ -1664,6 +1673,7 @@ void MainWindow::jsButtonChanged(int button, bool pressed)
                     button == REAR_DOWN || button == REAR_UP || button == 6) {
                 for(QList<CarInterface*>::Iterator it_car = mCars.begin();it_car < mCars.end();it_car++) {
                     CarInterface *car = *it_car;
+                    qDebug() << "Car id: " << car->getId();
                     if (car->getCtrlKb()) {
                         if (button == FRONT_UP || button == FRONT_DOWN) {
                             qDebug() << "Hydraulic, rear down";
@@ -4068,6 +4078,15 @@ void MainWindow::on_mapRoutePosAttrBox_currentIndexChanged(int index)
     attr &= ~ATTR_POSITIONING_MASK;
     attr |= index;
     ui->mapLiveWidget->setRoutePointAttributes(attr);
+}
+
+void MainWindow::on_comboBoxAction_currentIndexChanged(int index)
+{
+    // Get the userData from the comboBoxAction item which contains the attribute value
+    int attributeValue = ui->comboBoxAction->itemData(index).toInt();
+    
+    // Set this value in the map widget so it uses this attribute for coloring
+    ui->mapLiveWidget->setSelectedActionAttribute(attributeValue);
 }
 
 void MainWindow::on_clearAnchorButton_clicked()
