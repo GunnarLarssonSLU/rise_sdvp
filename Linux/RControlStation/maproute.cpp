@@ -215,7 +215,7 @@ void MapRoute::paint(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool is
 
 void MapRoute::paintLine(int i, bool isSelected, bool isAnalysed, QPainter &painter, QPen &pen, Qt::GlobalColor defaultDarkColor, Qt::GlobalColor defaultColor, int selectedActionAttribute)
 {
-    qDebug() << "MapRoute::paintLine called with selectedActionAttribute:" << selectedActionAttribute << "isSelected:" << isSelected << "isAnalysed:" << isAnalysed;
+    qDebug() << "MapRoute::paintLine called with selectedActionAttribute:" << selectedActionAttribute << "isSelected:" << isSelected << "isAnalysed:" << isAnalysed << "attr:" << mRoute[i].getAttributes();
     if (isAnalysed) {
         qDebug() << "show analysis line: " << i;
         pen.setColor(Qt::darkBlue);
