@@ -64,7 +64,7 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>207</width>
+           <width>187</width>
            <height>71</height>
           </rect>
          </property>
@@ -530,7 +530,7 @@
        <enum>QTabWidget::TabPosition::North</enum>
       </property>
       <property name="currentIndex">
-       <number>11</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -882,6 +882,42 @@
              </widget>
             </item>
             <item>
+             <widget class="QComboBox" name="comboBoxAction">
+              <item>
+               <property name="text">
+                <string>all</string>
+               </property>
+               <property name="userData">
+                <number>0</number>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>front lift</string>
+               </property>
+               <property name="userData">
+                <number>16</number>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>rear lift</string>
+               </property>
+               <property name="userData">
+                <number>32</number>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>extra</string>
+               </property>
+               <property name="userData">
+                <number>48</number>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item>
              <widget class="QTabWidget" name="tabWidget_2">
               <property name="toolTip">
                <string/>
@@ -1211,7 +1247,7 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>239</width>
+                     <width>199</width>
                      <height>388</height>
                     </rect>
                    </property>
@@ -1566,7 +1602,7 @@
                      <x>0</x>
                      <y>0</y>
                      <width>196</width>
-                     <height>433</height>
+                     <height>431</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -1860,8 +1896,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>244</width>
-                     <height>562</height>
+                     <width>203</width>
+                     <height>560</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_15">
