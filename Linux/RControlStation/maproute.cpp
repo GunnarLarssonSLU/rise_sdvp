@@ -219,13 +219,12 @@ void MapRoute::paintLine(int i, bool isSelected, bool isAnalysed, QPainter &pain
     qreal originalWidth = pen.widthF();
     
     if (isAnalysed) {
-        qDebug() << "show analysis line: " << i;
+        // qDebug() << "show analysis line: " << i;
         pen.setColor(Qt::darkBlue);
         painter.setBrush(Qt::blue);
     } else if (isSelected && selectedActionAttribute != 0) {
         // Use the new simplified logic based on selected action attribute
         quint32 attr = mRoute[i].getAttributes();
-        qDebug() << "Line. attr = " << attr << ", selectedActionAttribute: " << selectedActionAttribute;
         if (attr == selectedActionAttribute) {
             // Attribute is on - use cyan colors
             pen.setColor(Qt::darkCyan);
