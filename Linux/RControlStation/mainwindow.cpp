@@ -246,6 +246,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->statusBar->addPermanentWidget(mStatusLabel);
     mStatusInfoTime = 0;
     mActiveCarId = 0;
+    mJoystickControlEnabled = true;
     mPacketInterface = new PacketInterface(this);
     mSerialPort = new QSerialPort(this);
     mThrottle = 0.0;
@@ -1685,6 +1686,7 @@ void MainWindow::jsButtonChanged(int button, bool pressed)
             if (button == FRONT_UP || button == FRONT_DOWN || button == 1 ||
                     button == REAR_DOWN || button == REAR_UP || button == 6) {
                 // Use the cached active car ID
+
                 CarInterface *activeCar = nullptr;
                 
                 // Find the car with matching ID
@@ -1696,8 +1698,8 @@ void MainWindow::jsButtonChanged(int button, bool pressed)
                     }
                 }
                 
-                // Only send commands to the active car if it has keyboard control enabled
-                if (activeCar && activeCar->getCtrlKb()) {
+                // Only send commands to the active car if joystick control is enabled globally
+                if (activeCar && mJoystickControlEnabled) {
                     qDebug() << "Active car id: " << activeCar->getId();
                         if (button == FRONT_UP || button == FRONT_DOWN) {
                             qDebug() << "Hydraulic, rear down";
@@ -1747,6 +1749,12 @@ void MainWindow::onMapCarBoxChanged(int value)
 {
     mActiveCarId = value;
     qDebug() << "Active car changed to:" << mActiveCarId;
+}
+
+void MainWindow::setJoystickControlEnabled(bool enabled)
+{
+    mJoystickControlEnabled = enabled;
+    qDebug() << "Joystick control" << (enabled ? "enabled" : "disabled");
 }
 
 void MainWindow::on_disconnectButton_clicked()
