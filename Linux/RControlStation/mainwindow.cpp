@@ -136,6 +136,12 @@ MainWindow::MainWindow(QWidget *parent) :
     // Initialize comboBoxAction with default value (0 = "all")
     ui->comboBoxAction->setCurrentIndex(0);
     
+    // Set userData for comboBoxAction items programmatically (UI loader might not handle this)
+    ui->comboBoxAction->setItemData(0, 0);    // "all" -> 0
+    ui->comboBoxAction->setItemData(1, 16);   // "front lift" -> 16
+    ui->comboBoxAction->setItemData(2, 32);   // "rear lift" -> 32
+    ui->comboBoxAction->setItemData(3, 48);   // "extra" -> 48
+    
     // Connect comboBoxAction signal to slot
     connect(ui->comboBoxAction, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &MainWindow::on_comboBoxAction_currentIndexChanged);
