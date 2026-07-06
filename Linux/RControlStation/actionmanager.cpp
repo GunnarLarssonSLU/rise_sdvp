@@ -128,18 +128,37 @@ void ActionManager::addAction()
 
 void ActionManager::removeAction()
 {
+    QModelIndex current = actionsTableView->selectionModel()->currentIndex();
     QModelIndexList selected = actionsTableView->selectionModel()->selectedRows();
-    if (selected.isEmpty()) return;
     
-    QModelIndex index = selected.first();
+    QModelIndex index;
+    if (!current.isValid() && selected.isEmpty()) {
+        QMessageBox::warning(this, "No Selection", "Please select an action to remove.");
+        return;
+    }
+    
+    // Prefer current index, fall back to first selected row
+    if (current.isValid()) {
+        index = current;
+    } else {
+        index = selected.first();
+    }
+    
     int row = index.row();
+    QString actionName = actionsModel->data(actionsModel->index(row, 1)).toString();
     
     QMessageBox::StandardButton reply;
     reply = QMessageBox::question(this, "Remove Action", 
-                                  "Are you sure you want to remove this action?",
+                                  QString("Are you sure you want to remove the action '%1'?").arg(actionName),
                                   QMessageBox::Yes|QMessageBox::No);
     
     if (reply == QMessageBox::Yes) {
+        // Check if this is the last action - we might want to keep at least one
+        if (actionsModel->rowCount() <= 1) {
+            QMessageBox::warning(this, "Cannot Remove", "You cannot remove the last action. At least one action must remain.");
+            return;
+        }
+        
         actionsModel->removeRow(row);
         
         if (actionsModel->submitAll()) {
