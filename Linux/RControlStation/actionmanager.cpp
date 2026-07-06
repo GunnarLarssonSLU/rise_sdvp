@@ -33,14 +33,26 @@ ActionManager::ActionManager(QWidget *parent) : QWidget(parent)
     connect(addButton, &QPushButton::clicked, this, &ActionManager::addAction);
     connect(removeButton, &QPushButton::clicked, this, &ActionManager::removeAction);
     connect(colourButton, &QPushButton::clicked, this, &ActionManager::editActionColour);
-    connect(actionsTableView->selectionModel(), &QItemSelectionModel::selectionChanged, 
-            this, &ActionManager::onActionSelectionChanged);
-    connect(actionsTableView->selectionModel(), &QItemSelectionModel::currentChanged, 
-            this, &ActionManager::onActionSelectionChanged);
+    
+    // Connect selection model signals
+    QItemSelectionModel *selectionModel = actionsTableView->selectionModel();
+    if (selectionModel) {
+        connect(selectionModel, &QItemSelectionModel::selectionChanged, 
+                this, &ActionManager::onActionSelectionChanged);
+        connect(selectionModel, &QItemSelectionModel::currentChanged, 
+                this, &ActionManager::onActionSelectionChanged);
+        qDebug() << "Successfully connected selection model signals";
+    } else {
+        qDebug() << "ERROR: Selection model is null!";
+    }
+    
+    // Set initial selection mode and ensure we have a selection model
+    actionsTableView->setSelectionMode(QAbstractItemView::SingleSelection);
     
     // Initial button states
     removeButton->setEnabled(false);
     colourButton->setEnabled(false);
+    qDebug() << "ActionManager initialized - buttons disabled initially";
 }
 
 void ActionManager::setupUi(QSqlDatabase db)
@@ -82,6 +94,15 @@ void ActionManager::setupUi(QSqlDatabase db)
     // Set initial column widths
     actionsTableView->setColumnWidth(1, 200); // Action name column
     actionsTableView->setColumnWidth(2, 100); // Colour column
+    
+    // If we have data, select the first row to enable buttons
+    if (actionsModel->rowCount() > 0) {
+        QModelIndex firstIndex = actionsModel->index(0, 1); // Select first row, name column
+        actionsTableView->selectionModel()->setCurrentIndex(firstIndex, QItemSelectionModel::SelectCurrent);
+        qDebug() << "Auto-selected first row to enable buttons";
+    } else {
+        qDebug() << "No data in model, buttons remain disabled";
+    }
 }
 
 void ActionManager::setupTableModel()
@@ -219,10 +240,22 @@ void ActionManager::onActionSelectionChanged()
     
     bool hasSelection = !selected.isEmpty() || current.isValid();
     
-    // Debug output to help diagnose selection issues
-    qDebug() << "Selection changed - selected rows:" << selected.count() 
-             << "current index valid:" << current.isValid();
+    // Enhanced debug output
+    qDebug() << "Selection changed:";
+    qDebug() << "  - Selected rows:" << selected.count();
+    qDebug() << "  - Current index valid:" << current.isValid();
+    qDebug() << "  - Has selection:" << hasSelection;
+    qDebug() << "  - Model row count:" << actionsModel->rowCount();
+    
+    // Additional check: ensure we have a valid model and rows
+    if (actionsModel->rowCount() == 0) {
+        hasSelection = false;
+        qDebug() << "  - No rows in model, disabling buttons";
+    }
     
     removeButton->setEnabled(hasSelection);
     colourButton->setEnabled(hasSelection);
+    
+    qDebug() << "  - Remove button enabled:" << removeButton->isEnabled();
+    qDebug() << "  - Colour button enabled:" << colourButton->isEnabled();
 }
