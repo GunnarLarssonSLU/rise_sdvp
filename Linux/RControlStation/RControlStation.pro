@@ -137,6 +137,8 @@ SOURCES += main.cpp\
     maproutecollection.cpp \
     qcustomplot.cpp \
     packetinterface.cpp \
+    actionmanager.cpp \
+    colourutils.cpp \
     rangeslider.cpp \
     shapefile.cpp \
     utility.cpp \
@@ -180,6 +182,8 @@ HEADERS  += mainwindow.h \
     arduinoreader.h \
     checkboxdelegate.h \
     database.h \
+    actionmanager.h \
+    colourutils.h \
     maproute.h \
     maproutecollection.h \
     qcustomplot.h \
