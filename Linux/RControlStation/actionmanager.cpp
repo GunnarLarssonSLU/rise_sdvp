@@ -35,6 +35,8 @@ ActionManager::ActionManager(QWidget *parent) : QWidget(parent)
     connect(colourButton, &QPushButton::clicked, this, &ActionManager::editActionColour);
     connect(actionsTableView->selectionModel(), &QItemSelectionModel::selectionChanged, 
             this, &ActionManager::onActionSelectionChanged);
+    connect(actionsTableView->selectionModel(), &QItemSelectionModel::currentChanged, 
+            this, &ActionManager::onActionSelectionChanged);
     
     // Initial button states
     removeButton->setEnabled(false);
@@ -52,7 +54,7 @@ void ActionManager::setupUi(QSqlDatabase db)
     // Configure table view
     actionsTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
     actionsTableView->setSelectionMode(QAbstractItemView::SingleSelection);
-    actionsTableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    actionsTableView->setEditTriggers(QAbstractItemView::DoubleClicked); // Allow double-click editing
     actionsTableView->horizontalHeader()->setStretchLastSection(true);
     actionsTableView->verticalHeader()->setVisible(false);
     
@@ -63,8 +65,23 @@ void ActionManager::setupUi(QSqlDatabase db)
     // Hide ID column
     actionsTableView->setColumnHidden(0, true);
     
+    // Set custom delegate for colour column
+    ColourDelegate *colourDelegate = new ColourDelegate(this);
+    actionsTableView->setItemDelegateForColumn(2, colourDelegate);
+    
+    // Connect double-click on colour column to edit colour
+    connect(actionsTableView, &QTableView::doubleClicked, this, [this](const QModelIndex &index) {
+        if (index.column() == 2) { // Colour column double-clicked
+            editActionColour();
+        }
+    });
+    
     // Refresh data
     actionsModel->select();
+    
+    // Set initial column widths
+    actionsTableView->setColumnWidth(1, 200); // Action name column
+    actionsTableView->setColumnWidth(2, 100); // Colour column
 }
 
 void ActionManager::setupTableModel()
@@ -137,10 +154,22 @@ void ActionManager::removeAction()
 
 void ActionManager::editActionColour()
 {
+    QModelIndex current = actionsTableView->selectionModel()->currentIndex();
     QModelIndexList selected = actionsTableView->selectionModel()->selectedRows();
-    if (selected.isEmpty()) return;
     
-    QModelIndex index = selected.first();
+    QModelIndex index;
+    if (!current.isValid() && selected.isEmpty()) {
+        QMessageBox::warning(this, "No Selection", "Please select an action first.");
+        return;
+    }
+    
+    // Prefer current index, fall back to first selected row
+    if (current.isValid()) {
+        index = current;
+    } else {
+        index = selected.first();
+    }
+    
     int row = index.row();
     
     // Get current colour
@@ -167,7 +196,13 @@ void ActionManager::editActionColour()
 void ActionManager::onActionSelectionChanged()
 {
     QModelIndexList selected = actionsTableView->selectionModel()->selectedRows();
-    bool hasSelection = !selected.isEmpty();
+    QModelIndex current = actionsTableView->selectionModel()->currentIndex();
+    
+    bool hasSelection = !selected.isEmpty() || current.isValid();
+    
+    // Debug output to help diagnose selection issues
+    qDebug() << "Selection changed - selected rows:" << selected.count() 
+             << "current index valid:" << current.isValid();
     
     removeButton->setEnabled(hasSelection);
     colourButton->setEnabled(hasSelection);

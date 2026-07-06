@@ -10,6 +10,11 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QColorDialog>
+#include <QStandardItemModel>
+#include <QItemDelegate>
+#include <QPainter>
+#include <QMouseEvent>
+#include "colourutils.h"
 
 class ActionManager : public QWidget
 {
@@ -36,6 +41,29 @@ private:
     
     void setupTableModel();
     void updateButtonStates();
+    
+    // Custom delegate for colour column
+    class ColourDelegate : public QItemDelegate {
+    public:
+        ColourDelegate(QObject *parent = nullptr) : QItemDelegate(parent) {}
+        
+        void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override {
+            if (index.column() == 2) { // Colour column
+                QString colourHex = index.data().toString();
+                QColor colour = ColourUtils::hexToQColor(colourHex);
+                
+                // Draw colour swatch
+                painter->save();
+                QRect rect = option.rect.adjusted(2, 2, -2, -2);
+                painter->fillRect(rect, colour);
+                painter->setPen(QColor(128, 128, 128));
+                painter->drawRect(rect);
+                painter->restore();
+            } else {
+                QItemDelegate::paint(painter, option, index);
+            }
+        }
+    };
 };
 
 #endif // ACTIONMANAGER_H
