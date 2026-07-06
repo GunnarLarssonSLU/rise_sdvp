@@ -14,6 +14,7 @@
 #include <QItemDelegate>
 #include <QPainter>
 #include <QMouseEvent>
+#include <QTimer>
 #include "colourutils.h"
 
 class ActionManager : public QWidget

@@ -34,20 +34,31 @@ ActionManager::ActionManager(QWidget *parent) : QWidget(parent)
     connect(removeButton, &QPushButton::clicked, this, &ActionManager::removeAction);
     connect(colourButton, &QPushButton::clicked, this, &ActionManager::editActionColour);
     
-    // Connect selection model signals
+    // Set selection mode first
+    actionsTableView->setSelectionMode(QAbstractItemView::SingleSelection);
+    actionsTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    
+    // Get selection model and connect signals
     QItemSelectionModel *selectionModel = actionsTableView->selectionModel();
     if (selectionModel) {
         connect(selectionModel, &QItemSelectionModel::selectionChanged, 
                 this, &ActionManager::onActionSelectionChanged);
         connect(selectionModel, &QItemSelectionModel::currentChanged, 
                 this, &ActionManager::onActionSelectionChanged);
-        qDebug() << "Successfully connected selection model signals";
+        connect(selectionModel, &QItemSelectionModel::currentRowChanged, 
+                this, &ActionManager::onActionSelectionChanged);
+        qDebug() << "Successfully connected all selection model signals";
     } else {
-        qDebug() << "ERROR: Selection model is null!";
+        qDebug() << "ERROR: Selection model is null - creating new one";
+        // This should not happen, but just in case
+        actionsTableView->setSelectionModel(new QItemSelectionModel(actionsModel));
+        connect(actionsTableView->selectionModel(), &QItemSelectionModel::selectionChanged, 
+                this, &ActionManager::onActionSelectionChanged);
     }
     
-    // Set initial selection mode and ensure we have a selection model
-    actionsTableView->setSelectionMode(QAbstractItemView::SingleSelection);
+    // Also connect clicked signal for direct interaction
+    connect(actionsTableView, &QTableView::clicked, 
+            this, &ActionManager::onActionSelectionChanged);
     
     // Initial button states
     removeButton->setEnabled(false);
@@ -95,14 +106,24 @@ void ActionManager::setupUi(QSqlDatabase db)
     actionsTableView->setColumnWidth(1, 200); // Action name column
     actionsTableView->setColumnWidth(2, 100); // Colour column
     
-    // If we have data, select the first row to enable buttons
-    if (actionsModel->rowCount() > 0) {
-        QModelIndex firstIndex = actionsModel->index(0, 1); // Select first row, name column
-        actionsTableView->selectionModel()->setCurrentIndex(firstIndex, QItemSelectionModel::SelectCurrent);
-        qDebug() << "Auto-selected first row to enable buttons";
-    } else {
-        qDebug() << "No data in model, buttons remain disabled";
-    }
+    // Force a selection update after model is loaded
+    QTimer::singleShot(100, this, [this]() {
+        qDebug() << "Timer-based selection update triggered";
+        
+        // If we have data, select the first row to enable buttons
+        if (actionsModel->rowCount() > 0) {
+            QModelIndex firstIndex = actionsModel->index(0, 0); // Select first row, first column
+            actionsTableView->selectionModel()->select(firstIndex, QItemSelectionModel::SelectCurrent | QItemSelectionModel::Rows);
+            actionsTableView->selectionModel()->setCurrentIndex(firstIndex, QItemSelectionModel::SelectCurrent);
+            actionsTableView->scrollTo(firstIndex);
+            qDebug() << "Timer auto-selected first row to enable buttons";
+        } else {
+            qDebug() << "Timer: No data in model, buttons remain disabled";
+        }
+        
+        // Force update button states
+        onActionSelectionChanged();
+    });
 }
 
 void ActionManager::setupTableModel()
@@ -235,27 +256,57 @@ void ActionManager::editActionColour()
 
 void ActionManager::onActionSelectionChanged()
 {
-    QModelIndexList selected = actionsTableView->selectionModel()->selectedRows();
-    QModelIndex current = actionsTableView->selectionModel()->currentIndex();
+    qDebug() << "=== Selection change triggered ===";
     
-    bool hasSelection = !selected.isEmpty() || current.isValid();
-    
-    // Enhanced debug output
-    qDebug() << "Selection changed:";
-    qDebug() << "  - Selected rows:" << selected.count();
-    qDebug() << "  - Current index valid:" << current.isValid();
-    qDebug() << "  - Has selection:" << hasSelection;
-    qDebug() << "  - Model row count:" << actionsModel->rowCount();
-    
-    // Additional check: ensure we have a valid model and rows
-    if (actionsModel->rowCount() == 0) {
-        hasSelection = false;
-        qDebug() << "  - No rows in model, disabling buttons";
+    // Get selection model and check its state
+    QItemSelectionModel *selectionModel = actionsTableView->selectionModel();
+    if (!selectionModel) {
+        qDebug() << "ERROR: No selection model available!";
+        removeButton->setEnabled(false);
+        colourButton->setEnabled(false);
+        return;
     }
     
-    removeButton->setEnabled(hasSelection);
-    colourButton->setEnabled(hasSelection);
+    // Check selected rows
+    QModelIndexList selectedRows = selectionModel->selectedRows();
+    qDebug() << "Selected rows count:" << selectedRows.size();
     
-    qDebug() << "  - Remove button enabled:" << removeButton->isEnabled();
-    qDebug() << "  - Colour button enabled:" << colourButton->isEnabled();
+    // Check current index
+    QModelIndex currentIndex = selectionModel->currentIndex();
+    qDebug() << "Current index valid:" << currentIndex.isValid();
+    if (currentIndex.isValid()) {
+        qDebug() << "Current index row:" << currentIndex.row() << "col:" << currentIndex.column();
+    }
+    
+    // Determine if we have a valid selection
+    bool hasValidSelection = false;
+    
+    // Check if we have selected rows
+    if (!selectedRows.isEmpty()) {
+        QModelIndex firstSelected = selectedRows.first();
+        qDebug() << "First selected row:" << firstSelected.row();
+        hasValidSelection = true;
+    }
+    
+    // Check if we have a valid current index (even if not officially "selected")
+    if (currentIndex.isValid() && currentIndex.row() >= 0) {
+        qDebug() << "Using current index as selection";
+        hasValidSelection = true;
+    }
+    
+    // Additional safety checks
+    qDebug() << "Model row count:" << actionsModel->rowCount();
+    if (actionsModel->rowCount() == 0) {
+        hasValidSelection = false;
+        qDebug() << "Model is empty, disabling buttons";
+    }
+    
+    // Update button states
+    bool buttonsEnabled = hasValidSelection && (actionsModel->rowCount() > 0);
+    removeButton->setEnabled(buttonsEnabled);
+    colourButton->setEnabled(buttonsEnabled);
+    
+    qDebug() << "Final button states - Remove:" << removeButton->isEnabled() 
+             << "Colour:" << colourButton->isEnabled();
+    qDebug() << "=== End selection change ===";
 }
