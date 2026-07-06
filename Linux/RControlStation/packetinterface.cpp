@@ -210,7 +210,6 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
 /*        QByteArray tmpArray = QByteArray::fromRawData((const char*)data, len);
         tmpArray[len] = '\0';*/
         emit printReceived(id, QString::fromLatin1(array)); // Might need to change this to avoid bad format
-        qDebug() << "step 3";
     } break;
 
     case CMD_GET_ENU_REF: {
@@ -303,32 +302,40 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         conf.log_uart_baud = utility::buffer_get_uint32(data, &ind);
 
         // Car settings
-        conf.car.yaw_use_odometry = data[ind++];
-        conf.car.yaw_imu_gain = utility::buffer_get_double32_auto(data, &ind);
-        conf.car.disable_motor = data[ind++];
-        conf.car.simulate_motor = data[ind++];
-        conf.car.clamp_imu_yaw_stationary = data[ind++];
-        conf.car.use_uwb_pos = data[ind++];
+        conf.vehicle.yaw_use_odometry = data[ind++];
+        conf.vehicle.yaw_imu_gain = utility::buffer_get_double32_auto(data, &ind);
+        conf.vehicle.disable_motor = data[ind++];
+        conf.vehicle.simulate_motor = data[ind++];
+        conf.vehicle.clamp_imu_yaw_stationary = data[ind++];
+        conf.vehicle.use_uwb_pos = data[ind++];
 
-        conf.car.gear_ratio = utility::buffer_get_double32_auto(data, &ind);
-        conf.car.wheel_diam = utility::buffer_get_double32_auto(data, &ind);
-        conf.car.motor_poles = utility::buffer_get_double32_auto(data, &ind);
-        conf.car.steering_max_angle_rad = utility::buffer_get_double32_auto(data, &ind);
-        conf.car.steering_center = utility::buffer_get_double32_auto(data, &ind);
-        conf.car.steering_range = utility::buffer_get_double32_auto(data, &ind);
-        conf.car.steering_ramp_time = utility::buffer_get_double32_auto(data, &ind);
-        conf.car.axis_distance = utility::buffer_get_double32_auto(data, &ind);
-        //Added 20211011
-        conf.car.vesc_p_gain = utility::buffer_get_double32_auto(data, &ind);
-        conf.car.vesc_i_gain = utility::buffer_get_double32_auto(data, &ind);
-        conf.car.vesc_d_gain = utility::buffer_get_double32_auto(data, &ind);
+        conf.vehicle.gear_ratio = utility::buffer_get_double32_auto(data, &ind);
+        conf.vehicle.wheel_diam = utility::buffer_get_double32_auto(data, &ind);
+        conf.vehicle.motor_poles = utility::buffer_get_double32_auto(data, &ind);
+        conf.vehicle.steering_max_angle_rad = utility::buffer_get_double32_auto(data, &ind);
+        conf.vehicle.steering_center = utility::buffer_get_double32_auto(data, &ind);
+        conf.vehicle.steering_range = utility::buffer_get_double32_auto(data, &ind);
+        conf.vehicle.steering_ramp_time = utility::buffer_get_double32_auto(data, &ind);
+        conf.vehicle.axis_distance = utility::buffer_get_double32_auto(data, &ind);
+        //Added 20211011doubleSpinBox_vescid1
+        conf.vehicle.vesc_p_gain = utility::buffer_get_double32_auto(data, &ind);
+        conf.vehicle.vesc_i_gain = utility::buffer_get_double32_auto(data, &ind);
+        conf.vehicle.vesc_d_gain = utility::buffer_get_double32_auto(data, &ind);
 
-        conf.car.sensorcentre = utility::buffer_get_double32_auto(data, &ind);
-        conf.car.sensorinterval = utility::buffer_get_double32_auto(data, &ind);
-        conf.car.degreeinterval = utility::buffer_get_double32_auto(data, &ind);
-        conf.car.deadband = utility::buffer_get_double32_auto(data, &ind);
-        conf.car.heartbeat_maxtime = utility::buffer_get_double32_auto(data, &ind);
-
+        conf.vehicle.sensorcentre = utility::buffer_get_double32_auto(data, &ind);
+        conf.vehicle.sensorinterval = utility::buffer_get_double32_auto(data, &ind);
+        conf.vehicle.degreeinterval = utility::buffer_get_double32_auto(data, &ind);
+        conf.vehicle.deadband = utility::buffer_get_double32_auto(data, &ind);
+        conf.vehicle.heartbeat_maxtime = utility::buffer_get_double32_auto(data, &ind);
+        conf.vehicle.actuators = utility::buffer_get_uint16(data, &ind);
+        for (int i=0;i<4;i++)
+        {
+            conf.vehicle.actuator[i].type=utility::buffer_get_uint16(data, &ind);
+            conf.vehicle.actuator[i].vescid=utility::buffer_get_uint16(data, &ind);
+            conf.vehicle.actuator[i].activity=utility::buffer_get_uint16(data, &ind);
+            conf.vehicle.actuator[i].mode=utility::buffer_get_uint16(data, &ind);
+        }
+/*
         // Multirotor settings
         conf.mr.vel_decay_e = utility::buffer_get_double32_auto(data, &ind);
         conf.mr.vel_decay_l = utility::buffer_get_double32_auto(data, &ind);
@@ -383,7 +390,7 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
         conf.mr.motors_x = data[ind++];
         conf.mr.motors_cw = data[ind++];
         conf.mr.motor_pwm_min_us = utility::buffer_get_uint16(data, &ind);
-        conf.mr.motor_pwm_max_us = utility::buffer_get_uint16(data, &ind);
+        conf.mr.motor_pwm_max_us = utility::buffer_get_uint16(data, &ind); */
 
         emit configurationReceived(id, conf);
     } break;
@@ -854,32 +861,40 @@ bool PacketInterface::setConfiguration(quint8 id, MAIN_CONFIG &conf, int retries
     utility::buffer_append_uint32(mSendBuffer, conf.log_uart_baud, &send_index);
 
     // Car settings
-    mSendBuffer[send_index++] = conf.car.yaw_use_odometry;
-    utility::buffer_append_double32_auto(mSendBuffer, conf.car.yaw_imu_gain, &send_index);
-    mSendBuffer[send_index++] = conf.car.disable_motor;
-    mSendBuffer[send_index++] = conf.car.simulate_motor;
-    mSendBuffer[send_index++] = conf.car.clamp_imu_yaw_stationary;
-    mSendBuffer[send_index++] = conf.car.use_uwb_pos;
+    mSendBuffer[send_index++] = conf.vehicle.yaw_use_odometry;
+    utility::buffer_append_double32_auto(mSendBuffer, conf.vehicle.yaw_imu_gain, &send_index);
+    mSendBuffer[send_index++] = conf.vehicle.disable_motor;
+    mSendBuffer[send_index++] = conf.vehicle.simulate_motor;
+    mSendBuffer[send_index++] = conf.vehicle.clamp_imu_yaw_stationary;
+    mSendBuffer[send_index++] = conf.vehicle.use_uwb_pos;
 
-    utility::buffer_append_double32_auto(mSendBuffer, conf.car.gear_ratio, &send_index);
-    utility::buffer_append_double32_auto(mSendBuffer, conf.car.wheel_diam, &send_index);
-    utility::buffer_append_double32_auto(mSendBuffer, conf.car.motor_poles, &send_index);
-    utility::buffer_append_double32_auto(mSendBuffer, conf.car.steering_max_angle_rad, &send_index);
-    utility::buffer_append_double32_auto(mSendBuffer, conf.car.steering_center, &send_index);
-    utility::buffer_append_double32_auto(mSendBuffer, conf.car.steering_range, &send_index);
-    utility::buffer_append_double32_auto(mSendBuffer, conf.car.steering_ramp_time, &send_index);
-    utility::buffer_append_double32_auto(mSendBuffer, conf.car.axis_distance, &send_index);
-    utility::buffer_append_double32_auto(mSendBuffer, conf.car.vesc_p_gain, &send_index);
-    utility::buffer_append_double32_auto(mSendBuffer, conf.car.vesc_i_gain, &send_index);
-    utility::buffer_append_double32_auto(mSendBuffer, conf.car.vesc_d_gain, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.vehicle.gear_ratio, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.vehicle.wheel_diam, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.vehicle.motor_poles, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.vehicle.steering_max_angle_rad, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.vehicle.steering_center, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.vehicle.steering_range, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.vehicle.steering_ramp_time, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.vehicle.axis_distance, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.vehicle.vesc_p_gain, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.vehicle.vesc_i_gain, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.vehicle.vesc_d_gain, &send_index);
 
-    utility::buffer_append_double32_auto(mSendBuffer, conf.car.sensorcentre, &send_index);
-    utility::buffer_append_double32_auto(mSendBuffer, conf.car.sensorinterval, &send_index);
-    utility::buffer_append_double32_auto(mSendBuffer, conf.car.degreeinterval, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.vehicle.sensorcentre, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.vehicle.sensorinterval, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.vehicle.degreeinterval, &send_index);
 
-    utility::buffer_append_double32_auto(mSendBuffer, conf.car.deadband, &send_index);
-    utility::buffer_append_double32_auto(mSendBuffer, conf.car.heartbeat_maxtime, &send_index);
-
+    utility::buffer_append_double32_auto(mSendBuffer, conf.vehicle.deadband, &send_index);
+    utility::buffer_append_double32_auto(mSendBuffer, conf.vehicle.heartbeat_maxtime, &send_index);
+    utility::buffer_append_uint16(mSendBuffer, conf.vehicle.actuators, &send_index);
+    for (int i=0;i<4;i++)
+    {
+        utility::buffer_append_uint16(mSendBuffer, conf.vehicle.actuator[i].type, &send_index);
+        utility::buffer_append_uint16(mSendBuffer, conf.vehicle.actuator[i].vescid, &send_index);
+        utility::buffer_append_uint16(mSendBuffer, conf.vehicle.actuator[i].activity, &send_index);
+        utility::buffer_append_uint16(mSendBuffer, conf.vehicle.actuator[i].mode, &send_index);
+    }
+    /*
     // Multirotor settings
     utility::buffer_append_double32_auto(mSendBuffer, conf.mr.vel_decay_e, &send_index);
     utility::buffer_append_double32_auto(mSendBuffer, conf.mr.vel_decay_l, &send_index);
@@ -934,7 +949,7 @@ bool PacketInterface::setConfiguration(quint8 id, MAIN_CONFIG &conf, int retries
     mSendBuffer[send_index++] = conf.mr.motors_x;
     mSendBuffer[send_index++] = conf.mr.motors_cw;
     utility::buffer_append_uint16(mSendBuffer, conf.mr.motor_pwm_min_us, &send_index);
-    utility::buffer_append_uint16(mSendBuffer, conf.mr.motor_pwm_max_us, &send_index);
+    utility::buffer_append_uint16(mSendBuffer, conf.mr.motor_pwm_max_us, &send_index);*/
 
     return sendPacketAck(mSendBuffer, send_index, retries, 500);
 }
@@ -1126,6 +1141,20 @@ void PacketInterface::hydraulicMove(quint8 id, HYDRAULIC_POS pos, HYDRAULIC_MOVE
     mSendBuffer[send_index++] = CMD_HYDRAULIC_MOVE;
     mSendBuffer[send_index++] = pos;
     mSendBuffer[send_index++] = move;
+    sendPacket(mSendBuffer, send_index);
+}
+
+void PacketInterface::setRcControlAdvanced(quint8 id, int activity, double value)
+{
+    qDebug() << "Car id: " << id;
+    qDebug() << "Activity: " << activity;
+    qDebug() << "Value: " << value;
+
+    qint32 send_index = 0;
+    mSendBuffer[send_index++] = id;
+    mSendBuffer[send_index++] = CMD_RC_CONTROL_ADV;
+    mSendBuffer[send_index++] = activity;
+    utility::buffer_append_double32(mSendBuffer, value, 1e4, &send_index);
     sendPacket(mSendBuffer, send_index);
 }
 

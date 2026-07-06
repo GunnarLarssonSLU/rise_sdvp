@@ -20,6 +20,7 @@
 
 #include <QWidget>
 #include <QVector>
+#include <QComboBox>
 #include "datatypes.h"
 
 namespace Ui {
@@ -56,5 +57,7 @@ private slots:
 private:
     Ui::ConfCommonWidget *ui;
 };
+
+void setComboBoxByData(QComboBox* combo, const QVariant& data);
 
 #endif // CONFCOMMONWIDGET_H

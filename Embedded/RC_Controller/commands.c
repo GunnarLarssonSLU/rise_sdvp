@@ -660,7 +660,15 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			float deadband= buffer_get_float32_auto(data, &ind);
 			main_config.vehicle.deadband =deadband;
 			main_config.vehicle.heartbeat_maxtime = buffer_get_float32_auto(data, &ind);
-
+			main_config.vehicle.actuators = buffer_get_uint16(data, &ind);
+		    commands_printf("antal lästa aktuatorer: %u",main_config.vehicle.actuators);
+			for (int i=0;i<4;i++)
+			{
+				main_config.vehicle.actuator[i].type=buffer_get_uint16(data, &ind);;
+				main_config.vehicle.actuator[i].motorid=buffer_get_uint16(data, &ind);;
+				main_config.vehicle.actuator[i].activity=buffer_get_uint16(data, &ind);;
+				main_config.vehicle.actuator[i].mode=buffer_get_uint16(data, &ind);;
+			};
 			motor_sim_set_running(main_config.vehicle.simulate_motor);
 			conf_general_store_main_config(&main_config);
 			// Doing this while driving will get wrong as there is so much accelerometer noise then.
@@ -761,6 +769,16 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.degreeinterval, &send_index);
 		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.deadband, &send_index);
 		    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.heartbeat_maxtime, &send_index);
+		    commands_printf("antal skrivna aktuatorer: %u",main_cfg_tmp.vehicle.actuators);
+		    buffer_append_uint16(m_send_buffer, main_cfg_tmp.vehicle.actuators, &send_index);
+
+			for (int i=0;i<4;i++)
+			{
+			    buffer_append_uint16(m_send_buffer, main_cfg_tmp.vehicle.actuator[i].type, &send_index);
+			    buffer_append_uint16(m_send_buffer, main_cfg_tmp.vehicle.actuator[i].motorid, &send_index);
+			    buffer_append_uint16(m_send_buffer, main_cfg_tmp.vehicle.actuator[i].activity, &send_index);
+			    buffer_append_uint16(m_send_buffer, main_cfg_tmp.vehicle.actuator[i].mode, &send_index);
+			};
 		    commands_printf("read deadband: %f",main_cfg_tmp.vehicle.deadband);
 			commands_send_packet(m_send_buffer, send_index);
 		} break;
@@ -967,30 +985,57 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				}
 				motor_set_throttle_and_steering(throttle,steering,frontangle);
 			};
+		};
 			break;
-
 		case CMD_RC_CONTROL_ADV: {
 			timeout_reset();
-			uint16_t action;
+			uint32_t activity;
 			float magnitude;
-			action = buffer_get_uint16(data, &ind);
-			magnitude = buffer_get_float32(data, 1e4, &ind);
+			int32_t ind = 0;
 
-			};
-			break;
+			// Debug: Print raw buffer content
+	/*		commands_printf("Buffer: %02X %02X %02X %02X %02X",
+			              data[0], data[1], data[2], data[3], data[4]);*/
 
-			case RC_MODE_PID: // In m/s
-				#if HAS_DIFF_STEERING
-					if (steering < 0.001) {
-						autopilot_set_turn_rad(1e6);
-					} else {
-						autopilot_set_turn_rad(1.0 / steering);
+			activity = data[ind];
+			ind += 1;
+			commands_printf("Activity: %d", activity);
+
+			// Debug: Print raw int32 before conversion
+			int32_t raw_value = buffer_get_int32(data, &ind);
+//			commands_printf("Raw int32: %d (0x%08X)", raw_value, raw_value);
+
+			magnitude = (float)raw_value / 1e4;  // Manual conversion for debug
+	//		commands_printf("Magnitude: %f", magnitude);
+
+			// Get actuators with the specified activity
+			int actuator_count = 0;
+			ACTUATOR* actuators = motor_get_actuators_by_activity(activity, &actuator_count);
+
+			if (actuators != NULL) {
+				// Process each actuator that matches the activity
+				for (int i = 0; i < actuator_count; i++) {
+					// Check if this actuator is a VESC motor (type = AT_VESCMOTOR = 0)
+
+					if (actuators[i].type == AT_VESCMOTOR) {
+						// Debug: Print actuator info and magnitude before calling VESC function
+/*						commands_printf("Actuator %d: motorid=%d, mode=%d, type=%d, activity=%d",
+						              i, actuators[i].motorid, actuators[i].mode, actuators[i].type, actuators[i].activity);
+						commands_printf("Calling VESC with magnitude: %f", magnitude);*/
+						
+						// Use the actuator's mode and VESC ID to control it
+						motor_set_vesc_value(actuators[i].motorid, magnitude, actuators[i].mode);
+					} else
+					{
+						commands_printf("Hydraulic command!");
+				//		hydraulic_move(actuators[i].motorid,magnitude);
 					}
-				#endif
-				motor_set_speed(throttle);
-				break;
-
-		} break;
+					// TODO: Add support for hydraulic actuators if needed
+				}
+				free(actuators); // Free the allocated memory
+			}
+		}
+			break;
 
 		case CMD_SET_SERVO_DIRECT: {
 			timeout_reset();
@@ -1022,11 +1067,30 @@ void commands_printf(const char* format, ...) {
 
 	print_buffer[0] = main_id;
 	print_buffer[1] = CMD_PRINTF;
+	
+	// Safety check: ensure we don't overflow the buffer
 	len = vsnprintf(print_buffer + 2, 509, format, arg);
 	va_end (arg);
 
+	// Additional safety checks
+	if(len < 0) {
+		// vsnprintf failed - don't send anything
+		chMtxUnlock(&m_print_gps);
+		return;
+	}
+
+	if(len > 509) {
+		// Buffer would be truncated - send maximum safe size
+		len = 509;
+	}
+
 	if(len > 0) {
-		commands_send_packet((unsigned char*)print_buffer, (len<509) ? len + 2: 512);
+		// Ensure total packet size is reasonable
+		int packet_len = len + 2;
+		if(packet_len > 512) {
+			packet_len = 512;
+		}
+		commands_send_packet((unsigned char*)print_buffer, packet_len);
 	}
 	chMtxUnlock(&m_print_gps);
 }

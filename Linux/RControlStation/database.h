@@ -16,6 +16,7 @@ public:
     void updateFarmLocation(int farmid,double latitude, double longitude);
     void showError(const QSqlError &err);
     QSqlDatabase getDb();
+    void ensureControllersTableExists();
 private:
     QSqlError initDb();
     QWidget* qw;

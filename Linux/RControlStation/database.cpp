@@ -1,5 +1,9 @@
 #include "database.h"
 #include <QtWidgets>
+#include <QStandardPaths>
+#include <QDir>
+#include <QDebug>
+#include <QCoreApplication>
 
 database::database(QWidget* _qw) {
     qw=_qw;
@@ -132,9 +136,41 @@ void database::showError(const QSqlError &err)
 QSqlError database::initDb()
 {
     db = QSqlDatabase::addDatabase("QSQLITE");
-    db.setDatabaseName("data.db");
+    
+    // Try different locations for the database file
+    QStringList dbPaths;
+    
+    // 1. First try current directory (for development)
+    dbPaths << "data.db";
+    
+    // 2. Try AppImage data directory
+    QString appImagePath = QCoreApplication::applicationDirPath();
+    dbPaths << appImagePath + "/../share/RControlStation/data.db";
+    dbPaths << appImagePath + "/../../share/RControlStation/data.db";
+    dbPaths << "/usr/share/RControlStation/data.db";
+    
+    // 3. Try common data directories
+    dbPaths << QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/data.db";
+    // DataLocation doesn't exist in Qt 6, use AppDataLocation instead
+    // dbPaths << QStandardPaths::writableLocation(QStandardPaths::DataLocation) + "/data.db";
+    
+    // Try each path until we find a working database
+    foreach (const QString &path, dbPaths) {
+        db.setDatabaseName(path);
+        if (db.open()) {
+            qDebug() << "Database opened from:" << path;
+            return QSqlError();
+        }
+    }
+    
+    // If no database found, create one in the writable data location
+    QString defaultPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    QDir().mkpath(defaultPath);
+    db.setDatabaseName(defaultPath + "/data.db");
     if (!db.open())
         return db.lastError();
+    
+    qDebug() << "Created new database at:" << defaultPath + "/data.db";
     return QSqlError();
 }
 

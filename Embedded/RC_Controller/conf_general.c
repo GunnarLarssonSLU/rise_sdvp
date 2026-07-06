@@ -164,28 +164,28 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 	conf->vehicle.heartbeat_maxtime = 3.0;
 
 	conf->vehicle.actuators = 4;
-	conf->vehicle.actuator[0].type = AT_VESCMOTOR;
-	conf->vehicle.actuator[0].veas = 100;
-	conf->vehicle.actuator[0].activity = ACT_FORWARD;
-	conf->vehicle.actuator[0].mode = MOTOR_CONTROL_DUTY ;
+	conf->vehicle.actuator[0].type = 0; // AT_VESCMOTOR
+	conf->vehicle.actuator[0].motorid = 94;
+	conf->vehicle.actuator[0].activity = 1; // ACT_FORWARD
+	conf->vehicle.actuator[0].mode = 0; // MOTOR_CONTROL_DUTY
 
-	conf->vehicle.actuator[1].type = AT_VESCMOTOR;
-	conf->vehicle.actuator[1].veas = 100;
-	conf->vehicle.actuator[1].activity = ACT_FORWARD;
-	conf->vehicle.actuator[1].mode = MOTOR_CONTROL_DUTY ;
+	conf->vehicle.actuator[1].type = 0; // AT_VESCMOTOR
+	conf->vehicle.actuator[1].motorid = 125;
+	conf->vehicle.actuator[1].activity = 1; // ACT_FORWARD
+	conf->vehicle.actuator[1].mode = 0; // MOTOR_CONTROL_DUTY
 
-	conf->vehicle.actuator[2].type = AT_VESCMOTOR;
-	conf->vehicle.actuator[2].veas = 100;
-	conf->vehicle.actuator[2].activity = ACT_S;
-	conf->vehicle.actuator[2].mode = MOTOR_CONTROL_DUTY ;
+	conf->vehicle.actuator[2].type = 0; // AT_VESCMOTOR
+	conf->vehicle.actuator[2].motorid = 113;
+	conf->vehicle.actuator[2].activity = 2; // ACT_FORWARD
+	conf->vehicle.actuator[2].mode = 0; // MOTOR_CONTROL_DUTY
 
-	conf->vehicle.actuator[3].type = AT_VESCMOTOR;
-	conf->vehicle.actuator[3].veas = 100;
-	conf->vehicle.actuator[3].activity = ACT_FORWARD;
-	conf->vehicle.actuator[3].mode = MOTOR_CONTROL_DUTY ;
+	conf->vehicle.actuator[3].type = 0; // AT_VESCMOTOR
+	conf->vehicle.actuator[3].motorid = 8;
+	conf->vehicle.actuator[3].activity = 3; // ACT_FORWARD
+	conf->vehicle.actuator[3].mode = 0; // MOTOR_CONTROL_DUTY
 
 
-	/*
+	/*100
 	// Custom parameters based on ID
 	switch (main_id) {
 	case 1:

@@ -309,7 +309,7 @@ debug-start:
 upload_remote: build/$(PROJECT).bin
 #	./upload_remote build/$(PROJECT).bin nvidia 192.168.200.7 22 stlink jetson
 #	./upload_remote build/$(PROJECT).bin pi 192.168.200.4 22 stlink raspberry
-	./upload_remote build/$(PROJECT).bin pi 192.168.200.106 22 stlink raspberry
+	./upload_remote build/$(PROJECT).bin pi 192.168.200.8 22 stlink raspberry
 
 touch_conf_general:
 	touch ./conf_general.h

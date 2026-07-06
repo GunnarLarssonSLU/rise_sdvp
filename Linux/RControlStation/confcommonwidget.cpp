@@ -35,7 +35,6 @@ ConfCommonWidget::~ConfCommonWidget()
 
 void ConfCommonWidget::populateMotorTypeComboBoxes(const QList<QPair<int, QString>>& motorTypes)
 {
-    qDebug() << "in populateMotorTypeComboBoxes";
     // Clear existing items first
     ui->comboBox_motor1_type->clear();
     ui->comboBox_motor2_type->clear();
@@ -46,7 +45,6 @@ void ConfCommonWidget::populateMotorTypeComboBoxes(const QList<QPair<int, QStrin
     for (const auto& motorType : motorTypes) {
         int id = motorType.first;
         QString name = motorType.second;
-        qDebug() << "reading id: " << id << ", name: " << name;
         // Add item to all motor type combo boxes
         ui->comboBox_motor1_type->addItem(name, QVariant(id));
         ui->comboBox_motor2_type->addItem(name, QVariant(id));
@@ -57,7 +55,6 @@ void ConfCommonWidget::populateMotorTypeComboBoxes(const QList<QPair<int, QStrin
 
 void ConfCommonWidget::populateActionsComboBoxes(const QList<QPair<int, QString>>& actions)
 {
-    qDebug() << "in populateACtionsComboBoxes";
     // Clear existing items first
     ui->comboBox_motor1_action->clear();
     ui->comboBox_motor2_action->clear();
@@ -68,7 +65,6 @@ void ConfCommonWidget::populateActionsComboBoxes(const QList<QPair<int, QString>
     for (const auto& action : actions) {
         int id = action.first;
         QString name = action.second;
-        qDebug() << "reading id: " << id << ", name: " << name;
         // Add item to all motor type combo boxes
         ui->comboBox_motor1_action->addItem(name, QVariant(id));
         ui->comboBox_motor2_action->addItem(name, QVariant(id));
@@ -79,7 +75,6 @@ void ConfCommonWidget::populateActionsComboBoxes(const QList<QPair<int, QString>
 
 void ConfCommonWidget::populateModesComboBoxes(const QList<QPair<int, QString>>& modes)
 {
-    qDebug() << "in populateModesComboBoxes";
     // Clear existing items first
     ui->comboBox_motor1_mode->clear();
     ui->comboBox_motor2_mode->clear();
@@ -90,7 +85,6 @@ void ConfCommonWidget::populateModesComboBoxes(const QList<QPair<int, QString>>&
     for (const auto& mode : modes) {
         int id = mode.first;
         QString name = mode.second;
-        qDebug() << "reading id: " << id << ", name: " << name;
         // Add item to all motor type combo boxes
         ui->comboBox_motor1_mode->addItem(name, QVariant(id));
         ui->comboBox_motor2_mode->addItem(name, QVariant(id));
@@ -161,8 +155,26 @@ void ConfCommonWidget::getConfGui(MAIN_CONFIG &conf)
     } else if (ui->confLogEthernetButton->isChecked()) {
         conf.log_mode_ext = LOG_EXT_ETHERNET;
     }
-
     conf.log_uart_baud = ui->confLogUartBaudBox->value();
+    conf.vehicle.actuators=ui->doubleSpinBox_actuators->value();
+
+    qDebug() << "Actuators (from RCS): " << conf.vehicle.actuators;
+    conf.vehicle.actuator[0].type=ui->comboBox_motor1_type->currentData().toInt();
+    conf.vehicle.actuator[0].vescid=ui->doubleSpinBox_vescid1->value();
+    conf.vehicle.actuator[0].activity=ui->comboBox_motor1_action->currentData().toInt();
+    conf.vehicle.actuator[0].mode=ui->comboBox_motor1_mode->currentData().toInt();
+    conf.vehicle.actuator[1].type=ui->comboBox_motor2_type->currentData().toInt();
+    conf.vehicle.actuator[1].vescid=ui->doubleSpinBox_vescid2->value();
+    conf.vehicle.actuator[1].activity=ui->comboBox_motor2_action->currentData().toInt();
+    conf.vehicle.actuator[1].mode=ui->comboBox_motor2_mode->currentData().toInt();
+    conf.vehicle.actuator[2].type=ui->comboBox_motor3_type->currentData().toInt();
+    conf.vehicle.actuator[2].vescid=ui->doubleSpinBox_vescid3->value();
+    conf.vehicle.actuator[2].activity=ui->comboBox_motor3_action->currentData().toInt();
+    conf.vehicle.actuator[2].mode=ui->comboBox_motor3_mode->currentData().toInt();
+    conf.vehicle.actuator[3].type=ui->comboBox_motor4_type->currentData().toInt();
+    conf.vehicle.actuator[3].vescid=ui->doubleSpinBox_vescid4->value();
+    conf.vehicle.actuator[3].activity=ui->comboBox_motor4_action->currentData().toInt();
+    conf.vehicle.actuator[3].mode=ui->comboBox_motor4_mode->currentData().toInt();
 }
 
 void ConfCommonWidget::setConfGui(const MAIN_CONFIG &conf)
@@ -217,6 +229,46 @@ void ConfCommonWidget::setConfGui(const MAIN_CONFIG &conf)
     ui->confLogEnBox->setChecked(conf.log_en);
     ui->confLogNameEdit->setText(QString::fromLocal8Bit(conf.log_name));
 
+
+    qDebug() << "Actuators (from vehicle): " << conf.vehicle.actuators;
+    ui->doubleSpinBox_actuators->setValue(conf.vehicle.actuators);
+    setComboBoxByData(ui->comboBox_motor1_type,conf.vehicle.actuator[0].type);
+    ui->doubleSpinBox_vescid1->setValue(conf.vehicle.actuator[0].vescid);
+    setComboBoxByData(ui->comboBox_motor1_action,conf.vehicle.actuator[0].activity);
+    setComboBoxByData(ui->comboBox_motor1_mode,conf.vehicle.actuator[0].mode);
+
+    setComboBoxByData(ui->comboBox_motor2_type,conf.vehicle.actuator[1].type);
+    ui->doubleSpinBox_vescid2->setValue(conf.vehicle.actuator[1].vescid);
+    setComboBoxByData(ui->comboBox_motor2_action,conf.vehicle.actuator[1].activity);
+    setComboBoxByData(ui->comboBox_motor2_mode,conf.vehicle.actuator[1].mode);
+
+    setComboBoxByData(ui->comboBox_motor3_type,conf.vehicle.actuator[2].type);
+    ui->doubleSpinBox_vescid3->setValue(conf.vehicle.actuator[2].vescid);
+    setComboBoxByData(ui->comboBox_motor3_action,conf.vehicle.actuator[2].activity);
+    setComboBoxByData(ui->comboBox_motor3_mode,conf.vehicle.actuator[2].mode);
+
+    setComboBoxByData(ui->comboBox_motor4_type,conf.vehicle.actuator[3].type);
+    ui->doubleSpinBox_vescid4->setValue(conf.vehicle.actuator[3].vescid);
+    setComboBoxByData(ui->comboBox_motor4_action,conf.vehicle.actuator[3].activity);
+    setComboBoxByData(ui->comboBox_motor4_mode,conf.vehicle.actuator[3].mode);
+
+    /*00
+    conf.vehicle.actuator[0].activity=ui->comboBox_motor1_action->currentData().toInt();
+    conf.vehicle.actuator[0].mode=ui->comboBox_motor1_mode->currentData().toInt();
+    conf.vehicle.actuator[1].type=ui->comboBox_motor2_type->currentData().toInt();
+    conf.vehicle.actuator[1].vescid=ui->doubleSpinBox_vescid2->value();
+    conf.vehicle.actuator[1].activity=ui->comboBox_motor2_action->currentData().toInt();
+    conf.vehicle.actuator[1].mode=ui->comboBox_motor2_mode->currentData().toInt();
+    conf.vehicle.actuator[2].type=ui->comboBox_motor3_type->currentData().toInt();
+    conf.vehicle.actuator[2].vescid=ui->doubleSpinBox_vescid3->value();
+    conf.vehicle.actuator[2].activity=ui->comboBox_motor3_action->currentData().toInt();
+    conf.vehicle.actuator[2].mode=ui->comboBox_motor3_mode->currentData().toInt();
+    conf.vehicle.actuator[3].type=ui->comboBox_motor4_type->currentData().toInt();
+    conf.vehicle.actuator[3].vescid=ui->doubleSpinBox_vescid4->value();
+    conf.vehicle.actuator[3].activity=ui->comboBox_motor4_action->currentData().toInt();
+    conf.vehicle.actuator[3].mode=ui->comboBox_motor4_mode->currentData().toInt();
+   */
+
     switch (conf.log_mode_ext) {
     case LOG_EXT_OFF: ui->confLogUartOffButton->setChecked(true); break;
     case LOG_EXT_UART: ui->confLogUartContButton->setChecked(true); break;
@@ -268,4 +320,9 @@ void ConfCommonWidget::on_confApResetOnEmergencyStopBox_toggled(bool checked)
 {
     CarInterface * car = dynamic_cast<CarInterface *>(parentWidget()->parentWidget()->parentWidget()->parentWidget());
     car->setResetApOnEmergencyStop(checked);
+}
+
+void setComboBoxByData(QComboBox* combo, const QVariant& data) {
+    int index = combo->findData(data);
+    if (index != -1) combo->setCurrentIndex(index);
 }

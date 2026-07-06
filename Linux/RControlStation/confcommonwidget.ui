@@ -1046,7 +1046,7 @@
         </widget>
        </item>
        <item row="3" column="2">
-        <widget class="QDoubleSpinBox" name="doubleSpinBox_7">
+        <widget class="QDoubleSpinBox" name="doubleSpinBox_vescid3">
          <property name="prefix">
           <string>vesc id: </string>
          </property>
@@ -1062,7 +1062,7 @@
         <widget class="QComboBox" name="comboBox_motor3_mode"/>
        </item>
        <item row="1" column="2">
-        <widget class="QDoubleSpinBox" name="doubleSpinBox_5">
+        <widget class="QDoubleSpinBox" name="doubleSpinBox_vescid1">
          <property name="prefix">
           <string>vesc id: </string>
          </property>
@@ -1088,7 +1088,7 @@
         </widget>
        </item>
        <item row="4" column="2">
-        <widget class="QDoubleSpinBox" name="doubleSpinBox_8">
+        <widget class="QDoubleSpinBox" name="doubleSpinBox_vescid4">
          <property name="prefix">
           <string>vesc id: </string>
          </property>
@@ -1107,7 +1107,7 @@
         <widget class="QComboBox" name="comboBox_motor4_type"/>
        </item>
        <item row="2" column="2">
-        <widget class="QDoubleSpinBox" name="doubleSpinBox_6">
+        <widget class="QDoubleSpinBox" name="doubleSpinBox_vescid2">
          <property name="prefix">
           <string>vesc id: </string>
          </property>
@@ -1123,7 +1123,7 @@
         <widget class="QComboBox" name="comboBox_motor2_type"/>
        </item>
        <item row="0" column="1">
-        <widget class="QDoubleSpinBox" name="doubleSpinBox_9">
+        <widget class="QDoubleSpinBox" name="doubleSpinBox_actuators">
          <property name="prefix">
           <string>motors: </string>
          </property>

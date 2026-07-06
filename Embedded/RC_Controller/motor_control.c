@@ -15,6 +15,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <math.h>
+#include <stdlib.h>
 #include "motor_control.h"
 #include "bldc_interface.h"
 #include "hydraulic.h"
@@ -27,6 +28,19 @@
 // Current motor direction: +1 (forward) or -1 (backward)
 static volatile int current_motor_direction = 1;
 static int mode;
+
+// Safe float printing function for embedded systems
+void print_float_safe(const char* name, float value) {
+    int32_t int_bits;
+    memcpy(&int_bits, &value, sizeof(float));
+    
+    // Print as integer and fractional parts
+    int whole = (int)value;
+    float fractional = fabs(value - whole);
+    int millionths = (int)(fractional * 1000000.0f);
+    
+    commands_printf("%s: %d.%06d (raw: 0x%08X)", name, whole, millionths, int_bits);
+}
 extern float m_turn_rad_now;
 int iCounterMotor=0;
 extern int iDebug;
@@ -117,6 +131,54 @@ void motor_set_speed(float speed)
 #endif
 }
 
+void motor_set_vesc_value(int id, float value,motor_control_mode mode)
+{
+	commands_printf("VESC command - ENTERED FUNCTION!");
+	commands_printf("id: %d (addr: %p)", id, &id);
+	
+	// Debug: Print float value safely
+	print_float_safe("value", value);
+	
+	// Convert to integer representation for safe printing
+	int32_t int_bits;
+memcpy(&int_bits, &value, sizeof(float));
+//	commands_printf("value as int bits: 0x%08X (%d)", int_bits, int_bits);
+	
+	// Print as hex float
+//	commands_printf("value addr: %p", &value);
+	
+	commands_printf("mode: %d (addr: %p)", mode, &mode);
+	
+	// Debug: Check if value is reasonable
+	if (fabs(value) > 1000.0f) {
+		commands_printf("WARNING: Unreasonable value detected!");
+		print_float_safe("fabs(value)", fabs(value));
+	}
+
+
+ 	comm_can_lock_vesc();
+	comm_can_set_vesc_id(id);
+	switch (mode)
+	{
+		case MOTOR_CONTROL_DUTY:
+			bldc_interface_set_duty_cycle(value);
+			break;
+		case MOTOR_CONTROL_CURRENT:
+			bldc_interface_set_current(value);
+			break;
+		case MOTOR_CONTROL_RPM:
+			bldc_interface_set_rpm(value);
+			break;
+	}
+	comm_can_unlock_vesc();
+
+}
+
+/*
+ *
+	MOTOR_CONTROL_CURRENT_BRAKE,
+	MOTOR_CONTROL_POS
+ */
 
 void motor_set_throttle_and_steering(float throttle,float steering,float frontangle)
 {
@@ -163,6 +225,24 @@ void motor_set_throttle_and_steering(float throttle,float steering,float frontan
 		#endif
 	#endif
 }
+
+
+/*
+ * 			case RC_MODE_PID: // In m/s
+				#if HAS_DIFF_STEERING
+					if (steering < 0.001) {
+						autopilot_set_turn_rad(1e6);
+					} else {
+						autopilot_set_turn_rad(1.0 / steering);
+					}
+				#endif
+				motor_set_speed(throttle);
+				break;
+ *
+ */
+
+
+
 
 #if !HAS_HYDRAULIC_DRIVE
 
@@ -337,4 +417,43 @@ void motor_handle_route_end(void) {
     if (!main_config.vehicle.disable_motor) {
         bldc_interface_set_current_brake(10.0);
     }
+}
+
+// Function to get actuators by activity
+ACTUATOR* motor_get_actuators_by_activity(uint16_t activity, int* count) {
+    MAIN_CONFIG conf;
+    conf_general_read_main_conf(&conf);
+    
+    // Initialize count to 0
+    *count = 0;
+    
+    // Loop through all actuators in the configuration
+    for (int i = 0; i < conf.vehicle.actuators; i++) {
+        if (conf.vehicle.actuator[i].activity == activity) {
+            (*count)++;
+        }
+    }
+    
+    // If no actuators found, return NULL
+    if (*count == 0) {
+        return NULL;
+    }
+    
+    // Allocate memory for the result (this should be freed by the caller)
+    ACTUATOR* result = (ACTUATOR*)malloc(*count * sizeof(ACTUATOR));
+    if (result == NULL) {
+        *count = 0;
+        return NULL;
+    }
+    
+    // Copy matching actuators to the result array
+    int result_index = 0;
+    for (int i = 0; i < conf.vehicle.actuators; i++) {
+        if (conf.vehicle.actuator[i].activity == activity) {
+            result[result_index] = conf.vehicle.actuator[i];
+            result_index++;
+        }
+    }
+    
+    return result;
 }

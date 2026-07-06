@@ -208,6 +208,13 @@ typedef enum {
 } MOTE_PACKET;
 
 typedef struct {
+    int16_t type;
+    int16_t vescid;
+    int16_t activity;
+    int16_t mode;
+} ACTUATOR;
+
+typedef struct {
     bool yaw_use_odometry; // Use odometry data for yaw angle correction.
     float yaw_imu_gain; // Gain for yaw angle from IMU (vs odometry)
     bool disable_motor; // Disable motor drive commands to make sure that the motor does not move.
@@ -231,8 +238,9 @@ typedef struct {
     float degreeinterval;
     float deadband;
     float heartbeat_maxtime;
-
-} MAIN_CONFIG_CAR;
+    int actuators;
+    ACTUATOR actuator[4];
+} MAIN_CONFIG_VEHICLE;
 
 typedef struct {
     // Dead reckoning
@@ -350,7 +358,7 @@ typedef struct {
     LOG_EXT_MODE log_mode_ext;
     int log_uart_baud;
 
-    MAIN_CONFIG_CAR car;
+    MAIN_CONFIG_VEHICLE vehicle;
     MAIN_CONFIG_MULTIROTOR mr;
 } MAIN_CONFIG;
 

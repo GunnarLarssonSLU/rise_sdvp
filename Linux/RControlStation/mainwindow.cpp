@@ -251,6 +251,7 @@ MainWindow::MainWindow(QWidget *parent) :
     mSerialPort = new QSerialPort(this);
     mThrottle = 0.0;
     mSteering = 0.0;
+    activeCarExists = false;
 
 //    static MainWindow *mThis=this;          // Just to be able to get the lambdas to work
 #ifdef HAS_JOYSTICK
@@ -420,6 +421,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
     qApp->installEventFilter(this);
     
+    // Connect checkBoxActiveKB to joystick control
+    connect(ui->checkBoxActiveKB, &QCheckBox::stateChanged, this, [this](int state) {
+        setJoystickControlEnabled(state == Qt::Checked);
+    });
+
     // Populate controller combo boxes from database
     populateControllerComboBoxes();
 }
@@ -897,7 +903,7 @@ void MainWindow::handleControllerInput(int controllerNumber, float value)
         // - car: mActiveCarId (the currently selected active car)
         // - iAction: the action ID from the database
         // - value: the input value passed to this function
-        controllerAction(mActiveCarId, actionId, value);
+        controllerAction(mActiveCarId, actionId, value*ui->throttleMaxBox->value());
     } else {
         // No action configured for this controller
         qDebug() << "Controller" << controllerNumber << "has no configured action - ignoring input";
@@ -1264,62 +1270,6 @@ bool MainWindow::connectJoystick()
         }
     }
 #else
-    auto gamepads = QGamepadManager::instance()->connectedGamepads();
-    if (gamepads.isEmpty()) {
-        qDebug() << "Did not find any connected gamepads";
-        //        return;
-    }                for(QList<CarInterface*>::Iterator it_car = mCars.begin();it_car < mCars.end();it_car++) {
-        CarInterface *car = *it_car;
-        if (car->getCtrlKb()) {
-            if (button == FRONT_UP || button == FRONT_DOWN) {
-                qDebug() << "Hydraulic, rear down";
-                mPacketInterface->hydraulicMove(car->getId(), HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
-                if (pressed) {
-                    if (button == FRONT_UP) {
-                        controllerAction(car->getId(),FRONT_UP);
-
-    mJoystick = new QGamepad(*gamepads.begin(), this);
-
-    connect(mJoystick, SIGNAL(buttonChanged(int,bool)),
-            this, SLOT(jsButtonChanged(int,bool)));
-
-    connect(mJoystick, &QGamepad::axisLeftXChanged, this, [](double value){
-        //           qDebug() << "Left X" << value;
-    });
-    connect(mJoystick, &QGamepad::axisLeftYChanged, this, [](double value){
-        //           qDebug() << "Left Y" << value;
-    });
-    connect(mJoystick, &QGamepad::axisRightXChanged, this, [](double value){
-        //           qDebug() << "Right X" << value;
-    });
-    connect(mJoystick, &QGamepad::axisRightYChanged, this, [](double value){
-        //           qDebug() << "Right Y" << value;
-    });
-
-    connect(mJoystick, &QGamepad::buttonL1Changed, this, [](bool pressed){
-        qDebug() << "Button L1" << pressed;
-        mThis->jsButtonChanged(4, pressed);
-    });
-    connect(mJoystick, &QGamepad::buttonR1Changed, this, [](bool pressed){
-        qDebug() << "Button R1" << pressed;
-        mThis->jsButtonChanged(5, pressed);
-    });
-    connect(mJoystick, &QGamepad::buttonL2Changed, this, [](double value){
-        qDebug() << "Button L2: " << value;
-        mThis->jsButtonChanged(6, value>0);
-    });
-
-    connect(mJoystick, &QGamepad::buttonR2Changed, this, [](double value){
-        qDebug() << "Button R2: " << value;
-        mThis->jsButtonChanged(7, value>0);
-    });
-
-    {
-        QGamepad js;
-        if (js.isConnected()) {
-            connectJs = true;
-        }
-    }
 
 #endif
     return connectJs;
@@ -1829,7 +1779,12 @@ void MainWindow::infoTraceChanged(int traceNow)
 
 void MainWindow::controllerAction(int car, int iAction,float value=0)
 {
-    switch (iController)
+    if (mJoystickControlEnabled) {
+        qDebug() << "Sending";
+        mPacketInterface->setRcControlAdvanced(car, iAction, value);
+    };
+/*
+ *     switch (iAction)
     {
     case FRONT_UP:
         qDebug() << "Hydraulic, front up: " << value;
@@ -1848,8 +1803,12 @@ void MainWindow::controllerAction(int car, int iAction,float value=0)
         mPacketInterface->hydraulicMove(car, HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
         break;
     }
+*/
 }
 
+
+
+/*
 void MainWindow::jsButtonChanged(int button, bool pressed)
 {
         qDebug() << "JS BT:" << button << pressed;
@@ -1874,7 +1833,7 @@ void MainWindow::jsButtonChanged(int button, bool pressed)
                         break;
                     }
                 }
-                
+                activeCarExists
                 // Only send commands to the active car if joystick control is enabled globally
                 if (activeCarExists && mJoystickControlEnabled) {
                     qDebug() << "Active car id: " << mActiveCarId;
@@ -1921,11 +1880,22 @@ void MainWindow::jsButtonChanged(int button, bool pressed)
 //        }
     #endif
 }
-
+*/
 void MainWindow::onMapCarBoxChanged(int value)
 {
     mActiveCarId = value;
     qDebug() << "Active car changed to:" << mActiveCarId;
+
+    bool activeCarExists = false;
+
+    // Find the car with matching ID
+    for(QList<CarInterface*>::Iterator it_car = mCars.begin(); it_car < mCars.end(); it_car++) {
+        CarInterface *car = *it_car;
+        if (car->getId() == mActiveCarId) {
+            activeCarExists = true;
+            break;
+        }
+    }
 }
 
 void MainWindow::setJoystickControlEnabled(bool enabled)
@@ -4426,6 +4396,7 @@ void MainWindow::on_AutopilotPausePushButton_clicked()
 void MainWindow::pollGamepad() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
+//        qDebug() << "button type: " << event.type;
         if (event.type == SDL_CONTROLLERBUTTONDOWN || event.type == SDL_CONTROLLERBUTTONUP) {
             qDebug() << "up or down";
             handleButtonEvent(event.cbutton);
@@ -4437,15 +4408,18 @@ void MainWindow::pollGamepad() {
 }
 
 void MainWindow::handleButtonEvent(const SDL_ControllerButtonEvent& event) {
+//    qDebug() << "button id: " << event.button;
     bool pressed = (event.state == SDL_PRESSED);
     switch (event.button) {
     case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
         qDebug() << "Button L1" << pressed;
-        jsButtonChanged(4, pressed);
+        handleControllerInput(1,1.0);
+        //jsButtonChanged(4, pressed);
         break;
     case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
         qDebug() << "Button R1" << pressed;
-        jsButtonChanged(5, pressed);
+        handleControllerInput(3,1.0);
+        //jsButtonChanged(5, pressed);
         break;
     }
 }
@@ -4453,24 +4427,24 @@ void MainWindow::handleButtonEvent(const SDL_ControllerButtonEvent& event) {
 void MainWindow::handleAxisEvent(const SDL_ControllerAxisEvent& event) {
     switch (event.axis) {
     case SDL_CONTROLLER_AXIS_LEFTX:
- //       qDebug() << "Left X" << event.value;
+        handleControllerInput(6,event.value/32768.0);
         break;
     case SDL_CONTROLLER_AXIS_LEFTY:
- //       qDebug() << "Left Y" << event.value;
+        handleControllerInput(5,-event.value/32768.0);
         break;
     case SDL_CONTROLLER_AXIS_RIGHTX:
- //       qDebug() << "Right X" << event.value;
+        handleControllerInput(8,event.value/32768.0);
         break;
     case SDL_CONTROLLER_AXIS_RIGHTY:
-//        qDebug() << "Right Y" << event.value;
+        handleControllerInput(7,-event.value/32768.0);
         break;
     case SDL_CONTROLLER_AXIS_TRIGGERLEFT:
-//        qDebug() << "Button L2:" << event.value;
-        jsButtonChanged(6, event.value > 0);
+        qDebug() << "Button L2:" << event.value;
+        //jsButtonChanged(6, event.value > 0);
         break;
     case SDL_CONTROLLER_AXIS_TRIGGERRIGHT:
-//        qDebug() << "Button R2:" << event.value;
-        jsButtonChanged(7, event.value > 0);
+        qDebug() << "Button R2:" << event.value;
+        //jsButtonChanged(7, event.value > 0);
         break;
     }
 }

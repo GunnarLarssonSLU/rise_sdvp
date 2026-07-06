@@ -124,7 +124,6 @@ private slots:
     void nmeaGgaRx(int fields, NmeaServer::nmea_gga_info_t gga);
     void routePointAdded(LocPoint pos);
     void infoTraceChanged(int traceNow);
-    void jsButtonChanged(int button, bool pressed);
     void onMapCarBoxChanged(int value);
     void setJoystickControlEnabled(bool enabled);
     void loadControllerSettingsFromDatabase();
@@ -149,6 +148,7 @@ private slots:
     void on_mapRemoveRouteButton_clicked();
     void on_mapRouteSpeedBox_valueChanged(double arg1);
     void on_jsConnectButton_clicked();
+
     void on_jsDisconnectButton_clicked();
     void on_mapAntialiasBox_toggled(bool checked);
     void on_carsWidget_tabCloseRequested(int index);
@@ -296,6 +296,7 @@ private:
     QList<QPair<int, int> > mSupportedFirmwares;
     ArduinoReader serialReader;
     database db;
+    bool activeCarExists;
 
 #ifdef HAS_JOYSTICK_CHECK
     bool JSconnected();

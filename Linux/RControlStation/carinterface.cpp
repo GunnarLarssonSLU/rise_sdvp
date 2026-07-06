@@ -735,59 +735,59 @@ void CarInterface::on_confWriteButton_clicked()
 
 void CarInterface::getConfGui(MAIN_CONFIG &conf)
 {
-    conf.car.yaw_use_odometry = ui->confOdometryYawBox->isChecked();
-    conf.car.yaw_imu_gain = ui->confYawImuGainBox->value();
-    conf.car.disable_motor = ui->confMiscDisableMotorBox->isChecked();
-    conf.car.simulate_motor = ui->confMiscSimulateMotorBox->isChecked();
-    conf.car.clamp_imu_yaw_stationary = ui->confClampImuYawBox->isChecked();
-    conf.car.use_uwb_pos = ui->confUseUwbPosBox->isChecked();
+    conf.vehicle.yaw_use_odometry = ui->confOdometryYawBox->isChecked();
+    conf.vehicle.yaw_imu_gain = ui->confYawImuGainBox->value();
+    conf.vehicle.disable_motor = ui->confMiscDisableMotorBox->isChecked();
+    conf.vehicle.simulate_motor = ui->confMiscSimulateMotorBox->isChecked();
+    conf.vehicle.clamp_imu_yaw_stationary = ui->confClampImuYawBox->isChecked();
+    conf.vehicle.use_uwb_pos = ui->confUseUwbPosBox->isChecked();
 
-    conf.car.gear_ratio = ui->confGearRatioBox->value();
-    conf.car.wheel_diam = ui->confWheelDiamBox->value();
-    conf.car.motor_poles = ui->confMotorPoleBox->value();
-    conf.car.steering_center = ui->confServoCenterBox->value();
-    conf.car.steering_range = ui->confServoRangeBox->value();
-    conf.car.steering_ramp_time = ui->confSteeringRampBox->value();
-    conf.car.axis_distance = ui->confAxisDistanceBox->value();
-    conf.car.vesc_p_gain = ui->confServoPGainBox->value();
-    conf.car.vesc_i_gain = ui->confServoIGainBox->value();
-    conf.car.vesc_d_gain = ui->confServoDGainBox->value();
-    conf.car.sensorcentre = ui->confSensorCentreBox->value();
-    conf.car.sensorinterval = ui->confSensorIntervalBox->value();
-    conf.car.degreeinterval = ui->confDegreeIntervalBox->value();
+    conf.vehicle.gear_ratio = ui->confGearRatioBox->value();
+    conf.vehicle.wheel_diam = ui->confWheelDiamBox->value();
+    conf.vehicle.motor_poles = ui->confMotorPoleBox->value();
+    conf.vehicle.steering_center = ui->confServoCenterBox->value();
+    conf.vehicle.steering_range = ui->confServoRangeBox->value();
+    conf.vehicle.steering_ramp_time = ui->confSteeringRampBox->value();
+    conf.vehicle.axis_distance = ui->confAxisDistanceBox->value();
+    conf.vehicle.vesc_p_gain = ui->confServoPGainBox->value();
+    conf.vehicle.vesc_i_gain = ui->confServoIGainBox->value();
+    conf.vehicle.vesc_d_gain = ui->confServoDGainBox->value();
+    conf.vehicle.sensorcentre = ui->confSensorCentreBox->value();
+    conf.vehicle.sensorinterval = ui->confSensorIntervalBox->value();
+    conf.vehicle.degreeinterval = ui->confDegreeIntervalBox->value();
 
-    conf.car.steering_max_angle_rad = atan(ui->confAxisDistanceBox->value() / ui->confTurnRadBox->value());
-    conf.car.deadband=ui->confDeadBandBox->value();
-    conf.car.heartbeat_maxtime=ui->confTimeLimitBox->value();
+    conf.vehicle.steering_max_angle_rad = atan(ui->confAxisDistanceBox->value() / ui->confTurnRadBox->value());
+    conf.vehicle.deadband=ui->confDeadBandBox->value();
+    conf.vehicle.heartbeat_maxtime=ui->confTimeLimitBox->value();
     ui->confCommonWidget->getConfGui(conf);
 }
 
 void CarInterface::setConfGui(MAIN_CONFIG &conf)
 {
-    ui->confOdometryYawBox->setChecked(conf.car.yaw_use_odometry);
-    ui->confYawImuGainBox->setValue(conf.car.yaw_imu_gain);
-    ui->confMiscDisableMotorBox->setChecked(conf.car.disable_motor);
-    ui->confMiscSimulateMotorBox->setChecked(conf.car.simulate_motor);
-    ui->confClampImuYawBox->setChecked(conf.car.clamp_imu_yaw_stationary);
-    ui->confUseUwbPosBox->setChecked(conf.car.use_uwb_pos);
+    ui->confOdometryYawBox->setChecked(conf.vehicle.yaw_use_odometry);
+    ui->confYawImuGainBox->setValue(conf.vehicle.yaw_imu_gain);
+    ui->confMiscDisableMotorBox->setChecked(conf.vehicle.disable_motor);
+    ui->confMiscSimulateMotorBox->setChecked(conf.vehicle.simulate_motor);
+    ui->confClampImuYawBox->setChecked(conf.vehicle.clamp_imu_yaw_stationary);
+    ui->confUseUwbPosBox->setChecked(conf.vehicle.use_uwb_pos);
 
-    ui->confGearRatioBox->setValue(conf.car.gear_ratio);
-    ui->confWheelDiamBox->setValue(conf.car.wheel_diam);
-    ui->confMotorPoleBox->setValue(conf.car.motor_poles);
-    ui->confServoCenterBox->setValue(conf.car.steering_center);
-    ui->confServoRangeBox->setValue(conf.car.steering_range);
-    ui->confSteeringRampBox->setValue(conf.car.steering_ramp_time);
-    ui->confAxisDistanceBox->setValue(conf.car.axis_distance);
-    ui->confServoPGainBox->setValue(conf.car.vesc_p_gain);
-    ui->confServoIGainBox->setValue(conf.car.vesc_i_gain);
-    ui->confServoDGainBox->setValue(conf.car.vesc_d_gain);
-    ui->confSensorCentreBox->setValue(conf.car.sensorcentre);
-    ui->confSensorIntervalBox->setValue(conf.car.sensorinterval);
-    ui->confDegreeIntervalBox->setValue(conf.car.degreeinterval);
-    ui->confDeadBandBox->setValue(conf.car.deadband);
-    ui->confTimeLimitBox->setValue(conf.car.heartbeat_maxtime);
+    ui->confGearRatioBox->setValue(conf.vehicle.gear_ratio);
+    ui->confWheelDiamBox->setValue(conf.vehicle.wheel_diam);
+    ui->confMotorPoleBox->setValue(conf.vehicle.motor_poles);
+    ui->confServoCenterBox->setValue(conf.vehicle.steering_center);
+    ui->confServoRangeBox->setValue(conf.vehicle.steering_range);
+    ui->confSteeringRampBox->setValue(conf.vehicle.steering_ramp_time);
+    ui->confAxisDistanceBox->setValue(conf.vehicle.axis_distance);
+    ui->confServoPGainBox->setValue(conf.vehicle.vesc_p_gain);
+    ui->confServoIGainBox->setValue(conf.vehicle.vesc_i_gain);
+    ui->confServoDGainBox->setValue(conf.vehicle.vesc_d_gain);
+    ui->confSensorCentreBox->setValue(conf.vehicle.sensorcentre);
+    ui->confSensorIntervalBox->setValue(conf.vehicle.sensorinterval);
+    ui->confDegreeIntervalBox->setValue(conf.vehicle.degreeinterval);
+    ui->confDeadBandBox->setValue(conf.vehicle.deadband);
+    ui->confTimeLimitBox->setValue(conf.vehicle.heartbeat_maxtime);
 
-    ui->confTurnRadBox->setValue(conf.car.axis_distance / tan(conf.car.steering_max_angle_rad));
+    ui->confTurnRadBox->setValue(conf.vehicle.axis_distance / tan(conf.vehicle.steering_max_angle_rad));
 
     ui->confCommonWidget->setConfGui(conf);
 }

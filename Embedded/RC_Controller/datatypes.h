@@ -289,11 +289,18 @@ typedef enum
 } ACTIVITY_TYPE;
 
 // VESC Controller
+// Note: This struct uses uint16_t fields to match the serialization format
+// in commands.c. The original enum types are documented below for reference:
+// type: ACTUATOR_TYPE (0=AT_VESCMOTOR, 1=AT_HYDRAULIC)
+// activity: ACTIVITY_TYPE (0=ACT_FORWARD, 1=ACT_STEERING, 2=ACT_LIFT)
+// mode: motor_control_mode (0=MOTOR_CONTROL_DUTY, 1=MOTOR_CONTROL_CURRENT, 
+//                           2=MOTOR_CONTROL_CURRENT_BRAKE, 3=MOTOR_CONTROL_RPM, 
+//                           4=MOTOR_CONTROL_POS)
 typedef struct {
-	ACTUATOR_TYPE type;
-	int vescid;
-	ACTIVITY_TYPE activity;
-	motor_control_mode mode;
+	uint16_t type;
+	uint16_t motorid;
+	uint16_t activity;
+	uint16_t mode;
 } ACTUATOR;
 
 
@@ -323,9 +330,10 @@ typedef struct {
     float sensorcentre;
     float deadband;
     float heartbeat_maxtime;
+    uint16_t actuators;
     ACTUATOR actuator[4];
-    int actuators;
 } MAIN_CONFIG_VEHICLE;
+
 
 
 typedef struct {
@@ -392,6 +400,7 @@ typedef struct {
 	uint16_t motor_pwm_max_us; // Maximum servo pulse length for motor in microseconds
 } MAIN_CONFIG_MULTIROTOR;
 
+
 // vehicle configuration
 typedef struct {
 	// Common vehicle settings
@@ -426,6 +435,7 @@ typedef struct {
 	bool gps_use_ubx_info; // Use info about the ublox solution
 	float gps_ubx_max_acc; // Maximum ublox accuracy to use solution (m, higher = worse)
 
+
 	// UWB Parameters
 	float uwb_max_corr; // Maximum distance to move UWB position in one sample
 
@@ -443,9 +453,8 @@ typedef struct {
 	char log_name[LOG_NAME_MAX_LEN + 1];
 	LOG_EXT_MODE log_mode_ext;
 	int log_uart_baud;
-
-	MAIN_CONFIG_VEHICLE vehicle;
 	MAIN_CONFIG_MULTIROTOR mr;
+	MAIN_CONFIG_VEHICLE vehicle;
 } MAIN_CONFIG;
 
 typedef struct {

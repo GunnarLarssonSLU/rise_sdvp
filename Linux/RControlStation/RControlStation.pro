@@ -60,7 +60,13 @@ CONFIG += static
 # Try using system OpenJPEG (version 2.4.0) instead of local (2.5.0)
 LIBS += -L/usr/lib/x86_64-linux-gnu -lopenjp2
 
-LIBS += -L/usr/local/lib -lgdal -lz -lsqlite3 -lproj -lgeos_c -lzstd -ltiff -lcurl -lwebp -ljpeg -ldeflate -lssl -lcrypto -lexpat -lpng -llz4 -ljson-c -lgeotiff -lgif -lnetcdf
+# Use local libraries for portability
+LIBS += -L$$PWD/local_libs
+
+LIBS += -L/usr/local/lib -lgdal -lz -lsqlite3 -lproj -lgeos_c -lzstd -ltiff -lcurl -lwebp -ljpeg -ldeflate -lssl -lcrypto -lexpat -lpng -llz4 -ljson-c -lgeotiff -lgif
+
+# Handle netCDF linking - use local library for portability
+LIBS += -l:libnetcdf.so.19
 LIBS += -L/usr/lib/x86_64-linux-gnu -lhdf5_serial -lhdf5_serial_hl -lmfhdf -ldf -lheif
 LIBS += -lpq -lblosc -lxml2 -lpcre2-8 -lxerces-c
 LIBS += -lIlmImf -lIlmThread -lImath -lHalf -lIex
@@ -71,6 +77,7 @@ LIBS += -logdi -lfreexl
 LIBS += -L/usr/lib/x86_64-linux-gnu -lodbc -lodbcinst
 
 INCLUDEPATH += /usr/local/include
+INCLUDEPATH += /usr/include/eigen3
 #INCLUDEPATH += /usr/local/include/openjpeg-2.4
 #INCLUDEPATH += /usr/local/include/openjpeg-2.5
 
@@ -98,6 +105,10 @@ release_lin {
     # http://micro.nicholaswilson.me.uk/post/31855915892/rules-of-static-linking-libstdc-libc-libgcc
     # http://insanecoding.blogspot.se/2012/07/creating-portable-linux-binaries.html
     QMAKE_LFLAGS += -static-libstdc++ -static-libgcc
+    
+    # Use local netCDF library for portability
+    LIBS += -l:libnetcdf.so.19
+    
     DESTDIR = build/lin
     OBJECTS_DIR = build/lin/obj
     MOC_DIR = build/lin/obj
@@ -247,7 +258,7 @@ contains(DEFINES, HAS_SIM_SCEN) {
 
 # --- GDAL support ---
 INCLUDEPATH += /usr/include/gdal
-LIBS += -L/usr/lib -lgdal
+LIBS += -L/usr/lib -lgdal -lz
 
 
 greaterThan(QT_MAJOR_VERSION, 5) {

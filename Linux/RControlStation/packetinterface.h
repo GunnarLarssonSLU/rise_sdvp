@@ -111,6 +111,7 @@ public slots:
     void setRcControlCurrentBrake(quint8 id, double current, double steering);
     void setRcControlDuty(quint8 id, double duty, double steering);
     void setRcControlPid(quint8 id, double speed, double steering);
+    void setRcControlAdvanced(quint8 id, int activity, double value);
     void setPos(quint8 id, double x, double y, double angle);
     void setServoDirect(quint8 id, double value);
     void sendRtcmUsb(quint8 id, QByteArray rtcm_msg);
