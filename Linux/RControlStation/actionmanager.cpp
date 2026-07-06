@@ -38,23 +38,36 @@ ActionManager::ActionManager(QWidget *parent) : QWidget(parent)
     actionsTableView->setSelectionMode(QAbstractItemView::SingleSelection);
     actionsTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
     
-    // Get selection model and connect signals
-    QItemSelectionModel *selectionModel = actionsTableView->selectionModel();
-    if (selectionModel) {
-        connect(selectionModel, &QItemSelectionModel::selectionChanged, 
-                this, &ActionManager::onActionSelectionChanged);
-        connect(selectionModel, &QItemSelectionModel::currentChanged, 
-                this, &ActionManager::onActionSelectionChanged);
-        connect(selectionModel, &QItemSelectionModel::currentRowChanged, 
-                this, &ActionManager::onActionSelectionChanged);
-        qDebug() << "Successfully connected all selection model signals";
-    } else {
-        qDebug() << "ERROR: Selection model is null - creating new one";
-        // This should not happen, but just in case
-        actionsTableView->setSelectionModel(new QItemSelectionModel(actionsModel));
-        connect(actionsTableView->selectionModel(), &QItemSelectionModel::selectionChanged, 
-                this, &ActionManager::onActionSelectionChanged);
+    // Set selection mode and behavior first
+    actionsTableView->setSelectionMode(QAbstractItemView::SingleSelection);
+    actionsTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    
+    // Ensure we have a model before creating selection model
+    if (!actionsTableView->model()) {
+        qDebug() << "ERROR: Table view has no model - setting dummy model";
+        // This should not happen, but let's be safe
+        actionsTableView->setModel(new QSqlTableModel(this));
     }
+    
+    // Get or create selection model
+    QItemSelectionModel *selectionModel = actionsTableView->selectionModel();
+    if (!selectionModel) {
+        qDebug() << "Creating new selection model for table view";
+        selectionModel = new QItemSelectionModel(actionsTableView->model());
+        actionsTableView->setSelectionModel(selectionModel);
+    }
+    
+    // Now connect signals safely
+    connect(selectionModel, &QItemSelectionModel::selectionChanged, 
+            this, &ActionManager::onActionSelectionChanged);
+    connect(selectionModel, &QItemSelectionModel::currentChanged, 
+            this, &ActionManager::onActionSelectionChanged);
+    connect(selectionModel, &QItemSelectionModel::currentRowChanged, 
+            this, &ActionManager::onActionSelectionChanged);
+    connect(actionsTableView, &QTableView::clicked, 
+            this, &ActionManager::onActionSelectionChanged);
+    
+    qDebug() << "Successfully connected all selection model signals";
     
     // Also connect clicked signal for direct interaction
     connect(actionsTableView, &QTableView::clicked, 
@@ -107,16 +120,31 @@ void ActionManager::setupUi(QSqlDatabase db)
     actionsTableView->setColumnWidth(2, 100); // Colour column
     
     // Force a selection update after model is loaded
-    QTimer::singleShot(100, this, [this]() {
+    QTimer::singleShot(200, this, [this]() {
         qDebug() << "Timer-based selection update triggered";
+        
+        // Safety checks
+        if (!actionsModel) {
+            qDebug() << "ERROR: No model available in timer callback";
+            return;
+        }
+        
+        if (!actionsTableView->selectionModel()) {
+            qDebug() << "ERROR: No selection model available in timer callback";
+            return;
+        }
         
         // If we have data, select the first row to enable buttons
         if (actionsModel->rowCount() > 0) {
             QModelIndex firstIndex = actionsModel->index(0, 0); // Select first row, first column
-            actionsTableView->selectionModel()->select(firstIndex, QItemSelectionModel::SelectCurrent | QItemSelectionModel::Rows);
-            actionsTableView->selectionModel()->setCurrentIndex(firstIndex, QItemSelectionModel::SelectCurrent);
-            actionsTableView->scrollTo(firstIndex);
-            qDebug() << "Timer auto-selected first row to enable buttons";
+            if (firstIndex.isValid()) {
+                actionsTableView->selectionModel()->select(firstIndex, QItemSelectionModel::SelectCurrent | QItemSelectionModel::Rows);
+                actionsTableView->selectionModel()->setCurrentIndex(firstIndex, QItemSelectionModel::SelectCurrent);
+                actionsTableView->scrollTo(firstIndex);
+                qDebug() << "Timer auto-selected first row to enable buttons";
+            } else {
+                qDebug() << "ERROR: First index is invalid";
+            }
         } else {
             qDebug() << "Timer: No data in model, buttons remain disabled";
         }
@@ -257,6 +285,17 @@ void ActionManager::editActionColour()
 void ActionManager::onActionSelectionChanged()
 {
     qDebug() << "=== Selection change triggered ===";
+    
+    // Defensive programming - check everything before proceeding
+    if (!actionsTableView) {
+        qDebug() << "ERROR: actionsTableView is null!";
+        return;
+    }
+    
+    if (!actionsModel) {
+        qDebug() << "ERROR: actionsModel is null!";
+        return;
+    }
     
     // Get selection model and check its state
     QItemSelectionModel *selectionModel = actionsTableView->selectionModel();
