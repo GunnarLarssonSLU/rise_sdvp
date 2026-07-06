@@ -21,10 +21,12 @@
 #include <QMainWindow>
 #include <QList>
 #include <QTimer>
+#include <tuple>
 #include <QSerialPort>
 #include <QLabel>
 #include <QTcpSocket>
 #include <QtWidgets>
+#include "actionmanager.h"
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     #include <SDL2/SDL.h>
@@ -102,6 +104,8 @@ public:
     void populateControllerComboBoxes();
     QList<QPair<int, QString>> getMotorTypesFromDatabase();
     QList<QPair<int, QString>> getActionsFromDatabase();
+    QList<std::tuple<int, QString, QString>> getActionsWithColoursFromDatabase();
+    QString generateColourForAction(int actionId);
     QList<QPair<int, QString>> getModesFromDatabase();
 
 public slots:
@@ -266,6 +270,7 @@ private:
     CheckBoxDelegate* checkboxdelegate;
     QStringListModel* fileModel;  // Model to hold filenames
     QStringList fileList;         // Underlying data
+    ActionManager *actionManager;
 
     Ui::MainWindow *ui;
     QTimer *mTimer;

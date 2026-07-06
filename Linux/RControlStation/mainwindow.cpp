@@ -363,6 +363,13 @@ MainWindow::MainWindow(QWidget *parent) :
                                      "Simulation Scenarios");
 #endif
 
+    // Add Actions Management tab
+    actionManager = new ActionManager(this);
+    actionManager->setupUi(db.getDb());
+    ui->mainTabWidget->addTab(actionManager, QIcon(":/models/Icons/Waypoint Map-96.png"), "");
+    ui->mainTabWidget->setTabToolTip(ui->mainTabWidget->count() - 1,
+                                     "Actions Management");
+
     ui->mainTabWidget->removeTab(8);
     ui->mainTabWidget->removeTab(7);
     ui->mainTabWidget->removeTab(6);
@@ -721,11 +728,11 @@ QList<QPair<int, QString>> MainWindow::getActionsFromDatabase()
     qDebug() << "in getActionsFromDatabase()";
     QList<QPair<int, QString>> actions;
 
-    // Query to get all motor types from database
+    // Query to get all actions from database
     QSqlQuery query("SELECT id, name FROM actions", db.getDb());
 
     if (!query.exec()) {
-        qDebug() << "Motor types query error:" << query.lastError().text();
+        qDebug() << "Actions query error:" << query.lastError().text();
         return actions;
     }
 
@@ -737,6 +744,56 @@ QList<QPair<int, QString>> MainWindow::getActionsFromDatabase()
     }
 
     return actions;
+}
+
+QList<std::tuple<int, QString, QString>> MainWindow::getActionsWithColoursFromDatabase()
+{
+    qDebug() << "in getActionsWithColoursFromDatabase()";
+    QList<std::tuple<int, QString, QString>> actions;
+
+    // Query to get all actions with their colours from database
+    QSqlQuery query("SELECT id, name, colour FROM actions", db.getDb());
+
+    if (!query.exec()) {
+        qDebug() << "Actions with colours query error:" << query.lastError().text();
+        return actions;
+    }
+
+    // Populate the list with database data
+    while (query.next()) {
+        int id = query.value(0).toInt();
+        QString name = query.value(1).toString();
+        QString colour = query.value(2).toString();
+        
+        // If colour is empty, generate one
+        if (colour.isEmpty()) {
+            colour = generateColourForAction(id);
+            
+            // Update the database with the generated colour
+            QSqlQuery updateQuery(db.getDb());
+            updateQuery.prepare("UPDATE actions SET colour = ? WHERE id = ?");
+            updateQuery.addBindValue(colour);
+            updateQuery.addBindValue(id);
+            updateQuery.exec();
+        }
+        
+        actions.append(std::make_tuple(id, name, colour));
+    }
+
+    return actions;
+}
+
+QString MainWindow::generateColourForAction(int actionId)
+{
+    // Generate a distinct colour using HSV colour space for better visual distinction
+    // Use golden ratio conjugation for good distribution
+    int hue = (actionId * 137) % 360;  // Golden ratio (≈137.5°) for good distribution
+    
+    // Convert HSV to RGB and then to hex string
+    QColor colour;
+    colour.setHsv(hue, 200, 255);  // Saturate and brighten for vibrant colours
+    
+    return colour.name(QColor::HexRgb);  // Returns "#RRGGBB" format
 }
 
 QList<QPair<int, QString>> MainWindow::getModesFromDatabase()

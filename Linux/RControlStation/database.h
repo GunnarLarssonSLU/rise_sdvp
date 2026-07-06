@@ -17,8 +17,12 @@ public:
     void showError(const QSqlError &err);
     QSqlDatabase getDb();
     void ensureControllersTableExists();
+    void ensureActionsTableExists();
 private:
     QSqlError initDb();
+    void insertDefaultActions();
+    void updateActionsWithGeneratedColours();
+    QString generateColourForAction(int actionIndex);
     QWidget* qw;
     QSqlDatabase db;
 

@@ -13,6 +13,9 @@ database::database(QWidget* _qw) {
         showError(err);
         return;
     }
+    
+    // Ensure required tables exist
+    ensureActionsTableExists();
 }
 
 QVariant database::addFarm(const QString &name)
@@ -177,4 +180,121 @@ QSqlError database::initDb()
 QSqlDatabase database::getDb()
 {
     return db;
+}
+
+void database::ensureActionsTableExists()
+{
+    QSqlQuery query(db);
+    
+    // Check if actions table exists
+    if (!query.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='actions'")) {
+        qDebug() << "Error checking for actions table:" << query.lastError().text();
+        return;
+    }
+    
+    // If table doesn't exist, create it
+    if (!query.next()) {
+        QString createTableSql = 
+            "CREATE TABLE actions ("
+            "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "name TEXT NOT NULL, "
+            "colour TEXT DEFAULT '#CCCCCC'"
+            ")";
+        
+        if (!query.exec(createTableSql)) {
+            qDebug() << "Error creating actions table:" << query.lastError().text();
+            return;
+        }
+        
+        qDebug() << "Created actions table with colour column";
+        
+        // Add some default actions if the table is new
+        insertDefaultActions();
+    } else {
+        // Table exists, check if colour column exists
+        QSqlQuery columnQuery(db);
+        if (columnQuery.exec("PRAGMA table_info(actions)")) {
+            bool hasColourColumn = false;
+            while (columnQuery.next()) {
+                QString columnName = columnQuery.value(1).toString();
+                if (columnName == "colour") {
+                    hasColourColumn = true;
+                    break;
+                }
+            }
+            
+            // If colour column doesn't exist, add it
+            if (!hasColourColumn) {
+                if (!query.exec("ALTER TABLE actions ADD COLUMN colour TEXT DEFAULT '#CCCCCC'")) {
+                    qDebug() << "Error adding colour column:" << query.lastError().text();
+                } else {
+                    qDebug() << "Added colour column to actions table";
+                    // Update existing actions with generated colours
+                    updateActionsWithGeneratedColours();
+                }
+            }
+        }
+    }
+}
+
+void database::insertDefaultActions()
+{
+    // Insert some default actions if the table is empty
+    QStringList defaultActions = {
+        "Takeoff", "Land", "Emergency Stop", "Return to Home", "Hover",
+        "Waypoint Navigation", "Manual Control", "Auto Mission", "Loiter", "Follow Me"
+    };
+    
+    QSqlQuery query(db);
+    query.prepare("INSERT INTO actions (name, colour) VALUES (?, ?)");
+    
+    for (int i = 0; i < defaultActions.size(); i++) {
+        query.addBindValue(defaultActions[i]);
+        // Generate a colour based on the action index
+        QString colour = generateColourForAction(i);
+        query.addBindValue(colour);
+        
+        if (!query.exec()) {
+            qDebug() << "Error inserting default action:" << query.lastError().text();
+        }
+    }
+}
+
+void database::updateActionsWithGeneratedColours()
+{
+    // Update existing actions with generated colours
+    QSqlQuery selectQuery(db);
+    if (!selectQuery.exec("SELECT id, name FROM actions")) {
+        qDebug() << "Error selecting actions:" << selectQuery.lastError().text();
+        return;
+    }
+    
+    QSqlQuery updateQuery(db);
+    updateQuery.prepare("UPDATE actions SET colour = ? WHERE id = ?");
+    
+    int index = 0;
+    while (selectQuery.next()) {
+        int actionId = selectQuery.value(0).toInt();
+        QString colour = generateColourForAction(index++);
+        
+        updateQuery.addBindValue(colour);
+        updateQuery.addBindValue(actionId);
+        
+        if (!updateQuery.exec()) {
+            qDebug() << "Error updating action colour:" << updateQuery.lastError().text();
+        }
+    }
+}
+
+QString database::generateColourForAction(int actionIndex)
+{
+    // Generate a distinct colour using HSV colour space for better visual distinction
+    // Use golden ratio conjugation for good distribution
+    int hue = (actionIndex * 137) % 360;  // Golden ratio (≈137.5°) for good distribution
+    
+    // Convert HSV to RGB and then to hex string
+    QColor colour;
+    colour.setHsv(hue, 200, 255);  // Saturate and brighten for vibrant colours
+    
+    return colour.name(QColor::HexRgb);  // Returns "#RRGGBB" format
 }
