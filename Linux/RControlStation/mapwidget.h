@@ -194,6 +194,15 @@ public:
     quint32 getRoutePointAttributes() const;
     void setRoutePointAttributes(const quint32 &routePointAttributes);
 
+    LocPoint* getCurrentPoint(void);
+    
+    // Get the selected point index
+    int getRoutePointSelected() const;
+    
+    // Control state methods
+    QList<ControlState> getRoutePointControlStates() const;
+    void setRoutePointControlStates(const QList<ControlState> &controlStates);
+
     bool loadXMLRoute(QXmlStreamReader* stream,bool isBorder);
     void saveXMLRoutes(QXmlStreamWriter* stream,bool withId);
     void saveXMLCurrentRoute(QXmlStreamWriter* stream);
@@ -255,6 +264,7 @@ private:
     double mRoutePointSpeed;
     qint32 mRoutePointTime;
     quint32 mRoutePointAttributes;
+    QList<ControlState> mRoutePointControlStates;
     double mScaleFactor;
     double mRotation;
     double mXOffset;

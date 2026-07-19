@@ -2267,6 +2267,8 @@ void MainWindow::on_mapUpdateSpeedButton_clicked()
 
     for (int i = 0;i < route.size();i++) {
         double speed = ui->mapRouteSpeedBox->value() / 3.6;
+        qDebug() << "Speed:" << speed;
+
         route[i].setSpeed(speed);
 
         if (i == 0) {
@@ -4594,4 +4596,191 @@ MainWindow* findMainWindow() {
         }
     }
     return nullptr; // Return nullptr if no MainWindow is found
+}
+
+// Missing method implementations
+void MainWindow::routePointSelected(LocPoint pos)
+{
+    qDebug() << "Route point selected - updating UI with point data:";
+    qDebug() << "  Speed:" << pos.getSpeed() << "m/s (" << pos.getSpeed() * 3.6 << "km/h)";
+    qDebug() << "  Time:" << pos.getTime() << "ms";
+    qDebug() << "  Attributes:" << pos.getAttributes();
+    qDebug() << "  Control States:" << pos.getControlStates().size() << "states";
+    
+    // Update the UI with the selected route point's properties
+    qDebug() << "Setting speed to" << pos.getSpeed() * 3.6 << "km/h";
+    ui->mapRouteSpeedBox->setValue(pos.getSpeed() * 3.6); // Convert from m/s to km/h
+    qDebug() << "Speed box now shows" << ui->mapRouteSpeedBox->value() << "km/h";
+    
+    QTime time;
+    time = time.addMSecs(pos.getTime());
+    qDebug() << "Setting time to" << time.toString("HH:mm:ss.zzz");
+    ui->mapRouteTimeEdit->setTime(time);
+    qDebug() << "Time edit now shows" << ui->mapRouteTimeEdit->time().toString("HH:mm:ss.zzz");
+    
+    // Update position attributes combo box
+    qDebug() << "Setting attributes to" << pos.getAttributes();
+    ui->mapRoutePosAttrBox->setCurrentIndex(pos.getAttributes());
+    qDebug() << "Attributes combo box now shows index" << ui->mapRoutePosAttrBox->currentIndex();
+    
+    // Update control states table
+    qDebug() << "Updating control states table with" << pos.getControlStates().size() << "states";
+    updateControlStatesTableFromRoutePoint();
+    qDebug() << "Control states table now has" << ui->controlStatesTable->rowCount() << "rows";
+    
+    // Update the map widget's current route point properties
+    ui->mapLiveWidget->setRoutePointSpeed(pos.getSpeed());
+    ui->mapLiveWidget->setRoutePointTime(pos.getTime());
+    ui->mapLiveWidget->setRoutePointAttributes(pos.getAttributes());
+    ui->mapLiveWidget->setRoutePointControlStates(pos.getControlStates());
+}
+
+void MainWindow::on_addControlStateButton_clicked()
+{
+    // Add a new control state row to the table
+    int row = ui->controlStatesTable->rowCount();
+    ui->controlStatesTable->insertRow(row);
+    
+    // Set up combo box for controller selection
+    QComboBox *comboBox = new QComboBox();
+    // Copy items from comboBoxAction to the new combo box
+    for (int i = 0; i < ui->comboBoxAction->count(); i++) {
+        comboBox->addItem(ui->comboBoxAction->itemText(i));
+    }
+    ui->controlStatesTable->setCellWidget(row, 0, comboBox);
+    
+    // Set up spin box for value
+    QDoubleSpinBox *spinBox = new QDoubleSpinBox();
+    spinBox->setRange(-1000.0, 1000.0);
+    spinBox->setDecimals(2);
+    ui->controlStatesTable->setCellWidget(row, 1, spinBox);
+    
+    // Connect signals
+    connect(comboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &MainWindow::on_controlStateComboChanged);
+    connect(spinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, &MainWindow::on_controlStateValueChanged);
+}
+
+void MainWindow::on_removeControlStateButton_clicked()
+{
+    // Remove the selected control state row
+    int currentRow = ui->controlStatesTable->currentRow();
+    if (currentRow >= 0) {
+        ui->controlStatesTable->removeRow(currentRow);
+    }
+}
+
+void MainWindow::on_removeControlStateRow_clicked()
+{
+    // This seems to be the same as removeControlStateButton_clicked
+    on_removeControlStateButton_clicked();
+}
+
+void MainWindow::on_controlStatesTable_cellChanged(int row, int column)
+{
+    (void)row; (void)column;
+    // Handle cell changes if needed
+}
+
+void MainWindow::on_controlStateComboChanged(int index)
+{
+    (void)index;
+    // Handle controller selection changes
+    QComboBox *comboBox = qobject_cast<QComboBox*>(sender());
+    if (comboBox) {
+        // Update the control state
+        updateCurrentRoutePointControlStates();
+    }
+}
+
+void MainWindow::on_controlStateValueChanged(double value)
+{
+    (void)value;
+    // Handle value changes
+    QDoubleSpinBox *spinBox = qobject_cast<QDoubleSpinBox*>(sender());
+    if (spinBox) {
+        // Update the control state
+        updateCurrentRoutePointControlStates();
+    }
+}
+
+void MainWindow::updateControlStatesTableFromRoutePoint()
+{
+    // Clear existing rows
+    while (ui->controlStatesTable->rowCount() > 0) {
+        ui->controlStatesTable->removeRow(0);
+    }
+    
+    // Get control states from the map widget
+    QList<ControlState> controlStates = ui->mapLiveWidget->getRoutePointControlStates();
+    
+    // Add rows for each control state
+    for (const ControlState &state : controlStates) {
+        int row = ui->controlStatesTable->rowCount();
+        ui->controlStatesTable->insertRow(row);
+        
+        // Set up combo box for controller selection
+        QComboBox *comboBox = new QComboBox();
+        // Copy items from comboBoxAction to the new combo box
+    for (int i = 0; i < ui->comboBoxAction->count(); i++) {
+        comboBox->addItem(ui->comboBoxAction->itemText(i));
+    }
+        comboBox->setCurrentIndex(state.controlId); // Set the control ID
+        ui->controlStatesTable->setCellWidget(row, 0, comboBox);
+        
+        // Set up spin box for value
+        QDoubleSpinBox *spinBox = new QDoubleSpinBox();
+        spinBox->setRange(-1000.0, 1000.0);
+        spinBox->setDecimals(2);
+        spinBox->setValue(state.targetValue);
+        ui->controlStatesTable->setCellWidget(row, 1, spinBox);
+        
+        // Connect signals
+        connect(comboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                this, &MainWindow::on_controlStateComboChanged);
+        connect(spinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                this, &MainWindow::on_controlStateValueChanged);
+    }
+}
+
+void MainWindow::updateCurrentRoutePointControlStates()
+{
+    // Collect control states from the table
+    QList<ControlState> controlStates;
+    
+    for (int row = 0; row < ui->controlStatesTable->rowCount(); row++) {
+        QComboBox *comboBox = qobject_cast<QComboBox*>(ui->controlStatesTable->cellWidget(row, 0));
+        QDoubleSpinBox *spinBox = qobject_cast<QDoubleSpinBox*>(ui->controlStatesTable->cellWidget(row, 1));
+        
+        if (comboBox && spinBox) {
+            ControlState state;
+            state.controlId = comboBox->currentIndex();
+            state.targetValue = spinBox->value();
+            controlStates.append(state);
+        }
+    }
+    
+    // Update the map widget
+    ui->mapLiveWidget->setRoutePointControlStates(controlStates);
+    
+    // If a route point is selected, update it directly
+    int selectedPoint = ui->mapLiveWidget->getRoutePointSelected();
+    if (selectedPoint >= 0) {
+        MapRoute& currentRoute = ui->mapLiveWidget->getCurrentPath();
+        if (selectedPoint < currentRoute.size()) {
+            currentRoute[selectedPoint].setControlStates(controlStates);
+        }
+    }
+}
+
+void MainWindow::populateControlStateComboBoxes()
+{
+    // This method should populate the comboBoxAction with available controllers
+    // For now, add some default controllers if the combo box is empty
+    if (ui->comboBoxAction->count() == 0) {
+        ui->comboBoxAction->addItem("Controller 1", 0);
+        ui->comboBoxAction->addItem("Controller 2", 1);
+        ui->comboBoxAction->addItem("Controller 3", 2);
+    }
 }
