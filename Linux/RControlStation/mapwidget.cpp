@@ -681,7 +681,12 @@ bool MapWidget::getCurrentRoute(MapRouteCollection* mRoutes, int& routeindex, in
                 routeDist=routeDistTmp;
                 mRoutePointSelected=mRoutePointSelectedTmp;
                 mRoutes->at(i).setActivePoint(mRoutePointSelectedTmp);
-//                this->mRoutePointSelected = mRoutePointSelectedTmp; // Update member variable
+                this->mRoutePointSelected = mRoutePointSelectedTmp; // Update member variable
+                
+                // Emit signal to update UI when active point changes
+                if (mRoutePointSelectedTmp >= 0 && mRoutePointSelectedTmp < mRoutes->at(i).size()) {
+                    emit activePointChanged(mRoutes->at(i).mRoute[mRoutePointSelectedTmp]);
+                }
             }
         }
         return (routeDist * mScaleFactor * 1000.0) < maxSnapDistance; // Found route?
@@ -935,6 +940,11 @@ void MapWidget::mousePressEventPaths(QMouseEvent *e)
         bHasCurrentRoute=true;
         this->mRoutePointSelected = getClosestPoint(mousePosMap, currentRoute->mRoute, routeDist);
         currentRoute->setActivePoint(this->mRoutePointSelected);
+        
+        // Emit signal to update UI when active point changes
+        if (this->mRoutePointSelected >= 0 && this->mRoutePointSelected < currentRoute->size()) {
+            emit activePointChanged(currentRoute->mRoute[this->mRoutePointSelected]);
+        }
         routeFound = (routeDist * mScaleFactor * 1000.0) < 20 && routeDist >= 0.0;
         anchorFound = (anchorDist * mScaleFactor * 1000.0) < 20 && anchorDist >= 0.0;
         qDebug() << "Distance: " << routeDist;
@@ -1360,7 +1370,24 @@ quint32 MapWidget::getRoutePointAttributes() const
 
 void MapWidget::setRoutePointAttributes(const quint32 &routePointAttributes)
 {
+    qDebug() << "setRoutePointAttributes()";
     mRoutePointAttributes = routePointAttributes;
+    
+    LocPoint* currentPoint = getCurrentPoint();
+    if (currentPoint) {
+        qDebug() << "OK";
+        qDebug() << "Attributes: " << routePointAttributes;
+        currentPoint->setAttributes(routePointAttributes);
+        
+        MapRoute& currentRoute = mPaths->getCurrent();
+        qDebug() << "Route size: " << currentRoute.size();
+        for (int i = 0; i < currentRoute.size(); i++) {
+            qDebug() << "Point No: " << i << ", attributes: " << currentRoute.at(i).getAttributes();
+        }
+    } else {
+        qDebug() << "Not OK";
+        qWarning() << "setRoutePointAttributes: No current point selected or invalid point index";
+    }
 }
 
 void MapWidget::addMapModule(MapModule *m)
@@ -1434,7 +1461,24 @@ qint32 MapWidget::getRoutePointTime() const
 
 void MapWidget::setRoutePointTime(const qint32 &routePointTime)
 {
+    qDebug() << "setRoutePointTime()";
     mRoutePointTime = routePointTime;
+    
+    LocPoint* currentPoint = getCurrentPoint();
+    if (currentPoint) {
+        qDebug() << "OK";
+        qDebug() << "Time: " << routePointTime;
+        currentPoint->setTime(routePointTime);
+        
+        MapRoute& currentRoute = mPaths->getCurrent();
+        qDebug() << "Route size: " << currentRoute.size();
+        for (int i = 0; i < currentRoute.size(); i++) {
+            qDebug() << "Point No: " << i << ", time: " << currentRoute.at(i).getTime();
+        }
+    } else {
+        qDebug() << "Not OK";
+        qWarning() << "setRoutePointTime: No current point selected or invalid point index";
+    }
 }
 
 int MapWidget::getInfoTraceNow() const
@@ -1486,7 +1530,24 @@ QList<ControlState> MapWidget::getRoutePointControlStates() const
 
 void MapWidget::setRoutePointControlStates(const QList<ControlState> &controlStates)
 {
+    qDebug() << "setRoutePointControlStates()";
     mRoutePointControlStates = controlStates;
+    
+    LocPoint* currentPoint = getCurrentPoint();
+    if (currentPoint) {
+        qDebug() << "OK";
+        qDebug() << "Control states count: " << controlStates.size();
+        currentPoint->setControlStates(controlStates);
+        
+        MapRoute& currentRoute = mPaths->getCurrent();
+        qDebug() << "Route size: " << currentRoute.size();
+        for (int i = 0; i < currentRoute.size(); i++) {
+            qDebug() << "Point No: " << i << ", control states: " << currentRoute.at(i).getControlStates().size();
+        }
+    } else {
+        qDebug() << "Not OK";
+        qWarning() << "setRoutePointControlStates: No current point selected or invalid point index";
+    }
 }
 
 void MapWidget::setDrawGrid(bool drawGrid)

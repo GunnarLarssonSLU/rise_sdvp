@@ -127,6 +127,8 @@ private slots:
     void enuRx(quint8 id, double lat, double lon, double height);
     void nmeaGgaRx(int fields, NmeaServer::nmea_gga_info_t gga);
     void routePointAdded(LocPoint pos);
+    void routePointSelected(LocPoint pos);
+    void activePointChanged(LocPoint point);
     void infoTraceChanged(int traceNow);
     void onMapCarBoxChanged(int value);
     void setJoystickControlEnabled(bool enabled);
@@ -216,6 +218,13 @@ private slots:
     void on_routeZeroAllButton_clicked();
     void on_mapRoutePosAttrBox_currentIndexChanged(int index);
     void on_comboBoxAction_currentIndexChanged(int index);
+    void on_addControlStateButton_clicked();
+    void on_removeControlStateButton_clicked();
+    void on_removeControlStateRow_clicked();
+    void on_controlStatesTable_cellChanged(int row, int column);
+    void on_controlStateComboChanged(int index);
+    void on_controlStateValueChanged(double value);
+
     void on_clearAnchorButton_clicked();
     void on_setBoundsRoutePushButton_clicked();
     void on_boundsFillPushButton_clicked();
@@ -259,6 +268,10 @@ private:
     // Helper methods
     bool isPointInsideBorder(const LocPoint& point, const MapRoute& border); // Check if point is inside border
     void controllerAction(int car, int iAction,float value);
+    void updateCurrentRoutePointControlStates();
+    void updateControlStatesTableFromRoutePoint();
+    void populateControlStateComboBoxes();
+    void populateControlStateComboBox(QComboBox* comboBox, int selectedControllerId = -1);
 
     // Area definition storage - using existing border infrastructure
     bool mAreaLoaded = false;

@@ -314,6 +314,8 @@ MainWindow::MainWindow(QWidget *parent) :
             this, SLOT(routePointAdded(LocPoint)));
     connect(ui->mapLiveWidget, SIGNAL(infoTraceChanged(int)),
             this, SLOT(infoTraceChanged(int)));
+    connect(ui->mapLiveWidget, SIGNAL(activePointChanged(LocPoint)),
+            this, SLOT(activePointChanged(LocPoint)));
 
     connect(ui->buttonGenerate, &QPushButton::clicked, this, &MainWindow::onGeneratePathButtonClicked);
     connect(ui->buttonGenerateLine, &QPushButton::clicked, this, &MainWindow::onGenerateLineButtonClicked);
@@ -4633,6 +4635,42 @@ void MainWindow::routePointSelected(LocPoint pos)
     ui->mapLiveWidget->setRoutePointTime(pos.getTime());
     ui->mapLiveWidget->setRoutePointAttributes(pos.getAttributes());
     ui->mapLiveWidget->setRoutePointControlStates(pos.getControlStates());
+}
+
+void MainWindow::activePointChanged(LocPoint point)
+{
+    qDebug() << "Active point changed - updating UI with point data:";
+    qDebug() << "  Speed:" << point.getSpeed() << "m/s (" << point.getSpeed() * 3.6 << "km/h)";
+    qDebug() << "  Time:" << point.getTime() << "ms";
+    qDebug() << "  Attributes:" << point.getAttributes();
+    qDebug() << "  Control States:" << point.getControlStates().size() << "states";
+    
+    // Update the UI with the active route point's properties
+    qDebug() << "Setting speed to" << point.getSpeed() * 3.6 << "km/h";
+    ui->mapRouteSpeedBox->setValue(point.getSpeed() * 3.6); // Convert from m/s to km/h
+    qDebug() << "Speed box now shows" << ui->mapRouteSpeedBox->value() << "km/h";
+    
+    QTime time;
+    time = time.addMSecs(point.getTime());
+    qDebug() << "Setting time to" << time.toString("HH:mm:ss.zzz");
+    ui->mapRouteTimeEdit->setTime(time);
+    qDebug() << "Time edit now shows" << ui->mapRouteTimeEdit->time().toString("HH:mm:ss.zzz");
+    
+    // Update position attributes combo box
+    qDebug() << "Setting attributes to" << point.getAttributes();
+    ui->mapRoutePosAttrBox->setCurrentIndex(point.getAttributes());
+    qDebug() << "Attributes combo box now shows index" << ui->mapRoutePosAttrBox->currentIndex();
+    
+    // Update control states table
+    qDebug() << "Updating control states table with" << point.getControlStates().size() << "states";
+    updateControlStatesTableFromRoutePoint();
+    qDebug() << "Control states table now has" << ui->controlStatesTable->rowCount() << "rows";
+    
+    // Update the map widget's current route point properties
+    ui->mapLiveWidget->setRoutePointSpeed(point.getSpeed());
+    ui->mapLiveWidget->setRoutePointTime(point.getTime());
+    ui->mapLiveWidget->setRoutePointAttributes(point.getAttributes());
+    ui->mapLiveWidget->setRoutePointControlStates(point.getControlStates());
 }
 
 void MainWindow::on_addControlStateButton_clicked()

@@ -224,6 +224,7 @@ signals:
     void routePointAdded(LocPoint pos);
     void lastRoutePointRemoved(LocPoint pos);
     void infoTraceChanged(int traceNow);
+    void activePointChanged(LocPoint point);
 
     void mouseClickedInField(const int field);
     void pathsUpdated();
