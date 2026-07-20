@@ -185,14 +185,10 @@ void MapRoute::setAnalysisFocus()
 
 void MapRoute::updateAnalysis()
 {
-    qDebug() << "Start: " << iAnalysisStart;
-    qDebug() << "End: " << iAnalysisEnd;
     bAnalysisShowable=(iAnalysisStart>0) && (iAnalysisEnd>0) && (iAnalysisEnd>iAnalysisStart);
     if (bAnalysisShowable)
     {
-        qDebug() << "A";
         double linelength=getLength(true);
-        qDebug() << "O";
         findMainWindow()->getLogLabel()->setText("Length:" + QString::number(linelength));
     }
     return;
@@ -261,7 +257,7 @@ void MapRoute::paintLine(int i, bool isSelected, bool isAnalysed, QPainter &pain
     painter.setOpacity(1.0);
 }
 
-void MapRoute::paintPoint(QPointF p, quint32 attr, bool isSelected, bool isAnalysed, QPainter &painter, QPen &pen, double mScaleFactor, QTransform drawTrans, bool highQuality, int selectedActionAttribute)
+void MapRoute::paintPoint(QPointF p, quint32 attr, bool isSelected, bool isAnalysed, QPainter &painter, QPen &pen, double mScaleFactor, QTransform drawTrans, bool highQuality, int selectedActionAttribute, bool isControlSelected)
 {
     // qDebug() << "MapRoute::paintPoint called with selectedActionAttribute:" << selectedActionAttribute << "isSelected:" << isSelected << "attr:" << attr;
     painter.setTransform(drawTrans);
@@ -294,6 +290,11 @@ void MapRoute::paintPoint(QPointF p, quint32 attr, bool isSelected, bool isAnaly
                     painter.setBrush(Qt::gray);
                 }
             }
+        } else if (isControlSelected) {
+            // Point is selected by control search - use special highlighting
+            // TODO: Get color from database based on controlId
+            pen.setColor(Qt::darkMagenta);
+            painter.setBrush(Qt::magenta);
         } else {
             pen.setColor(Qt::darkGray);
             painter.setBrush(Qt::gray);
@@ -371,7 +372,7 @@ void MapRoute::paintInfoText(bool mDrawRouteText, int i, QPointF p, bool isSelec
         painter.drawText(rect_txt, Qt::AlignCenter, txt);
     }
 }
-void MapRoute::paintPath(QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawTrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool mDrawRouteText, bool highQuality, int selectedActionAttribute)
+void MapRoute::paintPath(QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawTrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool mDrawRouteText, bool highQuality, int selectedActionAttribute, const QList<int> &controlSelectedPoints)
 {
     Qt::GlobalColor defaultDarkColor = Qt::darkGray;
     Qt::GlobalColor defaultColor = Qt::gray;
@@ -393,7 +394,8 @@ void MapRoute::paintPath(QPainter &painter, QPen &pen, bool isSelected, double m
         QPointF p = mRoute[i].getPointMm();
         quint32 attr = mRoute[i].getAttributes();
         bool isAnalysed=(iAnalysisStart!=-1) && (iAnalysisEnd!=-1) && (i>=iAnalysisStart) && (i<iAnalysisEnd);
-        paintPoint(p,attr,isSelected,isAnalysed,painter,pen,mScaleFactor,drawTrans, highQuality, selectedActionAttribute);
+        bool isControlSelected = controlSelectedPoints.contains(i);
+        paintPoint(p,attr,isSelected,isAnalysed,painter,pen,mScaleFactor,drawTrans, highQuality, selectedActionAttribute, isControlSelected);
 
         // Draw highlight for first and last point in active route
         if (isSelected && (i == 0 || i == nPoints-1)) {
@@ -628,3 +630,18 @@ const LocPoint& MapRoute::at(int i) const
 {
     return mRoute.at(i);
 }
+
+void MapRoute::setActivePoint(int p)
+{
+    iCurrentPoint=p;
+}
+LocPoint* MapRoute::getActivePoint(void)
+{
+    return &mRoute[iCurrentPoint];
+};
+
+int MapRoute::getActivePointNo(void)
+{
+    return iCurrentPoint;
+};
+

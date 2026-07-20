@@ -160,6 +160,7 @@ MapWidget::MapWidget(QWidget *parent) : QWidget(parent)
     mTraceMinSpaceGps = 0.05;
     mInfoTraceNow = 0;
     mAnchorMode = false;
+    mSelectedControlPoints = QList<int>();
     mDrawRouteText = false;
     mDrawUwbTrace = false;
     mSelectedActionAttribute = 0;
@@ -1550,6 +1551,82 @@ void MapWidget::setRoutePointControlStates(const QList<ControlState> &controlSta
     }
 }
 
+QList<int> MapWidget::findPointsWithControlState(int controlId, double targetValue) const
+{
+    QList<int> selectedPointIndices;
+    qDebug() << "Finding points with control" << controlId << "and target value" << targetValue;
+
+    // Check if we have a valid current path
+    if (!mPaths || mPaths->size() == 0) {
+        qDebug() << "No paths available";
+        return selectedPointIndices;
+    }
+
+    MapRoute& currentRoute = mPaths->getCurrent();
+    if (currentRoute.size() == 0) {
+        qDebug() << "Current route is empty";
+        return selectedPointIndices;
+    }
+
+    // Track the current control state for the specified controlId
+    double currentControlValue = -1; // Initialize to invalid value
+    bool inSelectionRange = false;
+
+    // Iterate through all points in the current route
+    for (int i = 0; i < currentRoute.size(); i++) {
+        const LocPoint& point = currentRoute[i];
+        const QList<ControlState>& controlStates = point.getControlStates();
+
+        // Find the control state with the specified controlId
+        bool controlFound = false;
+        double foundValue = -1;
+
+        for (const ControlState& state : controlStates) {
+            if (state.controlId == controlId) {
+                controlFound = true;
+                foundValue = state.targetValue;
+                break;
+            }
+        }
+
+        if (controlFound) {
+            qDebug() << "Point" << i << "has control" << controlId << "with value" << foundValue;
+
+            if (foundValue == targetValue) {
+                // Start or continue selection
+                if (!inSelectionRange) {
+                    qDebug() << "Starting selection at point" << i;
+                    inSelectionRange = true;
+                }
+                selectedPointIndices.append(i);
+            } else {
+                // End selection if we were in a selection range
+                if (inSelectionRange) {
+                    qDebug() << "Ending selection at point" << i << "(value changed to" << foundValue << ")";
+                    inSelectionRange = false;
+                }
+            }
+            currentControlValue = foundValue;
+        } else {
+            // Control not found in this point
+            if (inSelectionRange) {
+                // If we were in a selection range and the control is no longer present,
+                // continue selection (control maintains its last value)
+                selectedPointIndices.append(i);
+                qDebug() << "Point" << i << "continues selection (control not present, assuming last value)";
+            }
+        }
+    }
+
+    qDebug() << "Found" << selectedPointIndices.size() << "points with the specified control state";
+    
+    // Store the results for highlighting
+    mSelectedControlPoints = selectedPointIndices;
+    update(); // Trigger a repaint to show the selected points
+    
+    return selectedPointIndices;
+}
+
 void MapWidget::setDrawGrid(bool drawGrid)
 {
     bool drawGridOld = mDrawGrid;
@@ -2029,7 +2106,7 @@ void MapWidget::paint(QPainter &painter, int width, int height, bool highQuality
         MapRoute &routeNow = mPaths->at(rn);
         isSelected= (mPaths->mRouteNow == rn);
         // qDebug() << "Calling paintPath with selectedActionAttribute:" << mSelectedActionAttribute << "on widget:" << this << "paths:" << mPaths->size();
-        routeNow.paintPath(painter, pen, isSelected, mScaleFactor, drawTrans, txt, pt_txt, rect_txt, txtTrans,  mDrawRouteText, highQuality, mSelectedActionAttribute);
+        routeNow.paintPath(painter, pen, isSelected, mScaleFactor, drawTrans, txt, pt_txt, rect_txt, txtTrans,  mDrawRouteText, highQuality, mSelectedActionAttribute, mSelectedControlPoints);
     }
 
     //paintInfoTraces();

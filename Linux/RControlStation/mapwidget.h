@@ -298,6 +298,7 @@ private:
     int mRoutePointSelected;
     int mAnchorSelected;
     int mInfoTraceNow;
+    QList<int> mSelectedControlPoints; // Points selected by control search
     double mTraceMinSpaceCar;
     double mTraceMinSpaceGps;
     bool mAnchorMode;

@@ -52,10 +52,10 @@ public:
     double getArea();
     double getLength(bool bForAnalysis);
     //    void paint(MapWidget* mapWidget, QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawtrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool highQuality = false);
-    void paintPath(QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawtrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool mDrawRouteText, bool highQuality = false, int selectedActionAttribute = 0);
+    void paintPath(QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawtrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool mDrawRouteText, bool highQuality = false, int selectedActionAttribute = 0, const QList<int> &controlSelectedPoints = QList<int>());
     void paintBorder(QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawtrans);
     void paintLine(int i, bool isSelected, bool isSAnalyzed, QPainter &painter, QPen &pen, Qt::GlobalColor defaultDarkColor, Qt::GlobalColor defaultColor, int selectedActionAttribute = 0);
-    void paintPoint(QPointF p, quint32 attr, bool isSelected, bool isSAnalyzed, QPainter &painter, QPen &pen, double mScaleFactor, QTransform drawTrans, bool highQuality, int selectedActionAttribute = 0);
+    void paintPoint(QPointF p, quint32 attr, bool isSelected, bool isSAnalyzed, QPainter &painter, QPen &pen, double mScaleFactor, QTransform drawTrans, bool highQuality, int selectedActionAttribute = 0, bool isControlSelected = false);
     void paintInfoText(bool mDrawRouteText, int i, QPointF p, bool isSelected, QPainter &painter, QPen &pen, double mScaleFactor, QTransform drawTrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans);
 
     void routeinfo(QPainter &painter,double start_txt,const double txtOffset,const double txt_row_h, int width, QString txt);
@@ -67,12 +67,18 @@ public:
     void updateAnalysis();
     void drawCircleFast(QPainter &painter, QPointF center, double radius, int type = 0);
     void transform(double moveX,double moveY,double rotate);
+    void setColour(QColor cColour);
+    void setActivePoint(int p);
+    int getActivePointNo(void);
+    LocPoint* getActivePoint(void);
 
 private:
     bool isBorder;
     static QList<QPixmap> mPixmaps;
     static const QList<QPixmap>& getPixmaps();
     static void initPixmaps();
+    QColor colour;
+    int iCurrentPoint;
 };
 
 #endif // MAPROUTE_H
