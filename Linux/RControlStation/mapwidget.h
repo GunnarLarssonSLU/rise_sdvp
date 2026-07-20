@@ -201,7 +201,7 @@ public:
     
     // Find points with specific control state values
     // Selects points where controlId has targetValue, from first occurrence until controlId changes value
-    QList<int> findPointsWithControlState(int controlId, double targetValue) const;
+    QList<int> findPointsWithControlState(int controlId, double targetValue);
     
     // Control state methods
     QList<ControlState> getRoutePointControlStates() const;

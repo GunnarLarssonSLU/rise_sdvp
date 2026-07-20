@@ -1551,7 +1551,7 @@ void MapWidget::setRoutePointControlStates(const QList<ControlState> &controlSta
     }
 }
 
-QList<int> MapWidget::findPointsWithControlState(int controlId, double targetValue) const
+QList<int> MapWidget::findPointsWithControlState(int controlId, double targetValue)
 {
     QList<int> selectedPointIndices;
     qDebug() << "Finding points with control" << controlId << "and target value" << targetValue;
