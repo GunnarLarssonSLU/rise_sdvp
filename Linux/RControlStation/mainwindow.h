@@ -270,6 +270,7 @@ private:
     void controllerAction(int car, int iAction,float value);
     void updateCurrentRoutePointControlStates();
     void updateControlStatesTableFromRoutePoint();
+    void updateControlStatesTable(const QList<ControlState> &controlStates);
     void populateControlStateComboBoxes();
     void populateControlStateComboBox(QComboBox* comboBox, int selectedControllerId = -1);
 

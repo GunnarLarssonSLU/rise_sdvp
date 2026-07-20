@@ -4663,7 +4663,7 @@ void MainWindow::activePointChanged(LocPoint point)
     
     // Update control states table
     qDebug() << "Updating control states table with" << point.getControlStates().size() << "states";
-    updateControlStatesTableFromRoutePoint();
+    updateControlStatesTable(point.getControlStates());
     qDebug() << "Control states table now has" << ui->controlStatesTable->rowCount() << "rows";
     
     // Update the map widget's current route point properties
@@ -4745,13 +4745,17 @@ void MainWindow::on_controlStateValueChanged(double value)
 
 void MainWindow::updateControlStatesTableFromRoutePoint()
 {
+    // Get control states from the map widget and update the table
+    QList<ControlState> controlStates = ui->mapLiveWidget->getRoutePointControlStates();
+    updateControlStatesTable(controlStates);
+}
+
+void MainWindow::updateControlStatesTable(const QList<ControlState> &controlStates)
+{
     // Clear existing rows
     while (ui->controlStatesTable->rowCount() > 0) {
         ui->controlStatesTable->removeRow(0);
     }
-    
-    // Get control states from the map widget
-    QList<ControlState> controlStates = ui->mapLiveWidget->getRoutePointControlStates();
     
     // Add rows for each control state
     for (const ControlState &state : controlStates) {
