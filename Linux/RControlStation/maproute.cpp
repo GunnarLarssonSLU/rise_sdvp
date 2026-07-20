@@ -259,12 +259,12 @@ void MapRoute::paintLine(int i, bool isSelected, bool isAnalysed, QPainter &pain
 
 void MapRoute::paintPoint(QPointF p, quint32 attr, bool isSelected, bool isAnalysed, QPainter &painter, QPen &pen, double mScaleFactor, QTransform drawTrans, bool highQuality, int selectedActionAttribute, bool isControlSelected)
 {
-    qDebug() << "paintPoint called, isControlSelected:" << isControlSelected;
-{
+        qDebug() << "paintPoint called, isControlSelected:" << isControlSelected;
     // qDebug() << "MapRoute::paintPoint called with selectedActionAttribute:" << selectedActionAttribute << "isSelected:" << isSelected << "attr:" << attr;
     painter.setTransform(drawTrans);
 
     if (highQuality) {
+        qDebug() << "high quality";
         if (isAnalysed)
         {
             qDebug() << "show analysis point";
@@ -308,10 +308,14 @@ void MapRoute::paintPoint(QPointF p, quint32 attr, bool isSelected, bool isAnaly
         painter.drawEllipse(p, 10.0 / mScaleFactor,
                             10.0 / mScaleFactor);
     } else {
+        qDebug() << "low quality";
         // qDebug() << "low quality value: " << attr;
         // Use simplified logic for low quality as well
         int circleType = 1; // default (gray)
-        if (isSelected) {
+        if (isControlSelected) {
+            // Control-selected points get highest priority - use magenta (type 4)
+            circleType = 4;
+        } else if (isSelected) {
             if (selectedActionAttribute == 0) {
                 // No specific attribute selected - use yellow (type 0)
                 circleType = 0;
@@ -376,8 +380,7 @@ void MapRoute::paintInfoText(bool mDrawRouteText, int i, QPointF p, bool isSelec
 }
 void MapRoute::paintPath(QPainter &painter, QPen &pen, bool isSelected, double mScaleFactor, QTransform drawTrans, QString txt, QPointF pt_txt, QRectF rect_txt, QTransform txtTrans, bool mDrawRouteText, bool highQuality, int selectedActionAttribute, const QList<int> &controlSelectedPoints)
 {
-    qDebug() << "paintPath called with" << controlSelectedPoints.size() << "control-selected points";
-{
+        qDebug() << "paintPath called with" << controlSelectedPoints.size() << "control-selected points";
     Qt::GlobalColor defaultDarkColor = Qt::darkGray;
     Qt::GlobalColor defaultColor = Qt::gray;
     bool showSowing=false;
@@ -530,8 +533,8 @@ void MapRoute::initPixmaps() {
             p.drawEllipse(2, 2, 20, 20);
         } break;
         case 4: {
-            pen.setColor(Qt::darkYellow);
-            p.setBrush(Qt::green);
+            pen.setColor(Qt::darkMagenta);
+            p.setBrush(Qt::magenta);
             p.setPen(pen);
             p.drawEllipse(2, 2, 20, 20);
         } break;
