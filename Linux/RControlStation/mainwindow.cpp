@@ -145,6 +145,14 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->comboBoxAction, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &MainWindow::on_comboBoxAction_currentIndexChanged);
     
+    // Connect targetvalueSpinBox signal to control search slot
+    connect(ui->targetvalueSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, &MainWindow::onControlSearchCriteriaChanged);
+    
+    // Also connect comboBoxAction to control search for immediate feedback
+    connect(ui->comboBoxAction, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &MainWindow::onControlSearchCriteriaChanged);
+    
     // Initialize the map widget with the default value
     on_comboBoxAction_currentIndexChanged(0);
     
@@ -4672,6 +4680,35 @@ void MainWindow::activePointChanged(LocPoint point)
     ui->mapLiveWidget->setRoutePointControlStates(point.getControlStates());
 }
 
+void MainWindow::onControlSearchCriteriaChanged()
+{
+    qDebug() << "Control search criteria changed - searching for matching points";
+    
+    // Get the selected control ID from comboBoxAction
+    int currentIndex = ui->comboBoxAction->currentIndex();
+    if (currentIndex < 0) {
+        qDebug() << "No control selected in comboBoxAction";
+        return;
+    }
+    
+    int controlId = ui->comboBoxAction->itemData(currentIndex).toInt();
+    double targetValue = ui->targetvalueSpinBox->value();
+    
+    qDebug() << "Searching for control ID:" << controlId << "with target value:" << targetValue;
+    
+    // Call the function to find matching points
+    QList<int> selectedPoints = ui->mapLiveWidget->findPointsWithControlState(controlId, targetValue);
+    
+    // Log the results
+    qDebug() << "Found" << selectedPoints.size() << "points matching the criteria:";
+    foreach (int pointIndex, selectedPoints) {
+        qDebug() << "  Point index:" << pointIndex;
+    }
+    
+    // Force a repaint to ensure the highlights are shown
+    ui->mapLiveWidget->update();
+}
+
 void MainWindow::on_addControlStateButton_clicked()
 {
     // Add a new control state row to the table
@@ -4756,6 +4793,11 @@ void MainWindow::updateControlStatesTable(const QList<ControlState> &controlStat
     while (ui->controlStatesTable->rowCount() > 0) {
         ui->controlStatesTable->removeRow(0);
     }
+    
+    // Set column stretching to fill available width
+    ui->controlStatesTable->horizontalHeader()->setStretchLastSection(false);
+    ui->controlStatesTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    ui->controlStatesTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
     
     // Add rows for each control state
     for (const ControlState &state : controlStates) {
