@@ -133,14 +133,13 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->tableAnalysis->setItem(1, 0, new QTableWidgetItem("Angle"));
     ui->tableAnalysis->setItem(2, 0, new QTableWidgetItem("Root-Mean-Square"));
 
-    // Initialize comboBoxAction with default value (0 = "all")
-    ui->comboBoxAction->setCurrentIndex(0);
+    // Initialize comboBoxAction from database
+    populateControlStateComboBoxes();
     
-    // Set userData for comboBoxAction items programmatically (UI loader might not handle this)
-    ui->comboBoxAction->setItemData(0, 0);    // "all" -> 0
-    ui->comboBoxAction->setItemData(1, 16);   // "front lift" -> 16
-    ui->comboBoxAction->setItemData(2, 32);   // "rear lift" -> 32
-    ui->comboBoxAction->setItemData(3, 48);   // "extra" -> 48
+    // Set default value if there are items
+    if (ui->comboBoxAction->count() > 0) {
+        ui->comboBoxAction->setCurrentIndex(0);
+    }
     
     // Connect comboBoxAction signal to slot
     connect(ui->comboBoxAction, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -4681,9 +4680,10 @@ void MainWindow::on_addControlStateButton_clicked()
     
     // Set up combo box for controller selection
     QComboBox *comboBox = new QComboBox();
-    // Copy items from comboBoxAction to the new combo box
-    for (int i = 0; i < ui->comboBoxAction->count(); i++) {
-        comboBox->addItem(ui->comboBoxAction->itemText(i));
+    // Populate from database like comboBoxAction
+    QList<ControllerInfo> controllers = db.getAllControllers();
+    for (const ControllerInfo &controller : controllers) {
+        comboBox->addItem(controller.name, controller.id);
     }
     ui->controlStatesTable->setCellWidget(row, 0, comboBox);
     
@@ -4764,11 +4764,22 @@ void MainWindow::updateControlStatesTable(const QList<ControlState> &controlStat
         
         // Set up combo box for controller selection
         QComboBox *comboBox = new QComboBox();
-        // Copy items from comboBoxAction to the new combo box
-    for (int i = 0; i < ui->comboBoxAction->count(); i++) {
-        comboBox->addItem(ui->comboBoxAction->itemText(i));
-    }
-        comboBox->setCurrentIndex(state.controlId); // Set the control ID
+        // Populate from database like comboBoxAction
+        QList<ControllerInfo> controllers = db.getAllControllers();
+        for (const ControllerInfo &controller : controllers) {
+            comboBox->addItem(controller.name, controller.id);
+        }
+        // Find the index that matches state.controlId
+        int foundIndex = -1;
+        for (int i = 0; i < comboBox->count(); i++) {
+            if (comboBox->itemData(i).toInt() == state.controlId) {
+                foundIndex = i;
+                break;
+            }
+        }
+        if (foundIndex >= 0) {
+            comboBox->setCurrentIndex(foundIndex);
+        }
         ui->controlStatesTable->setCellWidget(row, 0, comboBox);
         
         // Set up spin box for value
@@ -4818,11 +4829,28 @@ void MainWindow::updateCurrentRoutePointControlStates()
 
 void MainWindow::populateControlStateComboBoxes()
 {
-    // This method should populate the comboBoxAction with available controllers
-    // For now, add some default controllers if the combo box is empty
-    if (ui->comboBoxAction->count() == 0) {
-        ui->comboBoxAction->addItem("Controller 1", 0);
-        ui->comboBoxAction->addItem("Controller 2", 1);
-        ui->comboBoxAction->addItem("Controller 3", 2);
+    // Clear existing items
+    ui->comboBoxAction->clear();
+    
+    // Get controllers from database
+    QList<ControllerInfo> controllers = db.getAllControllers();
+    
+    if (controllers.isEmpty()) {
+        // If no controllers in database, add some default ones
+        qDebug() << "No controllers found in database, adding defaults";
+        db.addController("Front Lift");
+        db.addController("Rear Lift");
+        db.addController("PTO");
+        db.addController("3-Point Hitch");
+        db.addController("Sprayer");
+        
+        // Refresh the list
+        controllers = db.getAllControllers();
+    }
+    
+    // Add controllers to combo box using database ID as user data
+    for (const ControllerInfo &controller : controllers) {
+        ui->comboBoxAction->addItem(controller.name, controller.id);
+        qDebug() << "Added controller:" << controller.name << "with ID:" << controller.id;
     }
 }
