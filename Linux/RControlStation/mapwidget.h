@@ -199,6 +199,10 @@ public:
     // Get the selected point index
     int getRoutePointSelected() const;
     
+    // Find points with specific control state values
+    // Selects points where controlId has targetValue, from first occurrence until controlId changes value
+    QList<int> findPointsWithControlState(int controlId, double targetValue) const;
+    
     // Control state methods
     QList<ControlState> getRoutePointControlStates() const;
     void setRoutePointControlStates(const QList<ControlState> &controlStates);
