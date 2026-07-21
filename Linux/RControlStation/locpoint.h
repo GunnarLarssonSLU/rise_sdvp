@@ -21,6 +21,13 @@
 #include <QPointF>
 #include <QString>
 #include <QColor>
+#include <QList>
+
+// Control state structure for XML version 2
+struct ControlState {
+    int controlId;      // ID of the control
+    double targetValue; // Target value for this control
+};
 
 class LocPoint
 {
@@ -68,6 +75,16 @@ public:
     void setId(int id);
     void setDrawLine(bool drawLine);
     void setAttributes(quint32 attributes);
+    
+    // Control states for XML version 2
+    void setControlStates(const QList<ControlState>& states);
+    QList<ControlState> getControlStates() const;
+    void addControlState(int controlId, double targetValue);
+    void clearControlStates();
+
+    // XML point handling functions
+    static void loadFromXML(LocPoint &point, QXmlStreamReader* stream);
+    void saveToXML(QXmlStreamWriter* stream) const;
 
     // Operators
     LocPoint& operator=(const LocPoint& point);
@@ -94,6 +111,13 @@ private:
     int mId;
     bool mDrawLine;
     quint32 mAttributes;
+    QList<ControlState> mControlStates;
+    
+    // XML format conversion functions
+    static QString saveVersion2(const LocPoint &point);
+    static QString saveVersion1(const LocPoint &point);
+    static LocPoint loadVersion2(const QString &xml);
+    static LocPoint loadVersion1(const QString &xml);
 
 };
 

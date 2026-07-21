@@ -2722,26 +2722,7 @@ bool MapWidget::loadXMLRoute(QXmlStreamReader* stream,bool isBorder)
                         id = stream->readElementText().toInt();
                     } else if (name2 == "point") {
                         LocPoint p;
-
-                        while (stream->readNextStartElement()) {
-                            QString name3 = stream->name().toString();
-
-                            if (name3 == "x") {
-                                p.setX(stream->readElementText().toDouble());
-                            } else if (name3 == "y") {
-                                p.setY(stream->readElementText().toDouble());
-                            } else if (name3 == "speed") {
-                                p.setSpeed(stream->readElementText().toDouble());
-                            } else if (name3 == "time") {
-                                p.setTime(stream->readElementText().toInt());
-                            } else if (name3 == "attributes") {
-                                p.setAttributes(stream->readElementText().toInt());
-                            } else {
-                                qWarning() << ": Unknown XML element :" << name2;
-                                stream->skipCurrentElement();
-                            }
-                        }
-
+                        LocPoint::loadFromXML(p, stream);
                         route.append(p);
                     } else {
                         qWarning() << ": Unknown XML element :" << name2;
@@ -2763,24 +2744,7 @@ bool MapWidget::loadXMLRoute(QXmlStreamReader* stream,bool isBorder)
 
                     if (name2 == "anchor") {
                         LocPoint p;
-
-                        while (stream->readNextStartElement()) {
-                            QString name3 = stream->name().toString();
-
-                            if (name3 == "x") {
-                                p.setX(stream->readElementText().toDouble());
-                            } else if (name3 == "y") {
-                                p.setY(stream->readElementText().toDouble());
-                            } else if (name3 == "height") {
-                                p.setHeight(stream->readElementText().toDouble());
-                            } else if (name3 == "id") {
-                                p.setId(stream->readElementText().toInt());
-                            } else {
-                                qWarning() << ": Unknown XML element :" << name2;
-                                stream->skipCurrentElement();
-                            }
-                        }
-
+                        LocPoint::loadFromXML(p, stream);
 //                        anchors.append(p);
                     } else {
                         qWarning() << ": Unknown XML element :" << name2;
@@ -2859,13 +2823,7 @@ void MapRoute::saveXMLRoute(QXmlStreamWriter* stream,bool withId, int i) const
     }
 
     for (const LocPoint p: mRoute) {
-        stream->writeStartElement("point");
-        stream->writeTextElement("x", QString::number(p.getX()));
-        stream->writeTextElement("y", QString::number(p.getY()));
-        stream->writeTextElement("speed", QString::number(p.getSpeed()));
-        stream->writeTextElement("time", QString::number(p.getTime()));
-        stream->writeTextElement("attributes", QString::number(p.getAttributes()));
-        stream->writeEndElement();
+        p.saveToXML(stream);
     }
     stream->writeEndElement();
 }

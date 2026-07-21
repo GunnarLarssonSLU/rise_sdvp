@@ -55,7 +55,8 @@ LocPoint::LocPoint(const LocPoint &point)
     mTime(point.mTime),
     mId(point.mId),
     mDrawLine(point.mDrawLine),
-    mAttributes(point.mAttributes)
+    mAttributes(point.mAttributes),
+    mControlStates(point.mControlStates) // Copy control states
 {
     // No need for additional logic; all members are initialized directly
 }
@@ -167,25 +168,7 @@ int LocPoint::getId() const
     return mId;
 }
 
-LocPoint &LocPoint::operator =(const LocPoint &point)
-{
-    mX = point.mX;
-    mY = point.mY;
-    mHeight = point.mHeight;
-    mRoll = point.mRoll;
-    mPitch = point.mPitch;
-    mYaw = point.mYaw;
-    mSpeed = point.mSpeed;
-    mRadius = point.mRadius;
-    mSigma = point.mSigma;
-    mInfo = point.mInfo;
-    mColor = point.mColor;
-    mTime = point.mTime;
-    mId = point.mId;
-    mDrawLine = point.mDrawLine;
-    mAttributes = point.mAttributes;
-    return *this;
-}
+
 
 bool LocPoint::getDrawLine() const
 {
@@ -226,7 +209,8 @@ bool LocPoint::operator ==(const LocPoint &point)
             mTime == point.mTime &&
             mId == point.mId &&
             mDrawLine == point.mDrawLine &&
-            mAttributes == point.mAttributes) {
+            mAttributes == point.mAttributes &&
+            mControlStates.size() == point.mControlStates.size()) {
         return true;
     } else {
         return false;
@@ -236,6 +220,29 @@ bool LocPoint::operator ==(const LocPoint &point)
 bool LocPoint::operator !=(const LocPoint &point)
 {
     return !(operator==(point));
+}
+
+LocPoint& LocPoint::operator=(const LocPoint& point)
+{
+    if (this != &point) { // Protect against self-assignment
+        mX = point.mX;
+        mY = point.mY;
+        mHeight = point.mHeight;
+        mRoll = point.mRoll;
+        mPitch = point.mPitch;
+        mYaw = point.mYaw;
+        mSpeed = point.mSpeed;
+        mRadius = point.mRadius;
+        mSigma = point.mSigma;
+        mInfo = point.mInfo;
+        mColor = point.mColor;
+        mTime = point.mTime;
+        mId = point.mId;
+        mDrawLine = point.mDrawLine;
+        mAttributes = point.mAttributes;
+        mControlStates = point.mControlStates; // Copy control states
+    }
+    return *this;
 }
 
 void LocPoint::setInfo(const QString &info)
@@ -286,6 +293,65 @@ void LocPoint::setDrawLine(bool drawLine)
 void LocPoint::setAttributes(quint32 attributes)
 {
     mAttributes = attributes;
+}
+
+// Control states methods for XML version 2
+void LocPoint::setControlStates(const QList<ControlState>& states)
+{
+    mControlStates = states;
+}
+
+QList<ControlState> LocPoint::getControlStates() const
+{
+    return mControlStates;
+}
+
+void LocPoint::addControlState(int controlId, double targetValue)
+{
+    mControlStates.append({controlId, targetValue});
+}
+
+void LocPoint::clearControlStates()
+{
+    mControlStates.clear();
+}
+
+// XML point handling functions
+void LocPoint::loadFromXML(LocPoint &point, QXmlStreamReader* stream)
+{
+    while (stream->readNextStartElement()) {
+        QString name = stream->name().toString();
+
+        if (name == "x") {
+            point.setX(stream->readElementText().toDouble());
+        } else if (name == "y") {
+            point.setY(stream->readElementText().toDouble());
+        } else if (name == "speed") {
+            point.setSpeed(stream->readElementText().toDouble());
+        } else if (name == "time") {
+            point.setTime(stream->readElementText().toInt());
+        } else if (name == "attributes") {
+            point.setAttributes(stream->readElementText().toInt());
+        } else if (name == "height") {
+            point.setHeight(stream->readElementText().toDouble());
+        } else if (name == "id") {
+            point.setId(stream->readElementText().toInt());
+        } else {
+            qWarning() << ": Unknown XML element :" << name;
+            stream->skipCurrentElement();
+        }
+    }
+}
+
+void LocPoint::saveToXML(QXmlStreamWriter* stream) const
+{
+    stream->writeStartElement("point");
+    stream->writeTextElement("x", QString::number(getX()));
+    stream->writeTextElement("y", QString::number(getY()));
+    stream->writeTextElement("speed", QString::number(getSpeed()));
+    stream->writeTextElement("time", QString::number(getTime()));
+    stream->writeTextElement("attributes", QString::number(getAttributes()));
+    stream->writeEndElement();
 }
 
 double LocPoint::calculateDistance(const LocPoint& p1, const LocPoint& p2) {
