@@ -354,6 +354,83 @@ void LocPoint::saveToXML(QXmlStreamWriter* stream) const
     stream->writeEndElement();
 }
 
+// XML version 2 functions (using control states instead of attributes)
+void LocPoint::loadFromXMLV2(LocPoint &point, QXmlStreamReader* stream)
+{
+    while (stream->readNextStartElement()) {
+        QString name = stream->name().toString();
+
+        if (name == "x") {
+            point.setX(stream->readElementText().toDouble());
+        } else if (name == "y") {
+            point.setY(stream->readElementText().toDouble());
+        } else if (name == "speed") {
+            point.setSpeed(stream->readElementText().toDouble());
+        } else if (name == "time") {
+            point.setTime(stream->readElementText().toInt());
+        } else if (name == "height") {
+            point.setHeight(stream->readElementText().toDouble());
+        } else if (name == "id") {
+            point.setId(stream->readElementText().toInt());
+        } else if (name == "controlStates") {
+            // Load control states
+            point.clearControlStates();
+            while (stream->readNextStartElement()) {
+                QString controlName = stream->name().toString();
+                if (controlName == "control") {
+                    int controlId = -1;
+                    double targetValue = 0.0;
+                    
+                    while (stream->readNextStartElement()) {
+                        QString fieldName = stream->name().toString();
+                        if (fieldName == "id") {
+                            controlId = stream->readElementText().toInt();
+                        } else if (fieldName == "value") {
+                            targetValue = stream->readElementText().toDouble();
+                        } else {
+                            qWarning() << ": Unknown control field :" << fieldName;
+                            stream->skipCurrentElement();
+                        }
+                    }
+                    
+                    if (controlId >= 0) {
+                        point.addControlState(controlId, targetValue);
+                    }
+                } else {
+                    qWarning() << ": Unknown element in controlStates :" << controlName;
+                    stream->skipCurrentElement();
+                }
+            }
+        } else {
+            qWarning() << ": Unknown XML element :" << name;
+            stream->skipCurrentElement();
+        }
+    }
+}
+
+void LocPoint::saveToXMLV2(QXmlStreamWriter* stream) const
+{
+    stream->writeStartElement("point");
+    stream->writeTextElement("x", QString::number(getX()));
+    stream->writeTextElement("y", QString::number(getY()));
+    stream->writeTextElement("speed", QString::number(getSpeed()));
+    stream->writeTextElement("time", QString::number(getTime()));
+    
+    // Save control states instead of attributes
+    if (!getControlStates().isEmpty()) {
+        stream->writeStartElement("controlStates");
+        for (const ControlState &state : getControlStates()) {
+            stream->writeStartElement("control");
+            stream->writeTextElement("id", QString::number(state.controlId));
+            stream->writeTextElement("value", QString::number(state.targetValue));
+            stream->writeEndElement();
+        }
+        stream->writeEndElement();
+    }
+    
+    stream->writeEndElement();
+}
+
 double LocPoint::calculateDistance(const LocPoint& p1, const LocPoint& p2) {
     double dx = p2.getX() - p1.getX();
     double dy = p2.getY() - p1.getY();

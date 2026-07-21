@@ -85,6 +85,10 @@ public:
     // XML point handling functions
     static void loadFromXML(LocPoint &point, QXmlStreamReader* stream);
     void saveToXML(QXmlStreamWriter* stream) const;
+    
+    // XML version 2 functions (using control states instead of attributes)
+    static void loadFromXMLV2(LocPoint &point, QXmlStreamReader* stream);
+    void saveToXMLV2(QXmlStreamWriter* stream) const;
 
     // Operators
     LocPoint& operator=(const LocPoint& point);
