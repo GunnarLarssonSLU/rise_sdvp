@@ -38,7 +38,7 @@
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,2">
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1,0,0,0,0">
+     <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1,0,0,0,0,0,0">
       <item>
        <widget class="QToolBox" name="toolBox">
         <property name="enabled">
@@ -64,8 +64,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>207</width>
-           <height>71</height>
+           <width>256</width>
+           <height>100</height>
           </rect>
          </property>
          <attribute name="label">
@@ -144,34 +144,6 @@
                 <normaloff>:/models/Icons/Disconnected-96.png</normaloff>:/models/Icons/Disconnected-96.png</iconset>
               </property>
              </widget>
-            </item>
-            <item row="2" column="0" colspan="2">
-             <layout class="QHBoxLayout" name="horizontalLayout_machineInputs">
-              <property name="spacing">
-               <number>2</number>
-              </property>
-              <item>
-               <widget class="QLineEdit" name="lineEditMachineName">
-                <property name="placeholderText">
-                 <string>Machine Name</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLineEdit" name="lineEditMachineIp">
-                <property name="placeholderText">
-                 <string>IP Address</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="pushButtonAddMachine">
-                <property name="text">
-                 <string>Add Machine</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
             </item>
            </layout>
           </item>
@@ -642,7 +614,7 @@
        <enum>QTabWidget::TabPosition::North</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -1350,8 +1322,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>392</width>
-                     <height>541</height>
+                     <width>413</width>
+                     <height>535</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_23">
@@ -1704,7 +1676,6 @@
                            <string>Target Value</string>
                           </property>
                          </column>
-
                         </widget>
                        </item>
                        <item>
@@ -1746,7 +1717,6 @@
                        </item>
                       </layout>
                      </widget>
-
                     </item>
                    </layout>
                   </widget>
@@ -1792,7 +1762,7 @@
                      <x>0</x>
                      <y>0</y>
                      <width>196</width>
-                     <height>433</height>
+                     <height>431</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -2086,8 +2056,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>244</width>
-                     <height>562</height>
+                     <width>203</width>
+                     <height>560</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_15">
@@ -3685,7 +3655,6 @@
             </property>
            </widget>
           </item>
-
           <item row="2" column="1">
            <spacer name="verticalSpacer_10">
             <property name="orientation">
@@ -3701,6 +3670,34 @@
              </size>
             </property>
            </spacer>
+          </item>
+          <item row="1" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout_machineInputs">
+            <property name="spacing">
+             <number>2</number>
+            </property>
+            <item>
+             <widget class="QLineEdit" name="lineEditMachineName">
+              <property name="placeholderText">
+               <string>Machine Name</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="lineEditMachineIp">
+              <property name="placeholderText">
+               <string>IP Address</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButtonAddMachine">
+              <property name="text">
+               <string>Add Machine</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
          </layout>
         </item>
