@@ -184,6 +184,50 @@ void conf_general_get_default_main_config(MAIN_CONFIG *conf) {
 	conf->vehicle.actuator[3].activity = 3; // ACT_FORWARD
 	conf->vehicle.actuator[3].mode = 0; // MOTOR_CONTROL_DUTY
 
+	// Sensor configurations
+	conf->vehicle.sensors = 3;
+	conf->vehicle.sensor[0].type = 1; // ST_POSITION
+	conf->vehicle.sensor[0].sensorid = 0;
+	conf->vehicle.sensor[0].activity = 1; // SENS_STEERING
+	conf->vehicle.sensor[0].reserved = 0;
+
+	conf->vehicle.sensor[1].type = 1; // ST_POSITION
+	conf->vehicle.sensor[1].sensorid = 1;
+	conf->vehicle.sensor[1].activity = 1; // SENS_STEERING
+	conf->vehicle.sensor[1].reserved = 0;
+
+	conf->vehicle.sensor[2].type = 0; // ST_VOLTAGE
+	conf->vehicle.sensor[2].sensorid = 2;
+	conf->vehicle.sensor[2].activity = 0; // SENS_FORWARD
+	conf->vehicle.sensor[2].reserved = 0;
+
+	// State control configurations
+	conf->vehicle.state_controls = 1;
+	conf->vehicle.control[0].actuator_activity = 2; // ACT_LIFT
+	conf->vehicle.control[0].sensor_activity = 2; // SENS_LIFT
+	conf->vehicle.control[0].control_type = 1; // CT_POSITION
+	conf->vehicle.control[0].target_value = 0.0f;
+	conf->vehicle.control[0].kp = 1.0f;
+	conf->vehicle.control[0].ki = 0.1f;
+	conf->vehicle.control[0].kd = 0.05f;
+	conf->vehicle.control[0].min_output = -0.5f;
+	conf->vehicle.control[0].max_output = 0.5f;
+	conf->vehicle.control[0].enabled = false;
+
+	// Initialize other state controls to safe defaults
+	for (int i = 1; i < 4; i++) {
+		conf->vehicle.control[i].actuator_activity = 0; // ACT_FORWARD
+		conf->vehicle.control[i].sensor_activity = 0; // SENS_FORWARD
+		conf->vehicle.control[i].control_type = 0; // CT_OPEN_LOOP
+		conf->vehicle.control[i].target_value = 0.0f;
+		conf->vehicle.control[i].kp = 0.0f;
+		conf->vehicle.control[i].ki = 0.0f;
+		conf->vehicle.control[i].kd = 0.0f;
+		conf->vehicle.control[i].min_output = -1.0f;
+		conf->vehicle.control[i].max_output = 1.0f;
+		conf->vehicle.control[i].enabled = false;
+	}
+
 
 	/*100
 	// Custom parameters based on ID

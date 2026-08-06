@@ -19,14 +19,17 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QtWidgets>
 #include <QList>
 #include <QTimer>
 #include <tuple>
 #include <QSerialPort>
 #include <QLabel>
 #include <QTcpSocket>
-#include <QtWidgets>
+#include <QNetworkAccessManager>
+#include <QUrlQuery>
 #include "actionmanager.h"
+#include "vehicletypedelegate.h"
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     #include <SDL2/SDL.h>
@@ -129,6 +132,7 @@ private slots:
     void routePointAdded(LocPoint pos);
     void routePointSelected(LocPoint pos);
     void activePointChanged(LocPoint point);
+    void onControlSearchCriteriaChanged();
     void infoTraceChanged(int traceNow);
     void onMapCarBoxChanged(int value);
     void setJoystickControlEnabled(bool enabled);
@@ -146,6 +150,9 @@ private slots:
     void handleAddFarmButton();
 
     void on_disconnectButton_clicked();
+    void on_connectSelectedButton_clicked();
+    void on_disconnectSelectedButton_clicked();
+    void on_refreshMachinesButton_clicked();
     void on_mapRemoveTraceButton_clicked();
     void on_MapRemovePixmapsButton_clicked();
     void on_tcpConnectButton_clicked();
@@ -273,6 +280,13 @@ private:
     void updateControlStatesTable(const QList<ControlState> &controlStates);
     void populateControlStateComboBoxes();
     void populateControlStateComboBox(QComboBox* comboBox, int selectedControllerId = -1);
+    void fetchMachinesData(int retryCount = 0);
+    void fetchAllMachinesData(int retryCount = 0);
+    void fetchVehicleTypes(int retryCount = 0);
+    void parseVehicleTypesXml(const QByteArray &xmlData);
+    void parseAllMachinesXml(const QByteArray &xmlData);
+    void parseMachinesXml(const QByteArray &xmlData);
+    void onAddMachineButtonClicked();
 
     // Area definition storage - using existing border infrastructure
     bool mAreaLoaded = false;
@@ -281,12 +295,16 @@ private:
     QSqlRelationalTableModel *modelFarm;
     QSqlRelationalTableModel *modelField;
     QSqlRelationalTableModel *modelPath;
+    QStandardItemModel *machinesModel;
+    QStandardItemModel *vehicleTypesModel;
+    VehicleTypeDelegate *vehicleTypeDelegate;
     CheckBoxDelegate* checkboxdelegate;
     QStringListModel* fileModel;  // Model to hold filenames
     QStringList fileList;         // Underlying data
     ActionManager *actionManager;
 
     Ui::MainWindow *ui;
+    bool mConnectingSelected = false; // Guard flag to prevent double connection
     QTimer *mTimer;
     QTimer *mHeartbeatTimer; // periodic heartbeat to vehicles for safety
     const int mHeartbeatMS = 300;
@@ -307,6 +325,7 @@ private:
     NmeaServer *mNmea;
     QUdpSocket *mUdpSocket;
     TcpClientMulti *mTcpClientMulti;
+    QNetworkAccessManager *mNetworkManager;
     QString mVersion;
     rtcm3_state mRtcmState;
     IntersectionTest *mIntersectionTest;
@@ -356,6 +375,9 @@ public:
 
     void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
 };
+
+// Forward declaration for VehicleTypeDelegate
+class VehicleTypeDelegate;
 
 #include <QDoubleValidator>
 

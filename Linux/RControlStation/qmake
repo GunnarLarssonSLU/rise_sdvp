@@ -1,0 +1,3 @@
+#!/bin/bash
+# Wrapper script to ensure Qt 6 is used
+/home/gunnar/Qt/6.9.1/gcc_64/bin/qmake "$@"

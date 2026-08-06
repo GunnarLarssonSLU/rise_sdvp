@@ -25,11 +25,16 @@
 #include <QFileInfo>
 #include <QHostInfo>
 #include <QInputDialog>
+
+
 #include <QXmlStreamWriter>
 #include <QXmlStreamReader>
 #include <QStringList>
 #include <QElapsedTimer>
 #include <QNetworkInterface>
+#include <QNetworkReply>
+#include <QUrl>
+#include <QTimer>
 #include <QLoggingCategory>
 #include <QtSql>
 #include <QtCharts>
@@ -256,6 +261,7 @@ MainWindow::MainWindow(QWidget *parent) :
     mJoystickControlEnabled = true;
     mPacketInterface = new PacketInterface(this);
     mSerialPort = new QSerialPort(this);
+    mNetworkManager = new QNetworkAccessManager(this);
     mThrottle = 0.0;
     mSteering = 0.0;
     activeCarExists = false;
@@ -336,6 +342,10 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->buttonCut, &QPushButton::clicked, this, &MainWindow::onCutButtonClicked);
     connect(ui->listLogfilesView, &QListView::clicked, this, &MainWindow::on_listLogFilesView_clicked);
     connect(ui->mapCarBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::onMapCarBoxChanged);
+    connect(ui->refreshMachinesButton, &QPushButton::clicked, this, &MainWindow::on_refreshMachinesButton_clicked);
+//    connect(ui->connectSelectedButton, &QPushButton::clicked, this, &MainWindow::on_connectSelectedButton_clicked);
+    connect(ui->disconnectSelectedButton, &QPushButton::clicked, this, &MainWindow::on_disconnectSelectedButton_clicked);
+    connect(ui->pushButtonAddMachine, &QPushButton::clicked, this, &MainWindow::onAddMachineButtonClicked);
 
     connect(ui->actionAboutQt, SIGNAL(triggered(bool)),
             qApp, SLOT(aboutQt()));
@@ -395,6 +405,24 @@ MainWindow::MainWindow(QWidget *parent) :
     modelFarm=setupFarmTable(ui->farmTable,"locations");
     modelField=setupFieldTable(ui->fieldTable,"fields");
     modelPath=setupPathTable(ui->pathTable,"paths");
+    
+    // Setup model for tableViewMachines
+    machinesModel = new QStandardItemModel(this);
+    machinesModel->setHorizontalHeaderLabels(QStringList() << "Name" << "IP Address" << "Vehicle Type");
+    ui->tableViewMachines->setModel(machinesModel);
+    ui->tableViewMachines->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->tableViewMachines->setSelectionMode(QAbstractItemView::SingleSelection);
+
+    
+    // Setup model for vehicle types
+    vehicleTypesModel = new QStandardItemModel(this);
+    ui->comboBoxVehicleType->setModel(vehicleTypesModel);
+    
+    // Setup delegate for vehicle type column in tableViewMachines
+    vehicleTypeDelegate = new VehicleTypeDelegate(vehicleTypesModel, this);
+    ui->tableViewMachines->setItemDelegateForColumn(2, vehicleTypeDelegate); // Vehicle Type is column 2
+    
+
 
     // Connect the signal from the first table view to a custom slot
     QObject::connect(ui->farmTable->selectionModel(), &QItemSelectionModel::currentChanged, this, &MainWindow::onSelectedFarm);
@@ -444,6 +472,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Populate controller combo boxes from database
     populateControllerComboBoxes();
+    
+    // Initial refresh of machines data
+    fetchMachinesData();
+    fetchVehicleTypes(); // This will call fetchAllMachinesData() when done
 }
 
 MainWindow::~MainWindow()
@@ -1453,11 +1485,6 @@ void MainWindow::timerSlot()
             }
         }
 
-        ui->mrThrottleBar->setValue(js_mr_thr * 100.0);
-        ui->mrRollBar->setValue(js_mr_roll * 100.0);
-        ui->mrPitchBar->setValue(js_mr_pitch * 100.0);
-        ui->mrYawBar->setValue(js_mr_yaw * 100.0);
-
         ui->throttleBar->setValue(mThrottle * 100.0);
         ui->steeringBar->setValue(mSteering * 100.0);
 #endif
@@ -1984,6 +2011,564 @@ MainWindow::
     removeCars();
     ui->carsWidget->clear();
 
+}
+
+void MainWindow::on_connectSelectedButton_clicked()
+{
+    // Get the currently selected row in machinesTable
+    int selectedRow = ui->machinesTable->currentRow();
+    
+    if (selectedRow >= 0) {
+        // Get the IP address from the selected row (column 1)
+        QTableWidgetItem* ipItem = ui->machinesTable->item(selectedRow, 1);
+        if (ipItem && !ipItem->text().isEmpty()) {
+            QString ipAddress = ipItem->text();
+            
+            // Do the same thing as tcpConnectButton but with the selected IP
+            mTcpClientMulti->disconnectAll();
+            
+            // Parse the IP address (handle potential port specification)
+            QStringList ipPort = ipAddress.split(":");
+            
+            if (ipPort.size() == 1) {
+                mTcpClientMulti->addConnection(ipPort.at(0), 8300);
+            } else if (ipPort.size() == 2) {
+                mTcpClientMulti->addConnection(ipPort.at(0), ipPort.at(1).toInt());
+            }
+            addCar(mCars.size(), ipPort.at(0));
+        }
+    }
+}
+
+void MainWindow::on_disconnectSelectedButton_clicked()
+{
+    // Disconnect from the selected machine
+    mTcpClientMulti->disconnectAll();
+    removeCars();
+    ui->carsWidget->clear();
+}
+
+void MainWindow::on_refreshMachinesButton_clicked()
+{
+    fetchMachinesData();
+}
+
+void MainWindow::fetchMachinesData(int retryCount)
+{
+    const int MAX_RETRIES = 3;
+    const int RETRY_DELAY_MS = 2000; // 2 seconds between retries
+    
+    QUrl url("http://127.0.0.1:8080/machines");
+    QNetworkRequest request(url);
+    
+    // Set a timeout for the request (10 seconds to be safe)
+    request.setTransferTimeout(10000);
+    
+    // Disconnect any existing connections to prevent multiple handlers
+    disconnect(mNetworkManager, &QNetworkAccessManager::finished, this, nullptr);
+    
+    // Show loading state
+    ui->machinesTable->setRowCount(0);
+    ui->machinesTable->insertRow(0);
+    ui->machinesTable->setItem(0, 0, new QTableWidgetItem(retryCount > 0 ? QString("Retrying... (%1/%2)").arg(retryCount).arg(MAX_RETRIES) : "Loading..."));
+    ui->machinesTable->setItem(0, 1, new QTableWidgetItem(""));
+    
+    // Connect the finished signal to parse the response
+    QNetworkReply* reply = mNetworkManager->get(request);
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, retryCount]() {
+        // Clear loading message
+        ui->machinesTable->setRowCount(0);
+        
+        // Check HTTP status code
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "HTTP Status Code:" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            QByteArray xmlData = reply->readAll();
+            qDebug() << "Received XML data (size:" << xmlData.size() << "):" << xmlData;
+            
+            if (xmlData.isEmpty()) {
+                qDebug() << "Empty response received";
+                ui->machinesTable->insertRow(0);
+                ui->machinesTable->setItem(0, 0, new QTableWidgetItem("No data"));
+                ui->machinesTable->setItem(0, 1, new QTableWidgetItem("Empty response"));
+            } else {
+                // Check if response contains valid XML
+                if (xmlData.contains("<machines>") && xmlData.contains("</machines>")) {
+                    parseMachinesXml(xmlData);
+                } else {
+                    qDebug() << "Invalid XML format received";
+                    ui->machinesTable->insertRow(0);
+                    ui->machinesTable->setItem(0, 0, new QTableWidgetItem("Invalid data"));
+                    ui->machinesTable->setItem(0, 1, new QTableWidgetItem("Bad format"));
+                }
+            }
+        } else {
+            qDebug() << "Error fetching machines data:" << reply->errorString();
+            qDebug() << "Error code:" << reply->error();
+            qDebug() << "HTTP Status Code:" << statusCode;
+            
+            // Retry if we haven't exceeded max retries and it's a timeout or temporary error
+            if (retryCount < MAX_RETRIES && 
+                (reply->error() == QNetworkReply::TimeoutError ||
+                 reply->error() == QNetworkReply::TemporaryNetworkFailureError ||
+                 reply->error() == QNetworkReply::ConnectionRefusedError)) {
+                qDebug() << "Retrying in" << RETRY_DELAY_MS << "ms...";
+                QTimer::singleShot(RETRY_DELAY_MS, this, [this, retryCount]() {
+                    fetchMachinesData(retryCount + 1);
+                });
+            } else {
+                // Show final error after all retries failed
+                QString errorMsg = reply->errorString();
+                if (statusCode != 200 && statusCode > 0) {
+                    errorMsg = QString("HTTP %1").arg(statusCode);
+                }
+                ui->machinesTable->insertRow(0);
+                ui->machinesTable->setItem(0, 0, new QTableWidgetItem("Error"));
+                ui->machinesTable->setItem(0, 1, new QTableWidgetItem(errorMsg));
+            }
+        }
+        reply->deleteLater();
+    });
+    
+    qDebug() << "Fetching machines data from:" << url.toString() << "(attempt" << (retryCount + 1) << ")";
+}
+
+void MainWindow::parseMachinesXml(const QByteArray &xmlData)
+{
+    // Clear existing data
+    ui->machinesTable->setRowCount(0);
+    
+    // Parse the XML
+    QXmlStreamReader xmlReader(xmlData);
+    bool foundMachines = false;
+    
+    qDebug() << "Starting XML parsing...";
+    
+    while (!xmlReader.atEnd()) {
+        QXmlStreamReader::TokenType token = xmlReader.readNext();
+        
+        if (token == QXmlStreamReader::StartElement && xmlReader.name() == "machine") {
+            QString name, ip;
+            foundMachines = true;
+            qDebug() << "Found machine element";
+            
+            // Read machine element contents
+            while (!xmlReader.atEnd()) {
+                token = xmlReader.readNext();
+                
+                if (token == QXmlStreamReader::EndElement && xmlReader.name() == "machine") {
+                    break; // End of machine element
+                }
+                
+                if (token == QXmlStreamReader::StartElement) {
+                    if (xmlReader.name() == "name") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            name = xmlReader.text().toString();
+                            qDebug() << "Found name:" << name;
+                        }
+                    } else if (xmlReader.name() == "ip") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            ip = xmlReader.text().toString();
+                            qDebug() << "Found ip:" << ip;
+                        }
+                    }
+                }
+            }
+            
+            // Add the machine to the table if we have both name and IP
+            if (!name.isEmpty() && !ip.isEmpty()) {
+                int row = ui->machinesTable->rowCount();
+                ui->machinesTable->insertRow(row);
+                ui->machinesTable->setItem(row, 0, new QTableWidgetItem(name));
+                ui->machinesTable->setItem(row, 1, new QTableWidgetItem(ip));
+                qDebug() << "Added machine to table:" << name << "-" << ip;
+            } else {
+                qDebug() << "Machine missing name or IP - name:" << name << ", ip:" << ip;
+            }
+        }
+    }
+    
+    if (xmlReader.hasError()) {
+        qDebug() << "XML parsing error:" << xmlReader.errorString();
+        qDebug() << "Error line:" << xmlReader.lineNumber() << "column:" << xmlReader.columnNumber();
+        // Show the raw data for debugging
+        qDebug() << "Raw XML data:" << xmlData;
+        
+        // If no machines were found and there was an error, show the error in the table
+        if (!foundMachines) {
+            ui->machinesTable->insertRow(0);
+            ui->machinesTable->setItem(0, 0, new QTableWidgetItem("XML Error"));
+            ui->machinesTable->setItem(0, 1, new QTableWidgetItem(xmlReader.errorString()));
+        }
+    }
+    
+    // If no machines were found but no error occurred, show a message
+    if (!foundMachines && !xmlReader.hasError()) {
+        qDebug() << "No machines found in XML";
+        ui->machinesTable->insertRow(0);
+        ui->machinesTable->setItem(0, 0, new QTableWidgetItem("No machines"));
+        ui->machinesTable->setItem(0, 1, new QTableWidgetItem("found"));
+    }
+    
+    ui->machinesTable->resizeColumnsToContents();
+}
+
+void MainWindow::fetchAllMachinesData(int retryCount)
+{
+    const int MAX_RETRIES = 3;
+    const int RETRY_DELAY_MS = 2000; // 2 seconds between retries
+    
+    QUrl url("http://127.0.0.1:8080/all_machines");
+    QNetworkRequest request(url);
+    
+    // Set a timeout for the request (10 seconds to be safe)
+    request.setTransferTimeout(10000);
+    
+    // Disconnect any existing connections to prevent multiple handlers
+    disconnect(mNetworkManager, &QNetworkAccessManager::finished, this, nullptr);
+    
+    // Clear the model
+    machinesModel->removeRows(0, machinesModel->rowCount());
+    
+    // Add loading state
+    machinesModel->appendRow(new QStandardItem(retryCount > 0 ? QString("Retrying... (%1/%2)").arg(retryCount).arg(MAX_RETRIES) : "Loading..."));
+    machinesModel->appendRow(new QStandardItem(""));
+    
+    // Connect the finished signal to parse the response
+    QNetworkReply* reply = mNetworkManager->get(request);
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, retryCount]() {
+        // Clear loading message
+        machinesModel->removeRows(0, machinesModel->rowCount());
+        
+        // Check HTTP status code
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "HTTP Status Code (all_machines):" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            QByteArray xmlData = reply->readAll();
+            qDebug() << "Received XML data from all_machines (size:" << xmlData.size() << "):" << xmlData;
+            
+            if (xmlData.isEmpty()) {
+                qDebug() << "Empty response received from all_machines";
+                machinesModel->appendRow(new QStandardItem("No data"));
+                machinesModel->appendRow(new QStandardItem("Empty response"));
+            } else {
+                // Check if response contains valid XML
+                if (xmlData.contains("<machines>") && xmlData.contains("</machines>")) {
+                    parseAllMachinesXml(xmlData);
+                } else {
+                    machinesModel->appendRow(new QStandardItem("Invalid data"));
+                    machinesModel->appendRow(new QStandardItem("Bad format"));
+                }
+            }
+        } else {
+            qDebug() << "Error fetching all_machines data:" << reply->errorString();
+            qDebug() << "Error code:" << reply->error();
+            qDebug() << "HTTP Status Code:" << statusCode;
+            
+            // Retry if we haven't exceeded max retries and it's a timeout or temporary error
+            if (retryCount < MAX_RETRIES && 
+                (reply->error() == QNetworkReply::TimeoutError ||
+                 reply->error() == QNetworkReply::TemporaryNetworkFailureError ||
+                 reply->error() == QNetworkReply::ConnectionRefusedError)) {
+                qDebug() << "Retrying all_machines in" << RETRY_DELAY_MS << "ms...";
+                QTimer::singleShot(RETRY_DELAY_MS, this, [this, retryCount]() {
+                    fetchAllMachinesData(retryCount + 1);
+                });
+            } else {
+                // Show final error after all retries failed
+                QString errorMsg = reply->errorString();
+                if (statusCode != 200 && statusCode > 0) {
+                    errorMsg = QString("HTTP %1").arg(statusCode);
+                }
+                machinesModel->appendRow(new QStandardItem("Error"));
+                machinesModel->appendRow(new QStandardItem(errorMsg));
+            }
+        }
+        reply->deleteLater();
+    });
+    
+    qDebug() << "Fetching all_machines data from:" << url.toString() << "(attempt" << (retryCount + 1) << ")";
+}
+
+void MainWindow::fetchVehicleTypes(int retryCount)
+{
+    const int MAX_RETRIES = 3;
+    const int RETRY_DELAY_MS = 2000; // 2 seconds between retries
+    
+    QUrl url("http://127.0.0.1:8080/vehicle_types");
+    QNetworkRequest request(url);
+    
+    // Set a timeout for the request (10 seconds to be safe)
+    request.setTransferTimeout(10000);
+    
+    // Disconnect any existing connections to prevent multiple handlers
+    disconnect(mNetworkManager, &QNetworkAccessManager::finished, this, nullptr);
+    
+    // Clear the model
+    vehicleTypesModel->removeRows(0, vehicleTypesModel->rowCount());
+    
+    // Add loading state
+    vehicleTypesModel->appendRow(new QStandardItem(retryCount > 0 ? QString("Retrying... (%1/%2)").arg(retryCount).arg(MAX_RETRIES) : "Loading..."));
+    
+    // Connect the finished signal to parse the response
+    QNetworkReply* reply = mNetworkManager->get(request);
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, retryCount]() {
+        // Clear loading message
+        vehicleTypesModel->removeRows(0, vehicleTypesModel->rowCount());
+        
+        // Check HTTP status code
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "HTTP Status Code (vehicle_types):" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            QByteArray xmlData = reply->readAll();
+            qDebug() << "Received XML data from vehicle_types (size:" << xmlData.size() << "):" << xmlData;
+            
+            if (xmlData.isEmpty()) {
+                qDebug() << "Empty response received from vehicle_types";
+            } else {
+                // Always try to parse the XML, let the parser handle any errors
+                parseVehicleTypesXml(xmlData);
+                // After loading vehicle types, refresh machines data to ensure vehicle types are available
+                fetchAllMachinesData();
+            }
+        } else {
+            // Retry if we haven't exceeded max retries and it's a timeout or temporary error
+            if (retryCount < MAX_RETRIES && 
+                (reply->error() == QNetworkReply::TimeoutError ||
+                 reply->error() == QNetworkReply::TemporaryNetworkFailureError ||
+                 reply->error() == QNetworkReply::ConnectionRefusedError)) {
+                QTimer::singleShot(RETRY_DELAY_MS, this, [this, retryCount]() {
+                    fetchVehicleTypes(retryCount + 1);
+                });
+            }
+        }
+        reply->deleteLater();
+    });
+    
+
+}
+
+void MainWindow::parseVehicleTypesXml(const QByteArray &xmlData)
+{
+    // Clear existing data
+    vehicleTypesModel->removeRows(0, vehicleTypesModel->rowCount());
+    
+    // Parse the XML
+    QXmlStreamReader xmlReader(xmlData);
+    
+
+    
+    while (!xmlReader.atEnd()) {
+        QXmlStreamReader::TokenType token = xmlReader.readNext();
+        
+        if (token == QXmlStreamReader::StartElement && xmlReader.name() == "vehicle_type") {
+            QString id, name;
+
+
+            
+            // Read vehicle_type element contents
+            while (!xmlReader.atEnd()) {
+                token = xmlReader.readNext();
+                
+                if (token == QXmlStreamReader::EndElement && xmlReader.name() == "vehicle_type") {
+                    break; // End of vehicle_type element
+                }
+                
+                if (token == QXmlStreamReader::StartElement) {
+                    if (xmlReader.name() == "id") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            id = xmlReader.text().toString();
+
+                        }
+                    } else if (xmlReader.name() == "name") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            name = xmlReader.text().toString();
+                        }
+                    }
+                }
+            }
+            
+            // Add the vehicle type to the model if we have both id and name
+            if (!id.isEmpty() && !name.isEmpty()) {
+                QStandardItem* item = new QStandardItem(name);
+                item->setData(id, Qt::UserRole); // Store ID as user data
+                vehicleTypesModel->appendRow(item);
+
+            } else {
+    
+            }
+        }
+    }
+    
+    if (xmlReader.hasError()) {
+        qDebug() << "XML parsing error for vehicle_types:" << xmlReader.errorString();
+    }
+    
+
+}
+
+void MainWindow::parseAllMachinesXml(const QByteArray &xmlData)
+{
+    // Clear existing data
+    machinesModel->removeRows(0, machinesModel->rowCount());
+    
+    // Parse the XML
+    QXmlStreamReader xmlReader(xmlData);
+    bool foundMachines = false;
+    
+    qDebug() << "Starting XML parsing for all_machines...";
+    
+    while (!xmlReader.atEnd()) {
+        QXmlStreamReader::TokenType token = xmlReader.readNext();
+        
+        if (token == QXmlStreamReader::StartElement && xmlReader.name() == "machine") {
+            QString name, ip, vehicleTypeId;
+            foundMachines = true;
+            qDebug() << "Found machine element in all_machines";
+            
+            // Read machine element contents
+            while (!xmlReader.atEnd()) {
+                token = xmlReader.readNext();
+                
+                if (token == QXmlStreamReader::EndElement && xmlReader.name() == "machine") {
+                    break; // End of machine element
+                }
+                
+                if (token == QXmlStreamReader::StartElement) {
+                    if (xmlReader.name() == "name") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            name = xmlReader.text().toString();
+                        }
+                    } else if (xmlReader.name() == "ip") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            ip = xmlReader.text().toString();
+                        }
+                    } else if (xmlReader.name() == "iVehicletype" || 
+                               xmlReader.name() == "vehicle_type_id" || 
+                               xmlReader.name() == "vehicle_type" ||
+                               xmlReader.name() == "vehicletype") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            vehicleTypeId = xmlReader.text().toString();
+                        }
+                    }
+                }
+            }
+            
+            // Add the machine to the model if we have both name and IP
+            if (!name.isEmpty() && !ip.isEmpty()) {
+                QList<QStandardItem*> rowItems;
+                rowItems.append(new QStandardItem(name));
+                rowItems.append(new QStandardItem(ip));
+                
+                // Look up vehicle type name from vehicleTypesModel using the vehicleTypeId
+                QString vehicleTypeName = "";
+                if (!vehicleTypeId.isEmpty()) {
+                    for (int row = 0; row < vehicleTypesModel->rowCount(); ++row) {
+                        QStandardItem* item = vehicleTypesModel->item(row);
+                        if (item && item->data(Qt::UserRole).toString() == vehicleTypeId) {
+                            vehicleTypeName = item->text();
+                            break;
+                        }
+                    }
+                }
+                
+                rowItems.append(new QStandardItem(vehicleTypeName));
+                machinesModel->appendRow(rowItems);
+            } else {
+                qDebug() << "Machine missing name or IP in all_machines - name:" << name << ", ip:" << ip;
+            }
+        }
+    }
+    
+    if (xmlReader.hasError()) {
+        qDebug() << "XML parsing error for all_machines:" << xmlReader.errorString();
+        qDebug() << "Error line:" << xmlReader.lineNumber() << "column:" << xmlReader.columnNumber();
+        
+        // If no machines were found and there was an error, show the error in the model
+        if (!foundMachines) {
+            machinesModel->appendRow(new QStandardItem("XML Error"));
+            machinesModel->appendRow(new QStandardItem(xmlReader.errorString()));
+        }
+    }
+    
+    // If no machines were found but no error occurred, show a message
+    if (!foundMachines && !xmlReader.hasError()) {
+        qDebug() << "No machines found in all_machines XML";
+        machinesModel->appendRow(new QStandardItem("No machines"));
+        machinesModel->appendRow(new QStandardItem("found"));
+    }
+}
+
+void MainWindow::onAddMachineButtonClicked()
+{
+    // Get the machine name and IP from the line edits
+    QString name = ui->lineEditMachineName->text();
+    QString ip = ui->lineEditMachineIp->text();
+    
+    // Get the selected vehicle type ID from the combobox
+    int selectedVehicleTypeIndex = ui->comboBoxVehicleType->currentIndex();
+    QString vehicleTypeId = "";
+    if (selectedVehicleTypeIndex >= 0) {
+        // Get the ID from user data
+        QStandardItem* item = vehicleTypesModel->item(selectedVehicleTypeIndex);
+        if (item) {
+            vehicleTypeId = item->data(Qt::UserRole).toString();
+        }
+    }
+    
+    // Validate inputs
+    if (name.isEmpty() || ip.isEmpty() || vehicleTypeId.isEmpty()) {
+        qDebug() << "Name, IP, or Vehicle Type is empty - cannot add machine";
+        return;
+    }
+    
+    // Create the URL with query parameters
+    QUrl url("http://127.0.0.1:8080/add_machine");
+    QUrlQuery query;
+    query.addQueryItem("name", name);
+    query.addQueryItem("ip", ip);
+    query.addQueryItem("vehicle_type_id", vehicleTypeId);
+    url.setQuery(query);
+    
+    qDebug() << "Adding machine:" << name << "with IP:" << ip << "and Vehicle Type ID:" << vehicleTypeId;
+    qDebug() << "URL:" << url.toString();
+    
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+    
+    // Send the POST request
+    QNetworkReply* reply = mNetworkManager->post(request, QByteArray());
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, name, ip]() {
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "Add machine HTTP Status Code:" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            qDebug() << "Machine added successfully:" << name << "-" << ip;
+            // Clear the input fields after successful addition
+            ui->lineEditMachineName->clear();
+            ui->lineEditMachineIp->clear();
+            // Refresh the machines list
+            fetchAllMachinesData();
+        } else {
+            qDebug() << "Error adding machine:" << reply->errorString();
+            qDebug() << "HTTP Status Code:" << statusCode;
+        }
+        reply->deleteLater();
+    });
 }
 
 void MainWindow::on_mapRemoveTraceButton_clicked()
@@ -4896,3 +5481,5 @@ void MainWindow::populateControlStateComboBoxes()
         qDebug() << "Added controller:" << controller.name << "with ID:" << controller.id;
     }
 }
+
+

@@ -132,6 +132,7 @@ SOURCES += main.cpp\
     arduinoreader.cpp \
     checkboxdelegate.cpp \
     database.cpp \
+    vehicletypedelegate.cpp \
         mainwindow.cpp \
     maproute.cpp \
     maproutecollection.cpp \
@@ -176,12 +177,16 @@ SOURCES += main.cpp\
     tcpclientmulti.cpp \
     routemagic.cpp \
     routegenerator.cpp \
-    task_basestation.cpp
+    task_basestation.cpp \
+    controlmanager.cpp \
+    actuatormanager.cpp \
+    sensormanager.cpp
 
 HEADERS  += mainwindow.h \
     arduinoreader.h \
     checkboxdelegate.h \
     database.h \
+    vehicletypedelegate.h \
     actionmanager.h \
     colourutils.h \
     maproute.h \
@@ -227,7 +232,10 @@ HEADERS  += mainwindow.h \
     routegenerator.h \
     attributes_masks.h \
     task.h \
-    task_basestation.h
+    task_basestation.h \
+    controlmanager.h \
+    actuatormanager.h \
+    sensormanager.h
 
 FORMS    += mainwindow.ui \
     carinterface.ui \

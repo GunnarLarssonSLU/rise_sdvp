@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=RControlStation
+Comment=RC Control Station Application
+GenericName=RC Control Station
+Exec=/home/gunnar/code/rise_sdvp/Linux/RControlStation/build/Desktop_Qt_6_9_1-release/RControlStation
+Icon=/home/gunnar/code/rise_sdvp/Linux/RControlStation/build/Desktop_Qt_6_9_1-release/default.png
+Terminal=false
+Categories=Utility;Development;Science;Engineering;
+StartupWMClass=RControlStation
+MimeType=application/xml;
+Keywords=RC;Control;Station;Robotics;Automation;

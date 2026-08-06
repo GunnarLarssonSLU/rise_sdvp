@@ -99,6 +99,7 @@ int MapRouteCollection::size()
 
 MapRoute& MapRouteCollection::getCurrent()
 {
+    qDebug() << "Route No: " << mRouteNow;
     return mCollection[mRouteNow];
 }
 

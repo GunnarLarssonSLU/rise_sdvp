@@ -1,0 +1,16 @@
+[Unit]
+Description=RTCM Forwarder str2str
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/str2str \
+  -in ntrip://username:password@nrtk-swepos.lm.se:80/RTCM3_GNSS \
+  -out tcpsvr://:1234 \
+  -msg "1005,1074,1084,1094,1230" \
+  -p LAT LON 17 \
+  -n 1
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

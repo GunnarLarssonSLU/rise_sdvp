@@ -229,6 +229,15 @@ typedef enum {
 	CMD_GET_ACTUATORS,
 	CMD_SET_ACTUATORS,
     CMD_RC_CONTROL_ADV,
+    CMD_GET_SENSOR_VALUE,      // Get value from specific sensor
+    CMD_GET_SENSOR_BY_ACTIVITY, // Get value from sensors of specific activity
+    CMD_SET_SENSOR_CONFIG,      // Configure sensors
+    CMD_GET_SENSOR_CONFIG,      // Get sensor configuration
+    CMD_SET_STATE_CONTROL,      // Configure a state control loop
+    CMD_GET_STATE_CONTROL,      // Get state control configuration
+    CMD_STATE_CONTROL_ENABLE,   // Enable/disable a control loop
+    CMD_STATE_CONTROL_TARGET,   // Set target value for a control loop
+    CMD_TEST_SENSOR_STATE,      // Test sensor and state control system
 
 	// Mote commands
 	CMD_MOTE_UBX_START_BASE = 200,
@@ -288,6 +297,57 @@ typedef enum
 	ACT_LIFT
 } ACTIVITY_TYPE;
 
+// Sensor Types
+typedef enum
+{
+	ST_VOLTAGE=0,      // Voltage sensor (like current angle sensor)
+	ST_POSITION,       // Position/angle sensor
+	ST_TEMPERATURE,    // Temperature sensor
+	ST_PRESSURE,       // Pressure sensor
+	ST_DISTANCE,       // Distance sensor (ultrasonic, etc.)
+	ST_FORCE           // Force/load sensor
+} SENSOR_TYPE;
+
+// Sensor Activities
+typedef enum
+{
+	SENS_FORWARD=0,    // Forward motion sensing
+	SENS_STEERING,     // Steering position sensing  
+	SENS_LIFT,         // Lift height/position sensing
+	SENS_TEMP_MONITOR, // Temperature monitoring
+	SENS_LOAD          // Load/force monitoring
+} SENSOR_ACTIVITY;
+
+// Sensor Configuration
+typedef struct {
+	uint16_t type;       // SENSOR_TYPE
+	uint16_t sensorid;    // ID of the specific sensor
+	uint16_t activity;   // SENSOR_ACTIVITY
+	uint16_t reserved;   // For future use (could be units, range, etc.)
+} SENSOR;
+
+// Control Types for State Control
+typedef enum
+{
+	CT_OPEN_LOOP=0,    // Direct control (current behavior)
+	CT_POSITION,       // Position/angle control
+	CT_VELOCITY,       // Velocity/speed control
+	CT_FORCE,          // Force/load control
+	CT_TEMPERATURE     // Temperature control
+} CONTROL_TYPE;
+
+// State Control Configuration
+typedef struct {
+	uint16_t actuator_activity;   // Which actuator activity to control
+	uint16_t sensor_activity;     // Which sensor activity to use for feedback
+	uint16_t control_type;       // CONTROL_TYPE
+	float target_value;          // Target value (position, temperature, etc.)
+	float kp, ki, kd;            // PID gains
+	float min_output;            // Minimum output limit
+	float max_output;            // Maximum output limit
+	bool enabled;                // Whether this control loop is active
+} STATE_CONTROL;
+
 // VESC Controller
 // Note: This struct uses uint16_t fields to match the serialization format
 // in commands.c. The original enum types are documented below for reference:
@@ -332,6 +392,10 @@ typedef struct {
     float heartbeat_maxtime;
     uint16_t actuators;
     ACTUATOR actuator[4];
+    uint16_t sensors;              // Number of sensors configured
+    SENSOR sensor[4];             // Array of sensor configurations
+    uint16_t state_controls;      // Number of state control loops
+    STATE_CONTROL control[4];     // State control configurations
 } MAIN_CONFIG_VEHICLE;
 
 

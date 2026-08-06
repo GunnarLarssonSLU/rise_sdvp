@@ -17,7 +17,7 @@
 
 #include "locpoint.h"
 #include <cmath>
-
+#include <QDebug>
 
 LocPoint::LocPoint(double x, double y, double height, double roll, double pitch, double yaw, double speed,
                    double radius, double sigma, QColor color, qint32 time, int id, bool drawLine, quint32 attributes) :

@@ -18,6 +18,7 @@
 #include <string.h>
 #include "packet.h"
 #include "crc.h"
+#include "state_control.h"
 
 typedef struct {
 	volatile unsigned char rx_state;
@@ -80,6 +81,9 @@ void packet_timerfunc(void) {
 			handler_states[i].rx_state = 0;
 		}
 	}
+	
+	// Update state control system
+	state_control_update();
 }
 
 void packet_process_byte(uint8_t rx_data, int handler_num) {

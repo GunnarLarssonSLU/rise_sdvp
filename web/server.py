@@ -1,0 +1,242 @@
+import subprocess
+import sqlite3
+import xml.etree.ElementTree as ET
+from flask import Flask, Response, request
+
+app = Flask(__name__)
+
+
+@app.route('/')
+def hello_world():
+    return "Hello, World!"
+
+
+@app.route('/machines')
+def list_machines():
+    try:
+        result = subprocess.run(
+            ['nmap', '-sP', '192.168.200.3/24'],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        # Parse output to extract IP addresses
+        import re
+        ip_pattern = r'\b(?:\d{1,3}\.){3}\d{1,3}\b'
+        ips = re.findall(ip_pattern, result.stdout)
+        # Remove duplicates and 192.168.200.3, then sort
+        #unique_ips = sorted(set(ips) - {'192.168.200.3'})
+        unique_ips = sorted(set(ips))
+        
+        # Look up names and vehicle types from database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        
+        # Create XML structure
+        root = ET.Element('machines')
+        for ip in unique_ips:
+            cursor.execute('SELECT name, iVehicletype FROM machines WHERE ip = ?', (ip,))
+            row = cursor.fetchone()
+            conn.commit()
+            if row:
+                machine_elem = ET.SubElement(root, 'machine')
+                ET.SubElement(machine_elem, 'name').text = row[0]
+                ET.SubElement(machine_elem, 'ip').text = ip
+                if row[1] is not None:
+                    ET.SubElement(machine_elem, 'iVehicletype').text = str(row[1])
+        
+        conn.close()
+        
+        # Convert to XML string with declaration
+        xml_str = '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding='unicode')
+        
+        # Write to file
+        with open('found_machines.xml', 'w') as f:
+            f.write(xml_str)
+        
+        return Response(xml_str, mimetype='application/xml')
+    except subprocess.TimeoutExpired:
+        return "Command timed out", 500
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
+@app.route('/all_machines')
+def all_machines():
+    try:
+        # Connect to SQLite database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        
+        # Query all machines from the table
+        cursor.execute('SELECT name, ip, iVehicletype FROM machines')
+        machines = cursor.fetchall()
+        conn.close()
+        
+        # Create XML structure
+        root = ET.Element('machines')
+        for name, ip, iVehicletype in machines:
+            machine_elem = ET.SubElement(root, 'machine')
+            ET.SubElement(machine_elem, 'name').text = name
+            ET.SubElement(machine_elem, 'ip').text = ip
+            if iVehicletype is not None:
+                ET.SubElement(machine_elem, 'iVehicletype').text = str(iVehicletype)
+        
+        # Convert to XML string with declaration
+        xml_str = '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding='unicode')
+        
+        # Write to file
+        with open('machines.xml', 'w') as f:
+            f.write(xml_str)
+        
+        return Response(xml_str, mimetype='application/xml')
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
+@app.route('/add_machine', methods=['POST'])
+def add_machine():
+    try:
+        # Get all the fields from POST form data
+        name = request.form.get('name')
+        ip = request.form.get('ip')
+        port = request.form.get('port')
+        gearratio = request.form.get('gearratio')
+        wheeldiameter_m = request.form.get('wheeldiameter_m')
+        motorpoles = request.form.get('motorpoles')
+        turnradius_m = request.form.get('turnradius_m')
+        steeringramp = request.form.get('steeringramp')
+        axisdistance_m = request.form.get('axisdistance_m')
+        servocenter = request.form.get('servocenter')
+        servorange = request.form.get('servorange')
+        yawIMUgain = request.form.get('yawIMUgain')
+        servoPgain = request.form.get('servoPgain')
+        servoIgain = request.form.get('servoIgain')
+        servoDgain = request.form.get('servoDgain')
+        maxleft_degrees = request.form.get('maxleft_degrees')
+        maxright_degrees = request.form.get('maxright_degrees')
+        centervoltage_V = request.form.get('centervoltage_V')
+        iVehicletype = request.form.get('iVehicletype')
+        
+        # Validate required fields
+        if not name:
+            return "Error: 'name' field is required", 400
+        
+        # Connect to database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        
+        # Build the INSERT query with all fields
+        columns = ['name']
+        values = [name]
+        placeholders = ['?']
+        
+        # Add optional fields if provided
+        field_mappings = [
+            ('ip', ip),
+            ('port', port),
+            ('gearratio', gearratio),
+            ('wheeldiameter_m', wheeldiameter_m),
+            ('motorpoles', motorpoles),
+            ('turnradius_m', turnradius_m),
+            ('steeringramp', steeringramp),
+            ('axisdistance_m', axisdistance_m),
+            ('servocenter', servocenter),
+            ('servorange', servorange),
+            ('yawIMUgain', yawIMUgain),
+            ('servoPgain', servoPgain),
+            ('servoIgain', servoIgain),
+            ('servoDgain', servoDgain),
+            ('maxleft_degrees', maxleft_degrees),
+            ('maxright_degrees', maxright_degrees),
+            ('centervoltage_V', centervoltage_V),
+            ('iVehicletype', iVehicletype)
+        ]
+        
+        for field_name, field_value in field_mappings:
+            if field_value is not None:
+                columns.append(field_name)
+                values.append(field_value)
+                placeholders.append('?')
+        
+        # Create and execute the INSERT statement
+        columns_str = ', '.join(columns)
+        placeholders_str = ', '.join(placeholders)
+        query = f'INSERT INTO machines ({columns_str}) VALUES ({placeholders_str})'
+        cursor.execute(query, values)
+        conn.commit()
+        conn.close()
+        
+        return "Machine added successfully", 201
+        
+    except sqlite3.IntegrityError as e:
+        return f"Error: {str(e)}", 409
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
+@app.route('/remove_machine', methods=['POST'])
+def remove_machine():
+    try:
+        # Get machine id from POST form data
+        machine_id = request.form.get('id')
+        
+        if not machine_id:
+            return "Error: 'id' field is required", 400
+        
+        # Connect to database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        
+        # Delete the machine with the specified id
+        cursor.execute('DELETE FROM machines WHERE id = ?', (machine_id,))
+        
+        if cursor.rowcount == 0:
+            conn.close()
+            return f"Error: No machine found with id {machine_id}", 404
+        
+        conn.commit()
+        conn.close()
+        
+        return f"Machine with id {machine_id} removed successfully", 200
+        
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
+@app.route('/vehicle_types')
+def vehicle_types():
+    try:
+        # Connect to SQLite database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        
+        # Query all vehicle types from the table
+        cursor.execute('SELECT id, name, typeofsteering, length_m, width_m FROM vehicle_types')
+        vehicle_types = cursor.fetchall()
+        conn.close()
+        
+        # Create XML structure
+        root = ET.Element('vehicle_types')
+        for vehicle_type in vehicle_types:
+            vt_elem = ET.SubElement(root, 'vehicle_type')
+            ET.SubElement(vt_elem, 'id').text = str(vehicle_type[0])
+            ET.SubElement(vt_elem, 'name').text = str(vehicle_type[1])
+            ET.SubElement(vt_elem, 'typeofsteering').text = str(vehicle_type[2])
+            ET.SubElement(vt_elem, 'length_m').text = str(vehicle_type[3])
+            ET.SubElement(vt_elem, 'width_m').text = str(vehicle_type[4])
+        
+        # Convert to XML string with declaration
+        xml_str = '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding='unicode')
+        
+        # Write to file
+        with open('vehicle_types.xml', 'w') as f:
+            f.write(xml_str)
+        
+        return Response(xml_str, mimetype='application/xml')
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8080, debug=True)

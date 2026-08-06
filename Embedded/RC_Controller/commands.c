@@ -25,6 +25,9 @@
 #include "motor_control.h"
 #include "servo_simple.h"
 #include "utils.h"
+#include "sensor_control.h"
+#include "state_control.h"
+#include "test_sensor_state_control.h"
 #include "autopilot.h"
 #include "comm_usb.h"
 #include "timeout.h"
@@ -634,6 +637,10 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			log_set_name(main_config.log_name);
 			log_set_ext(main_config.log_mode_ext, main_config.log_uart_baud);
 
+			// Initialize sensor and state control systems
+			sensor_control_init();
+			state_control_init();
+
 			// vehicle settings
 			main_config.vehicle.yaw_use_odometry = data[ind++];
 			main_config.vehicle.yaw_imu_gain = buffer_get_float32_auto(data, &ind);
@@ -668,6 +675,34 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 				main_config.vehicle.actuator[i].motorid=buffer_get_uint16(data, &ind);;
 				main_config.vehicle.actuator[i].activity=buffer_get_uint16(data, &ind);;
 				main_config.vehicle.actuator[i].mode=buffer_get_uint16(data, &ind);;
+			};
+			
+			// Sensor configurations
+			main_config.vehicle.sensors = buffer_get_uint16(data, &ind);
+			commands_printf("antal lästa sensorer: %u",main_config.vehicle.sensors);
+			for (int i=0;i<4;i++)
+			{
+				main_config.vehicle.sensor[i].type=buffer_get_uint16(data, &ind);;
+				main_config.vehicle.sensor[i].sensorid=buffer_get_uint16(data, &ind);;
+				main_config.vehicle.sensor[i].activity=buffer_get_uint16(data, &ind);;
+				main_config.vehicle.sensor[i].reserved=buffer_get_uint16(data, &ind);;
+			};
+			
+			// State control configurations
+			main_config.vehicle.state_controls = buffer_get_uint16(data, &ind);
+			commands_printf("antal lästa state controls: %u",main_config.vehicle.state_controls);
+			for (int i=0;i<4;i++)
+			{
+				main_config.vehicle.control[i].actuator_activity=buffer_get_uint16(data, &ind);;
+				main_config.vehicle.control[i].sensor_activity=buffer_get_uint16(data, &ind);;
+				main_config.vehicle.control[i].control_type=buffer_get_uint16(data, &ind);;
+				main_config.vehicle.control[i].target_value=buffer_get_float32_auto(data, &ind);;
+				main_config.vehicle.control[i].kp=buffer_get_float32_auto(data, &ind);;
+				main_config.vehicle.control[i].ki=buffer_get_float32_auto(data, &ind);;
+				main_config.vehicle.control[i].kd=buffer_get_float32_auto(data, &ind);;
+				main_config.vehicle.control[i].min_output=buffer_get_float32_auto(data, &ind);;
+				main_config.vehicle.control[i].max_output=buffer_get_float32_auto(data, &ind);;
+				main_config.vehicle.control[i].enabled=data[ind++];;
 			};
 			motor_sim_set_running(main_config.vehicle.simulate_motor);
 			conf_general_store_main_config(&main_config);
@@ -780,6 +815,34 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			    buffer_append_uint16(m_send_buffer, main_cfg_tmp.vehicle.actuator[i].mode, &send_index);
 			};
 		    commands_printf("read deadband: %f",main_cfg_tmp.vehicle.deadband);
+			
+			// Sensor configurations
+			commands_printf("antal skrivna sensorer: %u",main_cfg_tmp.vehicle.sensors);
+			buffer_append_uint16(m_send_buffer, main_cfg_tmp.vehicle.sensors, &send_index);
+			for (int i=0;i<4;i++)
+			{
+			    buffer_append_uint16(m_send_buffer, main_cfg_tmp.vehicle.sensor[i].type, &send_index);
+			    buffer_append_uint16(m_send_buffer, main_cfg_tmp.vehicle.sensor[i].sensorid, &send_index);
+			    buffer_append_uint16(m_send_buffer, main_cfg_tmp.vehicle.sensor[i].activity, &send_index);
+			    buffer_append_uint16(m_send_buffer, main_cfg_tmp.vehicle.sensor[i].reserved, &send_index);
+			}
+			
+			// State control configurations
+			commands_printf("antal skrivna state controls: %u",main_cfg_tmp.vehicle.state_controls);
+			buffer_append_uint16(m_send_buffer, main_cfg_tmp.vehicle.state_controls, &send_index);
+			for (int i=0;i<4;i++)
+			{
+			    buffer_append_uint16(m_send_buffer, main_cfg_tmp.vehicle.control[i].actuator_activity, &send_index);
+			    buffer_append_uint16(m_send_buffer, main_cfg_tmp.vehicle.control[i].sensor_activity, &send_index);
+			    buffer_append_uint16(m_send_buffer, main_cfg_tmp.vehicle.control[i].control_type, &send_index);
+			    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.control[i].target_value, &send_index);
+			    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.control[i].kp, &send_index);
+			    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.control[i].ki, &send_index);
+			    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.control[i].kd, &send_index);
+			    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.control[i].min_output, &send_index);
+			    buffer_append_float32_auto(m_send_buffer, main_cfg_tmp.vehicle.control[i].max_output, &send_index);
+			    m_send_buffer[send_index++] = main_cfg_tmp.vehicle.control[i].enabled;
+			}
 			commands_send_packet(m_send_buffer, send_index);
 		} break;
 
@@ -1046,6 +1109,191 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			float steering = buffer_get_float32(data, 1e6, &ind);
 			utils_truncate_number(&steering, 0.0, 1.0);
 			servo_simple_set_pos_ramp(steering, true);
+		} break;
+
+		// Sensor control commands
+		case CMD_GET_SENSOR_VALUE: {
+			timeout_reset();
+			commands_set_send_func(func);
+
+			int32_t ind = 0;
+			uint16_t sensorid = buffer_get_uint16(data, &ind);
+			uint16_t type = buffer_get_uint16(data, &ind);
+
+			float value = sensor_read_value(sensorid, type);
+
+			int32_t send_index = 0;
+			m_send_buffer[send_index++] = id_ret;
+			m_send_buffer[send_index++] = CMD_GET_SENSOR_VALUE;
+			buffer_append_float32(m_send_buffer, value, 1e4, &send_index);
+			commands_send_packet(m_send_buffer, send_index);
+		} break;
+
+		case CMD_GET_SENSOR_BY_ACTIVITY: {
+			timeout_reset();
+			commands_set_send_func(func);
+
+			int32_t ind = 0;
+			uint16_t activity = buffer_get_uint16(data, &ind);
+
+			float value = sensor_get_activity_value(activity);
+
+			int32_t send_index = 0;
+			m_send_buffer[send_index++] = id_ret;
+			m_send_buffer[send_index++] = CMD_GET_SENSOR_BY_ACTIVITY;
+			buffer_append_float32(m_send_buffer, value, 1e4, &send_index);
+			commands_send_packet(m_send_buffer, send_index);
+		} break;
+
+		case CMD_SET_SENSOR_CONFIG: {
+			timeout_reset();
+			commands_set_send_func(func);
+
+			int32_t ind = 0;
+			MAIN_CONFIG conf;
+			conf_general_read_main_conf(&conf);
+
+			conf.vehicle.sensors = buffer_get_uint16(data, &ind);
+			for (int i = 0; i < 4; i++) {
+				conf.vehicle.sensor[i].type = buffer_get_uint16(data, &ind);
+				conf.vehicle.sensor[i].sensorid = buffer_get_uint16(data, &ind);
+				conf.vehicle.sensor[i].activity = buffer_get_uint16(data, &ind);
+				conf.vehicle.sensor[i].reserved = buffer_get_uint16(data, &ind);
+			}
+
+			conf_general_store_main_config(&conf);
+
+			int32_t send_index = 0;
+			m_send_buffer[send_index++] = id_ret;
+			m_send_buffer[send_index++] = packet_id;
+			commands_send_packet(m_send_buffer, send_index);
+		} break;
+
+		case CMD_GET_SENSOR_CONFIG: {
+			timeout_reset();
+			commands_set_send_func(func);
+
+			MAIN_CONFIG conf;
+			conf_general_read_main_conf(&conf);
+
+			int32_t send_index = 0;
+			m_send_buffer[send_index++] = id_ret;
+			m_send_buffer[send_index++] = packet_id;
+			buffer_append_uint16(m_send_buffer, conf.vehicle.sensors, &send_index);
+
+			for (int i = 0; i < 4; i++) {
+				buffer_append_uint16(m_send_buffer, conf.vehicle.sensor[i].type, &send_index);
+				buffer_append_uint16(m_send_buffer, conf.vehicle.sensor[i].sensorid, &send_index);
+				buffer_append_uint16(m_send_buffer, conf.vehicle.sensor[i].activity, &send_index);
+				buffer_append_uint16(m_send_buffer, conf.vehicle.sensor[i].reserved, &send_index);
+			}
+
+			commands_send_packet(m_send_buffer, send_index);
+		} break;
+
+		// State control commands
+		case CMD_SET_STATE_CONTROL: {
+			timeout_reset();
+			commands_set_send_func(func);
+
+			int32_t ind = 0;
+			uint16_t control_index = buffer_get_uint16(data, &ind);
+			
+			if (control_index < 4) {
+				STATE_CONTROL* control = state_control_get_config(control_index);
+				if (control) {
+					control->actuator_activity = buffer_get_uint16(data, &ind);
+					control->sensor_activity = buffer_get_uint16(data, &ind);
+					control->control_type = buffer_get_uint16(data, &ind);
+					control->target_value = buffer_get_float32(data, 1e4, &ind);
+					control->kp = buffer_get_float32(data, 1e4, &ind);
+					control->ki = buffer_get_float32(data, 1e4, &ind);
+					control->kd = buffer_get_float32(data, 1e4, &ind);
+					control->min_output = buffer_get_float32(data, 1e4, &ind);
+					control->max_output = buffer_get_float32(data, 1e4, &ind);
+					control->enabled = data[ind++];
+				}
+			}
+
+			int32_t send_index = 0;
+			m_send_buffer[send_index++] = id_ret;
+			m_send_buffer[send_index++] = packet_id;
+			commands_send_packet(m_send_buffer, send_index);
+		} break;
+
+		case CMD_GET_STATE_CONTROL: {
+			timeout_reset();
+			commands_set_send_func(func);
+
+			int32_t ind = 0;
+			uint16_t control_index = buffer_get_uint16(data, &ind);
+			
+			int32_t send_index = 0;
+			m_send_buffer[send_index++] = id_ret;
+			m_send_buffer[send_index++] = packet_id;
+			
+			if (control_index < 4) {
+				STATE_CONTROL* control = state_control_get_config(control_index);
+				if (control) {
+					buffer_append_uint16(m_send_buffer, control->actuator_activity, &send_index);
+					buffer_append_uint16(m_send_buffer, control->sensor_activity, &send_index);
+					buffer_append_uint16(m_send_buffer, control->control_type, &send_index);
+					buffer_append_float32(m_send_buffer, control->target_value, 1e4, &send_index);
+					buffer_append_float32(m_send_buffer, control->kp, 1e4, &send_index);
+					buffer_append_float32(m_send_buffer, control->ki, 1e4, &send_index);
+					buffer_append_float32(m_send_buffer, control->kd, 1e4, &send_index);
+					buffer_append_float32(m_send_buffer, control->min_output, 1e4, &send_index);
+					buffer_append_float32(m_send_buffer, control->max_output, 1e4, &send_index);
+					m_send_buffer[send_index++] = control->enabled;
+				}
+			}
+
+			commands_send_packet(m_send_buffer, send_index);
+		} break;
+
+		case CMD_STATE_CONTROL_ENABLE: {
+			timeout_reset();
+			commands_set_send_func(func);
+
+			int32_t ind = 0;
+			uint16_t control_index = buffer_get_uint16(data, &ind);
+			bool enabled = data[ind++];
+
+			state_control_set_enabled(control_index, enabled);
+
+			int32_t send_index = 0;
+			m_send_buffer[send_index++] = id_ret;
+			m_send_buffer[send_index++] = packet_id;
+			commands_send_packet(m_send_buffer, send_index);
+		} break;
+
+		case CMD_STATE_CONTROL_TARGET: {
+			timeout_reset();
+			commands_set_send_func(func);
+
+			int32_t ind = 0;
+			uint16_t control_index = buffer_get_uint16(data, &ind);
+			float target = buffer_get_float32(data, 1e4, &ind);
+
+			state_control_set_target(control_index, target);
+
+			int32_t send_index = 0;
+			m_send_buffer[send_index++] = id_ret;
+			m_send_buffer[send_index++] = packet_id;
+			commands_send_packet(m_send_buffer, send_index);
+		} break;
+
+		// Test command
+		case CMD_TEST_SENSOR_STATE: {
+			timeout_reset();
+			commands_set_send_func(func);
+
+			test_sensor_state_control_init();
+
+			int32_t send_index = 0;
+			m_send_buffer[send_index++] = id_ret;
+			m_send_buffer[send_index++] = packet_id;
+			commands_send_packet(m_send_buffer, send_index);
 		} break;
 
 		default:

@@ -22,6 +22,8 @@
 #include <QString>
 #include <QColor>
 #include <QList>
+#include <QXmlStreamReader>
+#include <QXmlStreamWriter>
 
 // Control state structure for XML version 2
 struct ControlState {

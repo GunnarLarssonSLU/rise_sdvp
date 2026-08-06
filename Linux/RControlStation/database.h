@@ -31,9 +31,7 @@ public:
     // Old method kept for compatibility
     void ensureActionsTableExists();
     
-    // XML format conversion functions
-    static QString convertPointToVersion2(const LocPoint &point);
-    static LocPoint convertPointFromVersion2(const QString &xmlPoint);
+
     
     // Methods for inserting default data
     void insertDefaultControls();
