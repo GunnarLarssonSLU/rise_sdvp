@@ -2585,7 +2585,7 @@ void MainWindow::on_MapRemovePixmapsButton_clicked()
     ui->mapLiveWidget->clearPerspectivePixmaps();
 }
 
-
+/*
 void MainWindow::on_tcpConnectButton_clicked()
 {
     mTcpClientMulti->disconnectAll();
@@ -2604,8 +2604,9 @@ void MainWindow::on_tcpConnectButton_clicked()
         }
         addCar(mCars.size(),ipPort.at(0));
     }
-}
+}*/
 
+/*
 void MainWindow::on_tcpPingButton_clicked()
 {
     QStringList conns = ui->tcpConnEdit->toPlainText().split("\n");
@@ -2619,6 +2620,7 @@ void MainWindow::on_tcpPingButton_clicked()
         }
     }
 }
+*/
 
 void MainWindow::on_mapZeroButton_clicked()
 {

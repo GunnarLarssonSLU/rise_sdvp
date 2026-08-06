@@ -97,32 +97,51 @@ def all_machines():
 @app.route('/add_machine', methods=['POST'])
 def add_machine():
     try:
-        # Get all the fields from POST form data
-        name = request.form.get('name')
-        ip = request.form.get('ip')
-        port = request.form.get('port')
-        gearratio = request.form.get('gearratio')
-        wheeldiameter_m = request.form.get('wheeldiameter_m')
-        motorpoles = request.form.get('motorpoles')
-        turnradius_m = request.form.get('turnradius_m')
-        steeringramp = request.form.get('steeringramp')
-        axisdistance_m = request.form.get('axisdistance_m')
-        servocenter = request.form.get('servocenter')
-        servorange = request.form.get('servorange')
-        yawIMUgain = request.form.get('yawIMUgain')
-        servoPgain = request.form.get('servoPgain')
-        servoIgain = request.form.get('servoIgain')
-        servoDgain = request.form.get('servoDgain')
-        maxleft_degrees = request.form.get('maxleft_degrees')
-        maxright_degrees = request.form.get('maxright_degrees')
-        centervoltage_V = request.form.get('centervoltage_V')
-        iVehicletype = request.form.get('iVehicletype')
+        # Debug: Print request information
+        print(f"DEBUG: Request method: {request.method}")
+        print(f"DEBUG: Request form data: {dict(request.form)}")
+        print(f"DEBUG: Request args (URL params): {dict(request.args)}")
+        print(f"DEBUG: Request data: {request.data}")
+        
+        # Get all the fields from POST form data or URL parameters
+        def get_param(name):
+            value = request.form.get(name) or request.args.get(name)
+            print(f"DEBUG: get_param('{name}') = {value}")
+            return value
+        
+        name = get_param('name')
+        ip = get_param('ip')
+        port = get_param('port')
+        gearratio = get_param('gearratio')
+        wheeldiameter_m = get_param('wheeldiameter_m')
+        motorpoles = get_param('motorpoles')
+        turnradius_m = get_param('turnradius_m')
+        steeringramp = get_param('steeringramp')
+        axisdistance_m = get_param('axisdistance_m')
+        servocenter = get_param('servocenter')
+        servorange = get_param('servorange')
+        yawIMUgain = get_param('yawIMUgain')
+        servoPgain = get_param('servoPgain')
+        servoIgain = get_param('servoIgain')
+        servoDgain = get_param('servoDgain')
+        maxleft_degrees = get_param('maxleft_degrees')
+        maxright_degrees = get_param('maxright_degrees')
+        centervoltage_V = get_param('centervoltage_V')
+        iVehicletype = get_param('iVehicletype') or get_param('vehicle_type_id')
+        
+        print(f"DEBUG: Final values - name: {name}, ip: {ip}, iVehicletype: {iVehicletype}")
         
         # Validate required fields
         if not name:
+            print("DEBUG: Missing name field")
             return "Error: 'name' field is required", 400
-        
+
+        if not ip:
+            print("DEBUG: Missing ip field")
+            return "Error: 'ip' field is required", 400
+
         # Connect to database
+        print("DEBUG: Connecting to database")
         conn = sqlite3.connect('data.db')
         cursor = conn.cursor()
         
@@ -163,15 +182,23 @@ def add_machine():
         columns_str = ', '.join(columns)
         placeholders_str = ', '.join(placeholders)
         query = f'INSERT INTO machines ({columns_str}) VALUES ({placeholders_str})'
+        print(f"DEBUG: Executing query: {query}")
+        print(f"DEBUG: With values: {values}")
         cursor.execute(query, values)
+        print(f"DEBUG: Rows affected: {cursor.rowcount}")
         conn.commit()
         conn.close()
         
+        print("DEBUG: Machine added successfully")
         return "Machine added successfully", 201
         
     except sqlite3.IntegrityError as e:
+        print(f"DEBUG: IntegrityError: {str(e)}")
         return f"Error: {str(e)}", 409
     except Exception as e:
+        print(f"DEBUG: Exception: {str(e)}")
+        import traceback
+        print(f"DEBUG: Traceback: {traceback.format_exc()}")
         return f"Error: {str(e)}", 500
 
 

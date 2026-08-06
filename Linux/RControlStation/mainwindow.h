@@ -155,8 +155,6 @@ private slots:
     void on_refreshMachinesButton_clicked();
     void on_mapRemoveTraceButton_clicked();
     void on_MapRemovePixmapsButton_clicked();
-    void on_tcpConnectButton_clicked();
-    void on_tcpPingButton_clicked();
     void on_mapZeroButton_clicked();
     void on_mapRemoveRouteButton_clicked();
     void on_mapRouteSpeedBox_valueChanged(double arg1);

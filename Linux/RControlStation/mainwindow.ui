@@ -38,119 +38,7 @@
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,2">
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1,0,0,0,0,0,0">
-      <item>
-       <widget class="QToolBox" name="toolBox">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>180</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="currentIndex">
-         <number>0</number>
-        </property>
-        <widget class="QWidget" name="page_3">
-         <property name="geometry">
-          <rect>
-           <x>0</x>
-           <y>0</y>
-           <width>256</width>
-           <height>100</height>
-          </rect>
-         </property>
-         <attribute name="label">
-          <string>TCP Connection</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="verticalLayout_25">
-          <property name="spacing">
-           <number>2</number>
-          </property>
-          <property name="leftMargin">
-           <number>2</number>
-          </property>
-          <property name="topMargin">
-           <number>2</number>
-          </property>
-          <property name="rightMargin">
-           <number>2</number>
-          </property>
-          <property name="bottomMargin">
-           <number>2</number>
-          </property>
-          <item>
-           <layout class="QGridLayout" name="gridLayout_8">
-            <property name="spacing">
-             <number>2</number>
-            </property>
-            <item row="0" column="1">
-             <widget class="QPushButton" name="tcpConnectButton">
-              <property name="enabled">
-               <bool>true</bool>
-              </property>
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="MinimumExpanding">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="toolTip">
-               <string>Connect</string>
-              </property>
-              <property name="text">
-               <string/>
-              </property>
-              <property name="icon">
-               <iconset resource="resources.qrc">
-                <normaloff>:/models/Icons/Connected-96.png</normaloff>:/models/Icons/Connected-96.png</iconset>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="0" rowspan="2">
-             <widget class="QPlainTextEdit" name="tcpConnEdit">
-              <property name="maximumSize">
-               <size>
-                <width>145</width>
-                <height>65</height>
-               </size>
-              </property>
-              <property name="lineWrapMode">
-               <enum>QPlainTextEdit::LineWrapMode::NoWrap</enum>
-              </property>
-              <property name="plainText">
-               <string>192.168.1.147</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QPushButton" name="disconnectButton">
-              <property name="toolTip">
-               <string>Disconnect</string>
-              </property>
-              <property name="text">
-               <string/>
-              </property>
-              <property name="icon">
-               <iconset resource="resources.qrc">
-                <normaloff>:/models/Icons/Disconnected-96.png</normaloff>:/models/Icons/Disconnected-96.png</iconset>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-         </layout>
-        </widget>
-       </widget>
-      </item>
+     <layout class="QVBoxLayout" name="verticalLayout" stretch="0,1,0,0,0,0,0,0">
       <item>
        <widget class="QTableWidget" name="machinesTable">
         <property name="sizePolicy">
@@ -1322,8 +1210,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>413</width>
-                     <height>535</height>
+                     <width>453</width>
+                     <height>540</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_23">
@@ -1762,7 +1650,7 @@
                      <x>0</x>
                      <y>0</y>
                      <width>196</width>
-                     <height>431</height>
+                     <height>433</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -2056,8 +1944,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>203</width>
-                     <height>560</height>
+                     <width>244</width>
+                     <height>562</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_15">
