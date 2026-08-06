@@ -145,10 +145,77 @@
               </property>
              </widget>
             </item>
+            <item row="4" column="0" colspan="2">
+             <widget class="QPushButton" name="refreshMachinesButton">
+              <property name="text">
+               <string>Refresh Machines</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="0" colspan="2">
+             <widget class="QPushButton" name="disconnectSelectedButton">
+              <property name="text">
+               <string>Disconnect Selected</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLineEdit" name="lineEditMachineName">
+              <property name="placeholderText">
+               <string>Machine Name</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QLineEdit" name="lineEditMachineIp">
+              <property name="placeholderText">
+               <string>IP Address</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0" colspan="2">
+             <widget class="QPushButton" name="pushButtonAddMachine">
+              <property name="text">
+               <string>Add Machine</string>
+              </property>
+             </widget>
+            </item>
            </layout>
           </item>
          </layout>
         </widget>
+       </widget>
+      </item>
+      <item>
+       <widget class="QTableWidget" name="machinesTable">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>100</height>
+         </size>
+        </property>
+        <property name="editTriggers">
+         <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
+        </property>
+        <property name="selectionBehavior">
+         <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+        </property>
+        <column>
+         <property name="text">
+          <string>Name</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>IP Address</string>
+         </property>
+        </column>
        </widget>
       </item>
       <item>
@@ -337,13 +404,6 @@
            </property>
            <property name="format">
             <string>Thr: %v%</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0">
-          <widget class="QCheckBox" name="checkBoxActiveKB">
-           <property name="text">
-            <string>Active</string>
            </property>
           </widget>
          </item>
@@ -1386,6 +1446,20 @@
                         <widget class="QProgressBar" name="mapUploadRouteProgressBar">
                          <property name="value">
                           <number>0</number>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QProgressBar" name="anchorUploadProgressBar">
+                         <property name="value">
+                          <number>0</number>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QPushButton" name="uploadAnchorButton">
+                         <property name="text">
+                          <string>Upload Anchor</string>
                          </property>
                         </widget>
                        </item>
@@ -4147,6 +4221,9 @@
         <item row="0" column="1">
          <widget class="QComboBox" name="comboBox_controller5"/>
         </item>
+        <item row="1" column="1">
+         <widget class="QComboBox" name="comboBox_controller2"/>
+        </item>
         <item row="2" column="0">
          <widget class="QLabel" name="label_7">
           <property name="text">
@@ -4176,6 +4253,12 @@
         </item>
         <item row="5" column="1">
          <widget class="QComboBox" name="comboBox_controller3"/>
+        </item>
+        <item row="6" column="0">
+         <widget class="QComboBox" name="comboBox_controller4"/>
+        </item>
+        <item row="6" column="1">
+         <widget class="QComboBox" name="comboBoxVehicleType"/>
         </item>
        </layout>
       </widget>
