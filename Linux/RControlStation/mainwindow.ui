@@ -145,41 +145,9 @@
               </property>
              </widget>
             </item>
-            <item row="4" column="0" colspan="2">
-             <widget class="QPushButton" name="refreshMachinesButton">
-              <property name="text">
-               <string>Refresh Machines</string>
-              </property>
-             </widget>
-            </item>
-            <item row="5" column="0" colspan="2">
-             <widget class="QPushButton" name="disconnectSelectedButton">
-              <property name="text">
-               <string>Disconnect Selected</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="0">
-             <widget class="QLineEdit" name="lineEditMachineName">
-              <property name="placeholderText">
-               <string>Machine Name</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
-             <widget class="QLineEdit" name="lineEditMachineIp">
-              <property name="placeholderText">
-               <string>IP Address</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="0" colspan="2">
-             <widget class="QPushButton" name="pushButtonAddMachine">
-              <property name="text">
-               <string>Add Machine</string>
-              </property>
-             </widget>
-            </item>
+
+
+
            </layout>
           </item>
          </layout>
@@ -217,6 +185,76 @@
          </property>
         </column>
        </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_machineInputs">
+        <property name="spacing">
+         <number>2</number>
+        </property>
+        <item>
+         <widget class="QLineEdit" name="lineEditMachineName">
+          <property name="placeholderText">
+           <string>Machine Name</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="lineEditMachineIp">
+          <property name="placeholderText">
+           <string>IP Address</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButtonAddMachine">
+          <property name="text">
+           <string>Add Machine</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_machinesButtons">
+        <property name="spacing">
+         <number>2</number>
+        </property>
+        <item>
+         <widget class="QPushButton" name="connectSelectedButton">
+          <property name="toolTip">
+           <string>Connect to selected machine</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/models/Icons/Connected-96.png</normaloff>:/models/Icons/Connected-96.png</iconset>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="disconnectSelectedButton">
+          <property name="toolTip">
+           <string>Disconnect from selected machine</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/models/Icons/Disconnected-96.png</normaloff>:/models/Icons/Disconnected-96.png</iconset>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="refreshMachinesButton">
+          <property name="text">
+           <string>Refresh Machines</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
       <item>
        <widget class="Line" name="line">
