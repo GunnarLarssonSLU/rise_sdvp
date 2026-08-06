@@ -2563,9 +2563,13 @@ void MainWindow::onAddMachineButtonClicked()
             ui->lineEditMachineIp->clear();
             // Refresh the machines list
             fetchAllMachinesData();
+            // Ensure tableViewMachines is refreshed
+            ui->tableViewMachines->update();
         } else {
             qDebug() << "Error adding machine:" << reply->errorString();
             qDebug() << "HTTP Status Code:" << statusCode;
+            // Still refresh the table even on error
+            fetchAllMachinesData();
         }
         reply->deleteLater();
     });
