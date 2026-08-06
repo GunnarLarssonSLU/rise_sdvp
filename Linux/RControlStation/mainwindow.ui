@@ -145,9 +145,34 @@
               </property>
              </widget>
             </item>
-
-
-
+            <item row="2" column="0" colspan="2">
+             <layout class="QHBoxLayout" name="horizontalLayout_machineInputs">
+              <property name="spacing">
+               <number>2</number>
+              </property>
+              <item>
+               <widget class="QLineEdit" name="lineEditMachineName">
+                <property name="placeholderText">
+                 <string>Machine Name</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="lineEditMachineIp">
+                <property name="placeholderText">
+                 <string>IP Address</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="pushButtonAddMachine">
+                <property name="text">
+                 <string>Add Machine</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
            </layout>
           </item>
          </layout>
@@ -185,34 +210,6 @@
          </property>
         </column>
        </widget>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_machineInputs">
-        <property name="spacing">
-         <number>2</number>
-        </property>
-        <item>
-         <widget class="QLineEdit" name="lineEditMachineName">
-          <property name="placeholderText">
-           <string>Machine Name</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLineEdit" name="lineEditMachineIp">
-          <property name="placeholderText">
-           <string>IP Address</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pushButtonAddMachine">
-          <property name="text">
-           <string>Add Machine</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
       </item>
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_machinesButtons">
@@ -3688,28 +3685,7 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="1">
-           <widget class="QTextEdit" name="textEditAddMachine">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>20</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>192</height>
-             </size>
-            </property>
-           </widget>
-          </item>
+
           <item row="2" column="1">
            <spacer name="verticalSpacer_10">
             <property name="orientation">
