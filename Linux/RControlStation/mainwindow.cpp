@@ -674,9 +674,9 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
                         } else {
                             qDebug() << "No machine ID found for selected row";
                         }
-                        } else {
-                            qDebug() << "nameItem is null for row:" << row;
-                        }
+                    } else {
+                        qDebug() << "nameItem is null for row:" << row;
+                    }
                     return true;
                 }
             }
