@@ -583,28 +583,14 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
                 if (keyEvent->key() == Qt::Key_Delete) {
                     // Get the selected row
                     QModelIndexList selectedIndexes = ui->tableViewMachines->selectionModel()->selectedRows();
-                    qDebug() << "DELETE key pressed on tableViewMachines, selected rows:" << selectedIndexes.count();
                     if (!selectedIndexes.isEmpty()) {
                         QModelIndex selectedIndex = selectedIndexes.first();
                         int row = selectedIndex.row();
-                        qDebug() << "Selected row:" << row;
-                    qDebug() << "Model row count:" << machinesModel->rowCount();
-                    qDebug() << "Model column count:" << machinesModel->columnCount();
-                    
-                    // Debug: Check all user data in the model
-                    for (int r = 0; r < machinesModel->rowCount(); r++) {
-                        QStandardItem* item = machinesModel->item(r, 0);
-                        if (item) {
-                            qDebug() << "Row" << r << "name:" << item->text() << "user data:" << item->data(Qt::UserRole).toString();
-                        }
-                    }
                         
                         // Get the machine ID from the first column (stored as user data)
                         QStandardItem* nameItem = machinesModel->item(row, 0);
                         if (nameItem) {
                             QString machineId = nameItem->data(Qt::UserRole).toString();
-                            qDebug() << "Machine name:" << nameItem->text() << "ID from user data:" << machineId;
-                            qDebug() << "Machine ID is empty:" << machineId.isEmpty();
                             
                             if (!machineId.isEmpty()) {
                             qDebug() << "Deleting machine with ID:" << machineId;
@@ -638,13 +624,12 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
                             qDebug() << "No machine ID found for selected row";
                         }
                     } else {
-                        qDebug() << "nameItem is null for row:" << row;
+                        qDebug() << "No machine name item found for row:" << row;
                     }
                     return true;
                 }
             }
         }
-    }
     }
     #ifdef HAS_JOYSTICK
     if (JSconnected()) {
