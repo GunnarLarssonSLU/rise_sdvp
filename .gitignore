@@ -4,3 +4,12 @@ Linux/RControlStation/build/Desktop_Qt_6_9_1-Debug/RControlStation
 Linux/RControlStation/RControlStation-Distributable/
 Linux/RControlStation/*.zip
 Linux/RControlStation/*.tar.gz
+Linux/RControlStation/build/
+Linux/RControlStation/RControlStation-Distributable/
+Linux/RControlStation/RControlStation-Portable/
+Linux/PI/Qt/
+Hardware/**/*.pdf
+Hardware/**/*.step
+Hardware/**/*.exe
+*.so*
+*.FCStd
