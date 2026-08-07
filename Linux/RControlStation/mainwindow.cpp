@@ -34,6 +34,7 @@
 #include <QNetworkInterface>
 #include <QNetworkReply>
 #include <QUrl>
+#include <QUrlQuery>
 #include <QTimer>
 #include <QLoggingCategory>
 #include <QtSql>
@@ -412,8 +413,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->tableViewMachines->setModel(machinesModel);
     ui->tableViewMachines->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui->tableViewMachines->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->tableViewMachines->installEventFilter(this);
 
-    
     // Setup model for vehicle types
     vehicleTypesModel = new QStandardItemModel(this);
     ui->comboBoxVehicleType->setModel(vehicleTypesModel);
@@ -610,6 +611,57 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
                 model->setData(model->index(row,4),xmlString);
                 ui->fieldTable->show();
                 return true;
+            }
+        }
+        if (object == ui->tableViewMachines)
+        {
+            if (e->type() == QEvent::KeyPress) {
+                QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
+                if (keyEvent->key() == Qt::Key_Delete) {
+                    // Get the selected row
+                    QModelIndexList selectedIndexes = ui->tableViewMachines->selectionModel()->selectedRows();
+                    if (!selectedIndexes.isEmpty()) {
+                        QModelIndex selectedIndex = selectedIndexes.first();
+                        int row = selectedIndex.row();
+                        
+                        // Get the machine ID from the first column (stored as user data)
+                        QStandardItem* nameItem = machinesModel->item(row, 0);
+                        QString machineId = nameItem->data(Qt::UserRole).toString();
+                        
+                        if (!machineId.isEmpty()) {
+                            qDebug() << "Deleting machine with ID:" << machineId;
+                            
+                            // Send DELETE request to remove the machine
+                            QUrl url("http://127.0.0.1:8080/remove_machine");
+                            QUrlQuery query;
+                            query.addQueryItem("id", machineId);
+                            url.setQuery(query);
+                            
+                            QNetworkRequest request(url);
+                            request.setTransferTimeout(10000);
+                            
+                            QNetworkReply* reply = mNetworkManager->get(request);
+                            
+                            connect(reply, &QNetworkReply::finished, this, [this, reply, row]() {
+                                int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+                                qDebug() << "Remove machine HTTP Status Code:" << statusCode;
+                                
+                                if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+                                    qDebug() << "Machine removed successfully";
+                                    // Remove the row from the model
+                                    machinesModel->removeRow(row);
+                                } else {
+                                    qDebug() << "Error removing machine:" << reply->errorString();
+                                    qDebug() << "HTTP Status Code:" << statusCode;
+                                }
+                                reply->deleteLater();
+                            });
+                        } else {
+                            qDebug() << "No machine ID found for selected row";
+                        }
+                    }
+                    return true;
+                }
             }
         }
     }
@@ -2432,7 +2484,7 @@ void MainWindow::parseAllMachinesXml(const QByteArray &xmlData)
         QXmlStreamReader::TokenType token = xmlReader.readNext();
         
         if (token == QXmlStreamReader::StartElement && xmlReader.name() == "machine") {
-            QString name, ip, vehicleTypeId;
+            QString id, name, ip, vehicleTypeId;
             foundMachines = true;
             qDebug() << "Found machine element in all_machines";
             
@@ -2445,7 +2497,12 @@ void MainWindow::parseAllMachinesXml(const QByteArray &xmlData)
                 }
                 
                 if (token == QXmlStreamReader::StartElement) {
-                    if (xmlReader.name() == "name") {
+                    if (xmlReader.name() == "id") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            id = xmlReader.text().toString();
+                        }
+                    } else if (xmlReader.name() == "name") {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             name = xmlReader.text().toString();
@@ -2470,7 +2527,11 @@ void MainWindow::parseAllMachinesXml(const QByteArray &xmlData)
             // Add the machine to the model if we have both name and IP
             if (!name.isEmpty() && !ip.isEmpty()) {
                 QList<QStandardItem*> rowItems;
-                rowItems.append(new QStandardItem(name));
+                QStandardItem* nameItem = new QStandardItem(name);
+                if (!id.isEmpty()) {
+                    nameItem->setData(id, Qt::UserRole); // Store ID as user data
+                }
+                rowItems.append(nameItem);
                 rowItems.append(new QStandardItem(ip));
                 
                 // Look up vehicle type name from vehicleTypesModel using the vehicleTypeId
