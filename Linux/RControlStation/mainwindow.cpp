@@ -511,43 +511,6 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
    //     qDebug() << "DEBUG: Event filter called for:" << object->objectName() << "event type:" << e->type();
     }
 
-/*    // Handle chart view mouse events for bar selection
-    if ((object == ui->Graph)  && (e->type() == QEvent::InputMethodQuery)) {
-        qDebug() << "DEBUG: Graph mouse press detected";
-        QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(e);
-        QChartView* chartView = qobject_cast<QChartView*>(object);
-        if (chartView && chartView->chart()) {
-            // Get the chart and check if we clicked on a bar
-            QPointF chartPoint = chartView->chart()->mapToValue(chartView->mapFromGlobal(QCursor::pos()));
-            qDebug() << "DEBUG: Chart click at:" << chartPoint;
-            
-            // Get the bar series
-            QBarSeries* barSeries = static_cast<QBarSeries*>(chartView->chart()->series().first());
-            if (barSeries && barSeries->count() > 0) {
-                // Calculate which bar was clicked based on x position
-                // This is a simplified approach - assumes bars are evenly spaced
-                double barWidth = 0.8; // Approximate bar width in chart coordinates
-                double barSpacing = 0.2; // Approximate spacing between bars
-                double barTotalWidth = barWidth + barSpacing;
-                
-                // Calculate which bar was clicked
-                int clickedBarIndex = static_cast<int>(chartPoint.x() / barTotalWidth);
-                
-                qDebug() << "DEBUG: Clicked bar index:" << clickedBarIndex;
-                
-                // Validate the index
-                if (clickedBarIndex >= 0 && clickedBarIndex < barSeries->count()) {
-                    // Select this path in the analysis results map
-                    ui->mapWidgetAnalysisResult->setPathNow(clickedBarIndex);
-                    ui->mapWidgetAnalysisResult->update();
-                    ui->spinBoxResultPath->setValue(clickedBarIndex);
-                    qDebug() << "DEBUG: Selected path" << clickedBarIndex << "in analysis results map";
-                }
-            }
-        }
-        return true;
-    }
-*/
     // Emergency stop on escape
     if (e->type() == QEvent::KeyPress) {
         QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
@@ -682,13 +645,12 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
             }
         }
     }
-
-#ifdef HAS_JOYSTICK
+    }
+    #ifdef HAS_JOYSTICK
     if (JSconnected()) {
         return false;
     }
-
-#endif
+    #endif
 
     if (ui->throttleOffButton->isChecked()) {
         return false;
@@ -715,24 +677,24 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
         }
 
         switch(keyEvent->key()) {
-        case Qt::Key_Up:
-        case Qt::Key_Down:
-        case Qt::Key_Left:
-        case Qt::Key_Right:
-            break;
+            case Qt::Key_Up:
+            case Qt::Key_Down:
+            case Qt::Key_Left:
+            case Qt::Key_Right:
+                break;
 
-        default:
-            return false;
+            default:
+                return false;
         }
 
         switch(keyEvent->key()) {
-        case Qt::Key_Up: mKeyUp = isPress; break;
-        case Qt::Key_Down: mKeyDown = isPress; break;
-        case Qt::Key_Left: mKeyLeft = isPress; break;
-        case Qt::Key_Right: mKeyRight = isPress; break;
+            case Qt::Key_Up: mKeyUp = isPress; break;
+            case Qt::Key_Down: mKeyDown = isPress; break;
+            case Qt::Key_Left: mKeyLeft = isPress; break;
+            case Qt::Key_Right: mKeyRight = isPress; break;
 
-        default:
-            break;
+            default:
+                break;
         }
 
         // Return true to not pass the key event on
