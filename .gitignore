@@ -13,3 +13,4 @@ Hardware/**/*.step
 Hardware/**/*.exe
 *.so*
 *.FCStd
+Linux/Car_Client/build/
