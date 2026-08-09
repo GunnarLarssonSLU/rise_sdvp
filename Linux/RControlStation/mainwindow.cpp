@@ -1371,10 +1371,16 @@ void MainWindow::onSelectedFieldGeneral(QStandardItemModel *model, QSqlRelationa
     }
     
     QStandardItem* nameItem = model->item(row, 1); // Name is column 1
+    QString fieldName = model->data(model->index(row, 1)).toString();
     int id = -1;
     if (nameItem) {
         QString fieldId = nameItem->data(Qt::UserRole).toString();
         id = fieldId.toInt();
+    }
+
+    // Fetch the field XML to ensure it's loaded in the map widget
+    if (id != -1) {
+        fetchFieldXml(id, fieldName);
     }
 
     ui->mapWidgetFields->setFieldNow(row);
@@ -3062,16 +3068,9 @@ void MainWindow::parseAllFieldsXml(const QByteArray &xmlData)
                 rowItems.append(new QStandardItem(id));
                 fieldsModel->appendRow(rowItems);
                 
-                // Load the field file into the map widget if it exists
-                if (!storedinfile.isEmpty()) {
-                    QFile file(storedinfile);
-                    if (file.exists() && file.open(QIODevice::ReadOnly)) {
-                        QXmlStreamReader xmlData(&file);
-                        ui->mapWidgetFields->loadXMLRoute(&xmlData, true);
-                        file.close();
-                    } else {
-                        qDebug() << "Field file does not exist:" << storedinfile;
-                    }
+                // Fetch the field XML from webserver and load it into the map widget
+                if (!id.isEmpty()) {
+                    fetchFieldXml(id.toInt(), name);
                 }
             } else {
                 qDebug() << "Field missing name in all_fields - name:" << name;
@@ -3189,6 +3188,47 @@ void MainWindow::deleteFarmFromServer(int farmId)
     });
     
     qDebug() << "Deleting farm:" << farmId;
+}
+
+void MainWindow::fetchFieldXml(int fieldId, const QString &fieldName)
+{
+    QUrl url("http://127.0.0.1:8080/field");
+    QUrlQuery query;
+    query.addQueryItem("id", QString::number(fieldId));
+    url.setQuery(query);
+    
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000); // 10 second timeout to allow for larger files
+    
+    QNetworkReply* reply = mNetworkManager->get(request);
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, fieldId, fieldName]() {
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "Field XML HTTP Status Code:" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            QByteArray xmlData = reply->readAll();
+            qDebug() << "Received field XML data (size:" << xmlData.size() << ") for field:" << fieldName;
+            
+            if (!xmlData.isEmpty()) {
+                QXmlStreamReader xmlReader(xmlData);
+                if (!xmlReader.hasError()) {
+                    ui->mapWidgetFields->loadXMLRoute(&xmlReader, true);
+                    qDebug() << "Successfully loaded field XML for field:" << fieldName;
+                } else {
+                    qDebug() << "Error parsing field XML:" << xmlReader.errorString();
+                }
+            } else {
+                qDebug() << "Empty field XML received for field:" << fieldName;
+            }
+        } else {
+            qDebug() << "Error fetching field XML for field" << fieldName << "(ID:" << fieldId << "):" << reply->errorString();
+            qDebug() << "HTTP Status Code:" << statusCode;
+        }
+        reply->deleteLater();
+    });
+    
+    qDebug() << "Fetching field XML for field:" << fieldName << "(ID:" << fieldId << ")";
 }
 
 void MainWindow::addFieldToServer(const QString &name, int farmId, const QString &filename)

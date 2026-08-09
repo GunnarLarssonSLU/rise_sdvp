@@ -683,6 +683,53 @@ def all_fields():
         return f"Error: {str(e)}", 500
 
 
+@app.route('/field', methods=['GET', 'POST'])
+def field():
+    try:
+        # Get all the fields from POST form data or URL parameters
+        def get_param(name):
+            value = request.form.get(name) or request.args.get(name)
+            return value
+        
+        field_id = get_param('id')
+        
+        if not field_id:
+            return "Error: 'id' parameter is required", 400
+        
+        # Connect to SQLite database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        
+        # Get the field with the specified id
+        cursor.execute('SELECT storedinfile FROM fields WHERE id = ?', (field_id,))
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result is None:
+            return f"Error: No field found with id {field_id}", 404
+        
+        storedinfile = result[0]
+        
+        if not storedinfile:
+            return f"Error: Field {field_id} has no storedinfile value", 400
+        
+        # Read the content of the file from the fields folder
+        file_path = f"fields/{storedinfile}"
+        
+        try:
+            with open(file_path, 'r') as f:
+                file_content = f.read()
+        except FileNotFoundError:
+            return f"Error: File {storedinfile} not found in fields folder", 404
+        except Exception as e:
+            return f"Error reading file: {str(e)}", 500
+        
+        return Response(file_content, mimetype='text/plain')
+        
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
 @app.route('/add_field', methods=['POST'])
 def add_field():
     try:

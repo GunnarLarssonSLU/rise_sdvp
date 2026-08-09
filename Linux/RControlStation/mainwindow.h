@@ -154,6 +154,7 @@ private slots:
     void addFieldToServer(const QString &name, int farmId, const QString &filename);
     void updateFieldOnServer(int fieldId, const QString &name, const QString &filename);
     void deleteFieldFromServer(int fieldId);
+    void fetchFieldXml(int fieldId, const QString &fieldName);
 
     void on_disconnectButton_clicked();
     void on_connectSelectedButton_clicked();
