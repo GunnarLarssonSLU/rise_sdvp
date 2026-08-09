@@ -3764,9 +3764,29 @@
              </widget>
             </item>
             <item>
+             <widget class="QLabel" name="labelLog">
+              <property name="text">
+               <string>Log:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="comboBoxLog">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>1</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QPushButton" name="pushButtonLoadLog">
               <property name="text">
                <string>Load Log</string>
+              </property>
+              <property name="visible">
+               <bool>false</bool>
               </property>
              </widget>
             </item>

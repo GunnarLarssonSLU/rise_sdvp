@@ -165,10 +165,14 @@ private slots:
     void parseAllFieldsXmlForLog(const QByteArray &xmlData);
     void fetchPathsForLogField(int fieldId);
     void parseAllPathsXmlForLog(const QByteArray &xmlData);
-    void fetchLogForPath(int pathId);
+    void fetchLogsForPath(int pathId);
+    void parseAllLogsXmlForLog(const QByteArray &xmlData);
+    void fetchLogForLog(int logId);
+    void loadPathAsLog(int pathId);
     void onFarmSelectedForLog(int index);
     void onFieldSelectedForLog(int index);
     void onPathSelectedForLog(int index);
+    void onLogSelectedForLog(int index);
     void onLoadLogButtonClicked();
 
     void on_disconnectButton_clicked();
@@ -328,6 +332,7 @@ private:
     QStandardItemModel *logFarmsModel;
     QStandardItemModel *logFieldsModel;
     QStandardItemModel *logPathsModel;
+    QStandardItemModel *logLogsModel;
     VehicleTypeDelegate *vehicleTypeDelegate;
     CheckBoxDelegate* checkboxdelegate;
     // QStringListModel* fileModel;  // Model to hold filenames - removed, replaced with combo boxes

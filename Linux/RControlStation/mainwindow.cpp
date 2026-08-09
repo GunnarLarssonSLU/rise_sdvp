@@ -133,7 +133,8 @@ MainWindow::MainWindow(QWidget *parent) :
     db(this),
     logFarmsModel(nullptr),
     logFieldsModel(nullptr),
-    logPathsModel(nullptr)
+    logPathsModel(nullptr),
+    logLogsModel(nullptr)
 {
     ui->setupUi(this);
     
@@ -1294,16 +1295,19 @@ void MainWindow::setupLogTab()
     logFarmsModel = new QStandardItemModel(this);
     logFieldsModel = new QStandardItemModel(this);
     logPathsModel = new QStandardItemModel(this);
+    logLogsModel = new QStandardItemModel(this);
     
     // Set up combo boxes
     ui->comboBoxLogFarm->setModel(logFarmsModel);
     ui->comboBoxLogField->setModel(logFieldsModel);
     ui->comboBoxLogPath->setModel(logPathsModel);
+    ui->comboBoxLog->setModel(logLogsModel);
     
     // Connect signals
     connect(ui->comboBoxLogFarm, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onFarmSelectedForLog);
     connect(ui->comboBoxLogField, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onFieldSelectedForLog);
     connect(ui->comboBoxLogPath, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onPathSelectedForLog);
+    connect(ui->comboBoxLog, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onLogSelectedForLog);
     connect(ui->pushButtonLoadLog, &QPushButton::clicked, this, &MainWindow::onLoadLogButtonClicked);
     
     // Fetch initial data
@@ -2935,9 +2939,9 @@ void MainWindow::parseAllPathsXmlForLog(const QByteArray &xmlData)
     qDebug() << "parseAllPathsXmlForLog: Paths loaded:" << logPathsModel->rowCount();
 }
 
-void MainWindow::fetchLogForPath(int pathId)
+void MainWindow::loadPathAsLog(int pathId)
 {
-    qDebug() << "fetchLogForPath: Starting for pathId:" << pathId;
+    qDebug() << "loadPathAsLog: Starting for pathId:" << pathId;
     
     QUrl url("http://127.0.0.1:8080/log");
     QUrlQuery query;
@@ -2949,13 +2953,13 @@ void MainWindow::fetchLogForPath(int pathId)
     
     QNetworkReply* reply = mNetworkManager->get(request);
     if (!reply) {
-        qDebug() << "ERROR: reply is null in fetchLogForPath!";
+        qDebug() << "ERROR: reply is null in loadPathAsLog!";
         return;
     }
     
     connect(reply, &QNetworkReply::finished, this, [this, reply, pathId]() {
         int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-        qDebug() << "fetchLogForPath HTTP Status Code:" << statusCode;
+        qDebug() << "loadPathAsLog HTTP Status Code:" << statusCode;
         
         if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
             QByteArray xmlData = reply->readAll();
@@ -3031,7 +3035,24 @@ void MainWindow::onFieldSelectedForLog(int index)
 void MainWindow::onPathSelectedForLog(int index)
 {
     qDebug() << "onPathSelectedForLog: Path index selected:" << index;
-    // Note: We don't automatically load the log here - user must click Load Log button
+    
+    if (index < 0 || !logPathsModel || index >= logPathsModel->rowCount()) {
+        qDebug() << "Invalid path index or model not ready";
+        logLogsModel->removeRows(0, logLogsModel->rowCount());
+        return;
+    }
+    
+    QStandardItem* pathItem = logPathsModel->item(index);
+    if (pathItem) {
+        QString pathId = pathItem->data(Qt::UserRole).toString();
+        qDebug() << "Selected path ID:" << pathId;
+        
+        if (!pathId.isEmpty()) {
+            fetchLogsForPath(pathId.toInt());
+        } else {
+            qDebug() << "No path ID found for selected path";
+        }
+    }
 }
 
 void MainWindow::onLoadLogButtonClicked()
@@ -3050,9 +3071,211 @@ void MainWindow::onLoadLogButtonClicked()
         qDebug() << "Loading log for path ID:" << pathId;
         
         if (!pathId.isEmpty()) {
-            fetchLogForPath(pathId.toInt());
+            loadPathAsLog(pathId.toInt());
         } else {
             qDebug() << "No path ID found for selected path";
+        }
+    }
+}
+
+void MainWindow::fetchLogsForPath(int pathId)
+{
+    qDebug() << "fetchLogsForPath: Starting for pathId:" << pathId;
+    
+    if (!logLogsModel) {
+        qDebug() << "ERROR: logLogsModel is null!";
+        return;
+    }
+    
+    // Clear existing data
+    logLogsModel->removeRows(0, logLogsModel->rowCount());
+    
+    // Add loading indicator
+    logLogsModel->appendRow(new QStandardItem("Loading logs..."));
+    
+    QUrl url("http://127.0.0.1:8080/all_logs");
+    QUrlQuery query;
+    query.addQueryItem("path", QString::number(pathId));
+    url.setQuery(query);
+    
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+    
+    QNetworkReply* reply = mNetworkManager->get(request);
+    if (!reply) {
+        qDebug() << "ERROR: reply is null in fetchLogsForPath!";
+        logLogsModel->removeRows(0, logLogsModel->rowCount());
+        logLogsModel->appendRow(new QStandardItem("Error: Network request failed"));
+        return;
+    }
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, pathId]() {
+        logLogsModel->removeRows(0, logLogsModel->rowCount());
+        
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "fetchLogsForPath HTTP Status Code:" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            QByteArray xmlData = reply->readAll();
+            qDebug() << "Received logs data for path" << pathId << "(size:" << xmlData.size() << ")";
+            
+            if (!xmlData.isEmpty()) {
+                parseAllLogsXmlForLog(xmlData);
+            } else {
+                qDebug() << "Empty response for logs";
+                logLogsModel->appendRow(new QStandardItem("No logs data"));
+            }
+        } else {
+            qDebug() << "Error fetching logs for path:" << pathId << "- Error:" << reply->errorString();
+            logLogsModel->appendRow(new QStandardItem("Error loading logs"));
+        }
+        reply->deleteLater();
+    });
+}
+
+void MainWindow::parseAllLogsXmlForLog(const QByteArray &xmlData)
+{
+    qDebug() << "parseAllLogsXmlForLog: Starting";
+    
+    if (!logLogsModel) {
+        qDebug() << "ERROR: logLogsModel is null!";
+        return;
+    }
+    
+    QXmlStreamReader xmlReader(xmlData);
+    
+    while (!xmlReader.atEnd()) {
+        QXmlStreamReader::TokenType token = xmlReader.readNext();
+        
+        if (token == QXmlStreamReader::StartElement && xmlReader.name() == "log") {
+            QString id, name;
+            
+            while (!xmlReader.atEnd()) {
+                token = xmlReader.readNext();
+                
+                if (token == QXmlStreamReader::EndElement && xmlReader.name() == "log") {
+                    break;
+                }
+                
+                if (token == QXmlStreamReader::StartElement) {
+                    if (xmlReader.name() == "id") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            id = xmlReader.text().toString();
+                        }
+                    } else if (xmlReader.name() == "name") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            name = xmlReader.text().toString();
+                        }
+                    }
+                }
+            }
+            
+            if (!name.isEmpty()) {
+                QStandardItem* logItem = new QStandardItem(name);
+                if (!id.isEmpty()) {
+                    logItem->setData(id, Qt::UserRole); // Store ID as user data
+                }
+                logLogsModel->appendRow(logItem);
+                qDebug() << "Added log to log tab:" << name << "(ID:" << id << ")";
+            }
+        }
+    }
+    
+    if (xmlReader.hasError()) {
+        qDebug() << "XML parsing error in parseAllLogsXmlForLog:" << xmlReader.errorString();
+    }
+    
+    qDebug() << "parseAllLogsXmlForLog: Logs loaded:" << logLogsModel->rowCount();
+}
+
+void MainWindow::fetchLogForLog(int logId)
+{
+    qDebug() << "fetchLogForLog: Starting for logId:" << logId;
+    
+    QUrl url("http://127.0.0.1:8080/log");
+    QUrlQuery query;
+    query.addQueryItem("id", QString::number(logId));
+    url.setQuery(query);
+    
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+    
+    QNetworkReply* reply = mNetworkManager->get(request);
+    if (!reply) {
+        qDebug() << "ERROR: reply is null in fetchLogForLog!";
+        return;
+    }
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, logId]() {
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "fetchLogForLog HTTP Status Code:" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            QByteArray xmlData = reply->readAll();
+            qDebug() << "Received log data for log" << logId << "(size:" << xmlData.size() << ")";
+            
+            if (!xmlData.isEmpty()) {
+                // Load the log data into mapWidgetAnalysis
+                QXmlStreamReader xmlReader(xmlData);
+                bool success = ui->mapWidgetAnalysis->loadXMLRoute(&xmlReader, false); // false = not a border
+                if (success) {
+                    qDebug() << "Successfully loaded log for log:" << logId;
+                    ui->mapWidgetAnalysis->update();
+                    
+                    // Store the original log for non-destructive filtering
+                    if (ui->mapWidgetAnalysis->mPaths->size() > 0) {
+                        MapRoute originalRoute = ui->mapWidgetAnalysis->getCurrentPath();
+                        mOriginalLogs.append(originalRoute);
+                    }
+                    
+                    // Initialize RangeSlider based on the loaded route
+                    if (ui->mapWidgetAnalysis->mPaths->size() > 0) {
+                        MapRoute& currentRoute = ui->mapWidgetAnalysis->getCurrentPath();
+                        int totalPoints = currentRoute.size();
+                        if (totalPoints > 0) {
+                            // Set default range to 20-80% of the route
+                            ui->rangeSlider->setRange(0, 100);
+                            ui->rangeSlider->setLowerValue(20);
+                            ui->rangeSlider->setUpperValue(80);
+                            
+                            // Update our stored values
+                            mRangeSliderLowerValue = 20;
+                            mRangeSliderUpperValue = 80;
+                        }
+                    }
+                } else {
+                    qDebug() << "Failed to load log XML for log:" << logId;
+                }
+            } else {
+                qDebug() << "Empty log data received for log:" << logId;
+            }
+        } else {
+            qDebug() << "Error fetching log for log:" << logId << "- Error:" << reply->errorString();
+        }
+        reply->deleteLater();
+    });
+}
+
+void MainWindow::onLogSelectedForLog(int index)
+{
+    qDebug() << "onLogSelectedForLog: Log index selected:" << index;
+    
+    if (index < 0 || !logLogsModel || index >= logLogsModel->rowCount()) {
+        qDebug() << "Invalid log index or model not ready";
+        return;
+    }
+    
+    QStandardItem* logItem = logLogsModel->item(index);
+    if (logItem) {
+        QString logId = logItem->data(Qt::UserRole).toString();
+        qDebug() << "Selected log ID:" << logId;
+        
+        if (!logId.isEmpty()) {
+            fetchLogForLog(logId.toInt());
+        } else {
+            qDebug() << "No log ID found for selected log";
         }
     }
 }

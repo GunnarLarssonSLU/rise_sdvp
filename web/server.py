@@ -777,6 +777,278 @@ def log():
         return f"Error: {str(e)}", 500
 
 
+@app.route('/all_paths', methods=['GET', 'POST'])
+def all_paths():
+    try:
+        # Get all the fields from POST form data or URL parameters
+        def get_param(name):
+            value = request.form.get(name) or request.args.get(name)
+            return value
+        
+        field = get_param('field')
+        
+        if not field:
+            return "Error: 'field' parameter is required", 400
+        
+        # Validate that field is an integer
+        try:
+            field_int = int(field)
+        except ValueError:
+            return "Error: 'field' parameter must be an integer", 400
+        
+        # Connect to SQLite database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        
+        # Query paths from the paths table filtered by field
+        cursor.execute('SELECT * FROM paths WHERE field = ?', (field_int,))
+        paths = cursor.fetchall()
+        
+        # Get column names from cursor description
+        column_names = [description[0] for description in cursor.description]
+        conn.close()
+        
+        # Create XML structure
+        root = ET.Element('paths')
+        for path in paths:
+            path_elem = ET.SubElement(root, 'path')
+            for i, column_name in enumerate(column_names):
+                ET.SubElement(path_elem, column_name).text = str(path[i])
+        
+        # Convert to XML string with declaration
+        xml_str = '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding='unicode')
+        
+        # Write to file
+        with open('paths.xml', 'w') as f:
+            f.write(xml_str)
+        
+        return Response(xml_str, mimetype='application/xml')
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
+@app.route('/add_path', methods=['POST'])
+def add_path():
+    try:
+        # Get all the fields from POST form data or URL parameters
+        def get_param(name):
+            value = request.form.get(name) or request.args.get(name)
+            return value
+        
+        # Get path fields - adjust these based on your paths table schema
+        name = get_param('name')
+        field = get_param('field')
+        
+        # Validate required fields
+        if not name:
+            return "Error: 'name' field is required", 400
+        
+        if not field:
+            return "Error: 'field' field is required", 400
+        
+        # Validate that field is an integer
+        try:
+            field_int = int(field)
+        except ValueError:
+            return "Error: 'field' parameter must be an integer", 400
+        
+        # Connect to database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        
+        # Build the INSERT query with all provided fields
+        columns = ['name', 'field']
+        values = [name, field_int]
+        placeholders = ['?', '?']
+        
+        # Add optional fields if provided
+        field_mappings = [
+            ('description', get_param('description')),
+            ('length_m', get_param('length_m')),
+            ('width_m', get_param('width_m')),
+            ('area_m2', get_param('area_m2')),
+            ('created_at', get_param('created_at')),
+        ]
+        
+        for field_name, field_value in field_mappings:
+            if field_value is not None:
+                columns.append(field_name)
+                values.append(field_value)
+                placeholders.append('?')
+        
+        # Create and execute the INSERT statement
+        columns_str = ', '.join(columns)
+        placeholders_str = ', '.join(placeholders)
+        query = f'INSERT INTO paths ({columns_str}) VALUES ({placeholders_str})'
+        cursor.execute(query, values)
+        
+        # Get the ID of the newly inserted path
+        path_id = cursor.lastrowid
+        
+        # Log the addition to log_paths table
+        from datetime import datetime
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Build the path data as a string for logging
+        path_data = {col: val for col, val in zip(columns, values)}
+        path_data_str = str(path_data)
+        
+        cursor.execute(
+            'INSERT INTO log_paths (path_id, path_data, timestamp, action) VALUES (?, ?, ?, ?)',
+            (path_id, path_data_str, timestamp, 'ADD')
+        )
+        
+        conn.commit()
+        conn.close()
+        
+        return "Path added successfully", 201
+        
+    except sqlite3.IntegrityError as e:
+        return f"Error: {str(e)}", 409
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
+@app.route('/edit_path', methods=['GET', 'POST'])
+def edit_path():
+    try:
+        # Get all the fields from POST form data or URL parameters
+        def get_param(name):
+            value = request.form.get(name) or request.args.get(name)
+            return value
+        
+        path_id = get_param('id')
+        
+        if not path_id:
+            return "Error: 'id' field is required", 400
+        
+        # Connect to database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        
+        # First, get the current path data for logging
+        cursor.execute('SELECT * FROM paths WHERE id = ?', (path_id,))
+        old_path = cursor.fetchone()
+        
+        if old_path is None:
+            conn.close()
+            return f"Error: No path found with id {path_id}", 404
+        
+        # Get column names
+        columns = [description[0] for description in cursor.description]
+        old_path_data = dict(zip(columns, old_path))
+        
+        # Get all possible fields that can be updated
+        field_mappings = {
+            'name': get_param('name'),
+            'field': get_param('field'),
+            'description': get_param('description'),
+            'length_m': get_param('length_m'),
+            'width_m': get_param('width_m'),
+            'area_m2': get_param('area_m2'),
+            'created_at': get_param('created_at')
+        }
+        
+        # Build UPDATE query with only the fields that are provided
+        updates = []
+        update_values = []
+        for field_name, field_value in field_mappings.items():
+            if field_value is not None:
+                # Handle integer fields
+                if field_name == 'field':
+                    try:
+                        field_value = int(field_value)
+                    except ValueError:
+                        return "Error: 'field' must be an integer", 400
+                updates.append(f"{field_name} = ?")
+                update_values.append(field_value)
+                # Update the path data for logging
+                old_path_data[field_name] = field_value
+        
+        if not updates:
+            conn.close()
+            return "Error: No fields provided to update", 400
+        
+        # Add the path_id to the values for the WHERE clause
+        update_values.append(path_id)
+        
+        # Execute the UPDATE
+        query = f"UPDATE paths SET {', '.join(updates)} WHERE id = ?"
+        cursor.execute(query, update_values)
+        
+        if cursor.rowcount == 0:
+            conn.close()
+            return f"Error: No path found with id {path_id}", 404
+        
+        # Log the edit to log_paths table
+        from datetime import datetime
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        path_data_str = str(old_path_data)
+        
+        cursor.execute(
+            'INSERT INTO log_paths (path_id, path_data, timestamp, action) VALUES (?, ?, ?, ?)',
+            (path_id, path_data_str, timestamp, 'EDIT')
+        )
+        
+        conn.commit()
+        conn.close()
+        
+        return f"Path with id {path_id} updated successfully", 200
+        
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
+@app.route('/remove_path', methods=['GET', 'POST'])
+def remove_path():
+    try:
+        # Get all the fields from POST form data or URL parameters
+        def get_param(name):
+            value = request.form.get(name) or request.args.get(name)
+            return value
+        
+        path_id = get_param('id')
+        
+        if not path_id:
+            return "Error: 'id' field is required", 400
+        
+        # Connect to database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        
+        # First, get the path data before deleting
+        cursor.execute('SELECT * FROM paths WHERE id = ?', (path_id,))
+        path = cursor.fetchone()
+        
+        if path is None:
+            conn.close()
+            return f"Error: No path found with id {path_id}", 404
+        
+        # Build path data string for logging
+        from datetime import datetime
+        columns = [description[0] for description in cursor.description]
+        path_data = dict(zip(columns, path))
+        path_data_str = str(path_data)
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Log the removal to log_paths table
+        cursor.execute(
+            'INSERT INTO log_paths (path_id, path_data, timestamp, action) VALUES (?, ?, ?, ?)',
+            (path_id, path_data_str, timestamp, 'REMOVE')
+        )
+        
+        # Delete the path with the specified id
+        cursor.execute('DELETE FROM paths WHERE id = ?', (path_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        return f"Path with id {path_id} removed successfully", 200
+        
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
 @app.route('/add_field', methods=['POST'])
 def add_field():
     try:
