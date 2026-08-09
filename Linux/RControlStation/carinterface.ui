@@ -1135,6 +1135,9 @@
      </item>
      <item>
       <widget class="QCheckBox" name="vescToolTcpBox">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
        <property name="text">
         <string>VESC Tool TCP</string>
        </property>

@@ -69,14 +69,15 @@ def all_machines():
         cursor = conn.cursor()
         
         # Query all machines from the table
-        cursor.execute('SELECT name, ip, iVehicletype FROM machines')
+        cursor.execute('SELECT id, name, ip, iVehicletype FROM machines')
         machines = cursor.fetchall()
         conn.close()
         
         # Create XML structure
         root = ET.Element('machines')
-        for name, ip, iVehicletype in machines:
+        for machine_id, name, ip, iVehicletype in machines:
             machine_elem = ET.SubElement(root, 'machine')
+            ET.SubElement(machine_elem, 'id').text = str(machine_id)
             ET.SubElement(machine_elem, 'name').text = name
             ET.SubElement(machine_elem, 'ip').text = ip
             if iVehicletype is not None:
@@ -186,6 +187,23 @@ def add_machine():
         print(f"DEBUG: With values: {values}")
         cursor.execute(query, values)
         print(f"DEBUG: Rows affected: {cursor.rowcount}")
+        
+        # Get the ID of the newly inserted machine
+        machine_id = cursor.lastrowid
+        
+        # Log the addition to log_machines table
+        from datetime import datetime
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Build the machine data as a string for logging
+        machine_data = {col: val for col, val in zip(columns, values)}
+        machine_data_str = str(machine_data)
+        
+        cursor.execute(
+            'INSERT INTO log_machines (machine_id, machine_data, timestamp, action) VALUES (?, ?, ?, ?)',
+            (machine_id, machine_data_str, timestamp, 'ADD')
+        )
+        
         conn.commit()
         conn.close()
         
@@ -202,11 +220,15 @@ def add_machine():
         return f"Error: {str(e)}", 500
 
 
-@app.route('/remove_machine', methods=['POST'])
+@app.route('/remove_machine', methods=['GET', 'POST'])
 def remove_machine():
     try:
-        # Get machine id from POST form data
-        machine_id = request.form.get('id')
+        # Get all the fields from POST form data or URL parameters (same as add_machine)
+        def get_param(name):
+            value = request.form.get(name) or request.args.get(name)
+            return value
+        
+        machine_id = get_param('id')
         
         if not machine_id:
             return "Error: 'id' field is required", 400
@@ -215,12 +237,29 @@ def remove_machine():
         conn = sqlite3.connect('data.db')
         cursor = conn.cursor()
         
-        # Delete the machine with the specified id
-        cursor.execute('DELETE FROM machines WHERE id = ?', (machine_id,))
+        # First, get the machine data before deleting
+        cursor.execute('SELECT * FROM machines WHERE id = ?', (machine_id,))
+        machine = cursor.fetchone()
         
-        if cursor.rowcount == 0:
+        if machine is None:
             conn.close()
             return f"Error: No machine found with id {machine_id}", 404
+        
+        # Build machine data string for logging
+        from datetime import datetime
+        columns = [description[0] for description in cursor.description]
+        machine_data = dict(zip(columns, machine))
+        machine_data_str = str(machine_data)
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Log the removal to log_machines table
+        cursor.execute(
+            'INSERT INTO log_machines (machine_id, machine_data, timestamp, action) VALUES (?, ?, ?, ?)',
+            (machine_id, machine_data_str, timestamp, 'REMOVE')
+        )
+        
+        # Delete the machine with the specified id
+        cursor.execute('DELETE FROM machines WHERE id = ?', (machine_id,))
         
         conn.commit()
         conn.close()
@@ -258,6 +297,40 @@ def vehicle_types():
         
         # Write to file
         with open('vehicle_types.xml', 'w') as f:
+            f.write(xml_str)
+        
+        return Response(xml_str, mimetype='application/xml')
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
+@app.route('/all_farms')
+def all_farms():
+    try:
+        # Connect to SQLite database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        
+        # Query all fields from the locations table
+        cursor.execute('SELECT * FROM locations')
+        locations = cursor.fetchall()
+        
+        # Get column names from cursor description
+        column_names = [description[0] for description in cursor.description]
+        conn.close()
+        
+        # Create XML structure
+        root = ET.Element('locations')
+        for location in locations:
+            location_elem = ET.SubElement(root, 'location')
+            for i, column_name in enumerate(column_names):
+                ET.SubElement(location_elem, column_name).text = str(location[i])
+        
+        # Convert to XML string with declaration
+        xml_str = '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding='unicode')
+        
+        # Write to file
+        with open('locations.xml', 'w') as f:
             f.write(xml_str)
         
         return Response(xml_str, mimetype='application/xml')

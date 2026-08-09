@@ -107,7 +107,11 @@
         <item>
          <widget class="QPushButton" name="refreshMachinesButton">
           <property name="text">
-           <string>Refresh Machines</string>
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="resources.qrc">
+            <normaloff>:/models/Icons/Available Updates-96.png</normaloff>:/models/Icons/Available Updates-96.png</iconset>
           </property>
          </widget>
         </item>
@@ -412,7 +416,7 @@
        <enum>QTabWidget::TabPosition::North</enum>
       </property>
       <property name="currentIndex">
-       <number>11</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">

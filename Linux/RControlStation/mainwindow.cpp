@@ -631,6 +631,7 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
             }
         }
     }
+    }
     #ifdef HAS_JOYSTICK
     if (JSconnected()) {
         return false;
