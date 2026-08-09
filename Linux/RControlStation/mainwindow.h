@@ -155,6 +155,7 @@ private slots:
     void updateFieldOnServer(int fieldId, const QString &name, const QString &filename);
     void deleteFieldFromServer(int fieldId);
     void fetchFieldXml(int fieldId, const QString &fieldName);
+    void onFieldDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
 
     void on_disconnectButton_clicked();
     void on_connectSelectedButton_clicked();

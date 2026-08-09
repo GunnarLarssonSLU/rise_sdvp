@@ -1239,6 +1239,9 @@ QStandardItemModel* MainWindow::setupFieldsTable(QTableView* uiFieldTable)
     // Set the member variable to the local model
     fieldsModel = model;
     
+    // Connect dataChanged signal to handle field name changes
+    connect(fieldsModel, &QStandardItemModel::dataChanged, this, &MainWindow::onFieldDataChanged);
+    
     return model;
 }
 
@@ -3057,7 +3060,7 @@ void MainWindow::parseAllFieldsXml(const QByteArray &xmlData)
                 if (!id.isEmpty()) {
                     nameItem->setData(id, Qt::UserRole); // Store ID as user data
                 }
-                QStandardItem* fencedItem = new QStandardItem(fenced ? "1" : "0");
+                QStandardItem* fencedItem = new QStandardItem("");
                 fencedItem->setCheckable(true);
                 fencedItem->setCheckState(fenced ? Qt::Checked : Qt::Unchecked);
                 
@@ -3229,6 +3232,25 @@ void MainWindow::fetchFieldXml(int fieldId, const QString &fieldName)
     });
     
     qDebug() << "Fetching field XML for field:" << fieldName << "(ID:" << fieldId << ")";
+}
+
+void MainWindow::onFieldDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles)
+{
+    // Check if this is a change to the name column (column 1)
+    if (topLeft.column() == 1 && (roles.contains(Qt::EditRole) || roles.contains(Qt::DisplayRole))) {
+        int row = topLeft.row();
+        QStandardItem* nameItem = fieldsModel->item(row, 1); // Name is column 1
+        
+        if (nameItem) {
+            QString newName = nameItem->text();
+            QString fieldId = nameItem->data(Qt::UserRole).toString();
+            
+            if (!fieldId.isEmpty() && !newName.isEmpty()) {
+                qDebug() << "Field name changed to:" << newName << "for ID:" << fieldId;
+                updateFieldOnServer(fieldId.toInt(), newName, ""); // filename is not changed
+            }
+        }
+    }
 }
 
 void MainWindow::addFieldToServer(const QString &name, int farmId, const QString &filename)
