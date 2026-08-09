@@ -556,7 +556,7 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
             qDebug() << "in fieldtable";
             QItemSelectionModel* selectionModel = ui->fieldTable->selectionModel();
             QModelIndexList selection = selectionModel->selectedRows();
-            QSqlTableModel* model = qobject_cast<QSqlTableModel*>(ui->fieldTable->model());
+            QStandardItemModel* model = qobject_cast<QStandardItemModel*>(ui->fieldTable->model());
             switch (keyEvent->key())
             {
             case Qt::Key_Delete:
@@ -593,13 +593,25 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
                 QModelIndexList selectedIndexes = selectionModel->selectedIndexes();
                 if (selectedIndexes.isEmpty()) {
                     qDebug() << "No selection";
+                    break;
                 }
 
                 int row = selectedIndexes.first().row();
                 qDebug() << "Selected Row: " << row;
 
                 // Retrieve the data of the selected row if needed
-                model->setData(model->index(row,4),xmlString);
+                if (model && row >= 0 && row < model->rowCount()) {
+                    // For QStandardItemModel, we need to get the item and set its data
+                    QStandardItem* fileItem = model->item(row, 3); // File is column 3
+                    if (fileItem) {
+                        fileItem->setText(xmlString);
+                        qDebug() << "Updated field file data for row:" << row;
+                    } else {
+                        qDebug() << "ERROR: Could not get file item for row:" << row;
+                    }
+                } else {
+                    qDebug() << "ERROR: Invalid model or row index:" << row;
+                }
                 ui->fieldTable->show();
                 return true;
             }
