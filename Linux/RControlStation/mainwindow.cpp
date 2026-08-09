@@ -1138,7 +1138,6 @@ QStandardItemModel* MainWindow::setupFarmsTable(QTableView* uiFarmTable)
     farmsModel = model;
     
     // Hide the columns that should not be visible
-    uiFarmTable->setColumnHidden(2, true); // Latitude - keep hidden as in original
     uiFarmTable->setColumnHidden(3, true); // ip
     uiFarmTable->setColumnHidden(4, true); // port
     uiFarmTable->setColumnHidden(5, true); // NTRIP
