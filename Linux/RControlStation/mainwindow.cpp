@@ -3236,20 +3236,44 @@ void MainWindow::fetchFieldXml(int fieldId, const QString &fieldName)
 
 void MainWindow::onFieldDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles)
 {
+    qDebug() << "onFieldDataChanged called - topLeft:" << topLeft.row() << "," << topLeft.column() << "bottomRight:" << bottomRight.row() << "," << bottomRight.column();
+    qDebug() << "Roles:" << roles;
+    
     // Check if this is a change to the name column (column 1)
     if (topLeft.column() == 1 && (roles.contains(Qt::EditRole) || roles.contains(Qt::DisplayRole))) {
         int row = topLeft.row();
+        qDebug() << "Name column change detected at row:" << row;
+        
+        if (!fieldsModel) {
+            qDebug() << "ERROR: fieldsModel is null!";
+            return;
+        }
+        
+        if (row < 0 || row >= fieldsModel->rowCount()) {
+            qDebug() << "ERROR: Invalid row index:" << row << "model row count:" << fieldsModel->rowCount();
+            return;
+        }
+        
         QStandardItem* nameItem = fieldsModel->item(row, 1); // Name is column 1
+        qDebug() << "nameItem:" << (nameItem ? "valid" : "null");
         
         if (nameItem) {
             QString newName = nameItem->text();
             QString fieldId = nameItem->data(Qt::UserRole).toString();
             
+            qDebug() << "New name:" << newName << "Field ID:" << fieldId;
+            
             if (!fieldId.isEmpty() && !newName.isEmpty()) {
                 qDebug() << "Field name changed to:" << newName << "for ID:" << fieldId;
                 updateFieldOnServer(fieldId.toInt(), newName, ""); // filename is not changed
+            } else {
+                qDebug() << "WARNING: Empty fieldId or newName - fieldId:" << fieldId << "newName:" << newName;
             }
+        } else {
+            qDebug() << "ERROR: nameItem is null at row:" << row << "column: 1";
         }
+    } else {
+        qDebug() << "Not a name column change or roles don't match - column:" << topLeft.column() << "roles:" << roles;
     }
 }
 
@@ -3290,6 +3314,8 @@ void MainWindow::addFieldToServer(const QString &name, int farmId, const QString
 
 void MainWindow::updateFieldOnServer(int fieldId, const QString &name, const QString &filename)
 {
+    qDebug() << "updateFieldOnServer called with fieldId:" << fieldId << "name:" << name << "filename:" << filename;
+    
     QUrl url("http://127.0.0.1:8080/edit_field");
     QUrlQuery query;
     query.addQueryItem("id", QString::number(fieldId));
@@ -3297,12 +3323,21 @@ void MainWindow::updateFieldOnServer(int fieldId, const QString &name, const QSt
     query.addQueryItem("filename", filename);
     url.setQuery(query);
     
+    qDebug() << "Update field URL:" << url.toString();
+    
     QNetworkRequest request(url);
     request.setTransferTimeout(10000);
     
+    if (!mNetworkManager) {
+        qDebug() << "ERROR: mNetworkManager is null!";
+        return;
+    }
+    
     QNetworkReply* reply = mNetworkManager->get(request);
+    qDebug() << "Network request sent, reply:" << (reply ? "valid" : "null");
     
     connect(reply, &QNetworkReply::finished, this, [this, reply, fieldId, name]() {
+        qDebug() << "Update field request finished for fieldId:" << fieldId << "name:" << name;
         int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
         qDebug() << "Update field HTTP Status Code:" << statusCode;
         
@@ -3310,7 +3345,9 @@ void MainWindow::updateFieldOnServer(int fieldId, const QString &name, const QSt
             qDebug() << "Field updated successfully";
             // Refresh the fields list for the current farm
             int currentFarmId = currentFarm();
+            qDebug() << "Current farm ID:" << currentFarmId;
             if (currentFarmId != -1) {
+                qDebug() << "Refreshing fields data for farm:" << currentFarmId;
                 fetchAllFieldsData(currentFarmId);
             }
         } else {
