@@ -730,6 +730,53 @@ def field():
         return f"Error: {str(e)}", 500
 
 
+@app.route('/log', methods=['GET', 'POST'])
+def log():
+    try:
+        # Get all the fields from POST form data or URL parameters
+        def get_param(name):
+            value = request.form.get(name) or request.args.get(name)
+            return value
+        
+        path = get_param('path')
+        
+        if not path:
+            return "Error: 'path' parameter is required", 400
+        
+        # Validate that path is an integer
+        try:
+            path_int = int(path)
+        except ValueError:
+            return "Error: 'path' parameter must be an integer", 400
+        
+        # Connect to SQLite database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        
+        # Query drivelogs table for entries with matching path
+        cursor.execute('SELECT * FROM drivelogs WHERE path = ?', (path_int,))
+        logs = cursor.fetchall()
+        
+        # Get column names from cursor description
+        column_names = [description[0] for description in cursor.description]
+        conn.close()
+        
+        # Create XML structure
+        root = ET.Element('posts')
+        for log_entry in logs:
+            post_elem = ET.SubElement(root, 'post')
+            for i, column_name in enumerate(column_names):
+                ET.SubElement(post_elem, column_name).text = str(log_entry[i])
+        
+        # Convert to XML string with declaration
+        xml_str = '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding='unicode')
+        
+        return Response(xml_str, mimetype='application/xml')
+        
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
 @app.route('/add_field', methods=['POST'])
 def add_field():
     try:

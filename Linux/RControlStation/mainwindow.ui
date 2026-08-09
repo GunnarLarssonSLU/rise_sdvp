@@ -3708,14 +3708,69 @@
            <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
           </property>
           <item>
-           <widget class="QPushButton" name="pushButtonLoadLogFile">
-            <property name="text">
-             <string>Load Log File</string>
+           <layout class="QHBoxLayout" name="horizontalLayoutLogSelection">
+            <property name="spacing">
+             <number>6</number>
             </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QListView" name="listLogfilesView"/>
+            <item>
+             <widget class="QLabel" name="labelLogFarm">
+              <property name="text">
+               <string>Farm:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="comboBoxLogFarm">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>1</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="labelLogField">
+              <property name="text">
+               <string>Field:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="comboBoxLogField">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>1</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="labelLogPath">
+              <property name="text">
+               <string>Path:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="comboBoxLogPath">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>1</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButtonLoadLog">
+              <property name="text">
+               <string>Load Log</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
           <item>
            <widget class="QLabel" name="labelAreaFile">

@@ -156,6 +156,20 @@ private slots:
     void deleteFieldFromServer(int fieldId);
     void fetchFieldXml(int fieldId, const QString &fieldName);
     void onFieldDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
+    
+    // Log tab functions
+    void setupLogTab();
+    void fetchAllFarmsForLog();
+    void parseAllFarmsXmlForLog(const QByteArray &xmlData);
+    void fetchFieldsForLogFarm(int farmId);
+    void parseAllFieldsXmlForLog(const QByteArray &xmlData);
+    void fetchPathsForLogField(int fieldId);
+    void parseAllPathsXmlForLog(const QByteArray &xmlData);
+    void fetchLogForPath(int pathId);
+    void onFarmSelectedForLog(int index);
+    void onFieldSelectedForLog(int index);
+    void onPathSelectedForLog(int index);
+    void onLoadLogButtonClicked();
 
     void on_disconnectButton_clicked();
     void on_connectSelectedButton_clicked();
@@ -309,10 +323,15 @@ private:
     QStandardItemModel *vehicleTypesModel;
     QStandardItemModel *farmsModel;
     QStandardItemModel *fieldsModel;
+    
+    // Models for log tab dropdowns
+    QStandardItemModel *logFarmsModel;
+    QStandardItemModel *logFieldsModel;
+    QStandardItemModel *logPathsModel;
     VehicleTypeDelegate *vehicleTypeDelegate;
     CheckBoxDelegate* checkboxdelegate;
-    QStringListModel* fileModel;  // Model to hold filenames
-    QStringList fileList;         // Underlying data
+    // QStringListModel* fileModel;  // Model to hold filenames - removed, replaced with combo boxes
+    // QStringList fileList;         // Underlying data - removed, replaced with combo boxes
     ActionManager *actionManager;
 
     Ui::MainWindow *ui;

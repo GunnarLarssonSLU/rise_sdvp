@@ -130,7 +130,10 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     serialReader("/dev/arduino", 9600),
     ui(new Ui::MainWindow),
-    db(this)
+    db(this),
+    logFarmsModel(nullptr),
+    logFieldsModel(nullptr),
+    logPathsModel(nullptr)
 {
     ui->setupUi(this);
     
@@ -241,9 +244,10 @@ MainWindow::MainWindow(QWidget *parent) :
     // Connect the pathsUpdated signal to refresh the graph
     connect(ui->mapWidgetAnalysisResult, &MapWidget::pathsUpdated, this, &MainWindow::updateCurrentAnalysis);
 
-    fileModel = new QStringListModel(this);
-    ui->listLogfilesView->setModel(fileModel);  // Link the model to the view
-    ui->listLogfilesView->installEventFilter(this);  // Install event filter for delete key
+    // Note: listLogfilesView and fileModel have been replaced with combo box dropdowns in the UI
+    // fileModel = new QStringListModel(this);
+    // ui->listLogfilesView->setModel(fileModel);  // Link the model to the view
+    // ui->listLogfilesView->installEventFilter(this);  // Install event filter for delete key
 
     mVersion = "0.8";
     mSupportedFirmwares.append(qMakePair(12, 3));
@@ -336,12 +340,13 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->buttonShowShapefile, &QPushButton::clicked, this, &MainWindow::onShowShapefile);
     // Connect the button's clicked signal to a lambda that opens a file dialog
     connect(ui->pushButton_load_shapefile, &QPushButton::clicked, this, &MainWindow::onLoadShapefile);
-    connect(ui->pushButtonLoadLogFile, &QPushButton::clicked, this, &MainWindow::onLoadLogfile);
+    // Note: pushButtonLoadLogFile and listLogfilesView have been replaced with combo box dropdowns
+    // connect(ui->pushButtonLoadLogFile, &QPushButton::clicked, this, &MainWindow::onLoadLogfile);
     connect(ui->buttonAppendRoute, &QPushButton::clicked, this, &MainWindow::onAppendButtonClicked);
     connect(ui->buttonPrependRoute, &QPushButton::clicked, this, &MainWindow::onPrependButtonClicked);
     connect(ui->buttonTransform, &QPushButton::clicked, this, &MainWindow::onTransformButtonClicked);
     connect(ui->buttonCut, &QPushButton::clicked, this, &MainWindow::onCutButtonClicked);
-    connect(ui->listLogfilesView, &QListView::clicked, this, &MainWindow::on_listLogFilesView_clicked);
+    // connect(ui->listLogfilesView, &QListView::clicked, this, &MainWindow::on_listLogFilesView_clicked);
     connect(ui->mapCarBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::onMapCarBoxChanged);
     connect(ui->refreshMachinesButton, &QPushButton::clicked, this, &MainWindow::on_refreshMachinesButton_clicked);
 //    connect(ui->connectSelectedButton, &QPushButton::clicked, this, &MainWindow::on_connectSelectedButton_clicked);
@@ -410,6 +415,9 @@ MainWindow::MainWindow(QWidget *parent) :
         qDebug() << "ERROR: fieldsModel setup failed!";
     }
     modelPath=setupPathTable(ui->pathTable,"paths");
+    
+    // Setup log tab
+    setupLogTab();
     
     // Setup model for tableViewMachines
     machinesModel = new QStandardItemModel(this);
@@ -686,21 +694,22 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
         QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
         bool isPress = e->type() == QEvent::KeyPress;
 
+        // Note: listLogfilesView has been replaced with combo box dropdowns
         // Handle delete key for listLogfilesView - remove selected items immediately
-        if (object == ui->listLogfilesView && e->type() == QEvent::KeyPress && keyEvent->key() == Qt::Key_Delete) {
-            QItemSelectionModel* selectionModel = ui->listLogfilesView->selectionModel();
-            QModelIndexList selection = selectionModel->selectedIndexes();
-            
-            // Remove selected items from the end to avoid index shifting
-            for(int i = selection.count() - 1; i >= 0; i--) {
-                QModelIndex index = selection.at(i);
-                if (index.isValid()) {
-                    fileList.removeAt(index.row());
-                }
-            }
-            fileModel->setStringList(fileList);  // Update the model
-            return true;  // Event handled
-        }
+        // if (object == ui->listLogfilesView && e->type() == QEvent::KeyPress && keyEvent->key() == Qt::Key_Delete) {
+        //     QItemSelectionModel* selectionModel = ui->listLogfilesView->selectionModel();
+        //     QModelIndexList selection = selectionModel->selectedIndexes();
+        //     
+        //     // Remove selected items from the end to avoid index shifting
+        //     for(int i = selection.count() - 1; i >= 0; i--) {
+        //         QModelIndex index = selection.at(i);
+        //         if (index.isValid()) {
+        //             fileList.removeAt(index.row());
+        //         }
+        //     }
+        //     fileModel->setStringList(fileList);  // Update the model
+        //     return true;  // Event handled
+        // }
 
         switch(keyEvent->key()) {
             case Qt::Key_Up:
@@ -1275,6 +1284,32 @@ QStandardItemModel* MainWindow::setupFieldsTable(QTableView* uiFieldTable)
     }
     
     return model;
+}
+
+void MainWindow::setupLogTab()
+{
+    qDebug() << "Setting up log tab...";
+    
+    // Initialize models for log tab dropdowns
+    logFarmsModel = new QStandardItemModel(this);
+    logFieldsModel = new QStandardItemModel(this);
+    logPathsModel = new QStandardItemModel(this);
+    
+    // Set up combo boxes
+    ui->comboBoxLogFarm->setModel(logFarmsModel);
+    ui->comboBoxLogField->setModel(logFieldsModel);
+    ui->comboBoxLogPath->setModel(logPathsModel);
+    
+    // Connect signals
+    connect(ui->comboBoxLogFarm, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onFarmSelectedForLog);
+    connect(ui->comboBoxLogField, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onFieldSelectedForLog);
+    connect(ui->comboBoxLogPath, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onPathSelectedForLog);
+    connect(ui->pushButtonLoadLog, &QPushButton::clicked, this, &MainWindow::onLoadLogButtonClicked);
+    
+    // Fetch initial data
+    fetchAllFarmsForLog();
+    
+    qDebug() << "Log tab setup complete";
 }
 
 QSqlRelationalTableModel* MainWindow::setupPathTable(QTableView* uiPathTable,QString sqlTablename)
@@ -2564,6 +2599,462 @@ void MainWindow::fetchAllFarmsData(int retryCount)
     });
     
     qDebug() << "Fetching all_farms data from:" << url.toString() << "(attempt" << (retryCount + 1) << ")";
+}
+
+// Log tab functions
+void MainWindow::fetchAllFarmsForLog()
+{
+    qDebug() << "fetchAllFarmsForLog: Starting";
+    
+    if (!logFarmsModel) {
+        qDebug() << "ERROR: logFarmsModel is null!";
+        return;
+    }
+    
+    // Clear existing data
+    logFarmsModel->removeRows(0, logFarmsModel->rowCount());
+    
+    // Add loading indicator
+    logFarmsModel->appendRow(new QStandardItem("Loading farms..."));
+    
+    QUrl url("http://127.0.0.1:8080/all_farms");
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+    
+    QNetworkReply* reply = mNetworkManager->get(request);
+    if (!reply) {
+        qDebug() << "ERROR: reply is null in fetchAllFarmsForLog!";
+        logFarmsModel->removeRows(0, logFarmsModel->rowCount());
+        logFarmsModel->appendRow(new QStandardItem("Error: Network request failed"));
+        return;
+    }
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        logFarmsModel->removeRows(0, logFarmsModel->rowCount());
+        
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "fetchAllFarmsForLog HTTP Status Code:" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            QByteArray xmlData = reply->readAll();
+            qDebug() << "Received farms data for log tab (size:" << xmlData.size() << ")";
+            
+            if (!xmlData.isEmpty()) {
+                parseAllFarmsXmlForLog(xmlData);
+            } else {
+                qDebug() << "Empty response for farms";
+                logFarmsModel->appendRow(new QStandardItem("No farms data"));
+            }
+        } else {
+            qDebug() << "Error fetching farms for log:" << reply->errorString();
+            logFarmsModel->appendRow(new QStandardItem("Error loading farms"));
+        }
+        reply->deleteLater();
+    });
+}
+
+void MainWindow::parseAllFarmsXmlForLog(const QByteArray &xmlData)
+{
+    qDebug() << "parseAllFarmsXmlForLog: Starting";
+    
+    if (!logFarmsModel) {
+        qDebug() << "ERROR: logFarmsModel is null!";
+        return;
+    }
+    
+    QXmlStreamReader xmlReader(xmlData);
+    
+    while (!xmlReader.atEnd()) {
+        QXmlStreamReader::TokenType token = xmlReader.readNext();
+        
+        if (token == QXmlStreamReader::StartElement && xmlReader.name() == "location") {
+            QString id, name;
+            
+            while (!xmlReader.atEnd()) {
+                token = xmlReader.readNext();
+                
+                if (token == QXmlStreamReader::EndElement && xmlReader.name() == "location") {
+                    break;
+                }
+                
+                if (token == QXmlStreamReader::StartElement) {
+                    if (xmlReader.name() == "id") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            id = xmlReader.text().toString();
+                        }
+                    } else if (xmlReader.name() == "name") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            name = xmlReader.text().toString();
+                        }
+                    }
+                }
+            }
+            
+            if (!name.isEmpty()) {
+                QStandardItem* farmItem = new QStandardItem(name);
+                if (!id.isEmpty()) {
+                    farmItem->setData(id, Qt::UserRole); // Store ID as user data
+                }
+                logFarmsModel->appendRow(farmItem);
+                qDebug() << "Added farm to log tab:" << name << "(ID:" << id << ")";
+            }
+        }
+    }
+    
+    if (xmlReader.hasError()) {
+        qDebug() << "XML parsing error in parseAllFarmsXmlForLog:" << xmlReader.errorString();
+    }
+    
+    qDebug() << "parseAllFarmsXmlForLog: Farms loaded:" << logFarmsModel->rowCount();
+}
+
+void MainWindow::fetchFieldsForLogFarm(int farmId)
+{
+    qDebug() << "fetchFieldsForLogFarm: Starting for farmId:" << farmId;
+    
+    if (!logFieldsModel) {
+        qDebug() << "ERROR: logFieldsModel is null!";
+        return;
+    }
+    
+    // Clear existing data
+    logFieldsModel->removeRows(0, logFieldsModel->rowCount());
+    logPathsModel->removeRows(0, logPathsModel->rowCount()); // Also clear paths
+    
+    // Add loading indicator
+    logFieldsModel->appendRow(new QStandardItem("Loading fields..."));
+    
+    QUrl url("http://127.0.0.1:8080/all_fields");
+    QUrlQuery query;
+    query.addQueryItem("farm", QString::number(farmId));
+    url.setQuery(query);
+    
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+    
+    QNetworkReply* reply = mNetworkManager->get(request);
+    if (!reply) {
+        qDebug() << "ERROR: reply is null in fetchFieldsForLogFarm!";
+        logFieldsModel->removeRows(0, logFieldsModel->rowCount());
+        logFieldsModel->appendRow(new QStandardItem("Error: Network request failed"));
+        return;
+    }
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, farmId]() {
+        logFieldsModel->removeRows(0, logFieldsModel->rowCount());
+        
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "fetchFieldsForLogFarm HTTP Status Code:" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            QByteArray xmlData = reply->readAll();
+            qDebug() << "Received fields data for farm" << farmId << "(size:" << xmlData.size() << ")";
+            
+            if (!xmlData.isEmpty()) {
+                parseAllFieldsXmlForLog(xmlData);
+            } else {
+                qDebug() << "Empty response for fields";
+                logFieldsModel->appendRow(new QStandardItem("No fields data"));
+            }
+        } else {
+            qDebug() << "Error fetching fields for log:" << reply->errorString();
+            logFieldsModel->appendRow(new QStandardItem("Error loading fields"));
+        }
+        reply->deleteLater();
+    });
+}
+
+void MainWindow::parseAllFieldsXmlForLog(const QByteArray &xmlData)
+{
+    qDebug() << "parseAllFieldsXmlForLog: Starting";
+    
+    if (!logFieldsModel) {
+        qDebug() << "ERROR: logFieldsModel is null!";
+        return;
+    }
+    
+    QXmlStreamReader xmlReader(xmlData);
+    
+    while (!xmlReader.atEnd()) {
+        QXmlStreamReader::TokenType token = xmlReader.readNext();
+        
+        if (token == QXmlStreamReader::StartElement && xmlReader.name() == "field") {
+            QString id, name;
+            
+            while (!xmlReader.atEnd()) {
+                token = xmlReader.readNext();
+                
+                if (token == QXmlStreamReader::EndElement && xmlReader.name() == "field") {
+                    break;
+                }
+                
+                if (token == QXmlStreamReader::StartElement) {
+                    if (xmlReader.name() == "id") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            id = xmlReader.text().toString();
+                        }
+                    } else if (xmlReader.name() == "name") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            name = xmlReader.text().toString();
+                        }
+                    }
+                }
+            }
+            
+            if (!name.isEmpty()) {
+                QStandardItem* fieldItem = new QStandardItem(name);
+                if (!id.isEmpty()) {
+                    fieldItem->setData(id, Qt::UserRole); // Store ID as user data
+                }
+                logFieldsModel->appendRow(fieldItem);
+                qDebug() << "Added field to log tab:" << name << "(ID:" << id << ")";
+            }
+        }
+    }
+    
+    if (xmlReader.hasError()) {
+        qDebug() << "XML parsing error in parseAllFieldsXmlForLog:" << xmlReader.errorString();
+    }
+    
+    qDebug() << "parseAllFieldsXmlForLog: Fields loaded:" << logFieldsModel->rowCount();
+}
+
+void MainWindow::fetchPathsForLogField(int fieldId)
+{
+    qDebug() << "fetchPathsForLogField: Starting for fieldId:" << fieldId;
+    
+    if (!logPathsModel) {
+        qDebug() << "ERROR: logPathsModel is null!";
+        return;
+    }
+    
+    // Clear existing data
+    logPathsModel->removeRows(0, logPathsModel->rowCount());
+    
+    // Add loading indicator
+    logPathsModel->appendRow(new QStandardItem("Loading paths..."));
+    
+    QUrl url("http://127.0.0.1:8080/all_paths");
+    QUrlQuery query;
+    query.addQueryItem("field", QString::number(fieldId));
+    url.setQuery(query);
+    
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+    
+    QNetworkReply* reply = mNetworkManager->get(request);
+    if (!reply) {
+        qDebug() << "ERROR: reply is null in fetchPathsForLogField!";
+        logPathsModel->removeRows(0, logPathsModel->rowCount());
+        logPathsModel->appendRow(new QStandardItem("Error: Network request failed"));
+        return;
+    }
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, fieldId]() {
+        logPathsModel->removeRows(0, logPathsModel->rowCount());
+        
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "fetchPathsForLogField HTTP Status Code:" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            QByteArray xmlData = reply->readAll();
+            qDebug() << "Received paths data for field" << fieldId << "(size:" << xmlData.size() << ")";
+            
+            if (!xmlData.isEmpty()) {
+                parseAllPathsXmlForLog(xmlData);
+            } else {
+                qDebug() << "Empty response for paths";
+                logPathsModel->appendRow(new QStandardItem("No paths data"));
+            }
+        } else {
+            qDebug() << "Error fetching paths for log:" << reply->errorString();
+            logPathsModel->appendRow(new QStandardItem("Error loading paths"));
+        }
+        reply->deleteLater();
+    });
+}
+
+void MainWindow::parseAllPathsXmlForLog(const QByteArray &xmlData)
+{
+    qDebug() << "parseAllPathsXmlForLog: Starting";
+    
+    if (!logPathsModel) {
+        qDebug() << "ERROR: logPathsModel is null!";
+        return;
+    }
+    
+    QXmlStreamReader xmlReader(xmlData);
+    
+    while (!xmlReader.atEnd()) {
+        QXmlStreamReader::TokenType token = xmlReader.readNext();
+        
+        if (token == QXmlStreamReader::StartElement && xmlReader.name() == "path") {
+            QString id, name;
+            
+            while (!xmlReader.atEnd()) {
+                token = xmlReader.readNext();
+                
+                if (token == QXmlStreamReader::EndElement && xmlReader.name() == "path") {
+                    break;
+                }
+                
+                if (token == QXmlStreamReader::StartElement) {
+                    if (xmlReader.name() == "id") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            id = xmlReader.text().toString();
+                        }
+                    } else if (xmlReader.name() == "name") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            name = xmlReader.text().toString();
+                        }
+                    }
+                }
+            }
+            
+            if (!name.isEmpty()) {
+                QStandardItem* pathItem = new QStandardItem(name);
+                if (!id.isEmpty()) {
+                    pathItem->setData(id, Qt::UserRole); // Store ID as user data
+                }
+                logPathsModel->appendRow(pathItem);
+                qDebug() << "Added path to log tab:" << name << "(ID:" << id << ")";
+            }
+        }
+    }
+    
+    if (xmlReader.hasError()) {
+        qDebug() << "XML parsing error in parseAllPathsXmlForLog:" << xmlReader.errorString();
+    }
+    
+    qDebug() << "parseAllPathsXmlForLog: Paths loaded:" << logPathsModel->rowCount();
+}
+
+void MainWindow::fetchLogForPath(int pathId)
+{
+    qDebug() << "fetchLogForPath: Starting for pathId:" << pathId;
+    
+    QUrl url("http://127.0.0.1:8080/log");
+    QUrlQuery query;
+    query.addQueryItem("path", QString::number(pathId));
+    url.setQuery(query);
+    
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+    
+    QNetworkReply* reply = mNetworkManager->get(request);
+    if (!reply) {
+        qDebug() << "ERROR: reply is null in fetchLogForPath!";
+        return;
+    }
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, pathId]() {
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "fetchLogForPath HTTP Status Code:" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            QByteArray xmlData = reply->readAll();
+            qDebug() << "Received log data for path" << pathId << "(size:" << xmlData.size() << ")";
+            
+            if (!xmlData.isEmpty()) {
+                // Load the log data into mapWidgetAnalysis
+                QXmlStreamReader xmlReader(xmlData);
+                bool success = ui->mapWidgetAnalysis->loadXMLRoute(&xmlReader, false); // false = not a border
+                if (success) {
+                    qDebug() << "Successfully loaded log for path:" << pathId;
+                    ui->mapWidgetAnalysis->update();
+                } else {
+                    qDebug() << "Failed to load log XML for path:" << pathId;
+                }
+            } else {
+                qDebug() << "Empty log data received for path:" << pathId;
+            }
+        } else {
+            qDebug() << "Error fetching log for path:" << pathId << "- Error:" << reply->errorString();
+        }
+        reply->deleteLater();
+    });
+}
+
+void MainWindow::onFarmSelectedForLog(int index)
+{
+    qDebug() << "onFarmSelectedForLog: Farm index selected:" << index;
+    
+    if (index < 0 || !logFarmsModel || index >= logFarmsModel->rowCount()) {
+        qDebug() << "Invalid farm index or model not ready";
+        logFieldsModel->removeRows(0, logFieldsModel->rowCount());
+        logPathsModel->removeRows(0, logPathsModel->rowCount());
+        return;
+    }
+    
+    QStandardItem* farmItem = logFarmsModel->item(index);
+    if (farmItem) {
+        QString farmId = farmItem->data(Qt::UserRole).toString();
+        qDebug() << "Selected farm ID:" << farmId;
+        
+        if (!farmId.isEmpty()) {
+            fetchFieldsForLogFarm(farmId.toInt());
+        } else {
+            qDebug() << "No farm ID found for selected farm";
+        }
+    }
+}
+
+void MainWindow::onFieldSelectedForLog(int index)
+{
+    qDebug() << "onFieldSelectedForLog: Field index selected:" << index;
+    
+    if (index < 0 || !logFieldsModel || index >= logFieldsModel->rowCount()) {
+        qDebug() << "Invalid field index or model not ready";
+        logPathsModel->removeRows(0, logPathsModel->rowCount());
+        return;
+    }
+    
+    QStandardItem* fieldItem = logFieldsModel->item(index);
+    if (fieldItem) {
+        QString fieldId = fieldItem->data(Qt::UserRole).toString();
+        qDebug() << "Selected field ID:" << fieldId;
+        
+        if (!fieldId.isEmpty()) {
+            fetchPathsForLogField(fieldId.toInt());
+        } else {
+            qDebug() << "No field ID found for selected field";
+        }
+    }
+}
+
+void MainWindow::onPathSelectedForLog(int index)
+{
+    qDebug() << "onPathSelectedForLog: Path index selected:" << index;
+    // Note: We don't automatically load the log here - user must click Load Log button
+}
+
+void MainWindow::onLoadLogButtonClicked()
+{
+    qDebug() << "onLoadLogButtonClicked: Load log button clicked";
+    
+    int pathIndex = ui->comboBoxLogPath->currentIndex();
+    if (pathIndex < 0 || !logPathsModel || pathIndex >= logPathsModel->rowCount()) {
+        qDebug() << "Invalid path selection";
+        return;
+    }
+    
+    QStandardItem* pathItem = logPathsModel->item(pathIndex);
+    if (pathItem) {
+        QString pathId = pathItem->data(Qt::UserRole).toString();
+        qDebug() << "Loading log for path ID:" << pathId;
+        
+        if (!pathId.isEmpty()) {
+            fetchLogForPath(pathId.toInt());
+        } else {
+            qDebug() << "No path ID found for selected path";
+        }
+    }
 }
 
 void MainWindow::fetchAllFieldsData(int farmId, int retryCount)
@@ -5183,9 +5674,9 @@ bool MainWindow::onLoadLogfile()
             }
         }
         
-        // Add to listview
-        fileList.append(QString::fromStdString(nmeafilename));
-        fileModel->setStringList(fileList);  // Update the model
+        // Note: fileList and fileModel are no longer used - replaced with combo boxes
+        // fileList.append(QString::fromStdString(nmeafilename));
+        // fileModel->setStringList(fileList);  // Update the model
     } else
     {
         QMessageBox msgBox;
@@ -5198,35 +5689,36 @@ bool MainWindow::onLoadLogfile()
 
 
 void MainWindow::on_listLogFilesView_clicked(const QModelIndex& index) {
-    if (index.isValid()) {
-        QString filename = fileModel->data(index, Qt::DisplayRole).toString();
-        qDebug() << "Selected file:" << filename;
-        int row = index.row();  // 0-based row index
-        qDebug() << "Clicked row:" << row;
-        ui->mapWidgetAnalysis->setPathNow(row);
-        
-        // Store the original log for non-destructive filtering if not already stored
-        if (row >= 0 && row >= mOriginalLogs.size()) {
-            MapRoute originalRoute = ui->mapWidgetAnalysis->getCurrentPath();
-            mOriginalLogs.append(originalRoute);
-        }
-        
-        // Initialize RangeSlider based on the selected route
-        if (ui->mapWidgetAnalysis->mPaths->size() > 0) {
-            MapRoute& currentRoute = ui->mapWidgetAnalysis->getCurrentPath();
-            int totalPoints = currentRoute.size();
-            if (totalPoints > 0) {
-                // Set default range to 20-80% of the route
-                ui->rangeSlider->setRange(0, 100);
-                ui->rangeSlider->setLowerValue(20);
-                ui->rangeSlider->setUpperValue(80);
-                
-                // Update our stored values
-                mRangeSliderLowerValue = 20;
-                mRangeSliderUpperValue = 80;
-            }
-        }
-    }
+    // Note: This function is no longer used - replaced with combo box dropdowns
+    // if (index.isValid()) {
+    //     QString filename = fileModel->data(index, Qt::DisplayRole).toString();
+    //     qDebug() << "Selected file:" << filename;
+    //     int row = index.row();  // 0-based row index
+    //     qDebug() << "Clicked row:" << row;
+    //     ui->mapWidgetAnalysis->setPathNow(row);
+    //     
+    //     // Store the original log for non-destructive filtering if not already stored
+    //     if (row >= 0 && row >= mOriginalLogs.size()) {
+    //         MapRoute originalRoute = ui->mapWidgetAnalysis->getCurrentPath();
+    //         mOriginalLogs.append(originalRoute);
+    //     }
+    //     
+    //     // Initialize RangeSlider based on the selected route
+    //     if (ui->mapWidgetAnalysis->mPaths->size() > 0) {
+    //         MapRoute& currentRoute = ui->mapWidgetAnalysis->getCurrentPath();
+    //         int totalPoints = currentRoute.size();
+    //         if (totalPoints > 0) {
+    //             // Set default range to 20-80% of the route
+    //             ui->rangeSlider->setRange(0, 100);
+    //             ui->rangeSlider->setLowerValue(20);
+    //             ui->rangeSlider->setUpperValue(80);
+    //             
+    //             // Update our stored values
+    //             mRangeSliderLowerValue = 20;
+    //             mRangeSliderUpperValue = 80;
+    //         }
+    //     }
+    // }
 }
 
 void MainWindow::on_mapChooseNmeaButton_clicked()
