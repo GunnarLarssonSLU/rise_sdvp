@@ -639,15 +639,25 @@ def edit_farm():
         return f"Error: {str(e)}", 500
 
 
-@app.route('/all_fields')
+@app.route('/all_fields', methods=['GET', 'POST'])
 def all_fields():
     try:
+        # Get all the fields from POST form data or URL parameters
+        def get_param(name):
+            value = request.form.get(name) or request.args.get(name)
+            return value
+        
+        farm = get_param('farm')
+        
+        if not farm:
+            return "Error: 'farm' parameter is required", 400
+        
         # Connect to SQLite database
         conn = sqlite3.connect('data.db')
         cursor = conn.cursor()
         
-        # Query all fields from the fields table
-        cursor.execute('SELECT * FROM fields')
+        # Query fields from the fields table filtered by location = farm
+        cursor.execute('SELECT * FROM fields WHERE location = ?', (farm,))
         fields = cursor.fetchall()
         
         # Get column names from cursor description

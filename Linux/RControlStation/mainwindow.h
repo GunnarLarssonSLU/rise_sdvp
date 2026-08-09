@@ -142,13 +142,12 @@ private slots:
 
     void onSelectedFarm(const QModelIndex& current, const QModelIndex& previous);
     void onSelectedField(const QModelIndex& current, const QModelIndex& previous);
-    void onSelectedFieldGeneral(QSqlRelationalTableModel *model,QSqlRelationalTableModel *modelPth,const QModelIndex& current, const QModelIndex& previous);
+    void onSelectedFieldGeneral(QStandardItemModel *model, QSqlRelationalTableModel *modelPth, const QModelIndex& current, const QModelIndex& previous);
     void on_listLogFilesView_clicked(const QModelIndex& index);
 
 
     void handleAddFieldButton();
     void handleAddFarmButton();
-    void handleAddFieldButton();
     void addFarmToServer(const QString &name);
     void updateFarmOnServer(int farmId, const QString &name, double latitude, double longitude);
     void deleteFarmFromServer(int farmId);

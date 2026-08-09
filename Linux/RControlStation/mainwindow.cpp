@@ -1330,24 +1330,6 @@ void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& p
     modelPath->select();
     */
 
-    // Get the storedinfile from the current field
-    QString xmlFile = model->data(model->index(row, 3)).toString(); // File is column 3
-    
-    if (!xmlFile.isEmpty()) {
-        QFile file(xmlFile);
-        if (!file.exists()) {
-            qDebug() << "File does not exist:" << xmlFile;
-            return;
-        }
-
-        if (!file.open(QIODevice::ReadOnly)) {
-            qDebug() << "Could not open file for reading:" << xmlFile;
-            return;
-        }
-
-        QXmlStreamReader xmlData(&file);
-        ui->mapWidgetFields->loadXMLRoute(&xmlData, true);
-    }
     qDebug() << "AC";
     //            if (ui->fieldTable->model()->rowCount()>0)
     if (ui->mapWidgetFields->getFieldNum()>0)
