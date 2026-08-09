@@ -1242,6 +1242,27 @@ QStandardItemModel* MainWindow::setupFieldsTable(QTableView* uiFieldTable)
     // Connect dataChanged signal to handle field name changes
     connect(fieldsModel, &QStandardItemModel::dataChanged, this, &MainWindow::onFieldDataChanged);
     
+    // Also connect to the fieldnameEdit widget's editingFinished signal
+    // This handles the case when editing through the widget mapper
+    QLineEdit* fieldnameEdit = this->findChild<QLineEdit*>("fieldnameEdit");
+    if (fieldnameEdit) {
+        qDebug() << "Found fieldnameEdit widget, connecting editingFinished signal";
+        connect(fieldnameEdit, &QLineEdit::editingFinished, this, [this]() {
+            qDebug() << "fieldnameEdit editingFinished signal received";
+            // Get the current row from the selection
+            QModelIndex currentIndex = ui->fieldTable->selectionModel()->currentIndex();
+            if (currentIndex.isValid()) {
+                qDebug() << "Current field row:" << currentIndex.row();
+                // Trigger the data changed handler manually
+                onFieldDataChanged(currentIndex, currentIndex, {Qt::EditRole});
+            } else {
+                qDebug() << "WARNING: No valid current index when fieldnameEdit editingFinished";
+            }
+        });
+    } else {
+        qDebug() << "WARNING: fieldnameEdit widget not found!";
+    }
+    
     return model;
 }
 
