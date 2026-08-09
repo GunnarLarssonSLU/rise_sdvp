@@ -405,7 +405,10 @@ MainWindow::MainWindow(QWidget *parent) :
     if (!farmsModel) {
         qDebug() << "ERROR: farmsModel setup failed!";
     }
-    modelField=setupFieldTable(ui->fieldTable,"fields");
+    fieldsModel = setupFieldsTable(ui->fieldTable);
+    if (!fieldsModel) {
+        qDebug() << "ERROR: fieldsModel setup failed!";
+    }
     modelPath=setupPathTable(ui->pathTable,"paths");
     
     // Setup model for tableViewMachines
@@ -558,18 +561,28 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
             {
             case Qt::Key_Delete:
                 // Multiple rows can be selected
-                for(int i=0; i< selection.count(); i++)
-                {
-                    QModelIndex index = selection.at(i);
-                    qDebug() << index.row();
-                    QAbstractItemModel* connectedModel = ui->fieldTable->model();
-                    QString fieldid = connectedModel->data(connectedModel->index(index.row(), 0)).toString();
-                    db.deleteField(fieldid);
-                    //                     connectedModel->select();
+                if (!selection.isEmpty()) {
+                    for(int i=0; i< selection.count(); i++)
+                    {
+                        QModelIndex index = selection.at(i);
+                        qDebug() << "Deleting field at row:" << index.row();
+                        
+                        // Get the field ID from the name column (stored as user data)
+                        QStandardItem* nameItem = fieldsModel->item(index.row(), 1); // Name is column 1
+                        if (nameItem) {
+                            QString fieldId = nameItem->data(Qt::UserRole).toString();
+                            
+                            if (!fieldId.isEmpty()) {
+                                qDebug() << "Deleting field with ID:" << fieldId;
+                                deleteFieldFromServer(fieldId.toInt());
+                            } else {
+                                qDebug() << "No field ID found for row:" << index.row();
+                            }
+                        } else {
+                            qDebug() << "No field name item found for row:" << index.row();
+                        }
+                    }
                 }
-                if (model) {
-                    model->select();
-                };
                 return true;
                 break;
             case Qt::Key_Return:
@@ -1144,45 +1157,88 @@ QStandardItemModel* MainWindow::setupFarmsTable(QTableView* uiFarmTable)
     return model;
 }
 
-QSqlRelationalTableModel* MainWindow::setupFieldTable(QTableView* uiFieldTable,QString sqlTablename)
+// QSqlRelationalTableModel* MainWindow::setupFieldTable(QTableView* uiFieldTable,QString sqlTablename) // Replaced with webserver version
+// {
+//     // Create the data model:
+//     QSqlRelationalTableModel *model = new QSqlRelationalTableModel(uiFieldTable);
+//     model->setEditStrategy(QSqlTableModel::OnFieldChange);
+//     model->setTable(sqlTablename);
+// 
+//     // Remember the indexes of the columns:
+//     int locationIdx = model->fieldIndex("location");
+// 
+//     // Set the relations to the other database tables:
+//     model->setRelation(locationIdx, QSqlRelation("locations", "id", "name"));
+// 
+//     // Set the localized header captions:
+//     model->setHeaderData(locationIdx, Qt::Horizontal, tr("Location"));
+//     model->setHeaderData(model->fieldIndex("name"),  Qt::Horizontal, tr("Field name"));
+//     model->setHeaderData(model->fieldIndex("fenced"),  Qt::Horizontal, tr("Is fenced?"));
+//     model->setHeaderData(model->fieldIndex("storedinfile"),  Qt::Horizontal, tr("File"));
+//     model->setHeaderData(model->fieldIndex("location"),  Qt::Horizontal, tr("Location"));
+//     model->setHeaderData(model->fieldIndex("id"),  Qt::Horizontal, tr("Id"));
+// 
+//     // Set the model and hide the ID column:
+//     uiFieldTable->setModel(model);
+//     uiFieldTable->setColumnHidden(model->fieldIndex("id"), true);
+//     uiFieldTable->setColumnHidden(model->fieldIndex("location"), true);
+// 
+//     uiFieldTable->setSelectionMode(QAbstractItemView::SingleSelection);
+//     uiFieldTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+//     uiFieldTable->setItemDelegateForColumn(1, checkboxdelegate);
+//     uiFieldTable->resizeColumnsToContents();
+//     uiFieldTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+// //    uiFieldTable->horizontalHeader()->setVisible(false); // Hide vertical headers
+// 
+//     QDataWidgetMapper *mapperField = new QDataWidgetMapper(this);
+//     mapperField->setModel(model);
+//     mapperField->addMapping(this->findChild<QLineEdit*>("fieldnameEdit"), model->fieldIndex("name"));
+//     mapperField->addMapping(this->findChild<QLineEdit*>("filenameEdit"), model->fieldIndex("storedinfile"));
+//     connect(uiFieldTable->selectionModel(),&QItemSelectionModel::currentRowChanged,mapperField,&QDataWidgetMapper::setCurrentModelIndex);
+// 
+//     return model;
+// }
+
+QStandardItemModel* MainWindow::setupFieldsTable(QTableView* uiFieldTable)
 {
+    if (!uiFieldTable) {
+        qDebug() << "ERROR: uiFieldTable is null in setupFieldsTable!";
+        return nullptr;
+    }
+    
     // Create the data model:
-    QSqlRelationalTableModel *model = new QSqlRelationalTableModel(uiFieldTable);
-    model->setEditStrategy(QSqlTableModel::OnFieldChange);
-    model->setTable(sqlTablename);
-
-    // Remember the indexes of the columns:
-    int locationIdx = model->fieldIndex("location");
-
-    // Set the relations to the other database tables:
-    model->setRelation(locationIdx, QSqlRelation("locations", "id", "name"));
-
-    // Set the localized header captions:
-    model->setHeaderData(locationIdx, Qt::Horizontal, tr("Location"));
-    model->setHeaderData(model->fieldIndex("name"),  Qt::Horizontal, tr("Field name"));
-    model->setHeaderData(model->fieldIndex("fenced"),  Qt::Horizontal, tr("Is fenced?"));
-    model->setHeaderData(model->fieldIndex("storedinfile"),  Qt::Horizontal, tr("File"));
-    model->setHeaderData(model->fieldIndex("location"),  Qt::Horizontal, tr("Location"));
-    model->setHeaderData(model->fieldIndex("id"),  Qt::Horizontal, tr("Id"));
-
-    // Set the model and hide the ID column:
+    QStandardItemModel* model = new QStandardItemModel(this);
+    
+    // Set the header labels - same as the database columns we want to show
+    // Based on the original setupFieldTable: Location, Field name, Is fenced?, File, Id
+    model->setHorizontalHeaderLabels(QStringList() << "Location" << "Field name" << "Is fenced?" << "File" << "Id");
+    
+    // Set the model to the table view
     uiFieldTable->setModel(model);
-    uiFieldTable->setColumnHidden(model->fieldIndex("id"), true);
-    uiFieldTable->setColumnHidden(model->fieldIndex("location"), true);
-
+    
+    // Hide the columns that should not be visible (same as in the original setupFieldTable)
+    uiFieldTable->setColumnHidden(0, true); // Location (hidden as it was in the original)
+    uiFieldTable->setColumnHidden(4, true); // Id (hidden as it was in the original)
+    
+    // Set table properties
     uiFieldTable->setSelectionMode(QAbstractItemView::SingleSelection);
     uiFieldTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    uiFieldTable->setItemDelegateForColumn(1, checkboxdelegate);
     uiFieldTable->resizeColumnsToContents();
     uiFieldTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-//    uiFieldTable->horizontalHeader()->setVisible(false); // Hide vertical headers
-
+    
+    // Set checkbox delegate for the "Is fenced?" column (column 2)
+    uiFieldTable->setItemDelegateForColumn(2, checkboxdelegate);
+    
+    // Set up data widget mapper for the field edit fields
     QDataWidgetMapper *mapperField = new QDataWidgetMapper(this);
     mapperField->setModel(model);
-    mapperField->addMapping(this->findChild<QLineEdit*>("fieldnameEdit"), model->fieldIndex("name"));
-    mapperField->addMapping(this->findChild<QLineEdit*>("filenameEdit"), model->fieldIndex("storedinfile"));
-    connect(uiFieldTable->selectionModel(),&QItemSelectionModel::currentRowChanged,mapperField,&QDataWidgetMapper::setCurrentModelIndex);
-
+    mapperField->addMapping(this->findChild<QLineEdit*>("fieldnameEdit"), 1); // Map to Field name column (index 1)
+    mapperField->addMapping(this->findChild<QLineEdit*>("filenameEdit"), 3); // Map to File column (index 3)
+    connect(uiFieldTable->selectionModel(), &QItemSelectionModel::currentRowChanged, mapperField, &QDataWidgetMapper::setCurrentModelIndex);
+    
+    // Set the member variable to the local model
+    fieldsModel = model;
+    
     return model;
 }
 
@@ -1263,15 +1319,10 @@ void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& p
     ui->mapWidgetFields->clearAllPaths();
     qDebug() << "Fields (onSelectedFarm 1): " << ui->mapWidgetFields->mFields->size();
     // Get the selected value from the first table view
-    QVariant selectedValue = id;
+    // QVariant selectedValue = id; // No longer needed with webserver model
 
-    // Construct a new query based on the selected value
-    QString filter = QString("location = %1").arg(id);
-
-
-    // Set the new query for the QSqlRelationalTableModel
-    modelField->setFilter(filter);
-    modelField->select();
+    // Fetch fields for the selected farm from webserver
+    fetchAllFieldsData(id);
     /*
     //To make sure the path table view is empty until a field has been selected
     QString filter2 = QString("field = %1").arg(0);
@@ -1279,15 +1330,10 @@ void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& p
     modelPath->select();
     */
 
-    // Execute the SQL query
-    QString querystring= QString("SELECT * FROM fields WHERE location = %1").arg(selectedValue.toString());
-    QSqlQuery query(querystring);
-
-    // Loop through the query results
-    while (query.next()) {
-        // Access data for each record
-        QString xmlFile= query.value("storedinfile").toString();
-
+    // Get the storedinfile from the current field
+    QString xmlFile = model->data(model->index(row, 3)).toString(); // File is column 3
+    
+    if (!xmlFile.isEmpty()) {
         QFile file(xmlFile);
         if (!file.exists()) {
             qDebug() << "File does not exist:" << xmlFile;
@@ -1300,7 +1346,7 @@ void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& p
         }
 
         QXmlStreamReader xmlData(&file);
-        ui->mapWidgetFields->loadXMLRoute(&xmlData,true);
+        ui->mapWidgetFields->loadXMLRoute(&xmlData, true);
     }
     qDebug() << "AC";
     //            if (ui->fieldTable->model()->rowCount()>0)
@@ -1327,16 +1373,22 @@ void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& p
 
 void MainWindow::onSelectedField(const QModelIndex& current, const QModelIndex& previous)
 {
-    onSelectedFieldGeneral(modelField,modelPath,current, previous);
+    onSelectedFieldGeneral(fieldsModel, modelPath, current, previous);
 };
 
-void MainWindow::onSelectedFieldGeneral(QSqlRelationalTableModel *model,QSqlRelationalTableModel *modelPth,const QModelIndex& current, const QModelIndex& previous)
+void MainWindow::onSelectedFieldGeneral(QStandardItemModel *model, QSqlRelationalTableModel *modelPth, const QModelIndex& current, const QModelIndex& previous)
 {
     MapWidget* activeMap=ui->mapWidgetFields;
     int row = current.row();
 
     // Retrieve the data of the selected row if needed
-    int id = model->data(model->index(row, 0)).toInt();
+    // Get the field ID from the name column (stored as user data)
+    QStandardItem* nameItem = model->item(row, 1); // Name is column 1
+    int id = -1;
+    if (nameItem) {
+        QString fieldId = nameItem->data(Qt::UserRole).toString();
+        id = fieldId.toInt();
+    }
 
     ui->mapWidgetFields->setFieldNow(row);
 
@@ -2485,6 +2537,103 @@ void MainWindow::fetchAllFarmsData(int retryCount)
     qDebug() << "Fetching all_farms data from:" << url.toString() << "(attempt" << (retryCount + 1) << ")";
 }
 
+void MainWindow::fetchAllFieldsData(int farmId, int retryCount)
+{
+    qDebug() << "fetchAllFieldsData: Starting for farmId:" << farmId << "retryCount:" << retryCount;
+    const int MAX_RETRIES = 3;
+    const int RETRY_DELAY_MS = 2000; // 2 seconds between retries
+    
+    QUrl url("http://127.0.0.1:8080/all_fields");
+    QUrlQuery query;
+    query.addQueryItem("farm_id", QString::number(farmId));
+    url.setQuery(query);
+    
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+    
+    // Check if fieldsModel is initialized
+    if (!fieldsModel) {
+        qDebug() << "ERROR: fieldsModel is null in fetchAllFieldsData!";
+        return;
+    }
+    
+    // Clear the model
+    fieldsModel->removeRows(0, fieldsModel->rowCount());
+    
+    // Add loading state
+    fieldsModel->appendRow(new QStandardItem(retryCount > 0 ? QString("Retrying... (%1/%2)").arg(retryCount).arg(MAX_RETRIES) : "Loading..."));
+    fieldsModel->appendRow(new QStandardItem(""));
+    
+    // Connect the finished signal to parse the response
+    QNetworkReply* reply = mNetworkManager->get(request);
+    if (!reply) {
+        qDebug() << "ERROR: reply is null in fetchAllFieldsData!";
+        return;
+    }
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, farmId, retryCount]() {
+        // Clear loading message
+        fieldsModel->removeRows(0, fieldsModel->rowCount());
+        
+        // Check HTTP status code
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "HTTP Status Code (all_fields):" << statusCode;
+        if (reply->error() != QNetworkReply::NoError) {
+            qDebug() << "Network error:" << reply->error() << "-" << reply->errorString();
+        }
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            QByteArray xmlData = reply->readAll();
+            qDebug() << "Received XML data from all_fields (size:" << xmlData.size() << "):";
+            qDebug() << "XML content:" << xmlData;
+            
+            if (xmlData.isEmpty()) {
+                qDebug() << "Empty response received from all_fields";
+                fieldsModel->appendRow(new QStandardItem("No data"));
+                fieldsModel->appendRow(new QStandardItem("Empty response"));
+            } else {
+                // Check if response contains valid XML
+                bool hasFields = xmlData.contains("<fields>") && xmlData.contains("</fields>");
+                qDebug() << "XML validation - has <fields>:" << hasFields;
+                
+                if (hasFields) {
+                    parseAllFieldsXml(xmlData);
+                } else {
+                    qDebug() << "XML validation failed - missing fields tags";
+                    fieldsModel->appendRow(new QStandardItem("Invalid data"));
+                    fieldsModel->appendRow(new QStandardItem("Bad format"));
+                }
+            }
+        } else {
+            qDebug() << "Error fetching all_fields data:" << reply->errorString();
+            qDebug() << "Error code:" << reply->error();
+            qDebug() << "HTTP Status Code:" << statusCode;
+            
+            // Retry if we haven't exceeded max retries and it's a timeout or temporary error
+            if (retryCount < MAX_RETRIES && 
+                (reply->error() == QNetworkReply::TimeoutError ||
+                 reply->error() == QNetworkReply::TemporaryNetworkFailureError ||
+                 reply->error() == QNetworkReply::ConnectionRefusedError)) {
+                qDebug() << "Retrying all_fields in" << RETRY_DELAY_MS << "ms...";
+                QTimer::singleShot(RETRY_DELAY_MS, this, [this, farmId, retryCount]() {
+                    fetchAllFieldsData(farmId, retryCount + 1);
+                });
+            } else {
+                // Show final error after all retries failed
+                QString errorMsg = reply->errorString();
+                if (statusCode != 200 && statusCode > 0) {
+                    errorMsg = QString("HTTP %1").arg(statusCode);
+                }
+                fieldsModel->appendRow(new QStandardItem("Error"));
+                fieldsModel->appendRow(new QStandardItem(errorMsg));
+            }
+        }
+        reply->deleteLater();
+    });
+    
+    qDebug() << "Fetching all_fields data from:" << url.toString() << "(attempt" << (retryCount + 1) << ")";
+}
+
 void MainWindow::fetchVehicleTypes(int retryCount)
 {
     const int MAX_RETRIES = 3;
@@ -2844,6 +2993,111 @@ void MainWindow::parseAllFarmsXml(const QByteArray &xmlData)
     }
 }
 
+void MainWindow::parseAllFieldsXml(const QByteArray &xmlData)
+{
+    // Clear existing data
+    fieldsModel->removeRows(0, fieldsModel->rowCount());
+    
+    // Parse the XML
+    QXmlStreamReader xmlReader(xmlData);
+    bool foundFields = false;
+    
+    qDebug() << "Starting XML parsing for all_fields...";
+    qDebug() << "XML data size:" << xmlData.size();
+    qDebug() << "XML data preview:" << xmlData.left(200) << "...";
+    
+    while (!xmlReader.atEnd()) {
+        QXmlStreamReader::TokenType token = xmlReader.readNext();
+        
+        if (token == QXmlStreamReader::StartElement && xmlReader.name() == "field") {
+            QString id, name, storedinfile, location;
+            bool fenced = false;
+            foundFields = true;
+            qDebug() << "Found field element in all_fields";
+            
+            // Read field element contents
+            while (!xmlReader.atEnd()) {
+                token = xmlReader.readNext();
+                
+                if (token == QXmlStreamReader::EndElement && xmlReader.name() == "field") {
+                    break; // End of field element
+                }
+                
+                if (token == QXmlStreamReader::StartElement) {
+                    if (xmlReader.name() == "id") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            id = xmlReader.text().toString();
+                        }
+                    } else if (xmlReader.name() == "name") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            name = xmlReader.text().toString();
+                        }
+                    } else if (xmlReader.name() == "fenced") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            QString fencedStr = xmlReader.text().toString();
+                            fenced = (fencedStr == "1" || fencedStr.toLower() == "true");
+                        }
+                    } else if (xmlReader.name() == "storedinfile") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            storedinfile = xmlReader.text().toString();
+                        }
+                    } else if (xmlReader.name() == "location") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            location = xmlReader.text().toString();
+                        }
+                    }
+                }
+            }
+            
+            // Add the field to the model if we have at least a name
+            if (!name.isEmpty()) {
+                qDebug() << "Adding field:" << name << "with ID:" << id << "Fenced:" << fenced << "File:" << storedinfile;
+                QList<QStandardItem*> rowItems;
+                QStandardItem* locationItem = new QStandardItem(location);
+                QStandardItem* nameItem = new QStandardItem(name);
+                if (!id.isEmpty()) {
+                    nameItem->setData(id, Qt::UserRole); // Store ID as user data
+                }
+                QStandardItem* fencedItem = new QStandardItem(fenced ? "1" : "0");
+                fencedItem->setCheckable(true);
+                fencedItem->setCheckState(fenced ? Qt::Checked : Qt::Unchecked);
+                
+                rowItems.append(locationItem);
+                rowItems.append(nameItem);
+                rowItems.append(fencedItem);
+                rowItems.append(new QStandardItem(storedinfile));
+                rowItems.append(new QStandardItem(id));
+                fieldsModel->appendRow(rowItems);
+            } else {
+                qDebug() << "Field missing name in all_fields - name:" << name;
+            }
+        }
+    }
+    
+    if (xmlReader.hasError()) {
+        qDebug() << "XML parsing error for all_fields:" << xmlReader.errorString();
+        qDebug() << "Error line:" << xmlReader.lineNumber() << "column:" << xmlReader.columnNumber();
+        
+        // If no fields were found and there was an error, show the error in the model
+        if (!foundFields) {
+            fieldsModel->appendRow(new QStandardItem("XML Error"));
+            fieldsModel->appendRow(new QStandardItem(xmlReader.errorString()));
+        }
+    }
+    
+    // If no fields were found but no error occurred, show a message
+    if (!foundFields && !xmlReader.hasError()) {
+        qDebug() << "No fields found in all_fields XML";
+        fieldsModel->appendRow(new QStandardItem("No fields"));
+        fieldsModel->appendRow(new QStandardItem("found"));
+    }
+}
+
 void MainWindow::addFarmToServer(const QString &name)
 {
     QUrl url("http://127.0.0.1:8080/add_farm");
@@ -2935,6 +3189,109 @@ void MainWindow::deleteFarmFromServer(int farmId)
     });
     
     qDebug() << "Deleting farm:" << farmId;
+}
+
+void MainWindow::addFieldToServer(const QString &name, int farmId, const QString &filename)
+{
+    QUrl url("http://127.0.0.1:8080/add_field");
+    QUrlQuery query;
+    query.addQueryItem("name", name);
+    query.addQueryItem("farm_id", QString::number(farmId));
+    query.addQueryItem("filename", filename);
+    url.setQuery(query);
+    
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+    
+    QNetworkReply* reply = mNetworkManager->get(request);
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, name, farmId]() {
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "Add field HTTP Status Code:" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            qDebug() << "Field added successfully";
+            // Refresh the fields list for the current farm
+            int currentFarmId = currentFarm();
+            if (currentFarmId != -1) {
+                fetchAllFieldsData(currentFarmId);
+            }
+        } else {
+            qDebug() << "Error adding field:" << reply->errorString();
+            qDebug() << "HTTP Status Code:" << statusCode;
+        }
+        reply->deleteLater();
+    });
+    
+    qDebug() << "Adding field:" << name << "for farm:" << farmId;
+}
+
+void MainWindow::updateFieldOnServer(int fieldId, const QString &name, const QString &filename)
+{
+    QUrl url("http://127.0.0.1:8080/edit_field");
+    QUrlQuery query;
+    query.addQueryItem("id", QString::number(fieldId));
+    query.addQueryItem("name", name);
+    query.addQueryItem("filename", filename);
+    url.setQuery(query);
+    
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+    
+    QNetworkReply* reply = mNetworkManager->get(request);
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, fieldId, name]() {
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "Update field HTTP Status Code:" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            qDebug() << "Field updated successfully";
+            // Refresh the fields list for the current farm
+            int currentFarmId = currentFarm();
+            if (currentFarmId != -1) {
+                fetchAllFieldsData(currentFarmId);
+            }
+        } else {
+            qDebug() << "Error updating field:" << reply->errorString();
+            qDebug() << "HTTP Status Code:" << statusCode;
+        }
+        reply->deleteLater();
+    });
+    
+    qDebug() << "Updating field:" << fieldId << "with name:" << name;
+}
+
+void MainWindow::deleteFieldFromServer(int fieldId)
+{
+    QUrl url("http://127.0.0.1:8080/remove_field");
+    QUrlQuery query;
+    query.addQueryItem("id", QString::number(fieldId));
+    url.setQuery(query);
+    
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+    
+    QNetworkReply* reply = mNetworkManager->get(request);
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, fieldId]() {
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "Delete field HTTP Status Code:" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            qDebug() << "Field deleted successfully";
+            // Refresh the fields list for the current farm
+            int currentFarmId = currentFarm();
+            if (currentFarmId != -1) {
+                fetchAllFieldsData(currentFarmId);
+            }
+        } else {
+            qDebug() << "Error deleting field:" << reply->errorString();
+            qDebug() << "HTTP Status Code:" << statusCode;
+        }
+        reply->deleteLater();
+    });
+    
+    qDebug() << "Deleting field:" << fieldId;
 }
 
 void MainWindow::onAddMachineButtonClicked()
@@ -5554,14 +5911,12 @@ void MainWindow::addField()
     int farmid=currentFarm();
     if (farmid)
     {
-        db.addField(ui->fieldnameEdit->text(),farmid,ui->filenameEdit->text());
+        addFieldToServer(ui->fieldnameEdit->text(), farmid, ui->filenameEdit->text());
     } else {
         QMessageBox msgBox;
         msgBox.setText("No row selected!");
         msgBox.exec();
     };
-    modelField->refresh();
-    modelField->select();
 }
 
 int MainWindow::currentFarm()

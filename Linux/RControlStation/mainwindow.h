@@ -148,9 +148,13 @@ private slots:
 
     void handleAddFieldButton();
     void handleAddFarmButton();
+    void handleAddFieldButton();
     void addFarmToServer(const QString &name);
     void updateFarmOnServer(int farmId, const QString &name, double latitude, double longitude);
     void deleteFarmFromServer(int farmId);
+    void addFieldToServer(const QString &name, int farmId, const QString &filename);
+    void updateFieldOnServer(int fieldId, const QString &name, const QString &filename);
+    void deleteFieldFromServer(int fieldId);
 
     void on_disconnectButton_clicked();
     void on_connectSelectedButton_clicked();
@@ -269,7 +273,7 @@ private slots:
     void updateStatisticsDisplay(const QList<double>& values, const QString& unit = ""); // Update statistics display
 
     // QSqlRelationalTableModel* setupFarmTable(QTableView* uiFarmtable,QString SqlTableName); // Replaced with webserver version
-    QSqlRelationalTableModel* setupFieldTable(QTableView* uiFieldtable,QString SqlTableName);
+    // QSqlRelationalTableModel* setupFieldTable(QTableView* uiFieldtable,QString SqlTableName); // Replaced with webserver version
     QSqlRelationalTableModel* setupPathTable(QTableView* uiPathTable,QString sqlTablename);
 
 private:
@@ -285,22 +289,25 @@ private:
     void fetchAllMachinesData(int retryCount = 0);
     void fetchVehicleTypes(int retryCount = 0);
     void fetchAllFarmsData(int retryCount = 0);
+    void fetchAllFieldsData(int farmId, int retryCount = 0);
     void parseVehicleTypesXml(const QByteArray &xmlData);
     void parseAllMachinesXml(const QByteArray &xmlData);
     void parseMachinesXml(const QByteArray &xmlData);
     void parseAllFarmsXml(const QByteArray &xmlData);
+    void parseAllFieldsXml(const QByteArray &xmlData);
     void onAddMachineButtonClicked();
     QStandardItemModel* setupFarmsTable(QTableView* uiFarmTable);
+    QStandardItemModel* setupFieldsTable(QTableView* uiFieldTable);
 
     // Area definition storage - using existing border infrastructure
     bool mAreaLoaded = false;
     int mAreaBorderIndex = -1; // Index of the border used for area filtering
 
-    QSqlRelationalTableModel *modelField;
     QSqlRelationalTableModel *modelPath;
     QStandardItemModel *machinesModel;
     QStandardItemModel *vehicleTypesModel;
     QStandardItemModel *farmsModel;
+    QStandardItemModel *fieldsModel;
     VehicleTypeDelegate *vehicleTypeDelegate;
     CheckBoxDelegate* checkboxdelegate;
     QStringListModel* fileModel;  // Model to hold filenames
