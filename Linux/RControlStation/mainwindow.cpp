@@ -1365,6 +1365,11 @@ void MainWindow::onSelectedFieldGeneral(QStandardItemModel *model, QSqlRelationa
 
     // Retrieve the data of the selected row if needed
     // Get the field ID from the name column (stored as user data)
+    if (!model || row < 0 || row >= model->rowCount()) {
+        qDebug() << "ERROR: Invalid model or row index in onSelectedFieldGeneral";
+        return;
+    }
+    
     QStandardItem* nameItem = model->item(row, 1); // Name is column 1
     int id = -1;
     if (nameItem) {
@@ -1411,19 +1416,20 @@ void MainWindow::onSelectedFieldGeneral(QStandardItemModel *model, QSqlRelationa
         // Access data for each record
         QString xmlFile= query.value("storedinfile").toString();
 
-        QFile file(xmlFile);
-        if (!file.exists()) {
-            qDebug() << "File does not exist:" << xmlFile;
-            return;
+        if (!xmlFile.isEmpty()) {
+            QFile file(xmlFile);
+            if (file.exists()) {
+                if (file.open(QIODevice::ReadOnly)) {
+                    QXmlStreamReader xmlData(&file);
+                    ui->mapLiveWidget->loadXMLRoute(&xmlData,false); // Drive-widget
+                    file.close();
+                } else {
+                    qDebug() << "Could not open file for reading:" << xmlFile;
+                }
+            } else {
+                qDebug() << "File does not exist:" << xmlFile;
+            }
         }
-
-        if (!file.open(QIODevice::ReadOnly)) {
-            qDebug() << "Could not open file for reading:" << xmlFile;
-            return;
-        }
-
-        QXmlStreamReader xmlData(xmlFile);
-        ui->mapLiveWidget->loadXMLRoute(&xmlData,false); // Drive-widget
     }
     qDebug() << "G";
     activeMap->setBorderFocus(true);
@@ -2527,7 +2533,7 @@ void MainWindow::fetchAllFieldsData(int farmId, int retryCount)
     
     QUrl url("http://127.0.0.1:8080/all_fields");
     QUrlQuery query;
-    query.addQueryItem("farm_id", QString::number(farmId));
+    query.addQueryItem("farm", QString::number(farmId));
     url.setQuery(query);
     
     QNetworkRequest request(url);
@@ -3055,6 +3061,18 @@ void MainWindow::parseAllFieldsXml(const QByteArray &xmlData)
                 rowItems.append(new QStandardItem(storedinfile));
                 rowItems.append(new QStandardItem(id));
                 fieldsModel->appendRow(rowItems);
+                
+                // Load the field file into the map widget if it exists
+                if (!storedinfile.isEmpty()) {
+                    QFile file(storedinfile);
+                    if (file.exists() && file.open(QIODevice::ReadOnly)) {
+                        QXmlStreamReader xmlData(&file);
+                        ui->mapWidgetFields->loadXMLRoute(&xmlData, true);
+                        file.close();
+                    } else {
+                        qDebug() << "Field file does not exist:" << storedinfile;
+                    }
+                }
             } else {
                 qDebug() << "Field missing name in all_fields - name:" << name;
             }
