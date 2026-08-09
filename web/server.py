@@ -338,5 +338,549 @@ def all_farms():
         return f"Error: {str(e)}", 500
 
 
+@app.route('/add_farm', methods=['POST'])
+def add_farm():
+    try:
+        # Get all the fields from POST form data or URL parameters
+        def get_param(name):
+            value = request.form.get(name) or request.args.get(name)
+            return value
+        
+        # Get farm fields - adjust these based on your locations table schema
+        name = get_param('name')
+        
+        # Validate required fields
+        if not name:
+            return "Error: 'name' field is required", 400
+        
+        # Connect to database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        
+        # Build the INSERT query with all provided fields
+        columns = ['name']
+        values = [name]
+        placeholders = ['?']
+        
+        # Add optional fields if provided
+        field_mappings = [
+            ('description', get_param('description')),
+            ('latitude', get_param('latitude')),
+            ('longitude', get_param('longitude')),
+            ('area_ha', get_param('area_ha')),
+            ('created_at', get_param('created_at')),
+        ]
+        
+        for field_name, field_value in field_mappings:
+            if field_value is not None:
+                columns.append(field_name)
+                values.append(field_value)
+                placeholders.append('?')
+        
+        # Create and execute the INSERT statement
+        columns_str = ', '.join(columns)
+        placeholders_str = ', '.join(placeholders)
+        query = f'INSERT INTO locations ({columns_str}) VALUES ({placeholders_str})'
+        cursor.execute(query, values)
+        
+        # Get the ID of the newly inserted farm
+        farm_id = cursor.lastrowid
+        
+        # Log the addition to log_farms table
+        from datetime import datetime
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Build the farm data as a string for logging
+        farm_data = {col: val for col, val in zip(columns, values)}
+        farm_data_str = str(farm_data)
+        
+        cursor.execute(
+            'INSERT INTO log_farms (farm_id, farm_data, timestamp, action) VALUES (?, ?, ?, ?)',
+            (farm_id, farm_data_str, timestamp, 'ADD')
+        )
+        
+        conn.commit()
+        conn.close()
+        
+        return "Farm added successfully", 201
+        
+    except sqlite3.IntegrityError as e:
+        return f"Error: {str(e)}", 409
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
+@app.route('/remove_farm', methods=['GET', 'POST'])
+def remove_farm():
+    try:
+        # Get all the fields from POST form data or URL parameters
+        def get_param(name):
+            value = request.form.get(name) or request.args.get(name)
+            return value
+        
+        farm_id = get_param('id')
+        
+        if not farm_id:
+            return "Error: 'id' field is required", 400
+        
+        # Connect to database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        
+        # First, get the farm data before deleting
+        cursor.execute('SELECT * FROM locations WHERE id = ?', (farm_id,))
+        farm = cursor.fetchone()
+        
+        if farm is None:
+            conn.close()
+            return f"Error: No farm found with id {farm_id}", 404
+        
+        # Build farm data string for logging
+        from datetime import datetime
+        columns = [description[0] for description in cursor.description]
+        farm_data = dict(zip(columns, farm))
+        farm_data_str = str(farm_data)
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Log the removal to log_farms table
+        cursor.execute(
+            'INSERT INTO log_farms (farm_id, farm_data, timestamp, action) VALUES (?, ?, ?, ?)',
+            (farm_id, farm_data_str, timestamp, 'REMOVE')
+        )
+        
+        # Delete the farm with the specified id
+        cursor.execute('DELETE FROM locations WHERE id = ?', (farm_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        return f"Farm with id {farm_id} removed successfully", 200
+        
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
+@app.route('/edit_machine', methods=['GET', 'POST'])
+def edit_machine():
+    try:
+        # Get all the fields from POST form data or URL parameters
+        def get_param(name):
+            value = request.form.get(name) or request.args.get(name)
+            return value
+        
+        machine_id = get_param('id')
+        
+        if not machine_id:
+            return "Error: 'id' field is required", 400
+        
+        # Connect to database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        
+        # First, get the current machine data for logging
+        cursor.execute('SELECT * FROM machines WHERE id = ?', (machine_id,))
+        old_machine = cursor.fetchone()
+        
+        if old_machine is None:
+            conn.close()
+            return f"Error: No machine found with id {machine_id}", 404
+        
+        # Get column names
+        columns = [description[0] for description in cursor.description]
+        old_machine_data = dict(zip(columns, old_machine))
+        
+        # Get all possible fields that can be updated
+        field_mappings = {
+            'name': get_param('name'),
+            'ip': get_param('ip'),
+            'port': get_param('port'),
+            'gearratio': get_param('gearratio'),
+            'wheeldiameter_m': get_param('wheeldiameter_m'),
+            'motorpoles': get_param('motorpoles'),
+            'turnradius_m': get_param('turnradius_m'),
+            'steeringramp': get_param('steeringramp'),
+            'axisdistance_m': get_param('axisdistance_m'),
+            'servocenter': get_param('servocenter'),
+            'servorange': get_param('servorange'),
+            'yawIMUgain': get_param('yawIMUgain'),
+            'servoPgain': get_param('servoPgain'),
+            'servoIgain': get_param('servoIgain'),
+            'servoDgain': get_param('servoDgain'),
+            'maxleft_degrees': get_param('maxleft_degrees'),
+            'maxright_degrees': get_param('maxright_degrees'),
+            'centervoltage_V': get_param('centervoltage_V'),
+            'iVehicletype': get_param('iVehicletype') or get_param('vehicle_type_id')
+        }
+        
+        # Build UPDATE query with only the fields that are provided
+        updates = []
+        update_values = []
+        for field_name, field_value in field_mappings.items():
+            if field_value is not None:
+                updates.append(f"{field_name} = ?")
+                update_values.append(field_value)
+                # Update the machine data for logging
+                old_machine_data[field_name] = field_value
+        
+        if not updates:
+            conn.close()
+            return "Error: No fields provided to update", 400
+        
+        # Add the machine_id to the values for the WHERE clause
+        update_values.append(machine_id)
+        
+        # Execute the UPDATE
+        query = f"UPDATE machines SET {', '.join(updates)} WHERE id = ?"
+        cursor.execute(query, update_values)
+        
+        if cursor.rowcount == 0:
+            conn.close()
+            return f"Error: No machine found with id {machine_id}", 404
+        
+        # Log the edit to log_machines table
+        from datetime import datetime
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        machine_data_str = str(old_machine_data)
+        
+        cursor.execute(
+            'INSERT INTO log_machines (machine_id, machine_data, timestamp, action) VALUES (?, ?, ?, ?)',
+            (machine_id, machine_data_str, timestamp, 'EDIT')
+        )
+        
+        conn.commit()
+        conn.close()
+        
+        return f"Machine with id {machine_id} updated successfully", 200
+        
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
+@app.route('/edit_farm', methods=['GET', 'POST'])
+def edit_farm():
+    try:
+        # Get all the fields from POST form data or URL parameters
+        def get_param(name):
+            value = request.form.get(name) or request.args.get(name)
+            return value
+        
+        farm_id = get_param('id')
+        
+        if not farm_id:
+            return "Error: 'id' field is required", 400
+        
+        # Connect to database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        
+        # First, get the current farm data for logging
+        cursor.execute('SELECT * FROM locations WHERE id = ?', (farm_id,))
+        old_farm = cursor.fetchone()
+        
+        if old_farm is None:
+            conn.close()
+            return f"Error: No farm found with id {farm_id}", 404
+        
+        # Get column names
+        columns = [description[0] for description in cursor.description]
+        old_farm_data = dict(zip(columns, old_farm))
+        
+        # Get all possible fields that can be updated
+        field_mappings = {
+            'name': get_param('name'),
+            'description': get_param('description'),
+            'latitude': get_param('latitude'),
+            'longitude': get_param('longitude'),
+            'area_ha': get_param('area_ha'),
+            'created_at': get_param('created_at')
+        }
+        
+        # Build UPDATE query with only the fields that are provided
+        updates = []
+        update_values = []
+        for field_name, field_value in field_mappings.items():
+            if field_value is not None:
+                updates.append(f"{field_name} = ?")
+                update_values.append(field_value)
+                # Update the farm data for logging
+                old_farm_data[field_name] = field_value
+        
+        if not updates:
+            conn.close()
+            return "Error: No fields provided to update", 400
+        
+        # Add the farm_id to the values for the WHERE clause
+        update_values.append(farm_id)
+        
+        # Execute the UPDATE
+        query = f"UPDATE locations SET {', '.join(updates)} WHERE id = ?"
+        cursor.execute(query, update_values)
+        
+        if cursor.rowcount == 0:
+            conn.close()
+            return f"Error: No farm found with id {farm_id}", 404
+        
+        # Log the edit to log_farms table
+        from datetime import datetime
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        farm_data_str = str(old_farm_data)
+        
+        cursor.execute(
+            'INSERT INTO log_farms (farm_id, farm_data, timestamp, action) VALUES (?, ?, ?, ?)',
+            (farm_id, farm_data_str, timestamp, 'EDIT')
+        )
+        
+        conn.commit()
+        conn.close()
+        
+        return f"Farm with id {farm_id} updated successfully", 200
+        
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
+@app.route('/all_fields')
+def all_fields():
+    try:
+        # Connect to SQLite database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        
+        # Query all fields from the fields table
+        cursor.execute('SELECT * FROM fields')
+        fields = cursor.fetchall()
+        
+        # Get column names from cursor description
+        column_names = [description[0] for description in cursor.description]
+        conn.close()
+        
+        # Create XML structure
+        root = ET.Element('fields')
+        for field in fields:
+            field_elem = ET.SubElement(root, 'field')
+            for i, column_name in enumerate(column_names):
+                ET.SubElement(field_elem, column_name).text = str(field[i])
+        
+        # Convert to XML string with declaration
+        xml_str = '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding='unicode')
+        
+        # Write to file
+        with open('fields.xml', 'w') as f:
+            f.write(xml_str)
+        
+        return Response(xml_str, mimetype='application/xml')
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
+@app.route('/add_field', methods=['POST'])
+def add_field():
+    try:
+        # Get all the fields from POST form data or URL parameters
+        def get_param(name):
+            value = request.form.get(name) or request.args.get(name)
+            return value
+        
+        # Get field fields - adjust these based on your fields table schema
+        name = get_param('name')
+        
+        # Validate required fields
+        if not name:
+            return "Error: 'name' field is required", 400
+        
+        # Connect to database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        
+        # Build the INSERT query with all provided fields
+        columns = ['name']
+        values = [name]
+        placeholders = ['?']
+        
+        # Add optional fields if provided
+        field_mappings = [
+            ('description', get_param('description')),
+            ('farm_id', get_param('farm_id')),
+            ('location_id', get_param('location_id')),
+            ('area_ha', get_param('area_ha')),
+            ('crop_type', get_param('crop_type')),
+            ('soil_type', get_param('soil_type')),
+            ('created_at', get_param('created_at')),
+        ]
+        
+        for field_name, field_value in field_mappings:
+            if field_value is not None:
+                columns.append(field_name)
+                values.append(field_value)
+                placeholders.append('?')
+        
+        # Create and execute the INSERT statement
+        columns_str = ', '.join(columns)
+        placeholders_str = ', '.join(placeholders)
+        query = f'INSERT INTO fields ({columns_str}) VALUES ({placeholders_str})'
+        cursor.execute(query, values)
+        
+        # Get the ID of the newly inserted field
+        field_id = cursor.lastrowid
+        
+        # Log the addition to log_fields table
+        from datetime import datetime
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Build the field data as a string for logging
+        field_data = {col: val for col, val in zip(columns, values)}
+        field_data_str = str(field_data)
+        
+        cursor.execute(
+            'INSERT INTO log_fields (field_id, field_data, timestamp, action) VALUES (?, ?, ?, ?)',
+            (field_id, field_data_str, timestamp, 'ADD')
+        )
+        
+        conn.commit()
+        conn.close()
+        
+        return "Field added successfully", 201
+        
+    except sqlite3.IntegrityError as e:
+        return f"Error: {str(e)}", 409
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
+@app.route('/edit_field', methods=['GET', 'POST'])
+def edit_field():
+    try:
+        # Get all the fields from POST form data or URL parameters
+        def get_param(name):
+            value = request.form.get(name) or request.args.get(name)
+            return value
+        
+        field_id = get_param('id')
+        
+        if not field_id:
+            return "Error: 'id' field is required", 400
+        
+        # Connect to database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        
+        # First, get the current field data for logging
+        cursor.execute('SELECT * FROM fields WHERE id = ?', (field_id,))
+        old_field = cursor.fetchone()
+        
+        if old_field is None:
+            conn.close()
+            return f"Error: No field found with id {field_id}", 404
+        
+        # Get column names
+        columns = [description[0] for description in cursor.description]
+        old_field_data = dict(zip(columns, old_field))
+        
+        # Get all possible fields that can be updated
+        field_mappings = {
+            'name': get_param('name'),
+            'description': get_param('description'),
+            'farm_id': get_param('farm_id'),
+            'location_id': get_param('location_id'),
+            'area_ha': get_param('area_ha'),
+            'crop_type': get_param('crop_type'),
+            'soil_type': get_param('soil_type'),
+            'created_at': get_param('created_at')
+        }
+        
+        # Build UPDATE query with only the fields that are provided
+        updates = []
+        update_values = []
+        for field_name, field_value in field_mappings.items():
+            if field_value is not None:
+                updates.append(f"{field_name} = ?")
+                update_values.append(field_value)
+                # Update the field data for logging
+                old_field_data[field_name] = field_value
+        
+        if not updates:
+            conn.close()
+            return "Error: No fields provided to update", 400
+        
+        # Add the field_id to the values for the WHERE clause
+        update_values.append(field_id)
+        
+        # Execute the UPDATE
+        query = f"UPDATE fields SET {', '.join(updates)} WHERE id = ?"
+        cursor.execute(query, update_values)
+        
+        if cursor.rowcount == 0:
+            conn.close()
+            return f"Error: No field found with id {field_id}", 404
+        
+        # Log the edit to log_fields table
+        from datetime import datetime
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        field_data_str = str(old_field_data)
+        
+        cursor.execute(
+            'INSERT INTO log_fields (field_id, field_data, timestamp, action) VALUES (?, ?, ?, ?)',
+            (field_id, field_data_str, timestamp, 'EDIT')
+        )
+        
+        conn.commit()
+        conn.close()
+        
+        return f"Field with id {field_id} updated successfully", 200
+        
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
+@app.route('/remove_field', methods=['GET', 'POST'])
+def remove_field():
+    try:
+        # Get all the fields from POST form data or URL parameters
+        def get_param(name):
+            value = request.form.get(name) or request.args.get(name)
+            return value
+        
+        field_id = get_param('id')
+        
+        if not field_id:
+            return "Error: 'id' field is required", 400
+        
+        # Connect to database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        
+        # First, get the field data before deleting
+        cursor.execute('SELECT * FROM fields WHERE id = ?', (field_id,))
+        field = cursor.fetchone()
+        
+        if field is None:
+            conn.close()
+            return f"Error: No field found with id {field_id}", 404
+        
+        # Build field data string for logging
+        from datetime import datetime
+        columns = [description[0] for description in cursor.description]
+        field_data = dict(zip(columns, field))
+        field_data_str = str(field_data)
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Log the removal to log_fields table
+        cursor.execute(
+            'INSERT INTO log_fields (field_id, field_data, timestamp, action) VALUES (?, ?, ?, ?)',
+            (field_id, field_data_str, timestamp, 'REMOVE')
+        )
+        
+        # Delete the field with the specified id
+        cursor.execute('DELETE FROM fields WHERE id = ?', (field_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        return f"Field with id {field_id} removed successfully", 200
+        
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)

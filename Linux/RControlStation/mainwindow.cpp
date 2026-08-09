@@ -395,15 +395,16 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->mainTabWidget->removeTab(6);
     ui->mainTabWidget->removeTab(5);
     ui->mainTabWidget->removeTab(4);
-
     if (!QSqlDatabase::drivers().contains("QSQLITE"))
             QMessageBox::critical(
                 this,
                 "Unable to load database",
                 "This program needs the SQLITE driver"
                 );
-
-    modelFarm=setupFarmTable(ui->farmTable,"locations");
+    farmsModel = setupFarmsTable(ui->farmTable);
+    if (!farmsModel) {
+        qDebug() << "ERROR: farmsModel setup failed!";
+    }
     modelField=setupFieldTable(ui->fieldTable,"fields");
     modelPath=setupPathTable(ui->pathTable,"paths");
     
@@ -525,11 +526,25 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
             {
             case Qt::Key_Delete:
                 QModelIndexList selectedRows = ui->farmTable->selectionModel()->selectedRows();
-                QSqlTableModel* model = qobject_cast<QSqlTableModel*>(ui->farmTable->model());
-                for (const QModelIndex& index : selectedRows) {
-                    model->removeRow(index.row());
+                if (!selectedRows.isEmpty()) {
+                    QModelIndex selectedIndex = selectedRows.first();
+                    int row = selectedIndex.row();
+                    
+                    // Get the farm ID from the first column (stored as user data)
+                    QStandardItem* nameItem = farmsModel->item(row, 0);
+                    if (nameItem) {
+                        QString farmId = nameItem->data(Qt::UserRole).toString();
+                        
+                        if (!farmId.isEmpty()) {
+                            qDebug() << "Deleting farm with ID:" << farmId;
+                            deleteFarmFromServer(farmId.toInt());
+                        } else {
+                            qDebug() << "No farm ID found for selected row";
+                        }
+                    } else {
+                        qDebug() << "No farm name item found for row:" << row;
+                    }
                 }
-                model->select();
                 return true; // Event is handled, don't propagate further
             }
         }
@@ -692,7 +707,7 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
 
 void MainWindow::updateFarms()
 {
-    modelFarm->select();
+    fetchAllFarmsData();
 }
 
 void MainWindow::populateControllerComboBoxes()
@@ -1026,55 +1041,106 @@ void MainWindow::handleControllerInput(int controllerNumber, float value)
     }
 }
 
-QSqlRelationalTableModel* MainWindow::setupFarmTable(QTableView* uiFarmTable,QString sqlTablename)
+// QSqlRelationalTableModel* MainWindow::setupFarmTable(QTableView* uiFarmTable,QString sqlTablename) // Replaced with webserver version
+// {
+//     // Create the data model:
+//     QSqlRelationalTableModel* model = new QSqlRelationalTableModel(uiFarmTable);
+//     model->setEditStrategy(QSqlTableModel::OnFieldChange);
+//     model->setTable(sqlTablename);
+// 
+//     // Set the localized header captions:
+//     model->setHeaderData(model->fieldIndex("name"), Qt::Horizontal, tr("Name"));
+//     model->setHeaderData(model->fieldIndex("longitude"), Qt::Horizontal, tr("Longitude"));
+//     model->setHeaderData(model->fieldIndex("latitude"), Qt::Horizontal, tr("Latitude"));
+//     model->setHeaderData(model->fieldIndex("ip"), Qt::Horizontal, tr("ip"));
+//     model->setHeaderData(model->fieldIndex("port"), Qt::Horizontal, tr("port"));
+//     model->setHeaderData(model->fieldIndex("NTRIP"), Qt::Horizontal, tr("NTRIP"));
+//     model->setHeaderData(model->fieldIndex("user"), Qt::Horizontal, tr("user"));
+//     model->setHeaderData(model->fieldIndex("password"), Qt::Horizontal, tr("password"));
+// 
+// 
+//     // Populate the model:
+//     if (!model->select()) {
+//         db.showError(model->lastError());
+//         return model;
+//     }
+// 
+//     // Set the model and hide the ID column:
+//     uiFarmTable->setModel(model);
+//     //ui.locationTable->setItemDelegate(new BookDelegate(ui.locationTable));
+//     uiFarmTable->setColumnHidden(model->fieldIndex("id"), true);
+// //    uiFarmTable->setColumnHidden(model->fieldIndex("longitude"), true);
+// //    uiFarmTable->setColumnHidden(model->fieldIndex("latitude"), true);
+//     uiFarmTable->setColumnHidden(model->fieldIndex("ip"), true);
+//     uiFarmTable->setColumnHidden(model->fieldIndex("port"), true);
+//     uiFarmTable->setColumnHidden(model->fieldIndex("NTRIP"), true);
+//     uiFarmTable->setColumnHidden(model->fieldIndex("user"), true);
+//     uiFarmTable->setColumnHidden(model->fieldIndex("password"), true);
+//     uiFarmTable->setColumnHidden(model->fieldIndex("stream"), true);
+//     uiFarmTable->setColumnHidden(model->fieldIndex("autoconnect"), true);
+//     uiFarmTable->setSelectionMode(QAbstractItemView::SingleSelection);
+//     uiFarmTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+//     uiFarmTable->setCurrentIndex(model->index(0, 0));
+//     uiFarmTable->resizeColumnsToContents();
+//     uiFarmTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+//     uiFarmTable->setItemDelegateForColumn(2, new PrecisionDelegate(2, 14, uiFarmTable));
+//     uiFarmTable->setItemDelegateForColumn(3, new PrecisionDelegate(3, 14, uiFarmTable));
+// 
+//     QDataWidgetMapper *mapperFarm = new QDataWidgetMapper(this);
+//     mapperFarm->setModel(model);
+//     mapperFarm->addMapping(this->findChild<QLineEdit*>("locationnameEdit"), model->fieldIndex("name"));
+//     connect(uiFarmTable->selectionModel(),&QItemSelectionModel::currentRowChanged,mapperFarm,&QDataWidgetMapper::setCurrentModelIndex);
+//     return model;
+// }
+
+QStandardItemModel* MainWindow::setupFarmsTable(QTableView* uiFarmTable)
 {
-    // Create the data model:
-    QSqlRelationalTableModel* model = new QSqlRelationalTableModel(uiFarmTable);
-    model->setEditStrategy(QSqlTableModel::OnFieldChange);
-    model->setTable(sqlTablename);
-
-    // Set the localized header captions:
-    model->setHeaderData(model->fieldIndex("name"), Qt::Horizontal, tr("Name"));
-    model->setHeaderData(model->fieldIndex("longitude"), Qt::Horizontal, tr("Longitude"));
-    model->setHeaderData(model->fieldIndex("latitude"), Qt::Horizontal, tr("Latitude"));
-    model->setHeaderData(model->fieldIndex("ip"), Qt::Horizontal, tr("ip"));
-    model->setHeaderData(model->fieldIndex("port"), Qt::Horizontal, tr("port"));
-    model->setHeaderData(model->fieldIndex("NTRIP"), Qt::Horizontal, tr("NTRIP"));
-    model->setHeaderData(model->fieldIndex("user"), Qt::Horizontal, tr("user"));
-    model->setHeaderData(model->fieldIndex("password"), Qt::Horizontal, tr("password"));
-
-
-    // Populate the model:
-    if (!model->select()) {
-        db.showError(model->lastError());
-        return model;
+    if (!uiFarmTable) {
+        qDebug() << "ERROR: uiFarmTable is null in setupFarmsTable!";
+        return nullptr;
     }
-
-    // Set the model and hide the ID column:
+    
+    // Create the data model:
+    QStandardItemModel* model = new QStandardItemModel(this);
+    
+    // Set the header labels - same as the database columns we want to show
+    model->setHorizontalHeaderLabels(QStringList() << "Name" << "Longitude" << "Latitude" << "ip" << "port" << "NTRIP" << "user" << "password" << "stream" << "autoconnect");
+    
+    // Set the model to the table view
     uiFarmTable->setModel(model);
-    //ui.locationTable->setItemDelegate(new BookDelegate(ui.locationTable));
-    uiFarmTable->setColumnHidden(model->fieldIndex("id"), true);
-//    uiFarmTable->setColumnHidden(model->fieldIndex("longitude"), true);
-//    uiFarmTable->setColumnHidden(model->fieldIndex("latitude"), true);
-    uiFarmTable->setColumnHidden(model->fieldIndex("ip"), true);
-    uiFarmTable->setColumnHidden(model->fieldIndex("port"), true);
-    uiFarmTable->setColumnHidden(model->fieldIndex("NTRIP"), true);
-    uiFarmTable->setColumnHidden(model->fieldIndex("user"), true);
-    uiFarmTable->setColumnHidden(model->fieldIndex("password"), true);
-    uiFarmTable->setColumnHidden(model->fieldIndex("stream"), true);
-    uiFarmTable->setColumnHidden(model->fieldIndex("autoconnect"), true);
+    
+    // Set the member variable to the local model
+    farmsModel = model;
+    
+    // Hide the columns that should not be visible
+    uiFarmTable->setColumnHidden(2, true); // Latitude - keep hidden as in original
+    uiFarmTable->setColumnHidden(3, true); // ip
+    uiFarmTable->setColumnHidden(4, true); // port
+    uiFarmTable->setColumnHidden(5, true); // NTRIP
+    uiFarmTable->setColumnHidden(6, true); // user
+    uiFarmTable->setColumnHidden(7, true); // password
+    uiFarmTable->setColumnHidden(8, true); // stream
+    uiFarmTable->setColumnHidden(9, true); // autoconnect
+    
+    // Set table properties
     uiFarmTable->setSelectionMode(QAbstractItemView::SingleSelection);
     uiFarmTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    uiFarmTable->setCurrentIndex(model->index(0, 0));
     uiFarmTable->resizeColumnsToContents();
     uiFarmTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    uiFarmTable->setItemDelegateForColumn(2, new PrecisionDelegate(2, 14, uiFarmTable));
-    uiFarmTable->setItemDelegateForColumn(3, new PrecisionDelegate(3, 14, uiFarmTable));
-
+    
+    // Set precision delegates for coordinate columns (same as original)
+    uiFarmTable->setItemDelegateForColumn(1, new PrecisionDelegate(2, 14, uiFarmTable)); // Longitude
+    uiFarmTable->setItemDelegateForColumn(2, new PrecisionDelegate(3, 14, uiFarmTable)); // Latitude
+    
+    // Set up data widget mapper for the name edit field
     QDataWidgetMapper *mapperFarm = new QDataWidgetMapper(this);
     mapperFarm->setModel(model);
-    mapperFarm->addMapping(this->findChild<QLineEdit*>("locationnameEdit"), model->fieldIndex("name"));
-    connect(uiFarmTable->selectionModel(),&QItemSelectionModel::currentRowChanged,mapperFarm,&QDataWidgetMapper::setCurrentModelIndex);
+    mapperFarm->addMapping(this->findChild<QLineEdit*>("locationnameEdit"), 0); // Map to Name column (index 0)
+    connect(uiFarmTable->selectionModel(), &QItemSelectionModel::currentRowChanged, mapperFarm, &QDataWidgetMapper::setCurrentModelIndex);
+    
+    // Fetch initial data from webserver
+    fetchAllFarmsData();
+    
     return model;
 }
 
@@ -1159,12 +1225,19 @@ QSqlRelationalTableModel* MainWindow::setupPathTable(QTableView* uiPathTable,QSt
 void MainWindow::onSelectedFarm(const QModelIndex& current, const QModelIndex& previous)
 {
     int row = current.row();
-    int id = modelFarm->data(modelFarm->index(row, 0)).toInt();
+    
+    // Get the farm ID from the first column (stored as user data)
+    QStandardItem* nameItem = farmsModel->item(row, 0);
+    int id = -1;
+    if (nameItem) {
+        QString farmId = nameItem->data(Qt::UserRole).toString();
+        id = farmId.toInt();
+    }
 
-    QString lon = modelFarm->data(modelFarm->index(row, 2)).toString();
-    QString lat = modelFarm->data(modelFarm->index(row, 3)).toString();
-    QString usr = modelFarm->data(modelFarm->index(row, 7)).toString();
-    QString pwd = modelFarm->data(modelFarm->index(row, 8)).toString();
+    QString lon = farmsModel->data(farmsModel->index(row, 1)).toString();
+    QString lat = farmsModel->data(farmsModel->index(row, 2)).toString();
+    QString usr = farmsModel->data(farmsModel->index(row, 6)).toString();
+    QString pwd = farmsModel->data(farmsModel->index(row, 7)).toString();
 
     mPacketInterface->sendSetUserCmd(ui->mapCarBox->value(),usr);
     mPacketInterface->sendSetPwdCmd(ui->mapCarBox->value(),pwd);
@@ -2313,6 +2386,105 @@ void MainWindow::fetchAllMachinesData(int retryCount)
     qDebug() << "Fetching all_machines data from:" << url.toString() << "(attempt" << (retryCount + 1) << ")";
 }
 
+void MainWindow::fetchAllFarmsData(int retryCount)
+{
+    qDebug() << "fetchAllFarmsData: Starting, retryCount:" << retryCount;
+    const int MAX_RETRIES = 3;
+    const int RETRY_DELAY_MS = 2000; // 2 seconds between retries
+    
+    QUrl url("http://127.0.0.1:8080/all_farms");
+    QNetworkRequest request(url);
+    
+    // Set a timeout for the request (10 seconds to be safe)
+    request.setTransferTimeout(10000);
+    
+    // Disconnect any existing connections to prevent multiple handlers
+    // Note: Removed disconnect call as it was causing crashes - same pattern as fetchAllMachinesData
+    
+    // Check if farmsModel is initialized
+    if (!farmsModel) {
+        qDebug() << "ERROR: farmsModel is null in fetchAllFarmsData!";
+        return;
+    }
+    
+    // Clear the model
+    farmsModel->removeRows(0, farmsModel->rowCount());
+    
+    // Add loading state
+    farmsModel->appendRow(new QStandardItem(retryCount > 0 ? QString("Retrying... (%1/%2)").arg(retryCount).arg(MAX_RETRIES) : "Loading..."));
+    farmsModel->appendRow(new QStandardItem(""));
+    
+    // Connect the finished signal to parse the response
+    QNetworkReply* reply = mNetworkManager->get(request);
+    if (!reply) {
+        qDebug() << "ERROR: reply is null in fetchAllFarmsData!";
+        return;
+    }
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, retryCount]() {
+        // Clear loading message
+        farmsModel->removeRows(0, farmsModel->rowCount());
+        
+        // Check HTTP status code
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "HTTP Status Code (all_farms):" << statusCode;
+        if (reply->error() != QNetworkReply::NoError) {
+            qDebug() << "Network error:" << reply->error() << "-" << reply->errorString();
+        }
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            QByteArray xmlData = reply->readAll();
+            qDebug() << "Received XML data from all_farms (size:" << xmlData.size() << "):";
+            qDebug() << "XML content:" << xmlData;
+            
+            if (xmlData.isEmpty()) {
+                qDebug() << "Empty response received from all_farms";
+                farmsModel->appendRow(new QStandardItem("No data"));
+                farmsModel->appendRow(new QStandardItem("Empty response"));
+            } else {
+                // Check if response contains valid XML
+                bool hasLocations = xmlData.contains("<locations>");
+                bool hasEndLocations = xmlData.contains("</locations>");
+                qDebug() << "XML validation - has <locations>:" << hasLocations << ", has </locations>:" << hasEndLocations;
+                
+                if (hasLocations && hasEndLocations) {
+                    parseAllFarmsXml(xmlData);
+                } else {
+                    qDebug() << "XML validation failed - missing locations tags";
+                    farmsModel->appendRow(new QStandardItem("Invalid data"));
+                    farmsModel->appendRow(new QStandardItem("Bad format"));
+                }
+            }
+        } else {
+            qDebug() << "Error fetching all_farms data:" << reply->errorString();
+            qDebug() << "Error code:" << reply->error();
+            qDebug() << "HTTP Status Code:" << statusCode;
+            
+            // Retry if we haven't exceeded max retries and it's a timeout or temporary error
+            if (retryCount < MAX_RETRIES && 
+                (reply->error() == QNetworkReply::TimeoutError ||
+                 reply->error() == QNetworkReply::TemporaryNetworkFailureError ||
+                 reply->error() == QNetworkReply::ConnectionRefusedError)) {
+                qDebug() << "Retrying all_farms in" << RETRY_DELAY_MS << "ms...";
+                QTimer::singleShot(RETRY_DELAY_MS, this, [this, retryCount]() {
+                    fetchAllFarmsData(retryCount + 1);
+                });
+            } else {
+                // Show final error after all retries failed
+                QString errorMsg = reply->errorString();
+                if (statusCode != 200 && statusCode > 0) {
+                    errorMsg = QString("HTTP %1").arg(statusCode);
+                }
+                farmsModel->appendRow(new QStandardItem("Error"));
+                farmsModel->appendRow(new QStandardItem(errorMsg));
+            }
+        }
+        reply->deleteLater();
+    });
+    
+    qDebug() << "Fetching all_farms data from:" << url.toString() << "(attempt" << (retryCount + 1) << ")";
+}
+
 void MainWindow::fetchVehicleTypes(int retryCount)
 {
     const int MAX_RETRIES = 3;
@@ -2536,6 +2708,233 @@ void MainWindow::parseAllMachinesXml(const QByteArray &xmlData)
         machinesModel->appendRow(new QStandardItem("No machines"));
         machinesModel->appendRow(new QStandardItem("found"));
     }
+}
+
+void MainWindow::parseAllFarmsXml(const QByteArray &xmlData)
+{
+    // Clear existing data
+    farmsModel->removeRows(0, farmsModel->rowCount());
+    
+    // Parse the XML
+    QXmlStreamReader xmlReader(xmlData);
+    bool foundFarms = false;
+    
+    qDebug() << "Starting XML parsing for all_farms...";
+    qDebug() << "XML data size:" << xmlData.size();
+    qDebug() << "XML data preview:" << xmlData.left(200) << "...";
+    
+    while (!xmlReader.atEnd()) {
+        QXmlStreamReader::TokenType token = xmlReader.readNext();
+        
+        if (token == QXmlStreamReader::StartElement && xmlReader.name() == "location") {
+            qDebug() << "Found location element in all_farms";
+            QString id, name, ip, port, ntrip, user, password, stream, autoconnect;
+            double longitude = 0.0, latitude = 0.0;
+            foundFarms = true;
+            
+            // Read location element contents
+            while (!xmlReader.atEnd()) {
+                token = xmlReader.readNext();
+                
+                if (token == QXmlStreamReader::EndElement && xmlReader.name() == "location") {
+                    break; // End of location element
+                }
+                
+                if (token == QXmlStreamReader::StartElement) {
+                    if (xmlReader.name() == "id") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            id = xmlReader.text().toString();
+                        }
+                    } else if (xmlReader.name() == "name") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            name = xmlReader.text().toString();
+                        }
+                    } else if (xmlReader.name() == "longitude") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            longitude = xmlReader.text().toString().toDouble();
+                        }
+                    } else if (xmlReader.name() == "latitude") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            latitude = xmlReader.text().toString().toDouble();
+                        }
+                    } else if (xmlReader.name() == "ip") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            ip = xmlReader.text().toString();
+                        }
+                    } else if (xmlReader.name() == "port") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            port = xmlReader.text().toString();
+                        }
+                    } else if (xmlReader.name() == "NTRIP") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            ntrip = xmlReader.text().toString();
+                        }
+                    } else if (xmlReader.name() == "user") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            user = xmlReader.text().toString();
+                        }
+                    } else if (xmlReader.name() == "password") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            password = xmlReader.text().toString();
+                        }
+                    } else if (xmlReader.name() == "stream") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            stream = xmlReader.text().toString();
+                        }
+                    } else if (xmlReader.name() == "autoconnect") {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            autoconnect = xmlReader.text().toString();
+                        }
+                    }
+                }
+            }
+            
+            // Add the location to the model if we have at least a name
+            if (!name.isEmpty()) {
+                qDebug() << "Adding location:" << name << "with ID:" << id << "Long:" << longitude << "Lat:" << latitude;
+                QList<QStandardItem*> rowItems;
+                QStandardItem* nameItem = new QStandardItem(name);
+                if (!id.isEmpty()) {
+                    nameItem->setData(id, Qt::UserRole); // Store ID as user data
+                }
+                rowItems.append(nameItem);
+                rowItems.append(new QStandardItem(QString::number(longitude, 'f', 14))); // Longitude
+                rowItems.append(new QStandardItem(QString::number(latitude, 'f', 14))); // Latitude
+                rowItems.append(new QStandardItem(ip));
+                rowItems.append(new QStandardItem(port));
+                rowItems.append(new QStandardItem(ntrip));
+                rowItems.append(new QStandardItem(user));
+                rowItems.append(new QStandardItem(password));
+                rowItems.append(new QStandardItem(stream));
+                rowItems.append(new QStandardItem(autoconnect));
+                farmsModel->appendRow(rowItems);
+            } else {
+                qDebug() << "Location missing name in all_farms - name:" << name;
+            }
+        }
+    }
+    
+    if (xmlReader.hasError()) {
+        qDebug() << "XML parsing error for all_farms:" << xmlReader.errorString();
+        qDebug() << "Error line:" << xmlReader.lineNumber() << "column:" << xmlReader.columnNumber();
+        
+        // If no locations were found and there was an error, show the error in the model
+        if (!foundFarms) {
+            farmsModel->appendRow(new QStandardItem("XML Error"));
+            farmsModel->appendRow(new QStandardItem(xmlReader.errorString()));
+        }
+    }
+    
+    // If no locations were found but no error occurred, show a message
+    if (!foundFarms && !xmlReader.hasError()) {
+        qDebug() << "No locations found in all_farms XML";
+        farmsModel->appendRow(new QStandardItem("No locations"));
+        farmsModel->appendRow(new QStandardItem("found"));
+    }
+}
+
+void MainWindow::addFarmToServer(const QString &name)
+{
+    QUrl url("http://127.0.0.1:8080/add_farm");
+    QUrlQuery query;
+    query.addQueryItem("name", name);
+    url.setQuery(query);
+    
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+    
+    QNetworkReply* reply = mNetworkManager->get(request);
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, name]() {
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "Add farm HTTP Status Code:" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            qDebug() << "Farm added successfully";
+            // Refresh the farms list
+            fetchAllFarmsData();
+        } else {
+            qDebug() << "Error adding farm:" << reply->errorString();
+            qDebug() << "HTTP Status Code:" << statusCode;
+        }
+        reply->deleteLater();
+    });
+    
+    qDebug() << "Adding farm:" << name;
+}
+
+void MainWindow::updateFarmOnServer(int farmId, const QString &name, double latitude, double longitude)
+{
+    QUrl url("http://127.0.0.1:8080/edit_farm");
+    QUrlQuery query;
+    query.addQueryItem("id", QString::number(farmId));
+    query.addQueryItem("name", name);
+    query.addQueryItem("latitude", QString::number(latitude, 'f', 14));
+    query.addQueryItem("longitude", QString::number(longitude, 'f', 14));
+    url.setQuery(query);
+    
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+    
+    QNetworkReply* reply = mNetworkManager->get(request);
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, farmId, name]() {
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "Update farm HTTP Status Code:" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            qDebug() << "Farm updated successfully";
+            // Refresh the farms list
+            fetchAllFarmsData();
+        } else {
+            qDebug() << "Error updating farm:" << reply->errorString();
+            qDebug() << "HTTP Status Code:" << statusCode;
+        }
+        reply->deleteLater();
+    });
+    
+    qDebug() << "Updating farm:" << farmId << "with name:" << name;
+}
+
+void MainWindow::deleteFarmFromServer(int farmId)
+{
+    QUrl url("http://127.0.0.1:8080/remove_farm");
+    QUrlQuery query;
+    query.addQueryItem("id", QString::number(farmId));
+    url.setQuery(query);
+    
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+    
+    QNetworkReply* reply = mNetworkManager->get(request);
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, farmId]() {
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "Delete farm HTTP Status Code:" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            qDebug() << "Farm deleted successfully";
+            // Refresh the farms list
+            fetchAllFarmsData();
+        } else {
+            qDebug() << "Error deleting farm:" << reply->errorString();
+            qDebug() << "HTTP Status Code:" << statusCode;
+        }
+        reply->deleteLater();
+    });
+    
+    qDebug() << "Deleting farm:" << farmId;
 }
 
 void MainWindow::onAddMachineButtonClicked()
@@ -4263,7 +4662,7 @@ bool MainWindow::onLoadLogfile()
             qDebug() << "Found matching farm ID:" << farmId;
             
             // Select this farm in the farm table
-            selectRowByPrimaryKey(ui->farmTable, modelFarm, "id", farmId);
+            setCurrentFarm(farmId);
         }
     }
 
@@ -5147,11 +5546,7 @@ void MainWindow::handleAddFarmButton()
     //    QMessageBox msgBox;
     //    msgBox.setText("Adding farm:" + ui->locationnameEdit->text());
     //    msgBox.exec();
-    db.addFarm(ui->locationnameEdit->text());
-    QSqlTableModel *tableModel = qobject_cast<QSqlTableModel*>(ui->farmTable->model());
-    if (tableModel) {
-        tableModel->select(); // Re-fetch the data from the database to update the model
-    }
+    addFarmToServer(ui->locationnameEdit->text());
 }
 
 void MainWindow::addField()
@@ -5174,15 +5569,31 @@ int MainWindow::currentFarm()
     QModelIndexList selectedIndexes = ui->farmTable->selectionModel()->selectedIndexes();
     if (!selectedIndexes.isEmpty()) {
         int rowIndex = selectedIndexes.first().row();
-        return modelFarm->record(rowIndex).value("id").toInt(); // farm id
-    } else {
-        return -1;
-    };
+        QStandardItem* nameItem = farmsModel->item(rowIndex, 0);
+        if (nameItem) {
+            QString farmId = nameItem->data(Qt::UserRole).toString();
+            return farmId.toInt(); // farm id
+        }
+    }
+    return -1;
 }
 
 void MainWindow::setCurrentFarm(int farm)
 {
-    selectRowByPrimaryKey(ui->farmTable, modelFarm, "id", farm);
+    // Find the row with the matching farm ID
+    for (int row = 0; row < farmsModel->rowCount(); ++row) {
+        QStandardItem* nameItem = farmsModel->item(row, 0);
+        if (nameItem) {
+            QString farmId = nameItem->data(Qt::UserRole).toString();
+            if (farmId.toInt() == farm) {
+                // Select the row in the table view
+                QModelIndex rowIndex = farmsModel->index(row, 0);
+                ui->farmTable->setCurrentIndex(rowIndex);
+                ui->farmTable->scrollTo(rowIndex);
+                break;
+            }
+        }
+    }
 }
 
 QLabel* MainWindow::getLogLabel()
