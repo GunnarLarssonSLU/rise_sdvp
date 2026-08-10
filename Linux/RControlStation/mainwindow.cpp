@@ -18,6 +18,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QSerialPortInfo>
+#include <QStringView>
 #include <QDebug>
 #include <cmath>
 #include <QMessageBox>
@@ -56,14 +57,14 @@
 #include <QListView>
 #include <QStringListModel>
 
-#include "utility.h"
-#include "routemagic.h"
-#include "wireguard.h"
-#include "attributes_masks.h"
-#include "datatypes.h"
-#include "arduinoreader.h"
-#include "checkboxdelegate.h"
-#include "shapefile.h"
+#include "utility.h") 
+#include "routemagic.h") 
+#include "wireguard.h") 
+#include "attributes_masks.h") 
+#include "datatypes.h") 
+#include "arduinoreader.h") 
+#include "checkboxdelegate.h") 
+#include "shapefile.h") 
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     #include <SDL2/SDL.h>
@@ -405,7 +406,7 @@ MainWindow::MainWindow(QWidget *parent) :
             QMessageBox::critical(
                 this,
                 "Unable to load database",
-                "This program needs the SQLITE driver"
+                "This program needs the SQLITE driver") 
                 );
     farmsModel = setupFarmsTable(ui->farmTable);
     if (!farmsModel) {
@@ -1859,8 +1860,8 @@ void MainWindow::stateReceived(quint8 id, CAR_STATE state)
     if (!mSupportedFirmwares.contains(qMakePair(static_cast<int>(state.fw_major), static_cast<int>(state.fw_minor)))) {
         on_disconnectButton_clicked();
         QMessageBox::warning(this, "Unsupported Firmware",
-                             "This version of RControlStation is not compatible with the "
-                             "firmware of the connected car. Update RControlStation, the car "
+                             "This version of RControlStation is not compatible with the ") 
+                             "firmware of the connected car. Update RControlStation, the car ") 
                              "firmware or both.");
     } else {
         for(QList<CarInterface*>::Iterator it_car = mCars.begin();it_car < mCars.end();it_car++) {
@@ -1980,18 +1981,18 @@ void MainWindow::nmeaGgaRx(int fields, NmeaServer::nmea_gga_info_t gga)
 
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-/*            info = QString("Fix type: %1\n"
-                         "Sats    : %2\n"
-                         "Height  : %3\n"
+/*            info = QString("Fix type: %1\n") 
+                         "Sats    : %2\n") 
+                         "Height  : %3\n") 
                          "Age     : %4")
                       .arg(fix_t.toLocal8Bit().data())
                       .arg(gga.n_sat,0,'d',0)
                       .arg(gga.height,0,'f',2)
                       .arg(gga.diff_age,0,'f',2);*/
             QByteArray fixBytes = fix_t.toLocal8Bit();
-            info = QString("Fix type: %1\n"
-                           "Sats    : %2\n"
-                           "Height  : %3\n"
+            info = QString("Fix type: %1\n") 
+                           "Sats    : %2\n") 
+                           "Height  : %3\n") 
                            "Age     : %4")
                        .arg(QString::fromLocal8Bit(fixBytes))
                        .arg(QString::number(gga.n_sat))
@@ -2001,9 +2002,9 @@ void MainWindow::nmeaGgaRx(int fields, NmeaServer::nmea_gga_info_t gga)
 
 
 #else
-            info.sprintf("Fix type: %s\n"
-                         "Sats    : %d\n"
-                         "Height  : %.2f\n"
+            info.sprintf("Fix type: %s\n") 
+                         "Sats    : %d\n") 
+                         "Height  : %.2f\n") 
                          "Age     : %.2f",
                          fix_t.toLocal8Bit().data(),
                          gga.n_sat,
@@ -2377,7 +2378,7 @@ void MainWindow::parseMachinesXml(const QByteArray &xmlData)
     while (!xmlReader.atEnd()) {
         QXmlStreamReader::TokenType token = xmlReader.readNext();
         
-        if (token == QXmlStreamReader::StartElement && xmlReader.name() == "machine") {
+        if (token == QXmlStreamReader::StartElement && xmlReader.name() == QStringView("machine")) {
             QString name, ip;
             foundMachines = true;
             qDebug() << "Found machine element";
@@ -2386,18 +2387,18 @@ void MainWindow::parseMachinesXml(const QByteArray &xmlData)
             while (!xmlReader.atEnd()) {
                 token = xmlReader.readNext();
                 
-                if (token == QXmlStreamReader::EndElement && xmlReader.name() == "machine") {
+                if (token == QXmlStreamReader::EndElement && xmlReader.name() == QStringView("machine")) {
                     break; // End of machine element
                 }
                 
                 if (token == QXmlStreamReader::StartElement) {
-                    if (xmlReader.name() == "name") {
+                    if (xmlReader.name() == QStringView("name")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             name = xmlReader.text().toString();
                             qDebug() << "Found name:" << name;
                         }
-                    } else if (xmlReader.name() == "ip") {
+                    } else if (xmlReader.name() == QStringView("ip")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             ip = xmlReader.text().toString();
@@ -2689,23 +2690,23 @@ void MainWindow::parseAllFarmsXmlForLog(const QByteArray &xmlData)
     while (!xmlReader.atEnd()) {
         QXmlStreamReader::TokenType token = xmlReader.readNext();
         
-        if (token == QXmlStreamReader::StartElement && xmlReader.name() == "location") {
+        if (token == QXmlStreamReader::StartElement && xmlReader.name() == QStringView("location")) {
             QString id, name;
             
             while (!xmlReader.atEnd()) {
                 token = xmlReader.readNext();
                 
-                if (token == QXmlStreamReader::EndElement && xmlReader.name() == "location") {
+                if (token == QXmlStreamReader::EndElement && xmlReader.name() == QStringView("location")) {
                     break;
                 }
                 
                 if (token == QXmlStreamReader::StartElement) {
-                    if (xmlReader.name() == "id") {
+                    if (xmlReader.name() == QStringView("id")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             id = xmlReader.text().toString();
                         }
-                    } else if (xmlReader.name() == "name") {
+                    } else if (xmlReader.name() == QStringView("name")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             name = xmlReader.text().toString();
@@ -2802,23 +2803,23 @@ void MainWindow::parseAllFieldsXmlForLog(const QByteArray &xmlData)
     while (!xmlReader.atEnd()) {
         QXmlStreamReader::TokenType token = xmlReader.readNext();
         
-        if (token == QXmlStreamReader::StartElement && xmlReader.name() == "field") {
+        if (token == QXmlStreamReader::StartElement && xmlReader.name() == QStringView("field")) {
             QString id, name;
             
             while (!xmlReader.atEnd()) {
                 token = xmlReader.readNext();
                 
-                if (token == QXmlStreamReader::EndElement && xmlReader.name() == "field") {
+                if (token == QXmlStreamReader::EndElement && xmlReader.name() == QStringView("field")) {
                     break;
                 }
                 
                 if (token == QXmlStreamReader::StartElement) {
-                    if (xmlReader.name() == "id") {
+                    if (xmlReader.name() == QStringView("id")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             id = xmlReader.text().toString();
                         }
-                    } else if (xmlReader.name() == "name") {
+                    } else if (xmlReader.name() == QStringView("name")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             name = xmlReader.text().toString();
@@ -2914,23 +2915,23 @@ void MainWindow::parseAllPathsXmlForLog(const QByteArray &xmlData)
     while (!xmlReader.atEnd()) {
         QXmlStreamReader::TokenType token = xmlReader.readNext();
         
-        if (token == QXmlStreamReader::StartElement && xmlReader.name() == "path") {
+        if (token == QXmlStreamReader::StartElement && xmlReader.name() == QStringView("path")) {
             QString id, name;
             
             while (!xmlReader.atEnd()) {
                 token = xmlReader.readNext();
                 
-                if (token == QXmlStreamReader::EndElement && xmlReader.name() == "path") {
+                if (token == QXmlStreamReader::EndElement && xmlReader.name() == QStringView("path")) {
                     break;
                 }
                 
                 if (token == QXmlStreamReader::StartElement) {
-                    if (xmlReader.name() == "id") {
+                    if (xmlReader.name() == QStringView("id")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             id = xmlReader.text().toString();
                         }
-                    } else if (xmlReader.name() == "name") {
+                    } else if (xmlReader.name() == QStringView("name")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             name = xmlReader.text().toString();
@@ -3165,23 +3166,23 @@ void MainWindow::parseAllLogsXmlForLog(const QByteArray &xmlData)
     while (!xmlReader.atEnd()) {
         QXmlStreamReader::TokenType token = xmlReader.readNext();
         
-        if (token == QXmlStreamReader::StartElement && xmlReader.name() == "log") {
+        if (token == QXmlStreamReader::StartElement && xmlReader.name() == QStringView("log")) {
             QString id, name;
             
             while (!xmlReader.atEnd()) {
                 token = xmlReader.readNext();
                 
-                if (token == QXmlStreamReader::EndElement && xmlReader.name() == "log") {
+                if (token == QXmlStreamReader::EndElement && xmlReader.name() == QStringView("log")) {
                     break;
                 }
                 
                 if (token == QXmlStreamReader::StartElement) {
-                    if (xmlReader.name() == "id") {
+                    if (xmlReader.name() == QStringView("id")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             id = xmlReader.text().toString();
                         }
-                    } else if (xmlReader.name() == "name") {
+                    } else if (xmlReader.name() == QStringView("name")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             name = xmlReader.text().toString();
@@ -3471,7 +3472,7 @@ void MainWindow::parseVehicleTypesXml(const QByteArray &xmlData)
     while (!xmlReader.atEnd()) {
         QXmlStreamReader::TokenType token = xmlReader.readNext();
         
-        if (token == QXmlStreamReader::StartElement && xmlReader.name() == "vehicle_type") {
+        if (token == QXmlStreamReader::StartElement && xmlReader.name() == QStringView("vehicle_type")) {
             QString id, name;
 
 
@@ -3480,18 +3481,18 @@ void MainWindow::parseVehicleTypesXml(const QByteArray &xmlData)
             while (!xmlReader.atEnd()) {
                 token = xmlReader.readNext();
                 
-                if (token == QXmlStreamReader::EndElement && xmlReader.name() == "vehicle_type") {
+                if (token == QXmlStreamReader::EndElement && xmlReader.name() == QStringView("vehicle_type")) {
                     break; // End of vehicle_type element
                 }
                 
                 if (token == QXmlStreamReader::StartElement) {
-                    if (xmlReader.name() == "id") {
+                    if (xmlReader.name() == QStringView("id")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             id = xmlReader.text().toString();
 
                         }
-                    } else if (xmlReader.name() == "name") {
+                    } else if (xmlReader.name() == QStringView("name")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             name = xmlReader.text().toString();
@@ -3533,7 +3534,7 @@ void MainWindow::parseAllMachinesXml(const QByteArray &xmlData)
     while (!xmlReader.atEnd()) {
         QXmlStreamReader::TokenType token = xmlReader.readNext();
         
-        if (token == QXmlStreamReader::StartElement && xmlReader.name() == "machine") {
+        if (token == QXmlStreamReader::StartElement && xmlReader.name() == QStringView("machine")) {
             QString id, name, ip, vehicleTypeId;
             foundMachines = true;
             qDebug() << "Found machine element in all_machines";
@@ -3542,30 +3543,30 @@ void MainWindow::parseAllMachinesXml(const QByteArray &xmlData)
             while (!xmlReader.atEnd()) {
                 token = xmlReader.readNext();
                 
-                if (token == QXmlStreamReader::EndElement && xmlReader.name() == "machine") {
+                if (token == QXmlStreamReader::EndElement && xmlReader.name() == QStringView("machine")) {
                     break; // End of machine element
                 }
                 
                 if (token == QXmlStreamReader::StartElement) {
-                    if (xmlReader.name() == "id") {
+                    if (xmlReader.name() == QStringView("id")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             id = xmlReader.text().toString();
                         }
-                    } else if (xmlReader.name() == "name") {
+                    } else if (xmlReader.name() == QStringView("name")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             name = xmlReader.text().toString();
                         }
-                    } else if (xmlReader.name() == "ip") {
+                    } else if (xmlReader.name() == QStringView("ip")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             ip = xmlReader.text().toString();
                         }
-                    } else if (xmlReader.name() == "iVehicletype" || 
-                               xmlReader.name() == "vehicle_type_id" || 
-                               xmlReader.name() == "vehicle_type" ||
-                               xmlReader.name() == "vehicletype") {
+                    } else if (xmlReader.name() == QStringView("iVehicletype") || 
+                               xmlReader.name() == QStringView("vehicle_type_id") || 
+                               xmlReader.name() == QStringView("vehicle_type") ||
+                               xmlReader.name() == QStringView("vehicletype")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             vehicleTypeId = xmlReader.text().toString();
@@ -3639,7 +3640,7 @@ void MainWindow::parseAllFarmsXml(const QByteArray &xmlData)
     while (!xmlReader.atEnd()) {
         QXmlStreamReader::TokenType token = xmlReader.readNext();
         
-        if (token == QXmlStreamReader::StartElement && xmlReader.name() == "location") {
+        if (token == QXmlStreamReader::StartElement && xmlReader.name() == QStringView("location")) {
             qDebug() << "Found location element in all_farms";
             QString id, name, ip, port, ntrip, user, password, stream, autoconnect;
             double longitude = 0.0, latitude = 0.0;
@@ -3649,62 +3650,62 @@ void MainWindow::parseAllFarmsXml(const QByteArray &xmlData)
             while (!xmlReader.atEnd()) {
                 token = xmlReader.readNext();
                 
-                if (token == QXmlStreamReader::EndElement && xmlReader.name() == "location") {
+                if (token == QXmlStreamReader::EndElement && xmlReader.name() == QStringView("location")) {
                     break; // End of location element
                 }
                 
                 if (token == QXmlStreamReader::StartElement) {
-                    if (xmlReader.name() == "id") {
+                    if (xmlReader.name() == QStringView("id")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             id = xmlReader.text().toString();
                         }
-                    } else if (xmlReader.name() == "name") {
+                    } else if (xmlReader.name() == QStringView("name")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             name = xmlReader.text().toString();
                         }
-                    } else if (xmlReader.name() == "longitude") {
+                    } else if (xmlReader.name() == QStringView("longitude")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             longitude = xmlReader.text().toString().toDouble();
                         }
-                    } else if (xmlReader.name() == "latitude") {
+                    } else if (xmlReader.name() == QStringView("latitude")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             latitude = xmlReader.text().toString().toDouble();
                         }
-                    } else if (xmlReader.name() == "ip") {
+                    } else if (xmlReader.name() == QStringView("ip")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             ip = xmlReader.text().toString();
                         }
-                    } else if (xmlReader.name() == "port") {
+                    } else if (xmlReader.name() == QStringView("port")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             port = xmlReader.text().toString();
                         }
-                    } else if (xmlReader.name() == "NTRIP") {
+                    } else if (xmlReader.name() == QStringView("NTRIP")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             ntrip = xmlReader.text().toString();
                         }
-                    } else if (xmlReader.name() == "user") {
+                    } else if (xmlReader.name() == QStringView("user")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             user = xmlReader.text().toString();
                         }
-                    } else if (xmlReader.name() == "password") {
+                    } else if (xmlReader.name() == QStringView("password")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             password = xmlReader.text().toString();
                         }
-                    } else if (xmlReader.name() == "stream") {
+                    } else if (xmlReader.name() == QStringView("stream")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             stream = xmlReader.text().toString();
                         }
-                    } else if (xmlReader.name() == "autoconnect") {
+                    } else if (xmlReader.name() == QStringView("autoconnect")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             autoconnect = xmlReader.text().toString();
@@ -3773,7 +3774,7 @@ void MainWindow::parseAllFieldsXml(const QByteArray &xmlData)
     while (!xmlReader.atEnd()) {
         QXmlStreamReader::TokenType token = xmlReader.readNext();
         
-        if (token == QXmlStreamReader::StartElement && xmlReader.name() == "field") {
+        if (token == QXmlStreamReader::StartElement && xmlReader.name() == QStringView("field")) {
             QString id, name, storedinfile, location;
             bool fenced = false;
             foundFields = true;
@@ -3783,33 +3784,33 @@ void MainWindow::parseAllFieldsXml(const QByteArray &xmlData)
             while (!xmlReader.atEnd()) {
                 token = xmlReader.readNext();
                 
-                if (token == QXmlStreamReader::EndElement && xmlReader.name() == "field") {
+                if (token == QXmlStreamReader::EndElement && xmlReader.name() == QStringView("field")) {
                     break; // End of field element
                 }
                 
                 if (token == QXmlStreamReader::StartElement) {
-                    if (xmlReader.name() == "id") {
+                    if (xmlReader.name() == QStringView("id")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             id = xmlReader.text().toString();
                         }
-                    } else if (xmlReader.name() == "name") {
+                    } else if (xmlReader.name() == QStringView("name")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             name = xmlReader.text().toString();
                         }
-                    } else if (xmlReader.name() == "fenced") {
+                    } else if (xmlReader.name() == QStringView("fenced")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             QString fencedStr = xmlReader.text().toString();
                             fenced = (fencedStr == "1" || fencedStr.toLower() == "true");
                         }
-                    } else if (xmlReader.name() == "storedinfile") {
+                    } else if (xmlReader.name() == QStringView("storedinfile")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             storedinfile = xmlReader.text().toString();
                         }
-                    } else if (xmlReader.name() == "location") {
+                    } else if (xmlReader.name() == QStringView("location")) {
                         token = xmlReader.readNext();
                         if (token == QXmlStreamReader::Characters) {
                             location = xmlReader.text().toString();
@@ -4834,7 +4835,7 @@ void MainWindow::loadAreaFromXML()
         this,
         "Open Area Definition File",
         "",
-        "XML Files (*.xml)"
+        "XML Files (*.xml)") 
     );
     
     if (fileName.isEmpty()) {
@@ -5852,7 +5853,7 @@ bool MainWindow::onLoadLogfile()
         this,
         "Open File",
         "",
-        "CSV/text files [*.csv,*.txt] (*.csv *.txt)"
+        "CSV/text files [*.csv,*.txt] (*.csv *.txt)") 
         );
 
     // Check if a file was selected
@@ -6035,15 +6036,15 @@ void MainWindow::on_mapImportNmeaButton_clicked()
                         p.setColor(Qt::red);
                     }
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-                    info = QString("Fix type: %s\n"
-                                   "Sats    : %d\n"
+                    info = QString("Fix type: %s\n") 
+                                   "Sats    : %d\n") 
                                    "Height  : %.2f")
                                .arg(fix_t.toLocal8Bit().data())
                                .arg(gga.n_sat)
                                .arg(gga.height);
 #else
-                    info.sprintf("Fix type: %s\n"
-                                 "Sats    : %d\n"
+                    info.sprintf("Fix type: %s\n") 
+                                 "Sats    : %d\n") 
                                  "Height  : %.2f",
                                  fix_t.toLocal8Bit().data(),
                                  gga.n_sat,
@@ -6141,11 +6142,11 @@ void MainWindow::on_removeTraceExtraButton_clicked()
 void MainWindow::on_mapEditHelpButton_clicked()
 {
     QMessageBox::information(this, tr("Keyboard shortcuts"),
-                             tr("<b>CTRL + Left click:</b> Move selected car<br>"
-                                "<b>CTRL + Right click:</b> Update route point or anchor settings<br>"
-                                "<b>Shift + Left click:</b> Add route point or anchor<br>"
-                                "<b>Shift + Left drag:</b> Move route point or anchor<br>"
-                                "<b>Shift + right click:</b> Delete route point or anchor<br>"
+                             tr("<b>CTRL + Left click:</b> Move selected car<br>") 
+                                "<b>CTRL + Right click:</b> Update route point or anchor settings<br>") 
+                                "<b>Shift + Left click:</b> Add route point or anchor<br>") 
+                                "<b>Shift + Left drag:</b> Move route point or anchor<br>") 
+                                "<b>Shift + right click:</b> Delete route point or anchor<br>") 
                                 "<b>CTRL + SHIFT + Left click:</b> Zero map ENU coordinates<br>"));
 }
 
@@ -6233,8 +6234,8 @@ void MainWindow::on_pollIntervalBox_valueChanged(int arg1)
 void MainWindow::on_actionAbout_triggered()
 {
     QMessageBox::about(this, "RControlStation",
-                       tr("<b>RControlStation %1</b><br>"
-                          "&copy; Benjamin Vedder 2016 - 2017<br>"
+                       tr("<b>RControlStation %1</b><br>") 
+                          "&copy; Benjamin Vedder 2016 - 2017<br>") 
                           "<a href=\"mailto:benjamin@vedder.se\">benjamin@vedder.se</a><br>").
                        arg(mVersion));
 }
@@ -6243,11 +6244,11 @@ void MainWindow::on_actionAboutLibrariesUsed_triggered()
 {
 
     QMessageBox::about(this, "Libraries Used",
-                       tr("<b>Icons<br>"
-                          "<a href=\"https://icons8.com/\">https://icons8.com/</a><br><br>"
-                          "<b>Plotting<br>"
-                          "<a href=\"http://qcustomplot.com/\">http://qcustomplot.com/</a><br><br>"
-                          "<b>Linear Algebra<br>"
+                       tr("<b>Icons<br>") 
+                          "<a href=\"https://icons8.com/\">https://icons8.com/</a><br><br>") 
+                          "<b>Plotting<br>") 
+                          "<a href=\"http://qcustomplot.com/\">http://qcustomplot.com/</a><br><br>") 
+                          "<b>Linear Algebra<br>") 
                           "<a href=\"http://eigen.tuxfamily.org\">http://eigen.tuxfamily.org</a>"));
 }
 
@@ -6515,7 +6516,7 @@ void MainWindow::on_actionGPSSimulator_triggered()
     mGpsSim->show();
 #else
     QMessageBox::warning(this, "GPS Simulator",
-                         "This version of RControlStation is not built with LIME SDR support, which "
+                         "This version of RControlStation is not built with LIME SDR support, which ") 
                          "is required for the GPS simulator.");
 #endif
 }
