@@ -20,28 +20,14 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(QT_VERSION 6)
 
 # Find Qt6 components - handle missing components gracefully
-set(QT_REQUIRED_COMPONENTS Core Gui Widgets PrintSupport Network Sql)
-set(QT_OPTIONAL_COMPONENTS Core5Compat Quick Charts OpenglWidgets Gamepad)
+set(QT_REQUIRED_COMPONENTS Core Gui Widgets PrintSupport Network Sql SerialPort Charts)
+set(QT_OPTIONAL_COMPONENTS Core5Compat Quick OpenglWidgets Gamepad)
 
 # Find required components first
 find_package(Qt${QT_VERSION} REQUIRED COMPONENTS ${QT_REQUIRED_COMPONENTS})
 
 # Find optional components
-# Note: SerialPort is treated as required for this project
-set(REQUIRED_OPTIONAL_COMPONENTS SerialPort)
-set(TRULY_OPTIONAL_COMPONENTS Core5Compat Quick Charts OpenglWidgets Gamepad)
-
-foreach(COMPONENT IN LISTS REQUIRED_OPTIONAL_COMPONENTS)
-    find_package(Qt${QT_VERSION} COMPONENTS ${COMPONENT} QUIET)
-    if(Qt${QT_VERSION}${COMPONENT}_FOUND)
-        list(APPEND QT_FOUND_COMPONENTS ${COMPONENT})
-        message(STATUS "Found Qt${QT_VERSION} component: ${COMPONENT}")
-    else()
-        message(FATAL_ERROR "Qt${QT_VERSION} component not found: ${COMPONENT}. Please install the required Qt6 development packages.")
-    endif()
-endforeach()
-
-foreach(COMPONENT IN LISTS TRULY_OPTIONAL_COMPONENTS)
+foreach(COMPONENT IN LISTS QT_OPTIONAL_COMPONENTS)
     find_package(Qt${QT_VERSION} COMPONENTS ${COMPONENT} QUIET)
     if(Qt${QT_VERSION}${COMPONENT}_FOUND)
         list(APPEND QT_FOUND_COMPONENTS ${COMPONENT})
@@ -306,6 +292,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt${QT_VERSION}::PrintSupport
     Qt${QT_VERSION}::Network
     Qt${QT_VERSION}::Sql
+    Qt${QT_VERSION}::SerialPort
+    Qt${QT_VERSION}::Charts
 )
 
 # Link optional Qt components if found
