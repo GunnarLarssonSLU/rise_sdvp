@@ -16,12 +16,25 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-# Find required Qt packages
-set(QT_VERSION 6)
+# Option to use Qt5 instead of Qt6 (for compatibility with existing code)
+option(USE_QT5 "Use Qt5 instead of Qt6" OFF)
 
-# Find Qt6 components - handle missing components gracefully
-set(QT_REQUIRED_COMPONENTS Core Gui Widgets PrintSupport Network Sql SerialPort Charts)
-set(QT_OPTIONAL_COMPONENTS Core5Compat Quick OpenglWidgets Gamepad)
+if(USE_QT5)
+    set(QT_VERSION 5)
+    message(STATUS "Using Qt5")
+else()
+    set(QT_VERSION 6)
+    message(STATUS "Using Qt6")
+endif()
+
+# Find Qt components - handle missing components gracefully
+if(QT_VERSION EQUAL 5)
+    set(QT_REQUIRED_COMPONENTS Core Gui Widgets PrintSupport Network Sql SerialPort)
+    set(QT_OPTIONAL_COMPONENTS Charts OpenglWidgets Gamepad)
+else()
+    set(QT_REQUIRED_COMPONENTS Core Gui Widgets PrintSupport Network Sql SerialPort Charts)
+    set(QT_OPTIONAL_COMPONENTS Core5Compat Quick OpenglWidgets Gamepad)
+endif()
 
 # Find required components first
 find_package(Qt${QT_VERSION} REQUIRED COMPONENTS ${QT_REQUIRED_COMPONENTS})
@@ -40,8 +53,12 @@ endforeach()
 # Combine all found components
 set(QT_ALL_COMPONENTS ${QT_REQUIRED_COMPONENTS} ${QT_FOUND_COMPONENTS})
 
-# Load Qt6 macros for qt6_* functions
-include(${Qt${QT_VERSION}Core_DIR}/Qt6CoreMacros.cmake)
+# Load Qt macros for automatic code generation
+if(QT_VERSION EQUAL 5)
+    include(${Qt${QT_VERSION}Core_DIR}/Qt5CoreMacros.cmake)
+else()
+    include(${Qt${QT_VERSION}Core_DIR}/Qt6CoreMacros.cmake)
+endif()
 
 # Add SDL2 for gamepad support (Qt6)
 find_package(SDL2 QUIET)
@@ -251,9 +268,15 @@ set(RESOURCE_FILES
 )
 
 # Qt automatic code generation
-qt6_wrap_cpp(MOC_SOURCES ${HEADERS})
-qt6_wrap_ui(UI_HEADERS ${UI_FILES})
-qt6_add_resources(RCC_SOURCES ${RESOURCE_FILES})
+if(QT_VERSION EQUAL 5)
+    qt5_wrap_cpp(MOC_SOURCES ${HEADERS})
+    qt5_wrap_ui(UI_HEADERS ${UI_FILES})
+    qt5_add_resources(RCC_SOURCES ${RESOURCE_FILES})
+else()
+    qt6_wrap_cpp(MOC_SOURCES ${HEADERS})
+    qt6_wrap_ui(UI_HEADERS ${UI_FILES})
+    qt6_add_resources(RCC_SOURCES ${RESOURCE_FILES})
+endif()
 
 # Add all generated sources
 list(APPEND SOURCES ${MOC_SOURCES} ${UI_HEADERS} ${RCC_SOURCES})
@@ -293,8 +316,16 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt${QT_VERSION}::Network
     Qt${QT_VERSION}::Sql
     Qt${QT_VERSION}::SerialPort
-    Qt${QT_VERSION}::Charts
 )
+
+# Link Charts if available (required for Qt6, optional for Qt5)
+if(QT_VERSION EQUAL 6)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION}::Charts)
+else()
+    if(Qt${QT_VERSION}Charts_FOUND)
+        target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION}::Charts)
+    endif()
+endif()
 
 # Link optional Qt components if found
 foreach(COMPONENT IN LISTS QT_FOUND_COMPONENTS)

@@ -18,7 +18,27 @@
         "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/Toolchains/Linux-GCC.cmake",
         "HAS_OPENGL": "OFF",
         "HAS_ASSIMP": "OFF",
-        "HAS_SIM_SCEN": "OFF"
+        "HAS_SIM_SCEN": "OFF",
+        "USE_QT5": "OFF"
+      },
+      "environment": {
+        "CC": "gcc",
+        "CXX": "g++"
+      }
+    },
+    {
+      "name": "linux-qt5-debug",
+      "displayName": "Linux Qt5 Debug Build",
+      "description": "Configure for Linux debug build using Qt5 (for compatibility)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/cmake_linux_qt5_debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/Toolchains/Linux-GCC.cmake",
+        "HAS_OPENGL": "OFF",
+        "HAS_ASSIMP": "OFF",
+        "HAS_SIM_SCEN": "OFF",
+        "USE_QT5": "ON"
       },
       "environment": {
         "CC": "gcc",
@@ -36,7 +56,27 @@
         "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/Toolchains/Linux-GCC.cmake",
         "HAS_OPENGL": "OFF",
         "HAS_ASSIMP": "OFF",
-        "HAS_SIM_SCEN": "OFF"
+        "HAS_SIM_SCEN": "OFF",
+        "USE_QT5": "OFF"
+      },
+      "environment": {
+        "CC": "gcc",
+        "CXX": "g++"
+      }
+    },
+    {
+      "name": "linux-qt5",
+      "displayName": "Linux Qt5 Build",
+      "description": "Configure for Linux build using Qt5 (for compatibility)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/cmake_linux_qt5",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/Toolchains/Linux-GCC.cmake",
+        "HAS_OPENGL": "OFF",
+        "HAS_ASSIMP": "OFF",
+        "HAS_SIM_SCEN": "OFF",
+        "USE_QT5": "ON"
       },
       "environment": {
         "CC": "gcc",
@@ -101,6 +141,19 @@
       "name": "linux-release",
       "displayName": "Build Linux Release",
       "configurePreset": "linux-release",
+      "targets": ["RControlStation"],
+      "configuration": "Release"
+    },
+    {
+      "name": "linux-qt5-debug",
+      "displayName": "Build Linux Qt5 Debug",
+      "configurePreset": "linux-qt5-debug",
+      "targets": ["RControlStation"]
+    },
+    {
+      "name": "linux-qt5-release",
+      "displayName": "Build Linux Qt5 Release",
+      "configurePreset": "linux-qt5",
       "targets": ["RControlStation"],
       "configuration": "Release"
     },
