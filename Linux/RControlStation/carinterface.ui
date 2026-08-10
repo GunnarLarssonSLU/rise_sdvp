@@ -1029,7 +1029,7 @@
        </widget>
        <widget class="QWidget" name="tab_7">
         <attribute name="icon">
-         <iconset theme="QIcon::ThemeIcon::NetworkWired"/>
+         <iconset theme="network-wired"/>
         </attribute>
         <attribute name="title">
          <string>Motor</string>

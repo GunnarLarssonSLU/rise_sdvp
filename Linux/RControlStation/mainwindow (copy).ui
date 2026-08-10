@@ -3197,7 +3197,7 @@
       </widget>
       <widget class="QWidget" name="tabFarm">
        <attribute name="icon">
-        <iconset theme="QIcon::ThemeIcon::SystemLogOut">
+        <iconset theme="SystemLogOut">
          <normaloff>512px-Font_Awesome_5_solid_seedling.svg.png</normaloff>512px-Font_Awesome_5_solid_seedling.svg.png</iconset>
        </attribute>
        <attribute name="title">
