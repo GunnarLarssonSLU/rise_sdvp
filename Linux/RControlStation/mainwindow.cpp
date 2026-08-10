@@ -1990,9 +1990,9 @@ void MainWindow::nmeaGgaRx(int fields, NmeaServer::nmea_gga_info_t gga)
                       .arg(gga.height,0,'f',2)
                       .arg(gga.diff_age,0,'f',2);*/
             QByteArray fixBytes = fix_t.toLocal8Bit();
-            info = QString("Fix type: %1\n") 
-                           "Sats    : %2\n") 
-                           "Height  : %3\n") 
+            info = QString("Fix type: %1\n") +
+                           "Sats    : %2\n" +
+                           "Height  : %3\n" +
                            "Age     : %4")
                        .arg(QString::fromLocal8Bit(fixBytes))
                        .arg(QString::number(gga.n_sat))
@@ -6036,8 +6036,8 @@ void MainWindow::on_mapImportNmeaButton_clicked()
                         p.setColor(Qt::red);
                     }
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-                    info = QString("Fix type: %s\n") 
-                                   "Sats    : %d\n") 
+                    info = QString("Fix type: %s\n") +
+                                   "Sats    : %d\n" +
                                    "Height  : %.2f")
                                .arg(fix_t.toLocal8Bit().data())
                                .arg(gga.n_sat)
@@ -6234,8 +6234,8 @@ void MainWindow::on_pollIntervalBox_valueChanged(int arg1)
 void MainWindow::on_actionAbout_triggered()
 {
     QMessageBox::about(this, "RControlStation",
-                       tr("<b>RControlStation %1</b><br>") 
-                          "&copy; Benjamin Vedder 2016 - 2017<br>") 
+                       tr("<b>RControlStation %1</b><br>"
+                          "&copy; Benjamin Vedder 2016 - 2017<br>"
                           "<a href=\"mailto:benjamin@vedder.se\">benjamin@vedder.se</a><br>").
                        arg(mVersion));
 }
