@@ -6244,12 +6244,12 @@ void MainWindow::on_actionAboutLibrariesUsed_triggered()
 {
 
     QMessageBox::about(this, "Libraries Used",
-                       tr("<b>Icons<br>") 
-                          "<a href=\"https://icons8.com/\">https://icons8.com/</a><br><br>") 
-                          "<b>Plotting<br>") 
-                          "<a href=\"http://qcustomplot.com/\">http://qcustomplot.com/</a><br><br>") 
-                          "<b>Linear Algebra<br>") 
-                          "<a href=\"http://eigen.tuxfamily.org\">http://eigen.tuxfamily.org</a>"));
+                       tr("<b>Icons<br>") +
+                          "<a href=\"https://icons8.com/\">https://icons8.com/</a><br><br>" +
+                          "<b>Plotting<br>" +
+                          "<a href=\"http://qcustomplot.com/\">http://qcustomplot.com/</a><br><br>" +
+                          "<b>Linear Algebra<br>" +
+                          "<a href=\"http://eigen.tuxfamily.org\">http://eigen.tuxfamily.org</a>");
 }
 
 void MainWindow::on_actionExit_triggered()
@@ -6516,7 +6516,7 @@ void MainWindow::on_actionGPSSimulator_triggered()
     mGpsSim->show();
 #else
     QMessageBox::warning(this, "GPS Simulator",
-                         "This version of RControlStation is not built with LIME SDR support, which ") 
+                         "This version of RControlStation is not built with LIME SDR support, which "
                          "is required for the GPS simulator.");
 #endif
 }
