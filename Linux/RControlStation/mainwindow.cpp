@@ -531,12 +531,12 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
             on_stopButton_clicked();
             return true;
         }
-        if (object == ui->farmTable)
+        if ((object == ui->farmTable || object == ui->farmTable->viewport()) && ui->farmTable->hasFocus())
         {
             qDebug() << "in farmtable";
             switch (keyEvent->key())
             {
-            case Qt::Key_Delete:
+            case Qt::Key_Delete: {
                 QModelIndexList selectedRows = ui->farmTable->selectionModel()->selectedRows();
                 if (!selectedRows.isEmpty()) {
                     QModelIndex selectedIndex = selectedRows.first();
@@ -558,6 +558,18 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
                     }
                 }
                 return true; // Event is handled, don't propagate further
+            }
+            case Qt::Key_F5:
+                qDebug() << "Refreshing farms table";
+                fetchAllFarmsData();
+                return true;
+            case Qt::Key_R:
+                if (keyEvent->modifiers() & Qt::ControlModifier) {
+                    qDebug() << "Refreshing farms table";
+                    fetchAllFarmsData();
+                    return true;
+                }
+                break;
             }
         }
         if (object == ui->fieldTable)
@@ -625,7 +637,7 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
                 return true;
             }
         }
-        if (object == ui->tableViewMachines)
+        if ((object == ui->tableViewMachines || object == ui->tableViewMachines->viewport()) && ui->tableViewMachines->hasFocus())
         {
             if (e->type() == QEvent::KeyPress) {
                 QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
@@ -675,6 +687,12 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
                     } else {
                         qDebug() << "No machine name item found for row:" << row;
                     }
+                    return true;
+                }
+                // Handle F5 or Ctrl+R to refresh machines table
+                if (keyEvent->key() == Qt::Key_F5 || (keyEvent->key() == Qt::Key_R && (keyEvent->modifiers() & Qt::ControlModifier))) {
+                    qDebug() << "Refreshing machines table";
+                    fetchAllMachinesData(0);
                     return true;
                 }
             }
@@ -3417,9 +3435,9 @@ void MainWindow::fetchVehicleTypes(int retryCount)
             } else {
                 // Always try to parse the XML, let the parser handle any errors
                 parseVehicleTypesXml(xmlData);
-                // After loading vehicle types, refresh machines data to ensure vehicle types are available
-                fetchAllMachinesData();
             }
+            // After loading vehicle types (or failing), refresh machines data to ensure table has content
+            fetchAllMachinesData();
         } else {
             // Retry if we haven't exceeded max retries and it's a timeout or temporary error
             if (retryCount < MAX_RETRIES && 
@@ -3429,6 +3447,9 @@ void MainWindow::fetchVehicleTypes(int retryCount)
                 QTimer::singleShot(RETRY_DELAY_MS, this, [this, retryCount]() {
                     fetchVehicleTypes(retryCount + 1);
                 });
+            } else {
+                // If all retries failed, still try to fetch machines data so table shows error state
+                fetchAllMachinesData();
             }
         }
         reply->deleteLater();
