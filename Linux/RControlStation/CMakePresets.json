@@ -1,0 +1,137 @@
+{
+  "version": 3,
+  "vendor": {
+    "mistral.ai": {
+      "created_by": "Mistral Vibe",
+      "converted_from": "qmake"
+    }
+  },
+  "configurePresets": [
+    {
+      "name": "linux-debug",
+      "displayName": "Linux Debug Build",
+      "description": "Configure for Linux debug build",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/cmake_linux_debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/Toolchains/Linux-GCC.cmake",
+        "HAS_OPENGL": "OFF",
+        "HAS_ASSIMP": "OFF",
+        "HAS_SIM_SCEN": "OFF"
+      },
+      "environment": {
+        "CC": "gcc",
+        "CXX": "g++"
+      }
+    },
+    {
+      "name": "linux-release",
+      "displayName": "Linux Release Build",
+      "description": "Configure for Linux release build with static linking",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/cmake_linux_release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/Toolchains/Linux-GCC.cmake",
+        "HAS_OPENGL": "OFF",
+        "HAS_ASSIMP": "OFF",
+        "HAS_SIM_SCEN": "OFF"
+      },
+      "environment": {
+        "CC": "gcc",
+        "CXX": "g++"
+      }
+    },
+    {
+      "name": "linux-opengl",
+      "displayName": "Linux Release with OpenGL",
+      "description": "Configure for Linux release build with OpenGL support",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/cmake_linux_opengl",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/Toolchains/Linux-GCC.cmake",
+        "HAS_OPENGL": "ON",
+        "HAS_ASSIMP": "OFF",
+        "HAS_SIM_SCEN": "OFF"
+      },
+      "environment": {
+        "CC": "gcc",
+        "CXX": "g++"
+      }
+    },
+    {
+      "name": "windows-mingw",
+      "displayName": "Windows MinGW Cross-Compile",
+      "description": "Configure for Windows cross-compilation using MinGW",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/cmake_windows",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/Toolchains/Windows-MinGW.cmake",
+        "HAS_OPENGL": "ON",
+        "HAS_ASSIMP": "OFF",
+        "HAS_SIM_SCEN": "OFF"
+      }
+    },
+    {
+      "name": "android-arm",
+      "displayName": "Android ARM Build",
+      "description": "Configure for Android ARM build",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/cmake_android",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/Toolchains/Android-ARM.cmake",
+        "HAS_OPENGL": "OFF",
+        "HAS_ASSIMP": "OFF",
+        "HAS_SIM_SCEN": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "linux-debug",
+      "displayName": "Build Linux Debug",
+      "configurePreset": "linux-debug",
+      "targets": ["RControlStation"]
+    },
+    {
+      "name": "linux-release",
+      "displayName": "Build Linux Release",
+      "configurePreset": "linux-release",
+      "targets": ["RControlStation"],
+      "configuration": "Release"
+    },
+    {
+      "name": "linux-opengl",
+      "displayName": "Build Linux with OpenGL",
+      "configurePreset": "linux-opengl",
+      "targets": ["RControlStation"],
+      "configuration": "Release"
+    },
+    {
+      "name": "windows-mingw",
+      "displayName": "Build Windows MinGW",
+      "configurePreset": "windows-mingw",
+      "targets": ["RControlStation"],
+      "configuration": "Release"
+    },
+    {
+      "name": "android-arm",
+      "displayName": "Build Android ARM",
+      "configurePreset": "android-arm",
+      "targets": ["RControlStation"],
+      "configuration": "Release"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "linux-test",
+      "displayName": "Test Linux Build",
+      "configurePreset": "linux-debug",
+      "output": {"outputOnFailure": true}
+    }
+  ]
+}
