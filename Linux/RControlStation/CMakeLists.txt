@@ -351,6 +351,7 @@ endif()
 # Note: Link order matters! OpenJPEG must be linked before GDAL since GDAL depends on it
 # GDAL in /usr/local/lib was compiled with OpenJPEG 2.5.0
 set(EXTERNAL_LIBS
+    zstd
     sqlite3
     proj
     geos_c
