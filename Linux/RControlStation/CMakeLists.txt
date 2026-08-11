@@ -72,9 +72,10 @@ else()
 endif()
 
 # Add include directories
-# Use ONLY system includes to avoid version conflicts with GDAL/OpenJPEG
+# Need /usr/local/include for GDAL which was compiled with OpenJPEG 2.5.0
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
+    /usr/local/include
     /usr/include/eigen3
     /usr/include/gdal
     /usr/include/SDL2
@@ -347,9 +348,10 @@ endif()
 
 # Add all the external libraries from the .pro file
 # These are the libraries that were in the LIBS variable
-# Note: We only need to link the top-level libraries (like GDAL, SQLite, etc.)
-# Their dependencies will be automatically resolved by the linker
+# Note: Link order matters! OpenJPEG must be linked before GDAL since GDAL depends on it
+# GDAL in /usr/local/lib was compiled with OpenJPEG 2.5.0
 set(EXTERNAL_LIBS
+    openjp2
     gdal
     sqlite3
     proj
@@ -372,9 +374,10 @@ set(EXTERNAL_LIBS
 target_link_libraries(${PROJECT_NAME} PRIVATE ${EXTERNAL_LIBS})
 
 # Add library directories
-# Use ONLY system libraries to avoid version conflicts with GDAL/OpenJPEG
-# The /usr/local/lib GDAL was compiled with its own OpenJPEG which causes conflicts
+# GDAL in /usr/local/lib was compiled with OpenJPEG 2.5.0, so we need to use that
+# System has OpenJPEG 2.4.0 which is incompatible with GDAL's internal OpenJPEG
 target_link_directories(${PROJECT_NAME} PRIVATE
+    /usr/local/lib
     /usr/lib/x86_64-linux-gnu
     ${CMAKE_CURRENT_SOURCE_DIR}/local_libs
 )
