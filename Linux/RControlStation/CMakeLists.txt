@@ -53,6 +53,9 @@ endforeach()
 # Combine all found components
 set(QT_ALL_COMPONENTS ${QT_REQUIRED_COMPONENTS} ${QT_FOUND_COMPONENTS})
 
+# Add build directory to include path for generated UI headers
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
 # Load Qt macros for automatic code generation
 if(QT_VERSION EQUAL 5)
     include(${Qt${QT_VERSION}Core_DIR}/Qt5CoreMacros.cmake)
@@ -159,7 +162,6 @@ set(SOURCES
     nmeawidget.cpp
     confcommonwidget.cpp
     ublox.cpp
-    intersectiontest.cpp
     ncom.cpp
     correctionanalysis.cpp
     historylineedit.cpp
@@ -171,13 +173,7 @@ set(SOURCES
     controlmanager.cpp
     actuatormanager.cpp
     sensormanager.cpp
-    gpsgen.cpp
-    gpssim.cpp
-    limesdr.cpp
     wireguard.cpp
-    copterinterface.cpp
-    orientationwidget.cpp
-    rcontrolstation_plugin_import.cpp
 )
 
 # Collect all header files
