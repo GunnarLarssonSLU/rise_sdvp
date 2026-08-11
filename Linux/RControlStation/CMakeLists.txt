@@ -351,8 +351,6 @@ endif()
 # Note: Link order matters! OpenJPEG must be linked before GDAL since GDAL depends on it
 # GDAL in /usr/local/lib was compiled with OpenJPEG 2.5.0
 set(EXTERNAL_LIBS
-    openjp2
-    gdal
     sqlite3
     proj
     geos_c
@@ -372,6 +370,11 @@ set(EXTERNAL_LIBS
 # Find and link external libraries
 # Link in reverse order of dependency (most dependent first)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${EXTERNAL_LIBS})
+
+# Handle GDAL and OpenJPEG linking carefully
+# Use the exact OpenJPEG library that GDAL was compiled with (2.5.0 in /usr/local/lib)
+# This must be linked BEFORE GDAL to avoid symbol conflicts
+target_link_libraries(${PROJECT_NAME} PRIVATE /usr/local/lib/libopenjp2.a /usr/local/lib/libgdal.a)
 
 # Add library directories
 # GDAL in /usr/local/lib was compiled with OpenJPEG 2.5.0, so we need to use that
