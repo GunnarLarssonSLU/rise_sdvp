@@ -406,8 +406,7 @@ MainWindow::MainWindow(QWidget *parent) :
             QMessageBox::critical(
                 this,
                 "Unable to load database",
-                "This program needs the SQLITE driver") 
-                );
+                "This program needs the SQLITE driver");
     farmsModel = setupFarmsTable(ui->farmTable);
     if (!farmsModel) {
         qDebug() << "ERROR: farmsModel setup failed!";
@@ -1860,8 +1859,8 @@ void MainWindow::stateReceived(quint8 id, CAR_STATE state)
     if (!mSupportedFirmwares.contains(qMakePair(static_cast<int>(state.fw_major), static_cast<int>(state.fw_minor)))) {
         on_disconnectButton_clicked();
         QMessageBox::warning(this, "Unsupported Firmware",
-                             "This version of RControlStation is not compatible with the ") 
-                             "firmware of the connected car. Update RControlStation, the car ") 
+                             "This version of RControlStation is not compatible with the "
+                             "firmware of the connected car. Update RControlStation, the car "
                              "firmware or both.");
     } else {
         for(QList<CarInterface*>::Iterator it_car = mCars.begin();it_car < mCars.end();it_car++) {
@@ -1991,9 +1990,9 @@ void MainWindow::nmeaGgaRx(int fields, NmeaServer::nmea_gga_info_t gga)
                       .arg(gga.diff_age,0,'f',2);*/
             QByteArray fixBytes = fix_t.toLocal8Bit();
             info = QString("Fix type: %1\n") +
-                           "Sats    : %2\n" +
-                           "Height  : %3\n" +
-                           "Age     : %4")
+                           QString("Sats    : %2\n") +
+                           QString("Height  : %3\n") +
+                           QString("Age     : %4")
                        .arg(QString::fromLocal8Bit(fixBytes))
                        .arg(QString::number(gga.n_sat))
                        .arg(gga.height, 0, 'f', 2)
@@ -6138,12 +6137,12 @@ void MainWindow::on_removeTraceExtraButton_clicked()
 void MainWindow::on_mapEditHelpButton_clicked()
 {
     QMessageBox::information(this, tr("Keyboard shortcuts"),
-                             tr(QString("<b>CTRL + Left click:</b> Move selected car<br>" +
-                                "<b>CTRL + Right click:</b> Update route point or anchor settings<br>" +
-                                "<b>Shift + Left click:</b> Add route point or anchor<br>" +
-                                "<b>Shift + Left drag:</b> Move route point or anchor<br>" +
-                                "<b>Shift + right click:</b> Delete route point or anchor<br>" +
-                                "<b>CTRL + SHIFT + Left click:</b> Zero map ENU coordinates<br>")));
+                             tr("<b>CTRL + Left click:</b> Move selected car<br>") +
+                                tr("<b>CTRL + Right click:</b> Update route point or anchor settings<br>") +
+                                tr("<b>Shift + Left click:</b> Add route point or anchor<br>") +
+                                tr("<b>Shift + Left drag:</b> Move route point or anchor<br>") +
+                                tr("<b>Shift + right click:</b> Delete route point or anchor<br>") +
+                                tr("<b>CTRL + SHIFT + Left click:</b> Zero map ENU coordinates<br>"));
 }
 
 void MainWindow::on_mapStreamNmeaConnectButton_clicked()
