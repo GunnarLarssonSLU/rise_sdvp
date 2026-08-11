@@ -1736,7 +1736,7 @@ int RouteMagic::loadRoutes(QString filename, MapWidget *map) {
     // Look for routes tag
     bool routes_found = false;
     while (stream.readNextStartElement()) {
-        if (stream.name() == "routes") {
+        if (stream.name() == QLatin1String("routes")) {
             routes_found = true;
             break;
         }

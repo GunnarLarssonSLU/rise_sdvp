@@ -2700,7 +2700,7 @@ bool MapWidget::loadXMLRoute(QXmlStreamReader* stream,bool isBorder)
     // Look for routes tag
     bool routes_found = false;
     while (stream->readNextStartElement()) {
-        if (stream->name() == "routes") {
+        if (stream->name() == QLatin1String("routes")) {
             routes_found = true;
             break;
         }

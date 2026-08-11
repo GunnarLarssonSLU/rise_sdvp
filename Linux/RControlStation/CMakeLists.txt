@@ -315,6 +315,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt${QT_VERSION}::Network
     Qt${QT_VERSION}::Sql
     Qt${QT_VERSION}::SerialPort
+    /usr/lib/x86_64-linux-gnu/libQt6DBus.so.6.2.4
 )
 
 # Link Charts if available (required for Qt6, optional for Qt5)
@@ -351,7 +352,18 @@ endif()
 # Note: Link order matters! OpenJPEG must be linked before GDAL since GDAL depends on it
 # GDAL in /usr/local/lib was compiled with OpenJPEG 2.5.0
 set(EXTERNAL_LIBS
-    zstd
+    tiff
+    webp
+    deflate
+    lz4
+    df
+    mfhdf
+    qhull
+    xerces-c
+    kmlbase
+    kmldom
+    kmlengine
+    json-c
     sqlite3
     proj
     geos_c
@@ -381,10 +393,13 @@ target_link_libraries(${PROJECT_NAME} PRIVATE /usr/local/lib/libopenjp2.a /usr/l
 # GDAL in /usr/local/lib was compiled with OpenJPEG 2.5.0, so we need to use that
 # System has OpenJPEG 2.4.0 which is incompatible with GDAL's internal OpenJPEG
 target_link_directories(${PROJECT_NAME} PRIVATE
-    /usr/local/lib
     /usr/lib/x86_64-linux-gnu
+    /usr/local/lib
     ${CMAKE_CURRENT_SOURCE_DIR}/local_libs
 )
+
+# Add linker flags to ensure zstd is properly linked
+target_link_options(${PROJECT_NAME} PRIVATE -Wl,--no-as-needed -Wl,--whole-archive -lzstd -Wl,--no-whole-archive)
 
 # Set output directory based on build type
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
