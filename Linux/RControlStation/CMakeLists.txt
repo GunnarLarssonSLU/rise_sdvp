@@ -364,6 +364,9 @@ set(EXTERNAL_LIBS
     kmldom
     kmlengine
     json-c
+    geotiff
+    gif
+    heif
     sqlite3
     proj
     geos_c
@@ -378,6 +381,19 @@ set(EXTERNAL_LIBS
     z
     curl
     expat
+    pq
+    blosc
+    pcre2-8
+    odbc
+    odbcinst
+    IlmImf
+    IlmThread
+    Imath
+    Half
+    Iex
+    cfitsio
+    ogdi
+    freexl
 )
 
 # Find and link external libraries
@@ -387,7 +403,12 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ${EXTERNAL_LIBS})
 # Handle GDAL and OpenJPEG linking carefully
 # Use the exact OpenJPEG library that GDAL was compiled with (2.5.0 in /usr/local/lib)
 # This must be linked BEFORE GDAL to avoid symbol conflicts
-target_link_libraries(${PROJECT_NAME} PRIVATE /usr/local/lib/libopenjp2.a /usr/local/lib/libgdal.a)
+# Link zstd and OpenJPEG as static libraries before GDAL
+# Use -Wl,-Bstatic to force static linking for OpenJPEG from /usr/local/lib
+target_link_options(${PROJECT_NAME} PRIVATE -Wl,-Bstatic)
+target_link_libraries(${PROJECT_NAME} PRIVATE /usr/lib/x86_64-linux-gnu/libzstd.a openjp2)
+target_link_options(${PROJECT_NAME} PRIVATE -Wl,-Bdynamic)
+target_link_libraries(${PROJECT_NAME} PRIVATE /usr/local/lib/libgdal.a)
 
 # Add library directories
 # GDAL in /usr/local/lib was compiled with OpenJPEG 2.5.0, so we need to use that
@@ -399,6 +420,7 @@ target_link_directories(${PROJECT_NAME} PRIVATE
 )
 
 # Add linker flags to ensure zstd is properly linked
+# Use -Wl,--no-as-needed to link all symbols
 target_link_options(${PROJECT_NAME} PRIVATE -Wl,--no-as-needed -Wl,--whole-archive -lzstd -Wl,--no-whole-archive)
 
 # Set output directory based on build type
