@@ -357,6 +357,7 @@ class FarmManagerApp:
         except requests.exceptions.RequestException as e:
             st.session_state.error_message = f"Network error: {str(e)}"
             return False
+    
     def render_farm_table(self):
         """Render the farm table with selection and actions."""
         st.header("🏠 Farms")
@@ -391,15 +392,17 @@ class FarmManagerApp:
                     'Longitude': f"{farm['longitude']:.14f}",
                     'Latitude': f"{farm['latitude']:.14f}",
                     'IP': farm['ip'],
-                    'Port': farm['port']
+                    'Port': farm['port'],
+                    'Select': f"[Select](#)"
                 })
             
             df_farms = pd.DataFrame(farm_data)
             st.dataframe(df_farms, width='stretch', height=300, hide_index=True, use_container_width=True)
             
-            # Selection via buttons below table
+            # Selection via buttons in a compact layout
+            st.markdown("**Select a farm:**")
             for farm in st.session_state.farms:
-                if st.button(f"Select {farm['name']}", width='stretch', key=f"select_farm_{farm['id']}"):
+                if st.button(farm['name'], width='stretch', key=f"select_farm_{farm['id']}"):
                     st.session_state.selected_farm_id = farm['id']
                     st.rerun()
             
@@ -407,6 +410,7 @@ class FarmManagerApp:
             if st.session_state.selected_farm_id:
                 selected_farm = next((f for f in st.session_state.farms if f['id'] == st.session_state.selected_farm_id), None)
                 if selected_farm:
+                    st.markdown(f"**Selected:** {selected_farm['name']}")
                     if st.button(f"🗑️ Delete '{selected_farm['name']}'", key=f"delete_farm_{selected_farm['id']}"):
                         if self.delete_farm(selected_farm['id']):
                             self.fetch_all_farms()
@@ -484,9 +488,10 @@ class FarmManagerApp:
                 df_fields = pd.DataFrame(field_data)
                 st.dataframe(df_fields, width='stretch', height=250, hide_index=True, use_container_width=True)
                 
-                # Selection via buttons below table
+                # Selection via buttons
+                st.markdown("**Select a field:**")
                 for field in farm_fields:
-                    if st.button(f"Select {field['name']}", width='stretch', key=f"select_field_{field['id']}"):
+                    if st.button(field['name'], width='stretch', key=f"select_field_{field['id']}"):
                         st.session_state.selected_field_id = field['id']
                         st.rerun()
                 
@@ -494,6 +499,7 @@ class FarmManagerApp:
                 if st.session_state.selected_field_id:
                     selected_field = next((f for f in farm_fields if f['id'] == st.session_state.selected_field_id), None)
                     if selected_field:
+                        st.markdown(f"**Selected:** {selected_field['name']}")
                         if st.button(f"🗑️ Delete '{selected_field['name']}'", key=f"delete_field_{selected_field['id']}"):
                             if self.delete_field(selected_field['id']):
                                 self.fetch_fields_for_farm(farm_id)
@@ -568,9 +574,10 @@ class FarmManagerApp:
                 df_paths = pd.DataFrame(path_data)
                 st.dataframe(df_paths, width='stretch', height=200, hide_index=True, use_container_width=True)
                 
-                # Selection via buttons below table
+                # Selection via buttons
+                st.markdown("**Select a path:**")
                 for path in field_paths:
-                    if st.button(f"Select {path['name']}", width='stretch', key=f"select_path_{path['id']}"):
+                    if st.button(path['name'], width='stretch', key=f"select_path_{path['id']}"):
                         st.session_state.selected_path_id = path['id']
                         st.rerun()
                 
@@ -578,6 +585,7 @@ class FarmManagerApp:
                 if st.session_state.selected_path_id:
                     selected_path = next((p for p in field_paths if p['id'] == st.session_state.selected_path_id), None)
                     if selected_path:
+                        st.markdown(f"**Selected:** {selected_path['name']}")
                         if st.button(f"🗑️ Delete '{selected_path['name']}'", key=f"delete_path_{selected_path['id']}"):
                             if self.delete_path(selected_path['id']):
                                 self.fetch_paths_for_field(field_id)
