@@ -55,11 +55,6 @@ class FarmManagerApp:
         self.fields: List[Dict[str, Any]] = []
         self.paths: List[Dict[str, Any]] = []
         
-        # State for selected items
-        self.selected_farm_id: Optional[int] = None
-        self.selected_field_id: Optional[int] = None
-        self.selected_path_id: Optional[int] = None
-        
         # Initialize session state
         self._initialize_session_state()
         
@@ -107,7 +102,7 @@ class FarmManagerApp:
     def fetch_fields_for_farm(self, farm_id: int) -> List[Dict[str, Any]]:
         """Fetch all fields for a specific farm."""
         try:
-            url = f"{SERVER_URL}/all_fields?farm_id={farm_id}"
+            url = f"{SERVER_URL}/all_fields?farm={farm_id}"
             response = requests.get(url, timeout=TIMEOUT)
             
             if response.status_code == 200:
@@ -386,7 +381,6 @@ class FarmManagerApp:
         except requests.exceptions.RequestException as e:
             st.session_state.error_message = f"Network error: {str(e)}"
             return False
-            
     def render_farm_table(self):
         """Render the farm table with selection and actions."""
         st.header("🏠 Farms")
@@ -426,8 +420,8 @@ class FarmManagerApp:
             
             df_farms = pd.DataFrame(farm_data)
             
-            # Display table
-            st.dataframe(
+            # Display table with row selection
+            edited_df, selected_rows = st.data_editor(
                 df_farms,
                 width='stretch',
                 height=300,
@@ -439,28 +433,25 @@ class FarmManagerApp:
                     "Latitude": st.column_config.NumberColumn(format="%.14f"),
                     "IP": st.column_config.TextColumn(width="small"),
                     "Port": st.column_config.TextColumn(width="small")
-                }
+                },
+                disabled=True,
+                use_container_width=True,
+                key="farm_editor"
             )
             
-            # Handle row selection via radio buttons for better compatibility
-            selected_index = st.radio(
-                "Select a farm:",
-                range(len(st.session_state.farms)),
-                format_func=lambda i: f"{st.session_state.farms[i]['id']}: {st.session_state.farms[i]['name']}",
-                key="farm_selector",
-                label_visibility="collapsed"
-            )
-            
-            if len(st.session_state.farms) > 0:
-                selected_farm = st.session_state.farms[selected_index]
-                st.session_state.selected_farm_id = selected_farm['id']
-                
-                # Show delete button for selected farm
-                if st.button(f"🗑️ Delete '{selected_farm['name']}'", key=f"delete_farm_{selected_farm['id']}"):
-                    if self.delete_farm(selected_farm['id']):
-                        self.fetch_all_farms()
-                        st.session_state.selected_farm_id = None
-                        st.rerun()
+            # Handle row selection
+            if selected_rows:
+                selected_row_data = selected_rows[0]
+                selected_farm = next((f for f in st.session_state.farms if f['id'] == selected_row_data['ID']), None)
+                if selected_farm:
+                    st.session_state.selected_farm_id = selected_farm['id']
+                    
+                    # Show delete button for selected farm
+                    if st.button(f"🗑️ Delete '{selected_farm['name']}'", key=f"delete_farm_{selected_farm['id']}"):
+                        if self.delete_farm(selected_farm['id']):
+                            self.fetch_all_farms()
+                            st.session_state.selected_farm_id = None
+                            st.rerun()
         else:
             st.info("No farms found. Click 'Refresh' to load data.")
             
@@ -532,8 +523,8 @@ class FarmManagerApp:
                 
                 df_fields = pd.DataFrame(field_data)
                 
-                # Display table
-                st.dataframe(
+                # Display table with row selection
+                edited_df, selected_rows = st.data_editor(
                     df_fields,
                     width='stretch',
                     height=250,
@@ -543,28 +534,25 @@ class FarmManagerApp:
                         "Name": st.column_config.TextColumn(width="medium"),
                         "Fenced": st.column_config.TextColumn(width="small"),
                         "File": st.column_config.TextColumn(width="large")
-                    }
+                    },
+                    disabled=True,
+                    use_container_width=True,
+                    key="field_editor"
                 )
                 
-                # Handle row selection via radio buttons
-                if farm_fields:
-                    selected_index = st.radio(
-                        "Select a field:",
-                        range(len(farm_fields)),
-                        format_func=lambda i: f"{farm_fields[i]['id']}: {farm_fields[i]['name']}",
-                        key="field_selector",
-                        label_visibility="collapsed"
-                    )
-                    
-                    selected_field = farm_fields[selected_index]
-                    st.session_state.selected_field_id = selected_field['id']
-                    
-                    # Show delete button for selected field
-                    if st.button(f"🗑️ Delete '{selected_field['name']}'", key=f"delete_field_{selected_field['id']}"):
-                        if self.delete_field(selected_field['id']):
-                            self.fetch_fields_for_farm(farm_id)
-                            st.session_state.selected_field_id = None
-                            st.rerun()
+                # Handle row selection
+                if selected_rows:
+                    selected_row_data = selected_rows[0]
+                    selected_field = next((f for f in farm_fields if f['id'] == selected_row_data['ID']), None)
+                    if selected_field:
+                        st.session_state.selected_field_id = selected_field['id']
+                        
+                        # Show delete button for selected field
+                        if st.button(f"🗑️ Delete '{selected_field['name']}'", key=f"delete_field_{selected_field['id']}"):
+                            if self.delete_field(selected_field['id']):
+                                self.fetch_fields_for_farm(farm_id)
+                                st.session_state.selected_field_id = None
+                                st.rerun()
             else:
                 st.info(f"No fields found for farm ID {farm_id}.")
         else:
@@ -633,8 +621,8 @@ class FarmManagerApp:
                 
                 df_paths = pd.DataFrame(path_data)
                 
-                # Display table
-                st.dataframe(
+                # Display table with row selection
+                edited_df, selected_rows = st.data_editor(
                     df_paths,
                     width='stretch',
                     height=200,
@@ -643,28 +631,25 @@ class FarmManagerApp:
                         "ID": st.column_config.NumberColumn(width="small"),
                         "Name": st.column_config.TextColumn(width="medium"),
                         "Field ID": st.column_config.NumberColumn(width="small")
-                    }
+                    },
+                    disabled=True,
+                    use_container_width=True,
+                    key="path_editor"
                 )
                 
-                # Handle row selection via radio buttons
-                if field_paths:
-                    selected_index = st.radio(
-                        "Select a path:",
-                        range(len(field_paths)),
-                        format_func=lambda i: f"{field_paths[i]['id']}: {field_paths[i]['name']}",
-                        key="path_selector",
-                        label_visibility="collapsed"
-                    )
-                    
-                    selected_path = field_paths[selected_index]
-                    st.session_state.selected_path_id = selected_path['id']
-                    
-                    # Show delete button for selected path
-                    if st.button(f"🗑️ Delete '{selected_path['name']}'", key=f"delete_path_{selected_path['id']}"):
-                        if self.delete_path(selected_path['id']):
-                            self.fetch_paths_for_field(field_id)
-                            st.session_state.selected_path_id = None
-                            st.rerun()
+                # Handle row selection
+                if selected_rows:
+                    selected_row_data = selected_rows[0]
+                    selected_path = next((p for p in field_paths if p['id'] == selected_row_data['ID']), None)
+                    if selected_path:
+                        st.session_state.selected_path_id = selected_path['id']
+                        
+                        # Show delete button for selected path
+                        if st.button(f"🗑️ Delete '{selected_path['name']}'", key=f"delete_path_{selected_path['id']}"):
+                            if self.delete_path(selected_path['id']):
+                                self.fetch_paths_for_field(field_id)
+                                st.session_state.selected_path_id = None
+                                st.rerun()
             else:
                 st.info(f"No paths found for field ID {field_id}.")
         else:
