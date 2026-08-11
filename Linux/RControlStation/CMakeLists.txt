@@ -264,6 +264,10 @@ set(RESOURCE_FILES
 )
 
 # Qt automatic code generation
+# Separate headers that should not be processed by MOC
+list(REMOVE_ITEM HEADERS qcustomplot.h)
+set(NON_MOC_HEADERS qcustomplot.h)
+
 if(QT_VERSION EQUAL 5)
     qt5_wrap_cpp(MOC_SOURCES ${HEADERS})
     qt5_wrap_ui(UI_HEADERS ${UI_FILES})
@@ -273,6 +277,9 @@ else()
     qt6_wrap_ui(UI_HEADERS ${UI_FILES})
     qt6_add_resources(RCC_SOURCES ${RESOURCE_FILES})
 endif()
+
+# Add back the non-MOC headers to the sources
+list(APPEND SOURCES ${NON_MOC_HEADERS})
 
 # Add all generated sources
 list(APPEND SOURCES ${MOC_SOURCES} ${UI_HEADERS} ${RCC_SOURCES})
