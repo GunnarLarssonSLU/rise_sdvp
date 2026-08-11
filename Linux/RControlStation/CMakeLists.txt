@@ -406,9 +406,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ${EXTERNAL_LIBS})
 # Link zstd and OpenJPEG as static libraries before GDAL
 # Use -Wl,-Bstatic to force static linking for OpenJPEG from /usr/local/lib
 target_link_options(${PROJECT_NAME} PRIVATE -Wl,-Bstatic)
-target_link_libraries(${PROJECT_NAME} PRIVATE /usr/lib/x86_64-linux-gnu/libzstd.a openjp2)
+target_link_libraries(${PROJECT_NAME} PRIVATE /usr/lib/x86_64-linux-gnu/libzstd.a openjp2 /usr/local/lib/libgdal.a)
 target_link_options(${PROJECT_NAME} PRIVATE -Wl,-Bdynamic)
-target_link_libraries(${PROJECT_NAME} PRIVATE /usr/local/lib/libgdal.a)
 
 # Add library directories
 # GDAL in /usr/local/lib was compiled with OpenJPEG 2.5.0, so we need to use that
@@ -419,9 +418,9 @@ target_link_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/local_libs
 )
 
-# Add linker flags to ensure zstd is properly linked
+# Add linker flags to ensure all symbols are linked
 # Use -Wl,--no-as-needed to link all symbols
-target_link_options(${PROJECT_NAME} PRIVATE -Wl,--no-as-needed -Wl,--whole-archive -lzstd -Wl,--no-whole-archive)
+target_link_options(${PROJECT_NAME} PRIVATE -Wl,--no-as-needed)
 
 # Set output directory based on build type
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
