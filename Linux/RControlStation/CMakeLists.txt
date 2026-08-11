@@ -72,12 +72,13 @@ else()
 endif()
 
 # Add include directories
+# Prefer system includes over local ones to avoid version conflicts
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
-    /usr/local/include
     /usr/include/eigen3
     /usr/include/gdal
     /usr/include/SDL2
+    /usr/local/include
 )
 
 # Add definitions from the .pro file
@@ -229,12 +230,7 @@ set(HEADERS
     controlmanager.h
     actuatormanager.h
     sensormanager.h
-    gpsgen.h
-    gpssim.h
-    limesdr.h
     wireguard.h
-    copterinterface.h
-    orientationwidget.h
     simscentree.h
 )
 
@@ -352,6 +348,7 @@ endif()
 
 # Add all the external libraries from the .pro file
 # These are the libraries that were in the LIBS variable
+# Note: Link order matters! OpenJPEG must be linked before GDAL since GDAL depends on it
 set(EXTERNAL_LIBS
     openjp2
     gdal
@@ -401,12 +398,14 @@ set(EXTERNAL_LIBS
 )
 
 # Find and link external libraries
+# Link in reverse order of dependency (most dependent first)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${EXTERNAL_LIBS})
 
 # Add library directories
+# Prefer system libraries over local ones to avoid version conflicts
 target_link_directories(${PROJECT_NAME} PRIVATE
-    /usr/local/lib
     /usr/lib/x86_64-linux-gnu
+    /usr/local/lib
     ${CMAKE_CURRENT_SOURCE_DIR}/local_libs
 )
 
