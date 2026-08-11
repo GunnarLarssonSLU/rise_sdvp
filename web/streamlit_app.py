@@ -420,8 +420,8 @@ class FarmManagerApp:
             
             df_farms = pd.DataFrame(farm_data)
             
-            # Display table with row selection
-            edited_df, selected_rows = st.data_editor(
+            # Display table
+            st.dataframe(
                 df_farms,
                 width='stretch',
                 height=300,
@@ -434,19 +434,20 @@ class FarmManagerApp:
                     "IP": st.column_config.TextColumn(width="small"),
                     "Port": st.column_config.TextColumn(width="small")
                 },
-                disabled=True,
-                use_container_width=True,
-                key="farm_editor"
+                use_container_width=True
             )
             
-            # Handle row selection
-            if selected_rows:
-                selected_row_data = selected_rows[0]
-                selected_farm = next((f for f in st.session_state.farms if f['id'] == selected_row_data['ID']), None)
+            # Handle row selection via click - use a simple approach with buttons in the table
+            # Create a selection interface by showing farm names as buttons
+            for farm in st.session_state.farms:
+                if st.button(f"Select: {farm['name']}", width='stretch', key=f"select_farm_{farm['id']}"):
+                    st.session_state.selected_farm_id = farm['id']
+                    st.rerun()
+            
+            # Show delete button for selected farm
+            if st.session_state.selected_farm_id:
+                selected_farm = next((f for f in st.session_state.farms if f['id'] == st.session_state.selected_farm_id), None)
                 if selected_farm:
-                    st.session_state.selected_farm_id = selected_farm['id']
-                    
-                    # Show delete button for selected farm
                     if st.button(f"🗑️ Delete '{selected_farm['name']}'", key=f"delete_farm_{selected_farm['id']}"):
                         if self.delete_farm(selected_farm['id']):
                             self.fetch_all_farms()
@@ -523,8 +524,8 @@ class FarmManagerApp:
                 
                 df_fields = pd.DataFrame(field_data)
                 
-                # Display table with row selection
-                edited_df, selected_rows = st.data_editor(
+                # Display table
+                st.dataframe(
                     df_fields,
                     width='stretch',
                     height=250,
@@ -535,19 +536,19 @@ class FarmManagerApp:
                         "Fenced": st.column_config.TextColumn(width="small"),
                         "File": st.column_config.TextColumn(width="large")
                     },
-                    disabled=True,
-                    use_container_width=True,
-                    key="field_editor"
+                    use_container_width=True
                 )
                 
-                # Handle row selection
-                if selected_rows:
-                    selected_row_data = selected_rows[0]
-                    selected_field = next((f for f in farm_fields if f['id'] == selected_row_data['ID']), None)
+                # Handle row selection via buttons
+                for field in farm_fields:
+                    if st.button(f"Select: {field['name']}", width='stretch', key=f"select_field_{field['id']}"):
+                        st.session_state.selected_field_id = field['id']
+                        st.rerun()
+                
+                # Show delete button for selected field
+                if st.session_state.selected_field_id:
+                    selected_field = next((f for f in farm_fields if f['id'] == st.session_state.selected_field_id), None)
                     if selected_field:
-                        st.session_state.selected_field_id = selected_field['id']
-                        
-                        # Show delete button for selected field
                         if st.button(f"🗑️ Delete '{selected_field['name']}'", key=f"delete_field_{selected_field['id']}"):
                             if self.delete_field(selected_field['id']):
                                 self.fetch_fields_for_farm(farm_id)
@@ -621,8 +622,8 @@ class FarmManagerApp:
                 
                 df_paths = pd.DataFrame(path_data)
                 
-                # Display table with row selection
-                edited_df, selected_rows = st.data_editor(
+                # Display table
+                st.dataframe(
                     df_paths,
                     width='stretch',
                     height=200,
@@ -632,19 +633,19 @@ class FarmManagerApp:
                         "Name": st.column_config.TextColumn(width="medium"),
                         "Field ID": st.column_config.NumberColumn(width="small")
                     },
-                    disabled=True,
-                    use_container_width=True,
-                    key="path_editor"
+                    use_container_width=True
                 )
                 
-                # Handle row selection
-                if selected_rows:
-                    selected_row_data = selected_rows[0]
-                    selected_path = next((p for p in field_paths if p['id'] == selected_row_data['ID']), None)
+                # Handle row selection via buttons
+                for path in field_paths:
+                    if st.button(f"Select: {path['name']}", width='stretch', key=f"select_path_{path['id']}"):
+                        st.session_state.selected_path_id = path['id']
+                        st.rerun()
+                
+                # Show delete button for selected path
+                if st.session_state.selected_path_id:
+                    selected_path = next((p for p in field_paths if p['id'] == st.session_state.selected_path_id), None)
                     if selected_path:
-                        st.session_state.selected_path_id = selected_path['id']
-                        
-                        # Show delete button for selected path
                         if st.button(f"🗑️ Delete '{selected_path['name']}'", key=f"delete_path_{selected_path['id']}"):
                             if self.delete_path(selected_path['id']):
                                 self.fetch_paths_for_field(field_id)
