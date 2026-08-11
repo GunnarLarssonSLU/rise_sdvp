@@ -348,53 +348,24 @@ endif()
 
 # Add all the external libraries from the .pro file
 # These are the libraries that were in the LIBS variable
-# Note: Link order matters! OpenJPEG must be linked before GDAL since GDAL depends on it
+# Note: We only need to link the top-level libraries (like GDAL, SQLite, etc.)
+# Their dependencies will be automatically resolved by the linker
 set(EXTERNAL_LIBS
-    openjp2
     gdal
-    z
     sqlite3
     proj
     geos_c
-    zstd
-    tiff
-    curl
-    webp
-    jpeg
-    deflate
-    ssl
-    crypto
-    expat
-    png
-    lz4
-    json-c
-    geotiff
-    gif
     netcdf
     hdf5_serial
     hdf5_serial_hl
-    mfhdf
-    df
-    heif
-    pq
-    blosc
     xml2
-    pcre2-8
-    xerces-c
-    IlmImf
-    IlmThread
-    Imath
-    Half
-    Iex
-    kmlbase
-    kmldom
-    kmlengine
-    qhull
-    cfitsio
-    ogdi
-    freexl
-    odbc
-    odbcinst
+    ssl
+    crypto
+    png
+    jpeg
+    z
+    curl
+    expat
 )
 
 # Find and link external libraries
