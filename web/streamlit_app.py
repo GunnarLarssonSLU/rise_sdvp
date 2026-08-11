@@ -26,35 +26,11 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for better styling
-st.markdown("""
-    <style>
-    .main {
-        padding: 0rem 1rem;
-    }
-    .stDataFrame {
-        border: 1px solid #ddd;
-        border-radius: 5px;
-    }
-    .stButton button {
-        border-radius: 5px;
-        padding: 0.25rem 1rem;
-    }
-    .highlight-row {
-        background-color: #f0f2f6 !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
 
 class FarmManagerApp:
     """Main application class for managing farms, fields, and paths."""
     
     def __init__(self):
-        self.farms: List[Dict[str, Any]] = []
-        self.fields: List[Dict[str, Any]] = []
-        self.paths: List[Dict[str, Any]] = []
-        
         # Initialize session state
         self._initialize_session_state()
         
@@ -419,28 +395,11 @@ class FarmManagerApp:
                 })
             
             df_farms = pd.DataFrame(farm_data)
+            st.dataframe(df_farms, width='stretch', height=300, hide_index=True, use_container_width=True)
             
-            # Display table
-            st.dataframe(
-                df_farms,
-                width='stretch',
-                height=300,
-                hide_index=True,
-                column_config={
-                    "ID": st.column_config.NumberColumn(width="small"),
-                    "Name": st.column_config.TextColumn(width="medium"),
-                    "Longitude": st.column_config.NumberColumn(format="%.14f"),
-                    "Latitude": st.column_config.NumberColumn(format="%.14f"),
-                    "IP": st.column_config.TextColumn(width="small"),
-                    "Port": st.column_config.TextColumn(width="small")
-                },
-                use_container_width=True
-            )
-            
-            # Handle row selection via click - use a simple approach with buttons in the table
-            # Create a selection interface by showing farm names as buttons
+            # Selection via buttons below table
             for farm in st.session_state.farms:
-                if st.button(f"Select: {farm['name']}", width='stretch', key=f"select_farm_{farm['id']}"):
+                if st.button(f"Select {farm['name']}", width='stretch', key=f"select_farm_{farm['id']}"):
                     st.session_state.selected_farm_id = farm['id']
                     st.rerun()
             
@@ -523,25 +482,11 @@ class FarmManagerApp:
                     })
                 
                 df_fields = pd.DataFrame(field_data)
+                st.dataframe(df_fields, width='stretch', height=250, hide_index=True, use_container_width=True)
                 
-                # Display table
-                st.dataframe(
-                    df_fields,
-                    width='stretch',
-                    height=250,
-                    hide_index=True,
-                    column_config={
-                        "ID": st.column_config.NumberColumn(width="small"),
-                        "Name": st.column_config.TextColumn(width="medium"),
-                        "Fenced": st.column_config.TextColumn(width="small"),
-                        "File": st.column_config.TextColumn(width="large")
-                    },
-                    use_container_width=True
-                )
-                
-                # Handle row selection via buttons
+                # Selection via buttons below table
                 for field in farm_fields:
-                    if st.button(f"Select: {field['name']}", width='stretch', key=f"select_field_{field['id']}"):
+                    if st.button(f"Select {field['name']}", width='stretch', key=f"select_field_{field['id']}"):
                         st.session_state.selected_field_id = field['id']
                         st.rerun()
                 
@@ -621,24 +566,11 @@ class FarmManagerApp:
                     })
                 
                 df_paths = pd.DataFrame(path_data)
+                st.dataframe(df_paths, width='stretch', height=200, hide_index=True, use_container_width=True)
                 
-                # Display table
-                st.dataframe(
-                    df_paths,
-                    width='stretch',
-                    height=200,
-                    hide_index=True,
-                    column_config={
-                        "ID": st.column_config.NumberColumn(width="small"),
-                        "Name": st.column_config.TextColumn(width="medium"),
-                        "Field ID": st.column_config.NumberColumn(width="small")
-                    },
-                    use_container_width=True
-                )
-                
-                # Handle row selection via buttons
+                # Selection via buttons below table
                 for path in field_paths:
-                    if st.button(f"Select: {path['name']}", width='stretch', key=f"select_path_{path['id']}"):
+                    if st.button(f"Select {path['name']}", width='stretch', key=f"select_path_{path['id']}"):
                         st.session_state.selected_path_id = path['id']
                         st.rerun()
                 
