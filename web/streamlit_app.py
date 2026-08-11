@@ -12,7 +12,6 @@ import requests
 import xml.etree.ElementTree as ET
 from typing import List, Dict, Any, Optional
 import pandas as pd
-import json
 from datetime import datetime
 
 # Configuration
@@ -33,7 +32,7 @@ st.markdown("""
     .main {
         padding: 0rem 1rem;
     }
-    .stTable {
+    .stDataFrame {
         border: 1px solid #ddd;
         border-radius: 5px;
     }
@@ -43,28 +42,6 @@ st.markdown("""
     }
     .highlight-row {
         background-color: #f0f2f6 !important;
-    }
-    .farm-section {
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 15px;
-        margin-bottom: 20px;
-    }
-    .field-section {
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 15px;
-        margin-bottom: 20px;
-        margin-left: 20px;
-        background-color: #f9f9f9;
-    }
-    .path-section {
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 15px;
-        margin-bottom: 20px;
-        margin-left: 40px;
-        background-color: #f5f5f5;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -423,15 +400,15 @@ class FarmManagerApp:
             st.success(st.session_state.success_message)
             st.session_state.success_message = None
         
-        # Refresh button
+        # Refresh button and Add Farm button
         col1, col2, col3 = st.columns([1, 2, 1])
         with col1:
-            if st.button("🔄 Refresh Farms", use_container_width=True):
+            if st.button("🔄 Refresh", width='stretch'):
                 self.fetch_all_farms()
                 st.rerun()
         
         with col3:
-            if st.button("➕ Add Farm", use_container_width=True):
+            if st.button("➕ Add Farm", width='stretch'):
                 st.session_state.show_add_farm = True
         
         # Display farm table
@@ -449,10 +426,10 @@ class FarmManagerApp:
             
             df_farms = pd.DataFrame(farm_data)
             
-            # Style the table
+            # Display table
             st.dataframe(
                 df_farms,
-                use_container_width=True,
+                width='stretch',
                 height=300,
                 hide_index=True,
                 column_config={
@@ -465,54 +442,52 @@ class FarmManagerApp:
                 }
             )
             
-            # Selection handling
-            selected_farm_name = st.selectbox(
-                "Select a Farm:",
-                [f"{farm['id']}: {farm['name']}" for farm in st.session_state.farms] + ["None"],
-                index=len(st.session_state.farms) if st.session_state.farms else 0,
-                key="farm_selector"
+            # Handle row selection via radio buttons for better compatibility
+            selected_index = st.radio(
+                "Select a farm:",
+                range(len(st.session_state.farms)),
+                format_func=lambda i: f"{st.session_state.farms[i]['id']}: {st.session_state.farms[i]['name']}",
+                key="farm_selector",
+                label_visibility="collapsed"
             )
             
-            if selected_farm_name and selected_farm_name != "None":
-                farm_id = int(selected_farm_name.split(":")[0])
-                st.session_state.selected_farm_id = farm_id
+            if len(st.session_state.farms) > 0:
+                selected_farm = st.session_state.farms[selected_index]
+                st.session_state.selected_farm_id = selected_farm['id']
                 
-                # Find the selected farm
-                selected_farm = next((f for f in st.session_state.farms if f['id'] == farm_id), None)
-                if selected_farm:
-                    st.info(f"Selected Farm: {selected_farm['name']} (ID: {selected_farm['id']})")
-                    
-                    # Delete button for selected farm
-                    if st.button(f"🗑️ Delete Farm {selected_farm['name']}", key=f"delete_farm_{farm_id}"):
-                        if self.delete_farm(farm_id):
-                            self.fetch_all_farms()
-                            st.session_state.selected_farm_id = None
-                            st.rerun()
+                # Show delete button for selected farm
+                if st.button(f"🗑️ Delete '{selected_farm['name']}'", key=f"delete_farm_{selected_farm['id']}"):
+                    if self.delete_farm(selected_farm['id']):
+                        self.fetch_all_farms()
+                        st.session_state.selected_farm_id = None
+                        st.rerun()
         else:
-            st.info("No farms found. Click 'Refresh Farms' to load data.")
+            st.info("No farms found. Click 'Refresh' to load data.")
             
         # Add farm dialog
         if 'show_add_farm' in st.session_state and st.session_state.show_add_farm:
             with st.expander("Add New Farm", expanded=True):
-                with st.form("add_farm_form"):
-                    farm_name = st.text_input("Farm Name:", key="new_farm_name")
+                farm_name = st.text_input("Farm Name:", key="new_farm_name")
+                col1, col2 = st.columns(2)
+                with col1:
                     farm_longitude = st.number_input("Longitude:", value=0.0, format="%.14f", key="new_farm_longitude")
+                with col2:
                     farm_latitude = st.number_input("Latitude:", value=0.0, format="%.14f", key="new_farm_latitude")
-                    
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if st.form_submit_button("Add Farm"):
-                            if farm_name:
-                                if self.add_farm(farm_name, farm_longitude, farm_latitude):
-                                    st.session_state.show_add_farm = False
-                                    self.fetch_all_farms()
-                                    st.rerun()
-                            else:
-                                st.error("Please enter a farm name")
-                    with col2:
-                        if st.form_submit_button("Cancel"):
-                            st.session_state.show_add_farm = False
-                            st.rerun()
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("Add Farm", width='stretch'):
+                        if farm_name:
+                            if self.add_farm(farm_name, farm_longitude, farm_latitude):
+                                st.session_state.show_add_farm = False
+                                self.fetch_all_farms()
+                                st.rerun()
+                        else:
+                            st.error("Please enter a farm name")
+                with col2:
+                    if st.button("Cancel", width='stretch'):
+                        st.session_state.show_add_farm = False
+                        st.rerun()
                             
         return st.session_state.selected_farm_id
         
@@ -532,12 +507,12 @@ class FarmManagerApp:
         # Refresh and add buttons
         col1, col2, col3 = st.columns([1, 2, 1])
         with col1:
-            if st.button("🔄 Refresh Fields", use_container_width=True, key=f"refresh_fields_{farm_id}"):
+            if st.button("🔄 Refresh", width='stretch', key=f"refresh_fields_{farm_id}"):
                 self.fetch_fields_for_farm(farm_id)
                 st.rerun()
         
         with col3:
-            if st.button("➕ Add Field", use_container_width=True, key=f"add_field_{farm_id}"):
+            if st.button("➕ Add Field", width='stretch', key=f"add_field_{farm_id}"):
                 st.session_state.show_add_field = True
         
         # Display field table
@@ -557,9 +532,10 @@ class FarmManagerApp:
                 
                 df_fields = pd.DataFrame(field_data)
                 
+                # Display table
                 st.dataframe(
                     df_fields,
-                    use_container_width=True,
+                    width='stretch',
                     height=250,
                     hide_index=True,
                     column_config={
@@ -570,55 +546,50 @@ class FarmManagerApp:
                     }
                 )
                 
-                # Selection handling
-                selected_field_name = st.selectbox(
-                    "Select a Field:",
-                    [f"{field['id']}: {field['name']}" for field in farm_fields] + ["None"],
-                    index=len(farm_fields) if farm_fields else 0,
-                    key="field_selector"
-                )
-                
-                if selected_field_name and selected_field_name != "None":
-                    field_id = int(selected_field_name.split(":")[0])
-                    st.session_state.selected_field_id = field_id
+                # Handle row selection via radio buttons
+                if farm_fields:
+                    selected_index = st.radio(
+                        "Select a field:",
+                        range(len(farm_fields)),
+                        format_func=lambda i: f"{farm_fields[i]['id']}: {farm_fields[i]['name']}",
+                        key="field_selector",
+                        label_visibility="collapsed"
+                    )
                     
-                    # Find the selected field
-                    selected_field = next((f for f in farm_fields if f['id'] == field_id), None)
-                    if selected_field:
-                        st.info(f"Selected Field: {selected_field['name']} (ID: {selected_field['id']})")
-                        
-                        # Delete button for selected field
-                        if st.button(f"🗑️ Delete Field {selected_field['name']}", key=f"delete_field_{field_id}"):
-                            if self.delete_field(field_id):
-                                self.fetch_fields_for_farm(farm_id)
-                                st.session_state.selected_field_id = None
-                                st.rerun()
+                    selected_field = farm_fields[selected_index]
+                    st.session_state.selected_field_id = selected_field['id']
+                    
+                    # Show delete button for selected field
+                    if st.button(f"🗑️ Delete '{selected_field['name']}'", key=f"delete_field_{selected_field['id']}"):
+                        if self.delete_field(selected_field['id']):
+                            self.fetch_fields_for_farm(farm_id)
+                            st.session_state.selected_field_id = None
+                            st.rerun()
             else:
                 st.info(f"No fields found for farm ID {farm_id}.")
         else:
-            st.info("No fields found. Click 'Refresh Fields' to load data.")
+            st.info("No fields found. Click 'Refresh' to load data.")
         
         # Add field dialog
         if 'show_add_field' in st.session_state and st.session_state.show_add_field:
             with st.expander("Add New Field", expanded=True):
-                with st.form("add_field_form"):
-                    field_name = st.text_input("Field Name:", key="new_field_name")
-                    field_fenced = st.checkbox("Is Fenced?", value=False, key="new_field_fenced")
-                    
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if st.form_submit_button("Add Field"):
-                            if field_name:
-                                if self.add_field(field_name, farm_id, field_fenced):
-                                    st.session_state.show_add_field = False
-                                    self.fetch_fields_for_farm(farm_id)
-                                    st.rerun()
-                            else:
-                                st.error("Please enter a field name")
-                    with col2:
-                        if st.form_submit_button("Cancel"):
-                            st.session_state.show_add_field = False
-                            st.rerun()
+                field_name = st.text_input("Field Name:", key="new_field_name")
+                field_fenced = st.checkbox("Is Fenced?", value=False, key="new_field_fenced")
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("Add Field", width='stretch'):
+                        if field_name:
+                            if self.add_field(field_name, farm_id, field_fenced):
+                                st.session_state.show_add_field = False
+                                self.fetch_fields_for_farm(farm_id)
+                                st.rerun()
+                        else:
+                            st.error("Please enter a field name")
+                with col2:
+                    if st.button("Cancel", width='stretch'):
+                        st.session_state.show_add_field = False
+                        st.rerun()
                             
         return st.session_state.selected_field_id
         
@@ -638,12 +609,12 @@ class FarmManagerApp:
         # Refresh and add buttons
         col1, col2, col3 = st.columns([1, 2, 1])
         with col1:
-            if st.button("🔄 Refresh Paths", use_container_width=True, key=f"refresh_paths_{field_id}"):
+            if st.button("🔄 Refresh", width='stretch', key=f"refresh_paths_{field_id}"):
                 self.fetch_paths_for_field(field_id)
                 st.rerun()
         
         with col3:
-            if st.button("➕ Add Path", use_container_width=True, key=f"add_path_{field_id}"):
+            if st.button("➕ Add Path", width='stretch', key=f"add_path_{field_id}"):
                 st.session_state.show_add_path = True
         
         # Display path table
@@ -662,9 +633,10 @@ class FarmManagerApp:
                 
                 df_paths = pd.DataFrame(path_data)
                 
+                # Display table
                 st.dataframe(
                     df_paths,
-                    use_container_width=True,
+                    width='stretch',
                     height=200,
                     hide_index=True,
                     column_config={
@@ -674,54 +646,49 @@ class FarmManagerApp:
                     }
                 )
                 
-                # Selection handling
-                selected_path_name = st.selectbox(
-                    "Select a Path:",
-                    [f"{path['id']}: {path['name']}" for path in field_paths] + ["None"],
-                    index=len(field_paths) if field_paths else 0,
-                    key="path_selector"
-                )
-                
-                if selected_path_name and selected_path_name != "None":
-                    path_id = int(selected_path_name.split(":")[0])
-                    st.session_state.selected_path_id = path_id
+                # Handle row selection via radio buttons
+                if field_paths:
+                    selected_index = st.radio(
+                        "Select a path:",
+                        range(len(field_paths)),
+                        format_func=lambda i: f"{field_paths[i]['id']}: {field_paths[i]['name']}",
+                        key="path_selector",
+                        label_visibility="collapsed"
+                    )
                     
-                    # Find the selected path
-                    selected_path = next((p for p in field_paths if p['id'] == path_id), None)
-                    if selected_path:
-                        st.info(f"Selected Path: {selected_path['name']} (ID: {selected_path['id']})")
-                        
-                        # Delete button for selected path
-                        if st.button(f"🗑️ Delete Path {selected_path['name']}", key=f"delete_path_{path_id}"):
-                            if self.delete_path(path_id):
-                                self.fetch_paths_for_field(field_id)
-                                st.session_state.selected_path_id = None
-                                st.rerun()
+                    selected_path = field_paths[selected_index]
+                    st.session_state.selected_path_id = selected_path['id']
+                    
+                    # Show delete button for selected path
+                    if st.button(f"🗑️ Delete '{selected_path['name']}'", key=f"delete_path_{selected_path['id']}"):
+                        if self.delete_path(selected_path['id']):
+                            self.fetch_paths_for_field(field_id)
+                            st.session_state.selected_path_id = None
+                            st.rerun()
             else:
                 st.info(f"No paths found for field ID {field_id}.")
         else:
-            st.info("No paths found. Click 'Refresh Paths' to load data.")
+            st.info("No paths found. Click 'Refresh' to load data.")
         
         # Add path dialog
         if 'show_add_path' in st.session_state and st.session_state.show_add_path:
             with st.expander("Add New Path", expanded=True):
-                with st.form("add_path_form"):
-                    path_name = st.text_input("Path Name:", key="new_path_name")
-                    
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if st.form_submit_button("Add Path"):
-                            if path_name:
-                                if self.add_path(path_name, field_id):
-                                    st.session_state.show_add_path = False
-                                    self.fetch_paths_for_field(field_id)
-                                    st.rerun()
-                            else:
-                                st.error("Please enter a path name")
-                    with col2:
-                        if st.form_submit_button("Cancel"):
-                            st.session_state.show_add_path = False
-                            st.rerun()
+                path_name = st.text_input("Path Name:", key="new_path_name")
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("Add Path", width='stretch'):
+                        if path_name:
+                            if self.add_path(path_name, field_id):
+                                st.session_state.show_add_path = False
+                                self.fetch_paths_for_field(field_id)
+                                st.rerun()
+                        else:
+                            st.error("Please enter a path name")
+                with col2:
+                    if st.button("Cancel", width='stretch'):
+                        st.session_state.show_add_path = False
+                        st.rerun()
                             
         return st.session_state.selected_path_id
         
@@ -805,7 +772,7 @@ class FarmManagerApp:
         
         # Add a global refresh button
         st.sidebar.markdown("---")
-        if st.sidebar.button("🔄 Refresh All Data", use_container_width=True):
+        if st.sidebar.button("🔄 Refresh All Data", width='stretch'):
             self.fetch_all_farms()
             if st.session_state.selected_farm_id:
                 self.fetch_fields_for_farm(st.session_state.selected_farm_id)
