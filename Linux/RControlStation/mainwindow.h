@@ -142,7 +142,7 @@ private slots:
 
     void onSelectedFarm(const QModelIndex& current, const QModelIndex& previous);
     void onSelectedField(const QModelIndex& current, const QModelIndex& previous);
-    void onSelectedFieldGeneral(QStandardItemModel *model, QSqlRelationalTableModel *modelPth, const QModelIndex& current, const QModelIndex& previous);
+    void onSelectedFieldGeneral(QStandardItemModel *model, QStandardItemModel *modelPth, const QModelIndex& current, const QModelIndex& previous);
     void on_listLogFilesView_clicked(const QModelIndex& index);
 
 
@@ -154,6 +154,9 @@ private slots:
     void addFieldToServer(const QString &name, int farmId, const QString &filename);
     void updateFieldOnServer(int fieldId, const QString &name, const QString &filename);
     void deleteFieldFromServer(int fieldId);
+    void addPathToServer(const QString &name, int fieldId);
+    void updatePathOnServer(int pathId, const QString &name);
+    void deletePathFromServer(int pathId);
     void fetchFieldXml(int fieldId, const QString &fieldName);
     void onFieldDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
     
@@ -293,7 +296,7 @@ private slots:
 
     // QSqlRelationalTableModel* setupFarmTable(QTableView* uiFarmtable,QString SqlTableName); // Replaced with webserver version
     // QSqlRelationalTableModel* setupFieldTable(QTableView* uiFieldtable,QString SqlTableName); // Replaced with webserver version
-    QSqlRelationalTableModel* setupPathTable(QTableView* uiPathTable,QString sqlTablename);
+    QStandardItemModel* setupPathTable(QTableView* uiPathTable,QString sqlTablename);
 
 private:
     // Helper methods
@@ -309,11 +312,13 @@ private:
     void fetchVehicleTypes(int retryCount = 0);
     void fetchAllFarmsData(int retryCount = 0);
     void fetchAllFieldsData(int farmId, int retryCount = 0);
+    void fetchAllPathsData(int fieldId, int retryCount = 0);
     void parseVehicleTypesXml(const QByteArray &xmlData);
     void parseAllMachinesXml(const QByteArray &xmlData);
     void parseMachinesXml(const QByteArray &xmlData);
     void parseAllFarmsXml(const QByteArray &xmlData);
     void parseAllFieldsXml(const QByteArray &xmlData);
+    void parseAllPathsXml(const QByteArray &xmlData);
     void onAddMachineButtonClicked();
     QStandardItemModel* setupFarmsTable(QTableView* uiFarmTable);
     QStandardItemModel* setupFieldsTable(QTableView* uiFieldTable);
@@ -322,7 +327,7 @@ private:
     bool mAreaLoaded = false;
     int mAreaBorderIndex = -1; // Index of the border used for area filtering
 
-    QSqlRelationalTableModel *modelPath;
+    QStandardItemModel *modelPath;
     QStandardItemModel *machinesModel;
     QStandardItemModel *vehicleTypesModel;
     QStandardItemModel *farmsModel;

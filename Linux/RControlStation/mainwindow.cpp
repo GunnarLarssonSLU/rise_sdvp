@@ -1334,39 +1334,74 @@ void MainWindow::setupLogTab()
     qDebug() << "Log tab setup complete";
 }
 
-QSqlRelationalTableModel* MainWindow::setupPathTable(QTableView* uiPathTable,QString sqlTablename)
+// QSqlRelationalTableModel* MainWindow::setupPathTable(QTableView* uiPathTable,QString sqlTablename) // Replaced with webserver version
+// {
+//     QSqlRelationalTableModel *model= new QSqlRelationalTableModel(uiPathTable);
+//     model->setEditStrategy(QSqlTableModel::OnFieldChange);
+//     model->setTable(sqlTablename);
+// 
+//     // Remember the indexes of the columns:
+//     int fieldIdx = model->fieldIndex("field");
+// 
+//     // Set the relations to the other database tables:
+//     model->setRelation(fieldIdx, QSqlRelation("fields", "id", "name"));
+// 
+//     // Set the localized header captions:
+//     model->setHeaderData(model->fieldIndex("name"), Qt::Horizontal, tr("Name"));
+//     //    model->setHeaderData(model->fieldIndex("xml"), Qt::Horizontal, tr("XML"));
+// 
+//     // Populate the model:
+//     if (!model->select()) {
+//         db.showError(model->lastError());
+//         return model;
+//     }
+// 
+//     // Set the model and hide the ID column:
+//     uiPathTable->setModel(model);
+//     uiPathTable->setColumnHidden(model->fieldIndex("iPath"), true);
+//     uiPathTable->setColumnHidden(model->fieldIndex("storedinfile"), true);
+//     uiPathTable->setColumnHidden(model->fieldIndex("field"), true);
+//     uiPathTable->setColumnHidden(model->fieldIndex("fields_name_2"), true);
+//     uiPathTable->setSelectionMode(QAbstractItemView::SingleSelection);
+//     uiPathTable->setCurrentIndex(model->index(0, 0));
+//     uiPathTable->resizeColumnsToContents();
+//     uiPathTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+//     uiPathTable->horizontalHeader()->setVisible(false); // Hide vertical headers
+//     return model;
+// }
+
+QStandardItemModel* MainWindow::setupPathTable(QTableView* uiPathTable,QString sqlTablename)
 {
-    QSqlRelationalTableModel *model= new QSqlRelationalTableModel(uiPathTable);
-    model->setEditStrategy(QSqlTableModel::OnFieldChange);
-    model->setTable(sqlTablename);
-
-    // Remember the indexes of the columns:
-    int fieldIdx = model->fieldIndex("field");
-
-    // Set the relations to the other database tables:
-    model->setRelation(fieldIdx, QSqlRelation("fields", "id", "name"));
-
-    // Set the localized header captions:
-    model->setHeaderData(model->fieldIndex("name"), Qt::Horizontal, tr("Name"));
-    //    model->setHeaderData(model->fieldIndex("xml"), Qt::Horizontal, tr("XML"));
-
-    // Populate the model:
-    if (!model->select()) {
-        db.showError(model->lastError());
-        return model;
+    if (!uiPathTable) {
+        qDebug() << "ERROR: uiPathTable is null in setupPathTable!";
+        return nullptr;
     }
-
-    // Set the model and hide the ID column:
+    
+    // Create the data model:
+    QStandardItemModel* model = new QStandardItemModel(this);
+    
+    // Set the header labels - based on the original database columns
+    // Original: iPath, name, xml, storedinfile, field, fields_name_2
+    // We'll show: Name (and store ID as user data)
+    model->setHorizontalHeaderLabels(QStringList() << "Name" << "Id" << "Field");
+    
+    // Set the model to the table view
     uiPathTable->setModel(model);
-    uiPathTable->setColumnHidden(model->fieldIndex("iPath"), true);
-    uiPathTable->setColumnHidden(model->fieldIndex("storedinfile"), true);
-    uiPathTable->setColumnHidden(model->fieldIndex("field"), true);
-    uiPathTable->setColumnHidden(model->fieldIndex("fields_name_2"), true);
+    
+    // Hide the columns that should not be visible
+    uiPathTable->setColumnHidden(1, true); // Id (hidden)
+    uiPathTable->setColumnHidden(2, true); // Field (hidden)
+    
+    // Set table properties
     uiPathTable->setSelectionMode(QAbstractItemView::SingleSelection);
-    uiPathTable->setCurrentIndex(model->index(0, 0));
+    uiPathTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     uiPathTable->resizeColumnsToContents();
     uiPathTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     uiPathTable->horizontalHeader()->setVisible(false); // Hide vertical headers
+    
+    // Set the member variable to the local model
+    modelPath = model;
+    
     return model;
 }
 
@@ -1450,7 +1485,7 @@ void MainWindow::onSelectedField(const QModelIndex& current, const QModelIndex& 
     onSelectedFieldGeneral(fieldsModel, modelPath, current, previous);
 };
 
-void MainWindow::onSelectedFieldGeneral(QStandardItemModel *model, QSqlRelationalTableModel *modelPth, const QModelIndex& current, const QModelIndex& previous)
+void MainWindow::onSelectedFieldGeneral(QStandardItemModel *model, QStandardItemModel *modelPth, const QModelIndex& current, const QModelIndex& previous)
 {
     MapWidget* activeMap=ui->mapWidgetFields;
     int row = current.row();
@@ -1484,51 +1519,17 @@ void MainWindow::onSelectedFieldGeneral(QStandardItemModel *model, QSqlRelationa
     ui->mapLiveWidget->clearAllPaths(); // Drive widget
     activeMap->clearAllPaths();
 
-    // Construct a new query based on the selected value
-    QString filter = QString("field = %1").arg(id);
-
-    // Set the new query for the QSqlRelationalTableModel
-    modelPth->setFilter(filter);
-    modelPth->select();
+    // Clear the path model and fetch paths for the selected field
+    if (modelPth) {
+        modelPth->removeRows(0, modelPth->rowCount());
+        if (id != -1) {
+            fetchAllPathsData(id);
+        }
+    }
 
     // Clear the existing items in the combobox
     QSpinBox *selectedRoute=ui->mapRouteBox;
     selectedRoute->clear();
-
-    // Iterate through the rows in the model and add items to the combobox
-    for (int row = 0; row < modelPth->rowCount(); ++row) {
-        // Assuming "id" is in column 0 and "name" is in column 1
-        QVariant id = modelPth->data(modelPth->index(row, 0));
-        QVariant name = modelPth->data(modelPth->index(row, 1));
-
-        // Add the item to the combobox
-//        selectedRoute->addItem(name.toString(), id);
-    }
-    qDebug() << "F";
-
-    // Execute the SQL query
-    QString querystring= QString("SELECT * FROM paths WHERE field = %1").arg(QString::number(id));
-    QSqlQuery query(querystring);
-    //     QMessageBox msg;
-    while (query.next()) {
-        // Access data for each record
-        QString xmlFile= query.value("storedinfile").toString();
-
-        if (!xmlFile.isEmpty()) {
-            QFile file(xmlFile);
-            if (file.exists()) {
-                if (file.open(QIODevice::ReadOnly)) {
-                    QXmlStreamReader xmlData(&file);
-                    ui->mapLiveWidget->loadXMLRoute(&xmlData,false); // Drive-widget
-                    file.close();
-                } else {
-                    qDebug() << "Could not open file for reading:" << xmlFile;
-                }
-            } else {
-                qDebug() << "File does not exist:" << xmlFile;
-            }
-        }
-    }
     qDebug() << "G";
     activeMap->setBorderFocus(true);
     qDebug() << "H";
@@ -3395,6 +3396,103 @@ void MainWindow::fetchAllFieldsData(int farmId, int retryCount)
     qDebug() << "Fetching all_fields data from:" << url.toString() << "(attempt" << (retryCount + 1) << ")";
 }
 
+void MainWindow::fetchAllPathsData(int fieldId, int retryCount)
+{
+    qDebug() << "fetchAllPathsData: Starting for fieldId:" << fieldId << "retryCount:" << retryCount;
+    const int MAX_RETRIES = 3;
+    const int RETRY_DELAY_MS = 2000; // 2 seconds between retries
+    
+    QUrl url("http://127.0.0.1:8080/all_paths");
+    QUrlQuery query;
+    query.addQueryItem("field", QString::number(fieldId));
+    url.setQuery(query);
+    
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+    
+    // Check if modelPath is initialized
+    if (!modelPath) {
+        qDebug() << "ERROR: modelPath is null in fetchAllPathsData!";
+        return;
+    }
+    
+    // Clear the model
+    modelPath->removeRows(0, modelPath->rowCount());
+    
+    // Add loading state
+    modelPath->appendRow(new QStandardItem(retryCount > 0 ? QString("Retrying... (%1/%2)").arg(retryCount).arg(MAX_RETRIES) : "Loading..."));
+    modelPath->appendRow(new QStandardItem(""));
+    
+    // Connect the finished signal to parse the response
+    QNetworkReply* reply = mNetworkManager->get(request);
+    if (!reply) {
+        qDebug() << "ERROR: reply is null in fetchAllPathsData!";
+        return;
+    }
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, fieldId, retryCount]() {
+        // Clear loading message
+        modelPath->removeRows(0, modelPath->rowCount());
+        
+        // Check HTTP status code
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "HTTP Status Code (all_paths):" << statusCode;
+        if (reply->error() != QNetworkReply::NoError) {
+            qDebug() << "Network error:" << reply->error() << "-" << reply->errorString();
+        }
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            QByteArray xmlData = reply->readAll();
+            qDebug() << "Received XML data from all_paths (size:" << xmlData.size() << "):";
+            qDebug() << "XML content:" << xmlData;
+            
+            if (xmlData.isEmpty()) {
+                qDebug() << "Empty response received from all_paths";
+                modelPath->appendRow(new QStandardItem("No data"));
+                modelPath->appendRow(new QStandardItem("Empty response"));
+            } else {
+                // Check if response contains valid XML
+                bool hasPaths = xmlData.contains("<paths>") && xmlData.contains("</paths>");
+                qDebug() << "XML validation - has <paths>:" << hasPaths;
+                
+                if (hasPaths) {
+                    parseAllPathsXml(xmlData);
+                } else {
+                    qDebug() << "XML validation failed - missing paths tags";
+                    modelPath->appendRow(new QStandardItem("Invalid data"));
+                    modelPath->appendRow(new QStandardItem("Bad format"));
+                }
+            }
+        } else {
+            qDebug() << "Error fetching all_paths data:" << reply->errorString();
+            qDebug() << "Error code:" << reply->error();
+            qDebug() << "HTTP Status Code:" << statusCode;
+            
+            // Retry if we haven't exceeded max retries and it's a timeout or temporary error
+            if (retryCount < MAX_RETRIES && 
+                (reply->error() == QNetworkReply::TimeoutError ||
+                 reply->error() == QNetworkReply::TemporaryNetworkFailureError ||
+                 reply->error() == QNetworkReply::ConnectionRefusedError)) {
+                qDebug() << "Retrying all_paths in" << RETRY_DELAY_MS << "ms...";
+                QTimer::singleShot(RETRY_DELAY_MS, this, [this, fieldId, retryCount]() {
+                    fetchAllPathsData(fieldId, retryCount + 1);
+                });
+            } else {
+                // Show final error after all retries failed
+                QString errorMsg = reply->errorString();
+                if (statusCode != 200 && statusCode > 0) {
+                    errorMsg = QString("HTTP %1").arg(statusCode);
+                }
+                modelPath->appendRow(new QStandardItem("Error"));
+                modelPath->appendRow(new QStandardItem(errorMsg));
+            }
+        }
+        reply->deleteLater();
+    });
+    
+    qDebug() << "Fetching all_paths data from:" << url.toString() << "(attempt" << (retryCount + 1) << ")";
+}
+
 void MainWindow::fetchVehicleTypes(int retryCount)
 {
     const int MAX_RETRIES = 3;
@@ -3867,6 +3965,92 @@ void MainWindow::parseAllFieldsXml(const QByteArray &xmlData)
     }
 }
 
+void MainWindow::parseAllPathsXml(const QByteArray &xmlData)
+{
+    // Clear existing data
+    modelPath->removeRows(0, modelPath->rowCount());
+    
+    // Parse the XML
+    QXmlStreamReader xmlReader(xmlData);
+    bool foundPaths = false;
+    
+    qDebug() << "Starting XML parsing for all_paths...";
+    qDebug() << "XML data size:" << xmlData.size();
+    qDebug() << "XML data preview:" << xmlData.left(200) << "...";
+    
+    while (!xmlReader.atEnd()) {
+        QXmlStreamReader::TokenType token = xmlReader.readNext();
+        
+        if (token == QXmlStreamReader::StartElement && xmlReader.name() == QLatin1String("path")) {
+            QString id, name, field;
+            foundPaths = true;
+            qDebug() << "Found path element in all_paths";
+            
+            // Read path element contents
+            while (!xmlReader.atEnd()) {
+                token = xmlReader.readNext();
+                
+                if (token == QXmlStreamReader::EndElement && xmlReader.name() == QLatin1String("path")) {
+                    break; // End of path element
+                }
+                
+                if (token == QXmlStreamReader::StartElement) {
+                    if (xmlReader.name() == QLatin1String("id")) {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            id = xmlReader.text().toString();
+                        }
+                    } else if (xmlReader.name() == QLatin1String("name")) {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            name = xmlReader.text().toString();
+                        }
+                    } else if (xmlReader.name() == QLatin1String("field")) {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            field = xmlReader.text().toString();
+                        }
+                    }
+                }
+            }
+            
+            // Add the path to the model if we have at least a name
+            if (!name.isEmpty()) {
+                qDebug() << "Adding path:" << name << "with ID:" << id << "Field:" << field;
+                QList<QStandardItem*> rowItems;
+                QStandardItem* nameItem = new QStandardItem(name);
+                if (!id.isEmpty()) {
+                    nameItem->setData(id, Qt::UserRole); // Store ID as user data
+                }
+                rowItems.append(nameItem);
+                rowItems.append(new QStandardItem(id)); // Id column
+                rowItems.append(new QStandardItem(field)); // Field column
+                modelPath->appendRow(rowItems);
+            } else {
+                qDebug() << "Path missing name in all_paths - name:" << name;
+            }
+        }
+    }
+    
+    if (xmlReader.hasError()) {
+        qDebug() << "XML parsing error for all_paths:" << xmlReader.errorString();
+        qDebug() << "Error line:" << xmlReader.lineNumber() << "column:" << xmlReader.columnNumber();
+        
+        // If no paths were found and there was an error, show the error in the model
+        if (!foundPaths) {
+            modelPath->appendRow(new QStandardItem("XML Error"));
+            modelPath->appendRow(new QStandardItem(xmlReader.errorString()));
+        }
+    }
+    
+    // If no paths were found but no error occurred, show a message
+    if (!foundPaths && !xmlReader.hasError()) {
+        qDebug() << "No paths found in all_paths XML";
+        modelPath->appendRow(new QStandardItem("No paths"));
+        modelPath->appendRow(new QStandardItem("found"));
+    }
+}
+
 void MainWindow::addFarmToServer(const QString &name)
 {
     QUrl url("http://127.0.0.1:8080/add_farm");
@@ -4158,6 +4342,113 @@ void MainWindow::deleteFieldFromServer(int fieldId)
     });
     
     qDebug() << "Deleting field:" << fieldId;
+}
+
+void MainWindow::addPathToServer(const QString &name, int fieldId)
+{
+    QUrl url("http://127.0.0.1:8080/add_path");
+    QUrlQuery query;
+    query.addQueryItem("name", name);
+    query.addQueryItem("field", QString::number(fieldId));
+    url.setQuery(query);
+    
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+    
+    QNetworkReply* reply = mNetworkManager->get(request);
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, name, fieldId]() {
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "Add path HTTP Status Code:" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            qDebug() << "Path added successfully";
+            // Refresh the paths list for the current field
+            fetchAllPathsData(fieldId);
+        } else {
+            qDebug() << "Error adding path:" << reply->errorString();
+            qDebug() << "HTTP Status Code:" << statusCode;
+        }
+        reply->deleteLater();
+    });
+    
+    qDebug() << "Adding path:" << name << "for field:" << fieldId;
+}
+
+void MainWindow::updatePathOnServer(int pathId, const QString &name)
+{
+    QUrl url("http://127.0.0.1:8080/edit_path");
+    QUrlQuery query;
+    query.addQueryItem("id", QString::number(pathId));
+    query.addQueryItem("name", name);
+    url.setQuery(query);
+    
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+    
+    QNetworkReply* reply = mNetworkManager->get(request);
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, pathId, name]() {
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "Update path HTTP Status Code:" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            qDebug() << "Path updated successfully";
+            // Refresh the paths list for the current field
+            // We need to get the current field ID from the selection
+            QModelIndex currentFieldIndex = ui->fieldTable->selectionModel()->currentIndex();
+            if (currentFieldIndex.isValid()) {
+                QStandardItem* nameItem = fieldsModel->item(currentFieldIndex.row(), 1);
+                if (nameItem) {
+                    QString fieldId = nameItem->data(Qt::UserRole).toString();
+                    fetchAllPathsData(fieldId.toInt());
+                }
+            }
+        } else {
+            qDebug() << "Error updating path:" << reply->errorString();
+            qDebug() << "HTTP Status Code:" << statusCode;
+        }
+        reply->deleteLater();
+    });
+    
+    qDebug() << "Updating path:" << pathId << "with name:" << name;
+}
+
+void MainWindow::deletePathFromServer(int pathId)
+{
+    QUrl url("http://127.0.0.1:8080/remove_path");
+    QUrlQuery query;
+    query.addQueryItem("id", QString::number(pathId));
+    url.setQuery(query);
+    
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+    
+    QNetworkReply* reply = mNetworkManager->get(request);
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, pathId]() {
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "Delete path HTTP Status Code:" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            qDebug() << "Path deleted successfully";
+            // Refresh the paths list for the current field
+            QModelIndex currentFieldIndex = ui->fieldTable->selectionModel()->currentIndex();
+            if (currentFieldIndex.isValid()) {
+                QStandardItem* nameItem = fieldsModel->item(currentFieldIndex.row(), 1);
+                if (nameItem) {
+                    QString fieldId = nameItem->data(Qt::UserRole).toString();
+                    fetchAllPathsData(fieldId.toInt());
+                }
+            }
+        } else {
+            qDebug() << "Error deleting path:" << reply->errorString();
+            qDebug() << "HTTP Status Code:" << statusCode;
+        }
+        reply->deleteLater();
+    });
+    
+    qDebug() << "Deleting path:" << pathId;
 }
 
 void MainWindow::onAddMachineButtonClicked()
