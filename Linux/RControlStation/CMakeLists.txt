@@ -72,13 +72,12 @@ else()
 endif()
 
 # Add include directories
-# Prefer system includes over local ones to avoid version conflicts
+# Use ONLY system includes to avoid version conflicts with GDAL/OpenJPEG
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     /usr/include/eigen3
     /usr/include/gdal
     /usr/include/SDL2
-    /usr/local/include
 )
 
 # Add definitions from the .pro file
@@ -373,10 +372,10 @@ set(EXTERNAL_LIBS
 target_link_libraries(${PROJECT_NAME} PRIVATE ${EXTERNAL_LIBS})
 
 # Add library directories
-# Prefer system libraries over local ones to avoid version conflicts
+# Use ONLY system libraries to avoid version conflicts with GDAL/OpenJPEG
+# The /usr/local/lib GDAL was compiled with its own OpenJPEG which causes conflicts
 target_link_directories(${PROJECT_NAME} PRIVATE
     /usr/lib/x86_64-linux-gnu
-    /usr/local/lib
     ${CMAKE_CURRENT_SOURCE_DIR}/local_libs
 )
 
