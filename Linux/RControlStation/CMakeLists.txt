@@ -71,15 +71,36 @@ else()
     message(WARNING "SDL2 not found - gamepad support may be limited")
 endif()
 
+# Find optional dependencies with find_package
+find_package(Eigen3 QUIET)
+if(Eigen3_FOUND)
+    message(STATUS "Eigen3 found at ${Eigen3_INCLUDE_DIRS}")
+else()
+    message(WARNING "Eigen3 not found")
+endif()
+
+find_package(GDAL QUIET)
+if(GDAL_FOUND)
+    message(STATUS "GDAL found at ${GDAL_INCLUDE_DIRS}")
+else()
+    message(WARNING "GDAL not found")
+endif()
+
 # Add include directories
-# Need /usr/local/include for GDAL which was compiled with OpenJPEG 2.5.0
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
-    /usr/local/include
-    /usr/include/eigen3
-    /usr/include/gdal
-    /usr/include/SDL2
 )
+
+# Add found package include directories if available
+if(Eigen3_FOUND)
+    include_directories(${Eigen3_INCLUDE_DIRS})
+endif()
+if(GDAL_FOUND)
+    include_directories(${GDAL_INCLUDE_DIRS})
+endif()
+if(SDL2_FOUND)
+    include_directories(${SDL2_INCLUDE_DIRS})
+endif()
 
 # Add definitions from the .pro file
 add_definitions(
@@ -347,11 +368,76 @@ if(HAS_ASSIMP AND Assimp_FOUND)
     target_link_libraries(${PROJECT_NAME} PRIVATE ${Assimp_LIBRARIES})
 endif()
 
-# Add all the external libraries from the .pro file
-# These are the libraries that were in the LIBS variable
-# Note: Link order matters! OpenJPEG must be linked before GDAL since GDAL depends on it
-# GDAL in /usr/local/lib was compiled with OpenJPEG 2.5.0
-set(EXTERNAL_LIBS
+# Find and link external libraries
+# These are the libraries that were in the LIBS variable from the .pro file
+
+# Find common system libraries
+find_package(ZLIB QUIET)
+find_package(PNG QUIET)
+find_package(JPEG QUIET)
+find_package(CURL QUIET)
+find_package(OpenSSL QUIET)
+find_package(SQLite3 QUIET)
+find_package(Expat QUIET)
+find_package(LibLZMA QUIET)
+find_package(Blosc QUIET)
+
+# Set up external libraries list
+set(EXTERNAL_LIBS)
+
+# Add found libraries
+if(ZLIB_FOUND)
+    list(APPEND EXTERNAL_LIBS ZLIB::ZLIB)
+    message(STATUS "Found ZLIB")
+else()
+    list(APPEND EXTERNAL_LIBS z)
+endif()
+
+if(PNG_FOUND)
+    list(APPEND EXTERNAL_LIBS PNG::PNG)
+    message(STATUS "Found PNG")
+else()
+    list(APPEND EXTERNAL_LIBS png)
+endif()
+
+if(JPEG_FOUND)
+    list(APPEND EXTERNAL_LIBS JPEG::JPEG)
+    message(STATUS "Found JPEG")
+else()
+    list(APPEND EXTERNAL_LIBS jpeg)
+endif()
+
+if(CURL_FOUND)
+    list(APPEND EXTERNAL_LIBS CURL::libcurl)
+    message(STATUS "Found CURL")
+else()
+    list(APPEND EXTERNAL_LIBS curl)
+endif()
+
+if(OpenSSL_FOUND)
+    list(APPEND EXTERNAL_LIBS OpenSSL::SSL OpenSSL::Crypto)
+    message(STATUS "Found OpenSSL")
+else()
+    list(APPEND EXTERNAL_LIBS ssl crypto)
+endif()
+
+if(SQLite3_FOUND)
+    list(APPEND EXTERNAL_LIBS SQLite::SQLite3)
+    message(STATUS "Found SQLite3")
+else()
+    list(APPEND EXTERNAL_LIBS sqlite3)
+endif()
+
+if(Expat_FOUND)
+    list(APPEND EXTERNAL_LIBS Expat::Expat)
+    message(STATUS "Found Expat")
+else()
+    list(APPEND EXTERNAL_LIBS expat)
+endif()
+
+# Add remaining libraries that don't have find_package modules
+# These will be linked as system libraries
+list(APPEND EXTERNAL_LIBS
     tiff
     webp
     deflate
@@ -367,20 +453,12 @@ set(EXTERNAL_LIBS
     geotiff
     gif
     heif
-    sqlite3
     proj
     geos_c
     netcdf
     hdf5_serial
     hdf5_serial_hl
     xml2
-    ssl
-    crypto
-    png
-    jpeg
-    z
-    curl
-    expat
     pq
     blosc
     pcre2-8
@@ -396,27 +474,28 @@ set(EXTERNAL_LIBS
     freexl
 )
 
-# Find and link external libraries
-# Link in reverse order of dependency (most dependent first)
+# Link external libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE ${EXTERNAL_LIBS})
 
 # Handle GDAL and OpenJPEG linking carefully
-# Use the exact OpenJPEG library that GDAL was compiled with (2.5.0 in /usr/local/lib)
+# Use the exact OpenJPEG library that GDAL was compiled with
 # This must be linked BEFORE GDAL to avoid symbol conflicts
-# Link zstd and OpenJPEG as static libraries before GDAL
-# Use -Wl,-Bstatic to force static linking for OpenJPEG from /usr/local/lib
-target_link_options(${PROJECT_NAME} PRIVATE -Wl,-Bstatic)
-target_link_libraries(${PROJECT_NAME} PRIVATE /usr/lib/x86_64-linux-gnu/libzstd.a openjp2 /usr/local/lib/libgdal.a)
-target_link_options(${PROJECT_NAME} PRIVATE -Wl,-Bdynamic)
-
-# Add library directories
-# GDAL in /usr/local/lib was compiled with OpenJPEG 2.5.0, so we need to use that
-# System has OpenJPEG 2.4.0 which is incompatible with GDAL's internal OpenJPEG
-target_link_directories(${PROJECT_NAME} PRIVATE
-    /usr/lib/x86_64-linux-gnu
-    /usr/local/lib
-    ${CMAKE_CURRENT_SOURCE_DIR}/local_libs
-)
+if(GDAL_FOUND)
+    message(STATUS "Linking with GDAL: ${GDAL_LIBRARIES}")
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${GDAL_LIBRARIES})
+    target_link_directories(${PROJECT_NAME} PRIVATE ${GDAL_LIBRARY_DIRS})
+else()
+    # Fallback to hardcoded paths for backward compatibility
+    message(WARNING "GDAL not found via find_package, using hardcoded paths")
+    target_link_options(${PROJECT_NAME} PRIVATE -Wl,-Bstatic)
+    target_link_libraries(${PROJECT_NAME} PRIVATE /usr/lib/x86_64-linux-gnu/libzstd.a openjp2 /usr/local/lib/libgdal.a)
+    target_link_options(${PROJECT_NAME} PRIVATE -Wl,-Bdynamic)
+    target_link_directories(${PROJECT_NAME} PRIVATE
+        /usr/lib/x86_64-linux-gnu
+        /usr/local/lib
+        ${CMAKE_CURRENT_SOURCE_DIR}/local_libs
+    )
+endif()
 
 # Add linker flags to ensure all symbols are linked
 # Use -Wl,--no-as-needed to link all symbols
@@ -432,8 +511,9 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
         set_target_properties(${PROJECT_NAME} PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/build/lin
         )
-        # Add static linking flags for Linux release builds
-        target_link_options(${PROJECT_NAME} PRIVATE -static-libstdc++ -static-libgcc)
+        # Add static linking flags for Linux release builds (optional)
+        # Note: This can cause issues with some system libraries
+        # target_link_options(${PROJECT_NAME} PRIVATE -static-libstdc++ -static-libgcc)
     endif()
 elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
     if(WIN32)
