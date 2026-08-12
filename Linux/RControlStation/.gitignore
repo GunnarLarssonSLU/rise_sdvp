@@ -1,0 +1,82 @@
+# Build directories
+build/
+build-*/
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+install_manifest.txt
+
+# Compiled objects
+*.o
+*.a
+*.so
+*.dll
+*.lib
+*.exe
+*.app
+*.dylib
+*.dSYM/
+
+# Qt generated files
+*.moc
+*.moc.cpp
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+
+# IDE specific files
+.qtcreator/
+*.user
+*.user.*
+*.pro.user
+*.qws
+
+# Visual Studio
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+*.suo
+*.userprefs
+
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Editor specific
+*.swp
+*.swo
+*~
+
+# Package files
+*.deb
+*.rpm
+*.tar.gz
+*.zip
+*.dmg
+*.msi
+*.exe
+
+# CPack temporary files
+_CPack_Packages/
+
+# Local configuration
+local_libs/
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/

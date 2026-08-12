@@ -472,3 +472,51 @@ message(STATUS "  HAS_OPENGL: ${HAS_OPENGL}")
 message(STATUS "  HAS_ASSIMP: ${HAS_ASSIMP}")
 message(STATUS "  HAS_SIM_SCEN: ${HAS_SIM_SCEN}")
 message(STATUS "  SDL2 Found: ${SDL2_FOUND}")
+
+# CPack configuration for package generation
+set(CPACK_PACKAGE_NAME "RControlStation")
+set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+set(CPACK_PACKAGE_VENDOR "RISE")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Remote Control Station Application for vehicle control and monitoring")
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://www.ri.se")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+
+# Set package maintainer info
+set(CPACK_PACKAGE_CONTACT "support@ri.se")
+
+# Generate packages for multiple platforms
+if(WIN32)
+    set(CPACK_GENERATOR "NSIS")
+    set(CPACK_NSIS_MODIFY_PATH ON)
+    set(CPACK_NSIS_MUI_UNIICON "${CMAKE_CURRENT_SOURCE_DIR}/installer/icon.ico")
+    set(CPACK_NSIS_MUI_UNIICON_FILE "${CMAKE_CURRENT_SOURCE_DIR}/installer/icon.ico")
+    set(CPACK_PACKAGE_INSTALL_DIRECTORY "RControlStation")
+    set(CPACK_NSIS_DISPLAY_NAME "RControlStation ${PROJECT_VERSION}")
+    set(CPACK_NSIS_HELP_LINK "https://www.ri.se")
+    set(CPACK_NSIS_URL_INFO_ABOUT "https://www.ri.se")
+    set(CPACK_NSIS_CONTACT "support@ri.se")
+    set(CPACK_NSIS_CREATE_ICONS_EXTRA "CreateShortcut,'$DESKTOP\\RControlStation.lnk','$INSTDIR\\bin\\${PROJECT_NAME}.exe'")
+    set(CPACK_NSIS_CREATE_UNINSTALLER ON)
+    set(CPACK_NSIS_ALLOW_ROOT_DIRECTORY_ON_PAGE ON)
+elseif(UNIX AND NOT APPLE)
+    set(CPACK_GENERATOR "DEB;RPM")
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "RISE Support <support@ri.se>")
+    # Debian dependencies - these should match your actual dependencies
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libqt6core6 (>= 6.2.0), libqt6gui6 (>= 6.2.0), libqt6widgets6 (>= 6.2.0), libqt6serialport6 (>= 6.2.0), libqt6network6 (>= 6.2.0), libqt6sql6 (>= 6.2.0), libqt6printsupport6 (>= 6.2.0), libsdl2-2.0-0 (>= 2.0.0), libgdal-dev (>= 3.0.0)")
+    set(CPACK_RPM_PACKAGE_REQUIRES "qt6-qtbase >= 6.2.0, qt6-qtserialport >= 6.2.0, SDL2 >= 2.0.0, gdal >= 3.0.0")
+    set(CPACK_DEBIAN_PACKAGE_SECTION "science")
+    set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+elseif(APPLE)
+    set(CPACK_GENERATOR "DragNDrop")
+    set(CPACK_DMG_FORMAT "UDBZ")
+    set(CPACK_DMG_VOLUME_NAME "RControlStation-${PROJECT_VERSION}")
+    set(CPACK_DMG_BACKGROUND_IMAGE "${CMAKE_CURRENT_SOURCE_DIR}/installer/dmg-background.png")
+endif()
+
+# Common CPack settings
+set(CPACK_PACKAGE_EXECUTABLES "${PROJECT_NAME}")
+set(CPACK_CREATE_DESKTOP_LINKS ON)
+set(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "RControlStation")
+
+# Include CPack
+include(CPack)
