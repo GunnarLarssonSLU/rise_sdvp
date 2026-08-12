@@ -82,6 +82,7 @@ CarInterface::CarInterface(QWidget *parent) :
             this, &CarInterface::onRestartServiceButtonClicked);
 
     mTcpServer->setUsePacket(true);
+    on_confReadButton_clicked();
 }
 
 CarInterface::~CarInterface()

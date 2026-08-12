@@ -54,12 +54,22 @@ class FarmManagerApp:
             st.session_state.error_message = None
         if 'success_message' not in st.session_state:
             st.session_state.success_message = None
+        if 'show_add_farm' not in st.session_state:
+            st.session_state.show_add_farm = False
+        if 'show_add_field' not in st.session_state:
+            st.session_state.show_add_field = False
+        if 'show_add_path' not in st.session_state:
+            st.session_state.show_add_path = False
             
     def fetch_all_farms(self) -> List[Dict[str, Any]]:
         """Fetch all farms from the web server."""
         try:
             url = f"{SERVER_URL}/all_farms"
+            st.write(f"DEBUG: Fetching farms from URL: {url}")
             response = requests.get(url, timeout=TIMEOUT)
+            
+            st.write(f"DEBUG: Response status: {response.status_code}")
+            st.write(f"DEBUG: Response text: {response.text[:200]}")
             
             if response.status_code == 200:
                 xml_data = response.content
@@ -73,12 +83,14 @@ class FarmManagerApp:
                 
         except requests.exceptions.RequestException as e:
             st.session_state.error_message = f"Network error: {str(e)}"
+            st.write(f"DEBUG: Network error: {str(e)}")
             return []
             
     def fetch_fields_for_farm(self, farm_id: int) -> List[Dict[str, Any]]:
         """Fetch all fields for a specific farm."""
         try:
             url = f"{SERVER_URL}/all_fields?farm={farm_id}"
+            st.write(f"DEBUG: Fetching fields for farm {farm_id} from URL: {url}")
             response = requests.get(url, timeout=TIMEOUT)
             
             if response.status_code == 200:
@@ -92,6 +104,7 @@ class FarmManagerApp:
                 
         except requests.exceptions.RequestException as e:
             st.session_state.error_message = f"Network error: {str(e)}"
+            st.write(f"DEBUG: Network error fetching fields: {str(e)}")
             return []
             
     def fetch_paths_for_field(self, field_id: int) -> List[Dict[str, Any]]:
@@ -161,7 +174,7 @@ class FarmManagerApp:
                     elif tag == 'autoconnect':
                         farm['autoconnect'] = text.lower() in ['1', 'true', 'yes']
                 
-                if farm['name']:  # Only add if we have a name
+                if farm['name']:
                     farms.append(farm)
                     
         except ET.ParseError as e:
@@ -199,7 +212,7 @@ class FarmManagerApp:
                     elif tag == 'location':
                         field['location'] = int(text) if text.isdigit() else None
                 
-                if field['name']:  # Only add if we have a name
+                if field['name']:
                     fields.append(field)
                     
         except ET.ParseError as e:
@@ -231,7 +244,7 @@ class FarmManagerApp:
                     elif tag == 'field':
                         path['field'] = int(text) if text.isdigit() else None
                 
-                if path['name']:  # Only add if we have a name
+                if path['name']:
                     paths.append(path)
                     
         except ET.ParseError as e:
@@ -243,40 +256,47 @@ class FarmManagerApp:
         """Add a new farm to the server."""
         try:
             url = f"{SERVER_URL}/add_farm"
-            params = {
+            data = {
                 'name': name,
                 'longitude': longitude,
                 'latitude': latitude
             }
-            response = requests.get(url, params=params, timeout=TIMEOUT)
+            st.write(f"DEBUG: Adding farm with data: {data}")
+            st.write(f"DEBUG: URL: {url}")
+            
+            response = requests.post(url, data=data, timeout=TIMEOUT)
+            
+            st.write(f"DEBUG: Add farm response status: {response.status_code}")
+            st.write(f"DEBUG: Add farm response text: {response.text}")
             
             if response.status_code == 200:
                 st.session_state.success_message = f"Farm '{name}' added successfully"
                 return True
             else:
-                st.session_state.error_message = f"Failed to add farm: HTTP {response.status_code}"
+                st.session_state.error_message = f"Failed to add farm: HTTP {response.status_code} - {response.text}"
                 return False
                 
         except requests.exceptions.RequestException as e:
             st.session_state.error_message = f"Network error: {str(e)}"
+            st.write(f"DEBUG: Network error adding farm: {str(e)}")
             return False
             
     def add_field(self, name: str, farm_id: int, fenced: bool = False) -> bool:
         """Add a new field to the server."""
         try:
             url = f"{SERVER_URL}/add_field"
-            params = {
+            data = {
                 'name': name,
                 'farm_id': farm_id,
                 'fenced': '1' if fenced else '0'
             }
-            response = requests.get(url, params=params, timeout=TIMEOUT)
+            response = requests.post(url, data=data, timeout=TIMEOUT)
             
             if response.status_code == 200:
                 st.session_state.success_message = f"Field '{name}' added successfully"
                 return True
             else:
-                st.session_state.error_message = f"Failed to add field: HTTP {response.status_code}"
+                st.session_state.error_message = f"Failed to add field: HTTP {response.status_code} - {response.text}"
                 return False
                 
         except requests.exceptions.RequestException as e:
@@ -287,17 +307,17 @@ class FarmManagerApp:
         """Add a new path to the server."""
         try:
             url = f"{SERVER_URL}/add_path"
-            params = {
+            data = {
                 'name': name,
                 'field_id': field_id
             }
-            response = requests.get(url, params=params, timeout=TIMEOUT)
+            response = requests.post(url, data=data, timeout=TIMEOUT)
             
             if response.status_code == 200:
                 st.session_state.success_message = f"Path '{name}' added successfully"
                 return True
             else:
-                st.session_state.error_message = f"Failed to add path: HTTP {response.status_code}"
+                st.session_state.error_message = f"Failed to add path: HTTP {response.status_code} - {response.text}"
                 return False
                 
         except requests.exceptions.RequestException as e:
@@ -379,10 +399,10 @@ class FarmManagerApp:
                 st.rerun()
         
         with col3:
-            if st.button("➕ Add Farm", width='stretch'):
+            if st.button("Add Farm", width='stretch'):
                 st.session_state.show_add_farm = True
         
-        # Display farm table
+        # Display farm table with selection
         if st.session_state.farms:
             farm_data = []
             for farm in st.session_state.farms:
@@ -392,35 +412,59 @@ class FarmManagerApp:
                     'Longitude': f"{farm['longitude']:.14f}",
                     'Latitude': f"{farm['latitude']:.14f}",
                     'IP': farm['ip'],
-                    'Port': farm['port'],
-                    'Select': f"[Select](#)"
+                    'Port': farm['port']
                 })
             
-            df_farms = pd.DataFrame(farm_data)
-            st.dataframe(df_farms, width='stretch', height=300, hide_index=True, use_container_width=True)
-            
-            # Selection via buttons in a compact layout
-            st.markdown("**Select a farm:**")
+            # Add a Select column with checkboxes
+            farm_data_with_select = []
             for farm in st.session_state.farms:
-                if st.button(farm['name'], width='stretch', key=f"select_farm_{farm['id']}"):
-                    st.session_state.selected_farm_id = farm['id']
-                    st.rerun()
+                farm_data_with_select.append({
+                    'ID': farm['id'],
+                    'Name': farm['name'],
+                    'Longitude': f"{farm['longitude']:.14f}",
+                    'Latitude': f"{farm['latitude']:.14f}",
+                    'IP': farm['ip'],
+                    'Port': farm['port'],
+                    'Select': False
+                })
             
-            # Show delete button for selected farm
-            if st.session_state.selected_farm_id:
-                selected_farm = next((f for f in st.session_state.farms if f['id'] == st.session_state.selected_farm_id), None)
-                if selected_farm:
-                    st.markdown(f"**Selected:** {selected_farm['name']}")
-                    if st.button(f"🗑️ Delete '{selected_farm['name']}'", key=f"delete_farm_{selected_farm['id']}"):
-                        if self.delete_farm(selected_farm['id']):
-                            self.fetch_all_farms()
-                            st.session_state.selected_farm_id = None
-                            st.rerun()
+            df_farms = pd.DataFrame(farm_data_with_select)
+            
+            # Use data_editor to allow editing the Select column
+            edited_df = st.data_editor(
+                df_farms,
+                key="farm_editor",
+                width='stretch',
+                height=300,
+                hide_index=True,
+                use_container_width=True,
+                num_rows="fixed"
+            )
+            
+            # Find which row has Select = True
+            selected_farm = None
+            if edited_df is not None:
+                for idx, row in edited_df.iterrows():
+                    if row['Select']:
+                        farm_id = row['ID']
+                        selected_farm = next((f for f in st.session_state.farms if f['id'] == farm_id), None)
+                        break
+            
+            if selected_farm:
+                st.session_state.selected_farm_id = selected_farm['id']
+                st.markdown(f"**Selected Farm:** {selected_farm['name']} (ID: {selected_farm['id']})")
+                
+                # Show delete button for selected farm
+                if st.button(f"🗑️ Delete '{selected_farm['name']}'", key=f"delete_farm_{selected_farm['id']}"):
+                    if self.delete_farm(selected_farm['id']):
+                        self.fetch_all_farms()
+                        st.session_state.selected_farm_id = None
+                        st.rerun()
         else:
             st.info("No farms found. Click 'Refresh' to load data.")
             
         # Add farm dialog
-        if 'show_add_farm' in st.session_state and st.session_state.show_add_farm:
+        if st.session_state.show_add_farm:
             with st.expander("Add New Farm", expanded=True):
                 farm_name = st.text_input("Farm Name:", key="new_farm_name")
                 col1, col2 = st.columns(2)
@@ -431,8 +475,10 @@ class FarmManagerApp:
                 
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.button("Add Farm", width='stretch'):
+                    if st.button("Execute", width='stretch'):
+                        st.write(f"DEBUG: Execute button clicked, farm_name='{farm_name}'")
                         if farm_name:
+                            st.write(f"DEBUG: Calling add_farm with name='{farm_name}'")
                             if self.add_farm(farm_name, farm_longitude, farm_latitude):
                                 st.session_state.show_add_farm = False
                                 self.fetch_all_farms()
@@ -467,10 +513,10 @@ class FarmManagerApp:
                 st.rerun()
         
         with col3:
-            if st.button("➕ Add Field", width='stretch', key=f"add_field_{farm_id}"):
+            if st.button("Add Field", width='stretch', key=f"add_field_{farm_id}"):
                 st.session_state.show_add_field = True
         
-        # Display field table
+        # Display field table with selection
         if st.session_state.fields:
             # Filter fields by farm
             farm_fields = [f for f in st.session_state.fields if f.get('location') == farm_id]
@@ -482,43 +528,56 @@ class FarmManagerApp:
                         'ID': field['id'],
                         'Name': field['name'],
                         'Fenced': '✅' if field['fenced'] else '❌',
-                        'File': field['storedinfile'][:50] + '...' if len(field['storedinfile']) > 50 else field['storedinfile']
+                        'File': field['storedinfile'][:50] + '...' if len(field['storedinfile']) > 50 else field['storedinfile'],
+                        'Select': False
                     })
                 
                 df_fields = pd.DataFrame(field_data)
-                st.dataframe(df_fields, width='stretch', height=250, hide_index=True, use_container_width=True)
                 
-                # Selection via buttons
-                st.markdown("**Select a field:**")
-                for field in farm_fields:
-                    if st.button(field['name'], width='stretch', key=f"select_field_{field['id']}"):
-                        st.session_state.selected_field_id = field['id']
-                        st.rerun()
+                # Use data_editor to allow editing the Select column
+                edited_df = st.data_editor(
+                    df_fields,
+                    key="field_editor",
+                    width='stretch',
+                    height=250,
+                    hide_index=True,
+                    use_container_width=True,
+                    num_rows="fixed"
+                )
                 
-                # Show delete button for selected field
-                if st.session_state.selected_field_id:
-                    selected_field = next((f for f in farm_fields if f['id'] == st.session_state.selected_field_id), None)
-                    if selected_field:
-                        st.markdown(f"**Selected:** {selected_field['name']}")
-                        if st.button(f"🗑️ Delete '{selected_field['name']}'", key=f"delete_field_{selected_field['id']}"):
-                            if self.delete_field(selected_field['id']):
-                                self.fetch_fields_for_farm(farm_id)
-                                st.session_state.selected_field_id = None
-                                st.rerun()
+                # Find which row has Select = True
+                selected_field = None
+                if edited_df is not None:
+                    for idx, row in edited_df.iterrows():
+                        if row['Select']:
+                            field_id = row['ID']
+                            selected_field = next((f for f in farm_fields if f['id'] == field_id), None)
+                            break
+                
+                if selected_field:
+                    st.session_state.selected_field_id = selected_field['id']
+                    st.markdown(f"**Selected Field:** {selected_field['name']} (ID: {selected_field['id']})")
+                    
+                    # Show delete button for selected field
+                    if st.button(f"🗑️ Delete '{selected_field['name']}'", key=f"delete_field_{selected_field['id']}"):
+                        if self.delete_field(selected_field['id']):
+                            self.fetch_fields_for_farm(farm_id)
+                            st.session_state.selected_field_id = None
+                            st.rerun()
             else:
                 st.info(f"No fields found for farm ID {farm_id}.")
         else:
             st.info("No fields found. Click 'Refresh' to load data.")
         
         # Add field dialog
-        if 'show_add_field' in st.session_state and st.session_state.show_add_field:
+        if st.session_state.show_add_field:
             with st.expander("Add New Field", expanded=True):
                 field_name = st.text_input("Field Name:", key="new_field_name")
                 field_fenced = st.checkbox("Is Fenced?", value=False, key="new_field_fenced")
                 
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.button("Add Field", width='stretch'):
+                    if st.button("Execute", width='stretch'):
                         if field_name:
                             if self.add_field(field_name, farm_id, field_fenced):
                                 st.session_state.show_add_field = False
@@ -554,10 +613,10 @@ class FarmManagerApp:
                 st.rerun()
         
         with col3:
-            if st.button("➕ Add Path", width='stretch', key=f"add_path_{field_id}"):
+            if st.button("Add Path", width='stretch', key=f"add_path_{field_id}"):
                 st.session_state.show_add_path = True
         
-        # Display path table
+        # Display path table with selection
         if st.session_state.paths:
             # Filter paths by field
             field_paths = [p for p in st.session_state.paths if p.get('field') == field_id]
@@ -568,42 +627,55 @@ class FarmManagerApp:
                     path_data.append({
                         'ID': path['id'],
                         'Name': path['name'],
-                        'Field ID': path['field']
+                        'Field ID': path['field'],
+                        'Select': False
                     })
                 
                 df_paths = pd.DataFrame(path_data)
-                st.dataframe(df_paths, width='stretch', height=200, hide_index=True, use_container_width=True)
                 
-                # Selection via buttons
-                st.markdown("**Select a path:**")
-                for path in field_paths:
-                    if st.button(path['name'], width='stretch', key=f"select_path_{path['id']}"):
-                        st.session_state.selected_path_id = path['id']
-                        st.rerun()
+                # Use data_editor to allow editing the Select column
+                edited_df = st.data_editor(
+                    df_paths,
+                    key="path_editor",
+                    width='stretch',
+                    height=200,
+                    hide_index=True,
+                    use_container_width=True,
+                    num_rows="fixed"
+                )
                 
-                # Show delete button for selected path
-                if st.session_state.selected_path_id:
-                    selected_path = next((p for p in field_paths if p['id'] == st.session_state.selected_path_id), None)
-                    if selected_path:
-                        st.markdown(f"**Selected:** {selected_path['name']}")
-                        if st.button(f"🗑️ Delete '{selected_path['name']}'", key=f"delete_path_{selected_path['id']}"):
-                            if self.delete_path(selected_path['id']):
-                                self.fetch_paths_for_field(field_id)
-                                st.session_state.selected_path_id = None
-                                st.rerun()
+                # Find which row has Select = True
+                selected_path = None
+                if edited_df is not None:
+                    for idx, row in edited_df.iterrows():
+                        if row['Select']:
+                            path_id = row['ID']
+                            selected_path = next((p for p in field_paths if p['id'] == path_id), None)
+                            break
+                
+                if selected_path:
+                    st.session_state.selected_path_id = selected_path['id']
+                    st.markdown(f"**Selected Path:** {selected_path['name']} (ID: {selected_path['id']})")
+                    
+                    # Show delete button for selected path
+                    if st.button(f"🗑️ Delete '{selected_path['name']}'", key=f"delete_path_{selected_path['id']}"):
+                        if self.delete_path(selected_path['id']):
+                            self.fetch_paths_for_field(field_id)
+                            st.session_state.selected_path_id = None
+                            st.rerun()
             else:
                 st.info(f"No paths found for field ID {field_id}.")
         else:
             st.info("No paths found. Click 'Refresh' to load data.")
         
         # Add path dialog
-        if 'show_add_path' in st.session_state and st.session_state.show_add_path:
+        if st.session_state.show_add_path:
             with st.expander("Add New Path", expanded=True):
                 path_name = st.text_input("Path Name:", key="new_path_name")
                 
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.button("Add Path", width='stretch'):
+                    if st.button("Execute", width='stretch'):
                         if path_name:
                             if self.add_path(path_name, field_id):
                                 st.session_state.show_add_path = False
