@@ -26,6 +26,13 @@
 #include <QFileInfo>
 #include <QHostInfo>
 #include <QInputDialog>
+#include <QDesktopServices>
+#include <QUrl>
+
+// Define version if not already defined by CMake
+#ifndef PROJECT_VERSION
+#define PROJECT_VERSION "1.0.0"
+#endif
 
 
 #include <QXmlStreamWriter>
@@ -138,6 +145,23 @@ MainWindow::MainWindow(QWidget *parent) :
     logLogsModel(nullptr)
 {
     ui->setupUi(this);
+    
+    // Create Help menu with Check for Updates action
+    m_helpMenu = menuBar()->addMenu(tr("Help"));
+    m_checkForUpdatesAction = new QAction(tr("Check for Updates"), this);
+    connect(m_checkForUpdatesAction, &QAction::triggered, this, &MainWindow::checkForUpdates);
+    m_helpMenu->addAction(m_checkForUpdatesAction);
+    
+    QAction *aboutAction = new QAction(tr("About"), this);
+    connect(aboutAction, &QAction::triggered, this, &MainWindow::showAbout);
+    m_helpMenu->addAction(aboutAction);
+    
+    // Initialize version checker
+    m_versionChecker = new VersionChecker(this);
+    connect(m_versionChecker, &VersionChecker::updateCheckFinished, 
+            this, &MainWindow::onUpdateCheckFinished);
+    connect(m_versionChecker, &VersionChecker::updateCheckError, 
+            this, &MainWindow::onUpdateCheckError);
     
     // Initialize analysis table items (they are defined in UI but need content)
     ui->tableAnalysis->setItem(0, 0, new QTableWidgetItem("Length"));
@@ -515,6 +539,78 @@ MainWindow::~MainWindow()
     SDL_Quit();
 #endif
     delete ui;
+}
+
+void MainWindow::checkForUpdates()
+{
+    // Get current version from PROJECT_VERSION
+    QVersionNumber currentVersion = QVersionNumber::fromString(PROJECT_VERSION);
+    
+    // Disable the action while checking
+    m_checkForUpdatesAction->setEnabled(false);
+    m_checkForUpdatesAction->setText(tr("Checking for updates..."));
+    
+    // Start the version check
+    // You should replace these with your actual GitHub repo details
+    m_versionChecker->checkForUpdates(currentVersion, "SLU-Agrosystem", "RControlStation");
+}
+
+void MainWindow::showAbout()
+{
+    QString aboutText = tr("<h2>RControlStation</h2>") +
+            tr("<p>Version: %1</p>").arg(PROJECT_VERSION) +
+            tr("<p>Remote Control Station for vehicle monitoring and control.</p>") +
+            tr("<p>Developed by RISE and SLU.</p>") +
+            tr("<p>© 2024 RISE Research Institutes of Sweden</p>");
+    
+    QMessageBox::about(this, tr("About RControlStation"), aboutText);
+}
+
+void MainWindow::onUpdateCheckFinished(bool updateAvailable, const QVersionNumber &latestVersion, 
+                                         const QString &downloadUrl, const QString &releaseNotes)
+{
+    m_checkForUpdatesAction->setEnabled(true);
+    m_checkForUpdatesAction->setText(tr("Check for Updates"));
+    
+    if (updateAvailable) {
+        QString message = tr("<p>A new version (%1) is available!</p>").arg(latestVersion.toString());
+        
+        if (!releaseNotes.isEmpty()) {
+            // Truncate release notes if too long
+            QString notes = releaseNotes;
+            if (notes.length() > 500) {
+                notes = notes.left(500) + "...";
+            }
+            message += tr("<p><b>Release Notes:</b></p><p>%1</p>").arg(notes.replace("\n", "<br>"));
+        }
+        
+        QMessageBox *msgBox = new QMessageBox(this);
+        msgBox->setWindowTitle(tr("Update Available"));
+        msgBox->setTextFormat(Qt::RichText);
+        msgBox->setText(message);
+        
+        if (!downloadUrl.isEmpty()) {
+            QPushButton *downloadButton = msgBox->addButton(tr("Download Now"), QMessageBox::ActionRole);
+            connect(downloadButton, &QPushButton::clicked, [downloadUrl]() {
+                QDesktopServices::openUrl(QUrl(downloadUrl));
+            });
+        }
+        
+        msgBox->addButton(QMessageBox::Ok);
+        msgBox->exec();
+    } else {
+        QMessageBox::information(this, tr("Up to Date"), 
+                                tr("You are running the latest version (%1).").arg(PROJECT_VERSION));
+    }
+}
+
+void MainWindow::onUpdateCheckError(const QString &errorMessage)
+{
+    m_checkForUpdatesAction->setEnabled(true);
+    m_checkForUpdatesAction->setText(tr("Check for Updates"));
+    
+    QMessageBox::warning(this, tr("Update Check Failed"), 
+                        tr("Could not check for updates: %1").arg(errorMessage));
 }
 
 bool MainWindow::eventFilter(QObject *object, QEvent *e)

@@ -51,6 +51,7 @@
 #include "routegenerator.h"
 #include "checkboxdelegate.h"
 #include "database.h"
+#include "versionchecker.h"
 
 #ifdef HAS_LIME_SDR
 #include "gpssim.h"
@@ -112,9 +113,13 @@ public:
     QList<QPair<int, QString>> getModesFromDatabase();
 
 public slots:
+    void checkForUpdates();
+    void showAbout();
 
 private slots:
     void serialDataAvailable();
+    void onUpdateCheckFinished(bool updateAvailable, const QVersionNumber &latestVersion, const QString &downloadUrl, const QString &releaseNotes);
+    void onUpdateCheckError(const QString &errorMessage);
     void serialPortError(QSerialPort::SerialPortError error);
     void timerSlot();
     void sendHeartbeat();
@@ -400,6 +405,9 @@ private:
     int mRangeSliderLowerValue = 20; // Default lower value for range slider
     int mRangeSliderUpperValue = 80; // Default upper value for range slider
     QList<MapRoute> mOriginalLogs; // Store original logs for non-destructive filtering
+    VersionChecker *m_versionChecker;
+    QAction *m_checkForUpdatesAction;
+    QMenu *m_helpMenu;
 
 private slots:
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))

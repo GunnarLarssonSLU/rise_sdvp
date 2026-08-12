@@ -196,6 +196,7 @@ set(SOURCES
     actuatormanager.cpp
     sensormanager.cpp
     wireguard.cpp
+    versionchecker.cpp
 )
 
 # Collect all header files
@@ -253,6 +254,7 @@ set(HEADERS
     sensormanager.h
     wireguard.h
     simscentree.h
+    versionchecker.h
 )
 
 # Collect all UI files
