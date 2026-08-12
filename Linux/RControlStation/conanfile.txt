@@ -1,0 +1,94 @@
+# Conan dependency configuration for RControlStation
+# This file specifies all dependencies for the project
+# Install with: conan install . --build=missing
+
+[requires]
+
+# Qt framework (use one of the following)
+qt/6.2.4
+# qt/5.15.2
+
+# Qt components
+qt-serialport/6.2.4
+qt-charts/6.2.4
+
+# Graphics and GUI
+sdl2/2.0.22
+eigen/3.4.0
+
+# Geospatial
+# Note: GDAL may need to be built from source with specific OpenJPEG version
+gdal/3.4.3
+
+# Compression and data processing
+zlib/1.2.13
+libpng/1.6.39
+libjpeg-turbo/2.1.5
+curl/7.86.0
+openssl/1.1.1t
+sqlite3/3.40.1
+expat/2.5.0
+liblzma/5.4.1
+c-blosc/1.21.3
+pcre2/10.42
+
+# Database
+postgresql/15.3
+
+# Image processing
+openjpeg/2.5.0
+libtiff/4.5.0
+libwebp/1.3.0
+libgeotiff/1.7.1
+
+# XML processing
+libxml2/2.10.3
+libkml/1.3.0
+json-c/0.16
+
+# Geospatial libraries
+proj/9.1.1
+geos/3.11.2
+
+# Scientific data
+netcdf-c/4.9.2
+hdf5/1.14.1
+cfitsio/4.2.0
+
+# Other
+libogdi/1.5.0
+freexl/1.0.2
+
+[generators]
+cmake
+
+[options]
+
+# Build options
+qt:shared=True
+qt-serialport:shared=True
+qt-charts:shared=True
+
+# Enable/disable features
+# *:shared=True  # Build all as shared libraries
+# *:fPIC=True    # Build position-independent code
+
+[imports]
+bin, *.dll -> ./bin      # Copy DLLs to bin directory on Windows
+lib, *.dylib -> ./lib    # Copy dynamic libraries on macOS
+
+[layout]
+cmake_layout
+
+# Notes:
+# 1. For GDAL: You may need to build from source with OpenJPEG 2.5.0
+#    conan create . gdal/3.4.3@ --build=missing -o gdal:with_openjpeg=True -o openjpeg:version=2.5.0
+#
+# 2. For Qt: Set QT_VERSION environment variable to control Qt version
+#    export QT_VERSION=6.2.4
+#
+# 3. To use this with CMake:
+#    mkdir build && cd build
+#    conan install .. --build=missing
+#    cmake .. -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake
+#    make

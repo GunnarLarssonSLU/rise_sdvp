@@ -80,3 +80,8 @@ local_libs/
 # Temporary files
 tmp/
 temp/
+
+# Allow dependency management files
+!vcpkg.json
+!conanfile.txt
+!conanfile.py

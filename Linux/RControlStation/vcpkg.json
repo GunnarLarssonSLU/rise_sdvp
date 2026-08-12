@@ -1,0 +1,61 @@
+{
+  "name": "rcontrolstation",
+  "version": "1.0.0",
+  "description": "Remote Control Station Application for vehicle control and monitoring",
+  "homepage": "https://www.ri.se",
+  "dependencies": [
+    "qt6",
+    "qt6-serialport",
+    "qt6-charts",
+    "sdl2",
+    "gdal",
+    "eigen3",
+    "zlib",
+    "libpng",
+    "libjpeg-turbo",
+    "curl",
+    "openssl",
+    "sqlite3",
+    "expat",
+    "liblzma",
+    "c-blosc",
+    "pcre2",
+    "postgresql",
+    "openjpeg",
+    "libtiff",
+    "libwebp",
+    "libgeotiff",
+    "libkml",
+    "json-c",
+    "libxml2",
+    "proj",
+    "geos",
+    "netcdf-c",
+    "hdf5",
+    "cfitsio",
+    "libogdi",
+    "freexl"
+  ],
+  "features": {
+    "qt5": {
+      "description": "Use Qt5 instead of Qt6",
+      "dependencies": [
+        "qt5",
+        "qt5-serialport",
+        "qt5-charts"
+      ]
+    },
+    "opengl": {
+      "description": "Enable OpenGL support",
+      "dependencies": [
+        "glew"
+      ]
+    },
+    "assimp": {
+      "description": "Enable Assimp support for 3D model loading",
+      "dependencies": [
+        "assimp"
+      ]
+    }
+  }
+}
