@@ -527,7 +527,6 @@ target_link_directories(${PROJECT_NAME} PRIVATE
     /usr/lib/x86_64-linux-gnu
     ${CMAKE_CURRENT_SOURCE_DIR}/local_libs
 )
-endif()
 
 # Add linker flags to ensure all symbols are linked
 # Use -Wl,--no-as-needed to link all symbols
