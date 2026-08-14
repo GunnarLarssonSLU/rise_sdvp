@@ -79,12 +79,13 @@ else()
     message(WARNING "Eigen3 not found")
 endif()
 
-find_package(GDAL QUIET)
-if(GDAL_FOUND)
-    message(STATUS "GDAL found at ${GDAL_INCLUDE_DIRS}")
-else()
-    message(WARNING "GDAL not found")
-endif()
+# GDAL linking is handled explicitly below to ensure version compatibility
+# find_package(GDAL QUIET) - disabled to use explicit paths
+# if(GDAL_FOUND)
+#     message(STATUS "GDAL found at ${GDAL_INCLUDE_DIRS}")
+# else()
+#     message(WARNING "GDAL not found")
+# endif()
 
 # Add include directories
 include_directories(
@@ -95,9 +96,8 @@ include_directories(
 if(Eigen3_FOUND)
     include_directories(${Eigen3_INCLUDE_DIRS})
 endif()
-if(GDAL_FOUND)
-    include_directories(${GDAL_INCLUDE_DIRS})
-endif()
+# GDAL include directories - using explicit paths for version compatibility
+include_directories(/usr/local/include /usr/include/gdal)
 if(SDL2_FOUND)
     include_directories(${SDL2_INCLUDE_DIRS})
 endif()
@@ -473,14 +473,15 @@ endif()
 
 # Add remaining libraries that don't have find_package modules
 # These will be linked as system libraries
+# Note: Link order matters! openjp2 must come before gdal
 list(APPEND EXTERNAL_LIBS
     tiff
     webp
     deflate
     lz4
     zstd
-    expat
     openjp2
+    gdal
     df
     mfhdf
     qhull
@@ -518,24 +519,14 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ${EXTERNAL_LIBS})
 
 # Handle GDAL and OpenJPEG linking carefully
 # Use the exact OpenJPEG library that GDAL was compiled with
-# This must be linked BEFORE GDAL to avoid symbol conflicts
-if(GDAL_FOUND)
-    message(STATUS "Linking with GDAL: ${GDAL_LIBRARIES}")
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${GDAL_LIBRARIES})
-    target_link_directories(${PROJECT_NAME} PRIVATE ${GDAL_LIBRARY_DIRS})
-else()
-    # Fallback to hardcoded paths for backward compatibility
-    message(WARNING "GDAL not found via find_package, using hardcoded paths")
-    target_link_options(${PROJECT_NAME} PRIVATE -Wl,-Bstatic)
-    target_link_libraries(${PROJECT_NAME} PRIVATE /usr/local/lib/libgdal.a)
-    target_link_options(${PROJECT_NAME} PRIVATE -Wl,-Bdynamic)
-    # Link with shared zstd library to resolve ZSTD symbols
-    target_link_libraries(${PROJECT_NAME} PRIVATE zstd openjp2)
-    target_link_directories(${PROJECT_NAME} PRIVATE
-        /usr/lib/x86_64-linux-gnu
-        /usr/local/lib
-        ${CMAKE_CURRENT_SOURCE_DIR}/local_libs
-    )
+# GDAL in /usr/local/lib was compiled with OpenJPEG 2.5.0, system has 2.4.0
+# Link order matters! OpenJPEG must be linked before GDAL since GDAL depends on it
+message(STATUS "Using explicit GDAL and OpenJPEG linking for version compatibility")
+target_link_directories(${PROJECT_NAME} PRIVATE
+    /usr/local/lib
+    /usr/lib/x86_64-linux-gnu
+    ${CMAKE_CURRENT_SOURCE_DIR}/local_libs
+)
 endif()
 
 # Add linker flags to ensure all symbols are linked
