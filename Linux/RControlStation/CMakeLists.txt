@@ -480,6 +480,7 @@ list(APPEND EXTERNAL_LIBS
     lz4
     zstd
     expat
+    openjp2
     df
     mfhdf
     qhull
