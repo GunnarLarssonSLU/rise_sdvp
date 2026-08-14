@@ -1689,9 +1689,12 @@ bool MainWindow::connectJoystick()
         mController = nullptr;
     }
     
-    if (SDL_Init(SDL_INIT_GAMECONTROLLER) != 0) {
-        qDebug() << "SDL_Init Error:" << SDL_GetError();
-        return false;
+    // Initialize SDL if not already initialized
+    if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0) {
+        if (SDL_Init(SDL_INIT_GAMECONTROLLER) != 0) {
+            qDebug() << "SDL_Init Error:" << SDL_GetError();
+            return false;
+        }
     }
 
     if (SDL_NumJoysticks() < 1) {
@@ -1722,19 +1725,29 @@ void MainWindow::checkJoystickConnection()
 {
 #ifdef HAS_JOYSTICK
     #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    // Check if we already have a controller connected
-    if (mController != nullptr) {
-        // Controller is already connected, no need to check
-        return;
-    }
+    static int lastJoystickCount = 0;  // Track previous joystick count
+    int numJoysticks = SDL_NumJoysticks();
     
-    // Check if any joysticks are now available
-    if (SDL_NumJoysticks() > 0) {
-        qDebug() << "Joystick detected, attempting to connect...";
-        bool connected = connectJoystick();
-        if (connected) {
-            qDebug() << "Joystick connected successfully!";
-            on_jsConnectButton_clicked();
+    // Check if joystick count changed
+    if (numJoysticks != lastJoystickCount) {
+        lastJoystickCount = numJoysticks;
+        qDebug() << "Joystick count changed to:" << numJoysticks;
+        
+        if (numJoysticks > 0) {
+            // Joysticks are available, try to connect
+            qDebug() << "Joystick(s) available, attempting to connect...";
+            bool connected = connectJoystick();
+            if (connected) {
+                qDebug() << "Joystick connected successfully!";
+                on_jsConnectButton_clicked();
+            }
+        } else {
+            // No joysticks available
+            if (mController != nullptr) {
+                qDebug() << "No joysticks detected, cleaning up controller.";
+                SDL_GameControllerClose(mController);
+                mController = nullptr;
+            }
         }
     }
     #else
