@@ -15,7 +15,31 @@ This web application provides a modern, browser-based interface for managing far
 - **Real-time Data**: Fetches data from the web server and displays it in interactive tables
 - **Responsive Design**: Works on desktop and mobile devices
 
-## Installation
+## Quick Setup (Recommended)
+
+The easiest way to set up this application is to use the provided `setup.sh` script. This will:
+1. Install all dependencies (Python, pip, etc.)
+2. Copy all necessary files to `/opt/rise_sdvp/`
+3. Set up a systemd service to run `server.py` automatically at boot
+4. Start the service
+
+```bash
+# Navigate to the directory containing setup.sh
+cd /path/to/this/directory
+
+# Run the setup script as root
+sudo ./setup.sh
+```
+
+After setup, the server will run automatically at boot. To start the Streamlit interface:
+```bash
+cd /opt/rise_sdvp
+/opt/rise_sdvp/venv/bin/streamlit run streamlit_app.py
+```
+
+## Manual Installation
+
+If you prefer to set up manually:
 
 ```bash
 # Clone the repository or navigate to the web directory
@@ -25,14 +49,63 @@ cd /home/gunnar/code/rise_sdvp/web
 pip install -r requirements.txt
 ```
 
-## Usage
+## Manual Usage
 
 ```bash
-# Run the Streamlit application
+# First, start the server in one terminal:
+python server.py
+
+# Then, in another terminal, run the Streamlit application:
 streamlit run streamlit_app.py
 ```
 
 The application will start and open in your default web browser at `http://localhost:8501`.
+
+## Service Management (After Quick Setup)
+
+If you used the `setup.sh` script, the server runs as a systemd service. Here are useful commands:
+
+```bash
+# Check service status
+sudo systemctl status rise_sdvp.service
+
+# Start the service (if stopped)
+sudo systemctl start rise_sdvp.service
+
+# Stop the service
+sudo systemctl stop rise_sdvp.service
+
+# Restart the service
+sudo systemctl restart rise_sdvp.service
+
+# View logs in real-time
+sudo journalctl -u rise_sdvp.service -f
+
+# Disable auto-start at boot
+sudo systemctl disable rise_sdvp.service
+```
+
+## Troubleshooting
+
+### Port Conflicts
+If the server fails to start, check if the port (default: 8080 for Flask) is already in use:
+```bash
+sudo netstat -tulnp | grep 8080
+```
+
+### Database Issues
+The application uses `data.db` in the same directory as the scripts. Ensure this file is present and readable.
+
+### Streamlit Access
+By default, Streamlit runs on port 8501. To access it remotely, you may need to:
+1. Configure Streamlit to listen on all interfaces:
+   ```bash
+   /opt/rise_sdvp/venv/bin/streamlit run streamlit_app.py --server.address=0.0.0.0
+   ```
+2. Open the port in your firewall:
+   ```bash
+   sudo ufw allow 8501
+   ```
 
 ## Requirements
 
