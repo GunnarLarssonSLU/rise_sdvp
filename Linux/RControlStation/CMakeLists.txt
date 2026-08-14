@@ -474,6 +474,7 @@ list(APPEND EXTERNAL_LIBS
     webp
     deflate
     lz4
+    zstd
     df
     mfhdf
     qhull
@@ -520,8 +521,10 @@ else()
     # Fallback to hardcoded paths for backward compatibility
     message(WARNING "GDAL not found via find_package, using hardcoded paths")
     target_link_options(${PROJECT_NAME} PRIVATE -Wl,-Bstatic)
-    target_link_libraries(${PROJECT_NAME} PRIVATE /usr/lib/x86_64-linux-gnu/libzstd.a openjp2 /usr/local/lib/libgdal.a)
+    target_link_libraries(${PROJECT_NAME} PRIVATE /usr/local/lib/libgdal.a)
     target_link_options(${PROJECT_NAME} PRIVATE -Wl,-Bdynamic)
+    # Link with shared zstd library to resolve ZSTD symbols
+    target_link_libraries(${PROJECT_NAME} PRIVATE zstd openjp2)
     target_link_directories(${PROJECT_NAME} PRIVATE
         /usr/lib/x86_64-linux-gnu
         /usr/local/lib
