@@ -305,6 +305,11 @@ MainWindow::MainWindow(QWidget *parent) :
     if (connectJs) {
         on_jsConnectButton_clicked();
     }
+    
+    // Set up joystick polling timer for hot-plugging support
+    mJoystickPollTimer = new QTimer(this);
+    connect(mJoystickPollTimer, &QTimer::timeout, this, &MainWindow::checkJoystickConnection);
+    mJoystickPollTimer->start(5000); // Check every 5 seconds
 #endif
 
     checkboxdelegate=new CheckBoxDelegate(ui->fieldTable);
@@ -538,6 +543,15 @@ MainWindow::~MainWindow()
     }
     SDL_Quit();
 #endif
+    
+#ifdef HAS_JOYSTICK
+    // Clean up joystick poll timer
+    if (mJoystickPollTimer) {
+        mJoystickPollTimer->stop();
+        delete mJoystickPollTimer;
+    }
+#endif
+    
     delete ui;
 }
 
@@ -1669,6 +1683,12 @@ bool MainWindow::connectJoystick()
 {
     bool connectJs = false;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    // Clean up any existing controller
+    if (mController != nullptr) {
+        SDL_GameControllerClose(mController);
+        mController = nullptr;
+    }
+    
     if (SDL_Init(SDL_INIT_GAMECONTROLLER) != 0) {
         qDebug() << "SDL_Init Error:" << SDL_GetError();
         return false;
@@ -1696,6 +1716,39 @@ bool MainWindow::connectJoystick()
 
 #endif
     return connectJs;
+}
+
+void MainWindow::checkJoystickConnection()
+{
+#ifdef HAS_JOYSTICK
+    #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    // Check if we already have a controller connected
+    if (mController != nullptr) {
+        // Controller is already connected, no need to check
+        return;
+    }
+    
+    // Check if any joysticks are now available
+    if (SDL_NumJoysticks() > 0) {
+        qDebug() << "Joystick detected, attempting to connect...";
+        bool connected = connectJoystick();
+        if (connected) {
+            qDebug() << "Joystick connected successfully!";
+            on_jsConnectButton_clicked();
+        }
+    }
+    #else
+    // For Qt5 version, check if joystick is connected
+    if (mJoystick && !mJoystick->isConnected()) {
+        qDebug() << "Joystick disconnected, attempting to reconnect...";
+        bool connected = connectJoystick();
+        if (connected) {
+            qDebug() << "Joystick reconnected successfully!";
+            on_jsConnectButton_clicked();
+        }
+    }
+    #endif
+#endif
 }
 
 void MainWindow::addTcpConnection(QString ip, int port)

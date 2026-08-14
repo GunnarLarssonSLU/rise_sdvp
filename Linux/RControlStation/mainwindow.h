@@ -96,6 +96,7 @@ public:
     void addCar(int id, QString name, bool pollData = false);
     void removeCars();
     bool connectJoystick();
+    void checkJoystickConnection();
     void addTcpConnection(QString ip, int port);
     void setNetworkTcpEnabled(bool enabled, int port = -1);
     void setNetworkUdpEnabled(bool enabled, int port = -1);
@@ -381,6 +382,7 @@ private:
     ArduinoReader serialReader;
     database db;
     bool activeCarExists;
+    QTimer* mJoystickPollTimer = nullptr;
 
 #ifdef HAS_JOYSTICK_CHECK
     bool JSconnected();
