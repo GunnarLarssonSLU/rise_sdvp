@@ -416,7 +416,7 @@
        <enum>QTabWidget::TabPosition::North</enum>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -1123,7 +1123,7 @@
                    <property name="geometry">
                     <rect>
                      <x>0</x>
-                     <y>0</y>
+                     <y>-1</y>
                      <width>439</width>
                      <height>535</height>
                     </rect>
@@ -1255,20 +1255,6 @@
                         <widget class="QProgressBar" name="mapUploadRouteProgressBar">
                          <property name="value">
                           <number>0</number>
-                         </property>
-                        </widget>
-                       </item>
-                       <item>
-                        <widget class="QProgressBar" name="anchorUploadProgressBar">
-                         <property name="value">
-                          <number>0</number>
-                         </property>
-                        </widget>
-                       </item>
-                       <item>
-                        <widget class="QPushButton" name="uploadAnchorButton">
-                         <property name="text">
-                          <string>Upload Anchor</string>
                          </property>
                         </widget>
                        </item>
@@ -3703,7 +3689,7 @@
        </attribute>
        <layout class="QHBoxLayout" name="hBoxLayoutMain" stretch="0,1">
         <item>
-         <layout class="QVBoxLayout" name="vBoxDisplay" stretch="0,0,0,0,1,0,1,0,0,0">
+         <layout class="QVBoxLayout" name="vBoxDisplay" stretch="0,0,0,0,1,0,1,0,0">
           <property name="sizeConstraint">
            <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
           </property>
@@ -3782,11 +3768,11 @@
             </item>
             <item>
              <widget class="QPushButton" name="pushButtonLoadLog">
-              <property name="text">
-               <string>Load Log</string>
-              </property>
               <property name="visible">
                <bool>false</bool>
+              </property>
+              <property name="text">
+               <string>Load Log</string>
               </property>
              </widget>
             </item>
