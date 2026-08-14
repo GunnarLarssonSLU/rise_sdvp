@@ -296,6 +296,7 @@ MainWindow::MainWindow(QWidget *parent) :
     mThrottle = 0.0;
     mSteering = 0.0;
     activeCarExists = false;
+    mLastJoystickCount = 0;
 
 //    static MainWindow *mThis=this;          // Just to be able to get the lambdas to work
 #ifdef HAS_JOYSTICK
@@ -1725,12 +1726,11 @@ void MainWindow::checkJoystickConnection()
 {
 #ifdef HAS_JOYSTICK
     #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    static int lastJoystickCount = 0;  // Track previous joystick count
     int numJoysticks = SDL_NumJoysticks();
     
     // Check if joystick count changed
-    if (numJoysticks != lastJoystickCount) {
-        lastJoystickCount = numJoysticks;
+    if (numJoysticks != mLastJoystickCount) {
+        mLastJoystickCount = numJoysticks;
         qDebug() << "Joystick count changed to:" << numJoysticks;
         
         if (numJoysticks > 0) {

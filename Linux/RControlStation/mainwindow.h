@@ -383,6 +383,7 @@ private:
     database db;
     bool activeCarExists;
     QTimer* mJoystickPollTimer = nullptr;
+    int mLastJoystickCount = 0;  // For hot-plugging detection
 
 #ifdef HAS_JOYSTICK_CHECK
     bool JSconnected();
