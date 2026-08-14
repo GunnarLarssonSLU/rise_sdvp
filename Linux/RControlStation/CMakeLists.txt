@@ -458,9 +458,13 @@ if(Expat_FOUND)
     if(TARGET Expat::Expat)
         list(APPEND EXTERNAL_LIBS Expat::Expat)
         message(STATUS "Found Expat (imported target)")
-    else()
+    elseif(Expat_LIBRARIES)
         list(APPEND EXTERNAL_LIBS ${Expat_LIBRARIES})
         message(STATUS "Found Expat (libraries: ${Expat_LIBRARIES})")
+    else()
+        # Fallback to system expat library
+        list(APPEND EXTERNAL_LIBS expat)
+        message(STATUS "Found Expat (using system library)")
     endif()
 else()
     list(APPEND EXTERNAL_LIBS expat)
@@ -475,6 +479,7 @@ list(APPEND EXTERNAL_LIBS
     deflate
     lz4
     zstd
+    expat
     df
     mfhdf
     qhull
