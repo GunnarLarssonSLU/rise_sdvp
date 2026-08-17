@@ -616,53 +616,12 @@ elseif(UNIX AND NOT APPLE)
     # Comprehensive dependency list for Debian/Ubuntu
     # These are the actual package names that provide the libraries your executable needs
     set(CPACK_DEBIAN_PACKAGE_DEPENDS 
-        "libqt6core6 (>= 6.2.0), libqt6gui6 (>= 6.2.0), libqt6widgets6 (>= 6.2.0),"
-        "libqt6serialport6 (>= 6.2.0), libqt6network6 (>= 6.2.0), libqt6sql6 (>= 6.2.0),"
-        "libqt6printsupport6 (>= 6.2.0), libqt6charts6 (>= 6.2.0), libqt6dbus6 (>= 6.2.0),"
-        "libsdl2-2.0-0 (>= 2.0.0), libgdal30 (>= 3.0.0), libgeotiff5, libproj25,"
-        "libjson-c5, libxerces-c3.2, libkmlbase1, libkmldom1, libkmlengine1,"
-        "libhdf5-103, libnetcdf19, libpq5, libgeos-c1v5, libgeos-3.12.1,"
-        "libfreexl1, libcfitsio10, libogdi-4.1, libopenjp2-7, libqhull8.0,"
-        "libexpat1, libsqlite3-0, libblosc1, libzstd1, liblz4-1, libwebp7,"
-        "libtiff6, libjpeg8, libpng16-16, libgif7, libcurl4, libssl3,"
-        "zlib1g, libbz2-1.0, liblzma5, libgl1, libglx0, libegl1, libgbm1,"
-        "libdrm2, libwayland-client0, libwayland-cursor0, libwayland-egl1,"
-        "libx11-6, libx11-xcb1, libxext6, libxrender1, libxi6, libxinerama1,"
-        "libxcursor1, libxrandr2, libxfixes3, libxdmcp6, libxau6, libxcb1,"
-        "libxcb-randr0, libxkbcommon0, libpulse0, libasound2, libflac8,"
-        "libvorbis0a, libvorbisenc2, libogg0, libsndfile1, libicu70,"
-        "libgnutls30, libgcrypt20, libgpg-error0, libidn2-0, libnettle8,"
-        "libhogweed6, libnuma1, libcap2, libapparmor1, libbsd0, libmd0,"
-        "libffi8, libfontconfig1, libfreetype6, libgmp10, libp11-kit0,"
-        "librtmp1, libsasl2-2, libsnappy1v5, libssh-4, libsystemd0,"
-        "libunistring2, liburiparser1, libuuid1, libresolv2,"
-        "libgssapi-krb5-2, libkrb5-3, libkrb5support0, libcom-err2,"
-        "libkeyutils1, liblber-2.5-0, libldap-2.5-0, libltdl7, libminizip1,"
-        "libnghttp2-14, libpsl5, libtasn1-6, libtirpc3, libdeflate0,"
-        "libaec0, libaom3, libasyncns0, libbrotli-common1, libbrotli-dec1,"
-        "libdav1d6, libde265-0, libdecor-0-0, libheif1, libopenexr25,"
-        "libjbig0, libwayland-server0, libx265-199, libxss1, libxxf86vm1"
+        "libqt6core6 (>= 6.2.0), libqt6gui6 (>= 6.2.0), libqt6widgets6 (>= 6.2.0), libqt6serialport6 (>= 6.2.0), libqt6network6 (>= 6.2.0), libqt6sql6 (>= 6.2.0), libqt6printsupport6 (>= 6.2.0), libqt6charts6 (>= 6.2.0), libqt6dbus6 (>= 6.2.0), libsdl2-2.0-0 (>= 2.0.0), libgdal30 (>= 3.0.0), libgeotiff5, libproj25, libjson-c5, libxerces-c3.2, libkmlbase1, libkmldom1, libkmlengine1, libhdf5-103, libnetcdf19, libpq5, libgeos-c1v5, libgeos-3.12.1, libfreexl1, libcfitsio10, libogdi-4.1, libopenjp2-7, libqhull8.0, libexpat1, libsqlite3-0, libblosc1, libzstd1, liblz4-1, libwebp7, libtiff6, libjpeg8, libpng16-16, libgif7, libcurl4, libssl3, zlib1g, libbz2-1.0, liblzma5"
     )
     
     # Comprehensive dependency list for RPM/Fedora
     set(CPACK_RPM_PACKAGE_REQUIRES 
-        "qt6-qtbase >= 6.2.0, qt6-qtserialport >= 6.2.0, qt6-qtcharts >= 6.2.0,"
-        "qt6-qtbase-gui >= 6.2.0, qt6-qtdbus >= 6.2.0, qt6-qtnetwork >= 6.2.0,"
-        "qt6-qtsql >= 6.2.0, qt6-qtprintsupport >= 6.2.0, qt6-qtwidgets >= 6.2.0,"
-        "SDL2 >= 2.0.0, gdal >= 3.0.0, geotiff, proj, json-c, xerces-c,"
-        "libkml, hdf5, netcdf, postgresql, blosc, zstd, lz4, libwebp,"
-        "libtiff, libjpeg, libpng, libgif, curl, openssl, zlib, bzip2,"
-        "xz, mesa-libGL, mesa-libGLU, libX11, libXext, libXrender,"
-        "libXi, libXinerama, libXcursor, libXrandr, libXfixes, libXdmcp,"
-        "libXau, libxcb, pulseaudio, alsa-lib, flac, libvorbis, libogg,"
-        "libsndfile, libicu, gnutls, libgcrypt, libgpg-error, libidn2,"
-        "nettle, numactl, libcap, apparmor, libbsd, libffi, fontconfig,"
-        "freetype, gmp, p11-kit, rtmp, cyrus-sasl, snappy, libssh,"
-        "systemd, libunistring, liburiparser, libuuid, krb5, libcom_err,"
-        "keyutils, openldap, ltdl, minizip, nghttp2, libpsl, libtasn1,"
-        "libtirpc, libdeflate, libaec, libaom, libasyncns, brotli, libdav1d,"
-        "libde265, libdecor, libheif, openexr, libjbig, libwayland-server,"
-        "libx265, libXss, libXXf86vm"
+        "qt6-qtbase >= 6.2.0, qt6-qtserialport >= 6.2.0, qt6-qtcharts >= 6.2.0, qt6-qtbase-gui >= 6.2.0, qt6-qtdbus >= 6.2.0, qt6-qtnetwork >= 6.2.0, qt6-qtsql >= 6.2.0, qt6-qtprintsupport >= 6.2.0, qt6-qtwidgets >= 6.2.0, SDL2 >= 2.0.0, gdal >= 3.0.0, geotiff, proj, json-c, xerces-c, libkml, hdf5, netcdf, postgresql, blosc, zstd, lz4, libwebp, libtiff, libjpeg, libpng, libgif, curl, openssl, zlib, bzip2, xz"
     )
     
     message(STATUS "CPack DEB dependencies configured")
