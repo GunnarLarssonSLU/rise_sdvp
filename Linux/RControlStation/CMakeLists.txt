@@ -616,7 +616,7 @@ elseif(UNIX AND NOT APPLE)
     # Comprehensive dependency list for Debian/Ubuntu
     # These are the actual package names that provide the libraries your executable needs
     set(CPACK_DEBIAN_PACKAGE_DEPENDS 
-        "libqt6core6 (>= 6.2.0), libqt6gui6 (>= 6.2.0), libqt6widgets6 (>= 6.2.0), libqt6serialport6 (>= 6.2.0), libqt6network6 (>= 6.2.0), libqt6sql6 (>= 6.2.0), libqt6printsupport6 (>= 6.2.0), libqt6charts6 (>= 6.2.0), libqt6dbus6 (>= 6.2.0), libsdl2-2.0-0 (>= 2.0.0), libgdal30 (>= 3.0.0), libgeotiff5, libproj22, libjson-c5, libxerces-c3.2, libkmlbase1, libkmldom1, libkmlengine1, libhdf5-103, libnetcdf19, libpq5, libgeos-c1v5, libfreexl1, libcfitsio-dev, libogdi4.1, libopenjp2-7, libqhull8.0, libexpat1, libsqlite3-0, libblosc1, libzstd1, liblz4-1, libwebp7, libtiff5, libjpeg8, libpng16-16, libgif7, libcurl4, libssl3, zlib1g, libbz2-1.0, liblzma5"
+        "libqt6core6 (>= 6.2.0), libqt6gui6 (>= 6.2.0), libqt6widgets6 (>= 6.2.0), libqt6serialport6 (>= 6.2.0), libqt6network6 (>= 6.2.0), libqt6sql6 (>= 6.2.0), libqt6printsupport6 (>= 6.2.0), libqt6charts6 (>= 6.2.0), libqt6dbus6 (>= 6.2.0), libsdl2-2.0-0 (>= 2.0.0), libgdal30 (>= 3.0.0), libgeotiff5, libproj22, libjson-c5, libxerces-c3.2, libkmlbase1, libkmldom1, libkmlengine1, libhdf5-103, libhdf4-0, libnetcdf19, libpq5, libgeos-c1v5, libfreexl1, libcfitsio-dev, libogdi4.1, libopenjp2-7, libqhull8.0, libexpat1, libsqlite3-0, libblosc1, libzstd1, liblz4-1, libwebp7, libtiff5, libjpeg8, libpng16-16, libgif7, libcurl4, libssl3, zlib1g, libbz2-1.0, liblzma5"
     )
     
     # Comprehensive dependency list for RPM/Fedora
