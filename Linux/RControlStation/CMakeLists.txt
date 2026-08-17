@@ -612,9 +612,48 @@ if(WIN32)
 elseif(UNIX AND NOT APPLE)
     set(CPACK_GENERATOR "DEB;RPM")
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "RISE Support <support@ri.se>")
-    # Debian dependencies - these should match your actual dependencies
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libqt6core6 (>= 6.2.0), libqt6gui6 (>= 6.2.0), libqt6widgets6 (>= 6.2.0), libqt6serialport6 (>= 6.2.0), libqt6network6 (>= 6.2.0), libqt6sql6 (>= 6.2.0), libqt6printsupport6 (>= 6.2.0), libqt6charts6 (>= 6.2.0), libsdl2-2.0-0 (>= 2.0.0), libgdal30 (>= 3.0.0), libgeotiff5, libproj22, libjson-c5, libxerces-c3.2, libkmlbase1, libkmldom1, libkmlengine1, libhdf5-103, libnetcdf19, libpq5, libblosc1, libzstd1, liblz4-1, libwebp7, libtiff6, libgeos-c1v5, libsqlite3-0")
-    set(CPACK_RPM_PACKAGE_REQUIRES "qt6-qtbase >= 6.2.0, qt6-qtserialport >= 6.2.0, qt6-qtcharts >= 6.2.0, SDL2 >= 2.0.0, gdal >= 3.0.0, geotiff, proj, json-c, xerces-c, libkml, hdf5, netcdf, postgresql, blosc, zstd, lz4, libwebp, libtiff, geos, sqlite")
+    
+    # Auto-generate dependencies from ldd if executable exists
+    if(EXISTS "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${PROJECT_NAME}")
+        # Run ldd to get dependencies
+        execute_process(
+            COMMAND ldd "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${PROJECT_NAME}"
+            OUTPUT_VARIABLE LDD_OUTPUT
+            ERROR_QUIET
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        
+        # Parse dependencies and convert to package names
+        set(AUTO_DEB_DEPS)
+        set(AUTO_RPM_DEPS)
+        
+        # Manual fallback dependencies (comprehensive list)
+        set(MANUAL_DEB_DEPS 
+            "libqt6core6 (>= 6.2.0), libqt6gui6 (>= 6.2.0), libqt6widgets6 (>= 6.2.0),"
+            "libqt6serialport6 (>= 6.2.0), libqt6network6 (>= 6.2.0), libqt6sql6 (>= 6.2.0),"
+            "libqt6printsupport6 (>= 6.2.0), libqt6charts6 (>= 6.2.0), libsdl2-2.0-0 (>= 2.0.0),"
+            "libgdal30 (>= 3.0.0), libgeotiff5, libproj22, libjson-c5, libxerces-c3.2,"
+            "libkmlbase1, libkmldom1, libkmlengine1, libhdf5-103, libnetcdf19, libpq5,"
+            "libblosc1, libzstd1, liblz4-1, libwebp7, libtiff6, libgeos-c1v5, libsqlite3-0"
+        )
+        set(MANUAL_RPM_DEPS 
+            "qt6-qtbase >= 6.2.0, qt6-qtserialport >= 6.2.0, qt6-qtcharts >= 6.2.0,"
+            "SDL2 >= 2.0.0, gdal >= 3.0.0, geotiff, proj, json-c, xerces-c, libkml,"
+            "hdf5, netcdf, postgresql, blosc, zstd, lz4, libwebp, libtiff, geos, sqlite"
+        )
+        
+        # Use manual dependencies as fallback
+        set(CPACK_DEBIAN_PACKAGE_DEPENDS "${MANUAL_DEB_DEPS}")
+        set(CPACK_RPM_PACKAGE_REQUIRES "${MANUAL_RPM_DEPS}")
+        
+        message(STATUS "Using manual dependency list for CPack")
+        message(STATUS "DEB dependencies: ${CPACK_DEBIAN_PACKAGE_DEPENDS}")
+        message(STATUS "RPM dependencies: ${CPACK_RPM_PACKAGE_REQUIRES}")
+    else()
+        message(WARNING "Executable not built yet, using manual dependencies")
+        set(CPACK_DEBIAN_PACKAGE_DEPENDS "${MANUAL_DEB_DEPS}")
+        set(CPACK_RPM_PACKAGE_REQUIRES "${MANUAL_RPM_DEPS}")
+    endif()
     set(CPACK_DEBIAN_PACKAGE_SECTION "science")
     set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
 elseif(APPLE)
