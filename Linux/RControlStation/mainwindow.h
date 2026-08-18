@@ -150,6 +150,7 @@ private slots:
     void onSelectedField(const QModelIndex& current, const QModelIndex& previous);
     void onSelectedFieldGeneral(QStandardItemModel *model, QStandardItemModel *modelPth, const QModelIndex& current, const QModelIndex& previous);
     void on_listLogFilesView_clicked(const QModelIndex& index);
+    void onUnconnectedFieldsTableItemClicked(QTableWidgetItem *item);
 
 
     void handleAddFieldButton();
@@ -319,6 +320,8 @@ private:
     void fetchAllFarmsData(int retryCount = 0);
     void fetchAllFieldsData(int farmId, int retryCount = 0);
     void fetchAllPathsData(int fieldId, int retryCount = 0);
+    void fetchUnconnectedFieldsData(int retryCount = 0);
+    void parseUnconnectedFieldsXml(const QByteArray &xmlData);
     void parseVehicleTypesXml(const QByteArray &xmlData);
     void parseAllMachinesXml(const QByteArray &xmlData);
     void parseMachinesXml(const QByteArray &xmlData);
@@ -373,6 +376,10 @@ private:
     QUdpSocket *mUdpSocket;
     TcpClientMulti *mTcpClientMulti;
     QNetworkAccessManager *mNetworkManager;
+    
+    // File administration tab widgets
+    QTableWidget *mUnconnectedFieldsTable;
+    MapWidget *mMapWidgetFileAdmin;
     QString mVersion;
     rtcm3_state mRtcmState;
     IntersectionTest *mIntersectionTest;

@@ -21,6 +21,8 @@
 #include <QLatin1String>
 #include <QDebug>
 #include <cmath>
+#include <array>
+#include <algorithm>
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -145,6 +147,17 @@ MainWindow::MainWindow(QWidget *parent) :
     logLogsModel(nullptr)
 {
     ui->setupUi(this);
+    
+    // Initialize File Administration tab widgets from UI
+    mUnconnectedFieldsTable = ui->unconnectedFieldsTable;
+    mMapWidgetFileAdmin = ui->mapWidgetFileAdmin;
+    
+    // Set up table columns for unconnected fields
+    mUnconnectedFieldsTable->setColumnCount(1);
+    mUnconnectedFieldsTable->setHorizontalHeaderItem(0, new QTableWidgetItem("Filename"));
+    
+    // Connect the table item click signal
+    connect(mUnconnectedFieldsTable, &QTableWidget::itemClicked, this, &MainWindow::onUnconnectedFieldsTableItemClicked);
     
     // Create Help menu with Check for Updates action
     m_helpMenu = menuBar()->addMenu(tr("Help"));
@@ -520,7 +533,11 @@ MainWindow::MainWindow(QWidget *parent) :
     // Initial refresh of machines data
     fetchMachinesData();
     fetchVehicleTypes(); // This will call fetchAllMachinesData() when done
+    
+    // Initial refresh of unconnected fields data - call after UI is fully initialized
+    QTimer::singleShot(100, this, [this]() { fetchUnconnectedFieldsData(); });
 }
+
 
 MainWindow::~MainWindow()
 {
@@ -1646,6 +1663,95 @@ void MainWindow::onSelectedFieldGeneral(QStandardItemModel *model, QStandardItem
     qDebug() << "H";
 
     //       mapFields->setRouteNow();   // Make sure that no route is set automatically (in order to make it easier to edit)
+}
+
+void MainWindow::onUnconnectedFieldsTableItemClicked(QTableWidgetItem *item)
+{
+    qDebug() << "onUnconnectedFieldsTableItemClicked: called";
+    
+    if (!item || !mUnconnectedFieldsTable || !mMapWidgetFileAdmin) {
+        qDebug() << "ERROR: Invalid parameters in onUnconnectedFieldsTableItemClicked";
+        return;
+    }
+    
+    int row = item->row();
+    QTableWidgetItem *filenameItem = mUnconnectedFieldsTable->item(row, 0);
+    if (!filenameItem) {
+        qDebug() << "ERROR: No filename item at row" << row;
+        return;
+    }
+    
+    QString filename = filenameItem->text();
+    qDebug() << "File administration: Loading file:" << filename;
+    
+    // Clear the map first
+    mMapWidgetFileAdmin->clearAllFields();
+    mMapWidgetFileAdmin->clearAllPaths();
+    mMapWidgetFileAdmin->update();
+    
+    // Load the file from the server via HTTP
+    QUrl url(QString("http://127.0.0.1:8080/field/%1").arg(filename));
+    qDebug() << "Fetching field from URL:" << url.toString();
+    
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+    
+    QNetworkReply* reply = mNetworkManager->get(request);
+    if (!reply) {
+        qDebug() << "ERROR: Network request failed for" << url.toString();
+        showStatusInfo("Network error: " + filename, false);
+        return;
+    }
+    
+    // Show loading state
+    showStatusInfo("Loading border: " + filename, true);
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, filename]() {
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "HTTP Status Code (field):" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            QByteArray xmlData = reply->readAll();
+            qDebug() << "Received XML data for field (size:" << xmlData.size() << ")";
+            
+            if (!xmlData.isEmpty()) {
+                QXmlStreamReader xmlReader(xmlData);
+                bool success = mMapWidgetFileAdmin->loadXMLRoute(&xmlReader, true); // true = isBorder
+                
+                if (success) {
+                    qDebug() << "Successfully loaded border file:" << filename;
+                    showStatusInfo("Loaded border: " + filename, true);
+                    
+                    // Center the view on the loaded data
+                    if (mMapWidgetFileAdmin->getFieldNum() > 0) {
+                        std::array<double, 4> extremes = mMapWidgetFileAdmin->findExtremeValuesFieldBorders();
+                        double offsetx = (extremes[0] + extremes[1]) / 2.0;
+                        double offsety = (extremes[2] + extremes[3]) / 2.0;
+                        double scalex = 1.0 / (extremes[1] - extremes[0]);
+                        double scaley = 1.0 / (extremes[3] - extremes[2]);
+                        
+                        mMapWidgetFileAdmin->moveView(offsetx, offsety);
+                        mMapWidgetFileAdmin->setScaleFactor(std::min(scalex, scaley) * 0.9);
+                        mMapWidgetFileAdmin->update();
+                    }
+                } else {
+                    qDebug() << "Failed to load border file:" << filename << "XML error:" << xmlReader.errorString();
+                    showStatusInfo("Failed to load border: " + filename, false);
+                }
+            } else {
+                qDebug() << "Empty response for field:" << filename;
+                showStatusInfo("Empty response: " + filename, false);
+            }
+        } else {
+            QString errorMsg = reply->errorString();
+            if (statusCode != 200 && statusCode > 0) {
+                errorMsg = QString("HTTP %1").arg(statusCode);
+            }
+            qDebug() << "Error fetching field:" << filename << "-" << errorMsg;
+            showStatusInfo("Error loading: " + filename + " (" + errorMsg + ")", false);
+        }
+        reply->deleteLater();
+    });
 }
 
 void MainWindow::addCar(int id, QString name, bool pollData)
@@ -3558,6 +3664,84 @@ void MainWindow::fetchAllFieldsData(int farmId, int retryCount)
     qDebug() << "Fetching all_fields data from:" << url.toString() << "(attempt" << (retryCount + 1) << ")";
 }
 
+void MainWindow::fetchUnconnectedFieldsData(int retryCount)
+{
+    qDebug() << "fetchUnconnectedFieldsData: Starting, retryCount:" << retryCount;
+    const int MAX_RETRIES = 3;
+    const int RETRY_DELAY_MS = 2000; // 2 seconds between retries
+
+    if (!mUnconnectedFieldsTable) {
+        qDebug() << "ERROR: mUnconnectedFieldsTable is null in fetchUnconnectedFieldsData!";
+        return;
+    }
+
+    // Clear the table
+    mUnconnectedFieldsTable->setRowCount(0);
+    
+    // Add loading indicator
+    mUnconnectedFieldsTable->insertRow(0);
+    mUnconnectedFieldsTable->setItem(0, 0, new QTableWidgetItem(retryCount > 0 ? QString("Retrying... (%1/%2)").arg(retryCount).arg(MAX_RETRIES) : "Loading..."));
+
+    QUrl url("http://127.0.0.1:8080/unconnected_fields");
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+
+    QNetworkReply* reply = mNetworkManager->get(request);
+    if (!reply) {
+        qDebug() << "ERROR: reply is null in fetchUnconnectedFieldsData!";
+        mUnconnectedFieldsTable->setRowCount(0);
+        mUnconnectedFieldsTable->insertRow(0);
+        mUnconnectedFieldsTable->setItem(0, 0, new QTableWidgetItem("Error: Network request failed"));
+        return;
+    }
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply, retryCount]() {
+        // Clear loading message
+        mUnconnectedFieldsTable->setRowCount(0);
+
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "HTTP Status Code (unconnected_fields):" << statusCode;
+        
+        if (reply->error() != QNetworkReply::NoError) {
+            qDebug() << "Network error:" << reply->error() << "-" << reply->errorString();
+        }
+
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            QByteArray xmlData = reply->readAll();
+            qDebug() << "Received XML data from unconnected_fields (size:" << xmlData.size() << ")";
+            
+            if (!xmlData.isEmpty()) {
+                parseUnconnectedFieldsXml(xmlData);
+            } else {
+                qDebug() << "Empty response for unconnected_fields";
+                mUnconnectedFieldsTable->insertRow(0);
+                mUnconnectedFieldsTable->setItem(0, 0, new QTableWidgetItem("No unconnected fields data"));
+            }
+        } else {
+            QString errorMsg = reply->errorString();
+            if (statusCode != 200 && statusCode > 0) {
+                errorMsg = QString("HTTP %1").arg(statusCode);
+            }
+            qDebug() << "Error fetching unconnected_fields:" << errorMsg;
+            
+            // Retry logic
+            if (retryCount < MAX_RETRIES) {
+                QTimer::singleShot(RETRY_DELAY_MS, this, [this, retryCount]() {
+                    fetchUnconnectedFieldsData(retryCount + 1);
+                });
+            } else {
+                mUnconnectedFieldsTable->insertRow(0);
+                mUnconnectedFieldsTable->setItem(0, 0, new QTableWidgetItem("Error"));
+                mUnconnectedFieldsTable->insertRow(1);
+                mUnconnectedFieldsTable->setItem(1, 0, new QTableWidgetItem(errorMsg));
+            }
+        }
+        reply->deleteLater();
+    });
+
+    qDebug() << "Fetching unconnected_fields data from:" << url.toString() << "(attempt" << (retryCount + 1) << ")";
+}
+
 void MainWindow::fetchAllPathsData(int fieldId, int retryCount)
 {
     qDebug() << "fetchAllPathsData: Starting for fieldId:" << fieldId << "retryCount:" << retryCount;
@@ -4124,6 +4308,73 @@ void MainWindow::parseAllFieldsXml(const QByteArray &xmlData)
         qDebug() << "No fields found in all_fields XML";
         fieldsModel->appendRow(new QStandardItem("No fields"));
         fieldsModel->appendRow(new QStandardItem("found"));
+    }
+}
+
+void MainWindow::parseUnconnectedFieldsXml(const QByteArray &xmlData)
+{
+    qDebug() << "parseUnconnectedFieldsXml: Starting";
+    
+    if (!mUnconnectedFieldsTable) {
+        qDebug() << "ERROR: mUnconnectedFieldsTable is null in parseUnconnectedFieldsXml!";
+        return;
+    }
+    
+    // Clear existing data
+    mUnconnectedFieldsTable->setRowCount(0);
+
+    // Parse the XML
+    QXmlStreamReader xmlReader(xmlData);
+    bool foundFiles = false;
+
+    while (!xmlReader.atEnd()) {
+        QXmlStreamReader::TokenType token = xmlReader.readNext();
+
+        if (token == QXmlStreamReader::StartElement && xmlReader.name() == QLatin1String("path")) {
+            QString filename;
+            foundFiles = true;
+            qDebug() << "Found path element in unconnected_fields";
+
+            // Read path element contents
+            while (!xmlReader.atEnd()) {
+                token = xmlReader.readNext();
+
+                if (token == QXmlStreamReader::EndElement && xmlReader.name() == QLatin1String("path")) {
+                    break; // End of path element
+                }
+
+                if (token == QXmlStreamReader::StartElement) {
+                    if (xmlReader.name() == QLatin1String("filename")) {
+                        token = xmlReader.readNext();
+                        if (token == QXmlStreamReader::Characters) {
+                            filename = xmlReader.text().toString();
+                        }
+                    }
+                }
+            }
+            
+            // Add the filename to the table if we got one
+            if (!filename.isEmpty()) {
+                int row = mUnconnectedFieldsTable->rowCount();
+                mUnconnectedFieldsTable->insertRow(row);
+                mUnconnectedFieldsTable->setItem(row, 0, new QTableWidgetItem(filename));
+                qDebug() << "Added file to table:" << filename;
+            }
+        }
+    }
+
+    if (!foundFiles) {
+        qDebug() << "No files found in unconnected_fields XML";
+        mUnconnectedFieldsTable->insertRow(0);
+        mUnconnectedFieldsTable->setItem(0, 0, new QTableWidgetItem("No files found"));
+    }
+
+    if (xmlReader.hasError()) {
+        qDebug() << "XML parsing error:" << xmlReader.errorString();
+        mUnconnectedFieldsTable->insertRow(0);
+        mUnconnectedFieldsTable->setItem(0, 0, new QTableWidgetItem("XML Error"));
+        mUnconnectedFieldsTable->insertRow(1);
+        mUnconnectedFieldsTable->setItem(1, 0, new QTableWidgetItem(xmlReader.errorString()));
     }
 }
 

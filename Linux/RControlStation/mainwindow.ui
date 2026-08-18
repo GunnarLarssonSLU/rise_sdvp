@@ -4174,6 +4174,56 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="tabFileAdmin">
+       <attribute name="title">
+        <string>File administration</string>
+       </attribute>
+       <layout class="QHBoxLayout" name="horizontalLayoutFileAdmin">
+        <property name="spacing">
+         <number>6</number>
+        </property>
+        <property name="leftMargin">
+         <number>11</number>
+        </property>
+        <property name="topMargin">
+         <number>11</number>
+        </property>
+        <property name="rightMargin">
+         <number>11</number>
+        </property>
+        <property name="bottomMargin">
+         <number>11</number>
+        </property>
+        <item>
+         <widget class="QTableWidget" name="unconnectedFieldsTable">
+          <property name="minimumSize">
+           <size>
+            <width>200</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+          </property>
+          <column>
+           <property name="text">
+            <string>Filename</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+        <item>
+         <widget class="MapWidget" name="mapWidgetFileAdmin" native="true">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <horstretch>1</horstretch>
+            <verstretch>1</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </item>
    </layout>
