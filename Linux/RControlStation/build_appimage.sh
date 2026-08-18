@@ -9,7 +9,21 @@ set -e
 echo "🚀 Building AppImage for RControlStation..."
 
 APP_NAME="RControlStation"
-BUILD_DIR="build/Desktop_Qt_6_9_1-release"
+# Try CMake build directory first, fall back to qmake directory
+if [ -f "build/cmake_linux_release/build/lin/$APP_NAME" ]; then
+    BUILD_DIR="build/cmake_linux_release/build/lin"
+elif [ -f "build/cmake_linux_release/$APP_NAME" ]; then
+    BUILD_DIR="build/cmake_linux_release"
+elif [ -f "build/Desktop_Qt_6_9_1-release/$APP_NAME" ]; then
+    BUILD_DIR="build/Desktop_Qt_6_9_1-release"
+else
+    echo "❌ Error: Could not find RControlStation executable in any build directory"
+    echo "   Checked:"
+    echo "   - build/cmake_linux_release/build/lin/"
+    echo "   - build/cmake_linux_release/"
+    echo "   - build/Desktop_Qt_6_9_1-release/"
+    exit 1
+fi
 APP_DIR="AppDir"
 FINAL_APPIMAGE="RControlStation-x86_64.AppImage"
 
@@ -39,21 +53,25 @@ ln -sf "usr/bin/$APP_NAME" "$APP_DIR/AppRun"
 # Copy all pre-bundled libraries
 echo "📚 Copying pre-bundled libraries..."
 if [ -d "$BUILD_DIR/lib" ]; then
-    cp -r "$BUILD_DIR/lib/"* "$APP_DIR/usr/lib/"
-    echo "   Copied $(ls $BUILD_DIR/lib | wc -l) libraries"
+    cp -r "$BUILD_DIR/lib/"* "$APP_DIR/usr/lib/" 2>/dev/null || true
+    echo "   Copied $(ls $BUILD_DIR/lib 2>/dev/null | wc -l) libraries from build/lib"
 fi
 
 # Copy Qt libraries that are still referenced from system Qt installation
 echo "🎯 Copying Qt libraries..."
-Qt_LIBS=$(ldd "$BUILD_DIR/$APP_NAME" | grep "Qt" | grep "/home/gunnar/Qt" | awk '{print $3}')
+Qt_LIBS=$(ldd "$BUILD_DIR/$APP_NAME" 2>/dev/null | grep "Qt" | grep "/home/gunnar/Qt" | awk '{print $3}')
 Qt_COUNT=0
 for lib in $Qt_LIBS; do
     if [ -f "$lib" ]; then
-        cp "$lib" "$APP_DIR/usr/lib/"
+        cp "$lib" "$APP_DIR/usr/lib/" 2>/dev/null || true
         Qt_COUNT=$((Qt_COUNT + 1))
     fi
 done
-echo "   Copied $Qt_COUNT Qt libraries"
+if [ $Qt_COUNT -gt 0 ]; then
+    echo "   Copied $Qt_COUNT Qt libraries"
+else
+    echo "   No Qt libraries found in /home/gunnar/Qt - using system Qt or bundled Qt"
+fi
 
 # Download appimagetool
 echo "🔧 Downloading appimagetool..."
@@ -83,11 +101,18 @@ cp "Icons/Car-96.png" "$APP_DIR/$APP_NAME.png"
 
 # Copy database file
 echo "🗃️  Copying database..."
-if [ -f "$BUILD_DIR/data.db" ]; then
-    cp "$BUILD_DIR/data.db" "$APP_DIR/usr/share/$APP_NAME/"
-    echo "   Copied database to AppDir"
-else
-    echo "   Warning: data.db not found in $BUILD_DIR"
+# Try multiple locations for data.db
+DB_FOUND=0
+for db_path in "$BUILD_DIR/data.db" "$BUILD_DIR/../data.db" "data.db"; do
+    if [ -f "$db_path" ]; then
+        cp "$db_path" "$APP_DIR/usr/share/$APP_NAME/"
+        echo "   Copied database from: $db_path"
+        DB_FOUND=1
+        break
+    fi
+done
+if [ $DB_FOUND -eq 0 ]; then
+    echo "   Warning: data.db not found in any expected location"
 fi
 
 # Set proper permissions
