@@ -784,38 +784,39 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
                             QString machineId = nameItem->data(Qt::UserRole).toString();
                             
                             if (!machineId.isEmpty()) {
-                            qDebug() << "Deleting machine with ID:" << machineId;
-                            
-                            // Send DELETE request to remove the machine
-                            QUrl url("http://127.0.0.1:8080/remove_machine");
-                            QUrlQuery query;
-                            query.addQueryItem("id", machineId);
-                            url.setQuery(query);
-                            
-                            QNetworkRequest request(url);
-                            request.setTransferTimeout(10000);
-                            
-                            QNetworkReply* reply = mNetworkManager->get(request);
-                            
-                            connect(reply, &QNetworkReply::finished, this, [this, reply, row]() {
-                                int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-                                qDebug() << "Remove machine HTTP Status Code:" << statusCode;
+                                qDebug() << "Deleting machine with ID:" << machineId;
                                 
-                                if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
-                                    qDebug() << "Machine removed successfully";
-                                    // Remove the row from the model
-                                    machinesModel->removeRow(row);
-                                } else {
-                                    qDebug() << "Error removing machine:" << reply->errorString();
-                                    qDebug() << "HTTP Status Code:" << statusCode;
-                                }
-                                reply->deleteLater();
-                            });
+                                // Send DELETE request to remove the machine
+                                QUrl url("http://127.0.0.1:8080/remove_machine");
+                                QUrlQuery query;
+                                query.addQueryItem("id", machineId);
+                                url.setQuery(query);
+                                
+                                QNetworkRequest request(url);
+                                request.setTransferTimeout(10000);
+                                
+                                QNetworkReply* reply = mNetworkManager->get(request);
+                                
+                                connect(reply, &QNetworkReply::finished, this, [this, reply, row]() {
+                                    int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+                                    qDebug() << "Remove machine HTTP Status Code:" << statusCode;
+                                    
+                                    if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+                                        qDebug() << "Machine removed successfully";
+                                        // Remove the row from the model
+                                        machinesModel->removeRow(row);
+                                    } else {
+                                        qDebug() << "Error removing machine:" << reply->errorString();
+                                        qDebug() << "HTTP Status Code:" << statusCode;
+                                    }
+                                    reply->deleteLater();
+                                });
+                            } else {
+                                qDebug() << "No machine ID found for selected row";
+                            }
                         } else {
-                            qDebug() << "No machine ID found for selected row";
+                            qDebug() << "No machine name item found for row:" << row;
                         }
-                    } else {
-                        qDebug() << "No machine name item found for row:" << row;
                     }
                     return true; // Event is handled, don't propagate further
                 }
