@@ -769,7 +769,9 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
         {
             if (e->type() == QEvent::KeyPress) {
                 QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
-                if (keyEvent->key() == Qt::Key_Delete) {
+                switch (keyEvent->key())
+                {
+                case Qt::Key_Delete: {
                     // Get the selected row
                     QModelIndexList selectedIndexes = ui->tableViewMachines->selectionModel()->selectedRows();
                     if (!selectedIndexes.isEmpty()) {
@@ -815,13 +817,19 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
                     } else {
                         qDebug() << "No machine name item found for row:" << row;
                     }
-                    return true;
+                    return true; // Event is handled, don't propagate further
                 }
-                // Handle F5 or Ctrl+R to refresh machines table
-                if (keyEvent->key() == Qt::Key_F5 || (keyEvent->key() == Qt::Key_R && (keyEvent->modifiers() & Qt::ControlModifier))) {
+                case Qt::Key_F5:
                     qDebug() << "Refreshing machines table";
                     fetchAllMachinesData(0);
                     return true;
+                case Qt::Key_R:
+                    if (keyEvent->modifiers() & Qt::ControlModifier) {
+                        qDebug() << "Refreshing machines table";
+                        fetchAllMachinesData(0);
+                        return true;
+                    }
+                    break;
                 }
             }
         }
