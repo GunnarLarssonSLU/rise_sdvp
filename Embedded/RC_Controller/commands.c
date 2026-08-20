@@ -48,71 +48,109 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// Commands Module
+// This module handles command processing for the RC Controller system.
+// It implements the command protocol, processes incoming command packets,
+// and executes the appropriate actions based on the command type.
+//
+// Key Features:
+// - Command packet processing and routing
+// - Position and navigation control
+// - Autopilot route management
+// - Sensor data handling
+// - Configuration management
+// - RTCM3 differential GPS data processing
+// - Emergency stop handling
+// - CAN bus communication forwarding
+// - Logging and debugging support
+//
+// The module uses a callback-based architecture where the send function is registered
+// and commands are processed based on their packet IDs. It supports both direct
+// commands and forwarded commands from other devices.
+
 // Defines
-#define FWD_TIME		20000
+#define FWD_TIME		20000 // Forwarding timeout in milliseconds (20 seconds)
 
 // Private variables
-static uint8_t m_send_buffer[PACKET_MAX_PL_LEN];
-static void(*m_send_func)(unsigned char *data, unsigned int len) = 0;
-static virtual_timer_t vt;
-static mutex_t m_print_gps;
-static bool m_init_done = false;
+static uint8_t m_send_buffer[PACKET_MAX_PL_LEN]; // Send buffer for command packets (max payload length)
+static void(*m_send_func)(unsigned char *data, unsigned int len) = 0; // Callback for sending packets
+static virtual_timer_t vt; // Virtual timer for timeout handling
+static mutex_t m_print_gps; // Mutex for GPS printing synchronization
+static bool m_init_done = false; // Flag indicating if module initialization is complete
 
 // Private functions
-static void stop_forward(void *p);
-static void rtcm_rx(uint8_t *data, int len, int type);
-static void rtcm_base_rx(rtcm_ref_sta_pos_t *pos);
+static void stop_forward(void *p); // Stop forwarding callback (for virtual timer)
+static void rtcm_rx(uint8_t *data, int len, int type); // RTCM3 data reception callback
+static void rtcm_base_rx(rtcm_ref_sta_pos_t *pos); // RTCM3 base station position callback
 
-// Private variables
-static rtcm3_state m_rtcm_state;
-uint16_t last_sensorvalue;
-float debugvalue;
-float debugvalue2;
-float debugvalue3;
-float debugvalue4;
-float debugvalue5;
-float debugvalue6;
-float debugvalue7;
-float debugvalue8;
-float debugvalue9;
-float debugvalue10;
-float debugvalue11;
-float debugvalue12;
-float debugvalue13;
-float debugvalue14;
-float debugvalue15;
-float frontangle=0.0;
-static bool arduino_connected = false;
-bool m_kb_active;
+// Private variables for sensor data and debugging
+static rtcm3_state m_rtcm_state; // RTCM3 state for differential GPS corrections
+uint16_t last_sensorvalue; // Last received sensor value (raw ADC)
+float debugvalue;    // Debug value 1 (general purpose)
+float debugvalue2;   // Debug value 2 (general purpose)
+float debugvalue3;   // Debug value 3 (general purpose)
+float debugvalue4;   // Debug value 4 (general purpose)
+float debugvalue5;   // Debug value 5 (general purpose)
+float debugvalue6;   // Debug value 6 (general purpose)
+float debugvalue7;   // Debug value 7 (general purpose)
+float debugvalue8;   // Debug value 8 (general purpose)
+float debugvalue9;   // Debug value 9 (general purpose)
+float debugvalue10;  // Debug value 10 (general purpose)
+float debugvalue11;  // Debug value 11 (general purpose)
+float debugvalue12;  // Debug value 12 (general purpose)
+float debugvalue13;  // Debug value 13 (general purpose)
+float debugvalue14;  // Debug value 14 (general purpose)
+float debugvalue15;  // Debug value 15 (general purpose)
+float frontangle=0.0; // Front angle from sensor (degrees)
+static bool arduino_connected = false; // Flag indicating if Arduino is connected
+bool m_kb_active; // Flag indicating if keyboard control is active
 
-extern float io_board_as5047_angle;
-extern float servo_output;
-extern int iDebug;
-int iCounterCommands=0;
+// External variables
+extern float io_board_as5047_angle; // IO board AS5047 angle sensor value (degrees)
+extern float servo_output; // Current servo output value
+extern int iDebug; // External debug flag for conditional debug output
+int iCounterCommands=0; // Command counter for statistics/debugging
+
+// Commented out: Emergency stop event (defined elsewhere)
+//extern event_source_t emergency_event;
+
+// Commented out: Hydraulic thread (defined elsewhere)
+//extern thread_t *hydro_thread;
 
 //extern event_source_t emergency_event;
 
 //extern thread_t *hydro_thread;
 
+// Commented out: Sign function (not currently used)
+// Returns the sign of a float value (-1, 0, or 1)
 /*
 float sign(float input)
 	{
 	return input/fabs(input);
 	}; */
 
+// Initialize the commands module
+// This function initializes all module state, sets up RTCM3 callbacks,
+// and prepares the module for command processing.
 void commands_init(void) {
+	// Initialize send function pointer
 	m_send_func = 0;
-	chMtxObjectInit(&m_print_gps);
-	chVTObjectInit(&vt);
+	
+	// Initialize synchronization primitives
+	chMtxObjectInit(&m_print_gps); // Initialize GPS print mutex
+	chVTObjectInit(&vt); // Initialize virtual timer
 
+	// Initialize RTCM3 state and callbacks for differential GPS
 	rtcm3_init_state(&m_rtcm_state);
-	rtcm3_set_rx_callback(rtcm_rx, &m_rtcm_state);
-	rtcm3_set_rx_callback_1005_1006(rtcm_base_rx, &m_rtcm_state);
+	rtcm3_set_rx_callback(rtcm_rx, &m_rtcm_state); // Set RTCM3 data callback
+	rtcm3_set_rx_callback_1005_1006(rtcm_base_rx, &m_rtcm_state); // Set base station position callback
 
+	// Suppress unused variable warning in non-vehicle modes
 #if MAIN_MODE != MAIN_MODE_vehicle
 	(void)stop_forward;
 #endif
 
+	// Initialize debug and sensor variables
 	last_sensorvalue=0;
 	debugvalue=0.0;
 	debugvalue2=0.0;
@@ -126,102 +164,140 @@ void commands_init(void) {
 	debugvalue10=0.0;
 	debugvalue11=0.0;
 	debugvalue12=0.0;
+	
+	// Set initialization flag
 	m_init_done = true;
 	m_kb_active=false;
 }
 
 /**
  * Provide a function to use the next time there are packets to be sent.
+ * This function registers the callback that will be used to transmit command packets.
  *
  * @param func
- * A pointer to the packet sending function.
+ * A pointer to the packet sending function with signature: void func(unsigned char *data, unsigned int len)
  */
 void commands_set_send_func(void(*func)(unsigned char *data, unsigned int len)) {
-	m_send_func = func;
+	m_send_func = func; // Register the send callback
 }
 
 /**
  * Send a packet using the set send function.
+ * This function transmits a command packet using the callback registered with commands_set_send_func().
  *
  * @param data
- * The packet data.
+ * The packet data to send (byte array).
  *
  * @param len
- * The data length.
+ * The length of the data in bytes.
  */
 void commands_send_packet(unsigned char *data, unsigned int len) {
+	// Only send if send function is registered
 	if (m_send_func) {
-		m_send_func(data, len);
+		m_send_func(data, len); // Invoke the registered send callback
 	}
 }
 
 /**
  * Process a received buffer with commands and data.
+ * This is the main command processing function that parses incoming command packets
+ * and executes the appropriate actions based on the command ID.
+ *
+ * Packet format:
+ * - Byte 0: Device ID (target device)
+ * - Byte 1: Command ID (packet_id)
+ * - Remaining bytes: Command-specific data
  *
  * @param data
- * The buffer to process.
+ * The buffer to process (byte array containing device ID, command ID, and data).
  *
  * @param len
- * The length of the buffer.
+ * The length of the buffer in bytes.
  *
  * @param func
- * A pointer to the packet sending function.
+ * A pointer to the packet sending function for sending responses.
  */
 void commands_process_packet(unsigned char *data, unsigned int len,
 		void (*func)(unsigned char *data, unsigned int len)) {
+	// Return immediately if buffer is empty
 	if (!len) {
 		return;
 	}
+	
+	// Check for RTCM3 differential GPS data (special handling)
+	// RTCM3 packets start with a specific preamble byte
 	if (data[0] == RTCM3PREAMB) {
+		// Process each byte as RTCM3 data
 		for (unsigned int i = 0;i < len;i++) {
-			rtcm3_input_data(data[i], &m_rtcm_state);
+			rtcm3_input_data(data[i], &m_rtcm_state); // Feed data to RTCM3 parser
 		}
-		return;
+		return; // RTCM3 data is handled separately
 	}
 
-	CMD_PACKET packet_id;
-	uint8_t id = 0;
+	// Parse the command packet
+	CMD_PACKET packet_id; // Command ID from the packet
+	uint8_t id = 0; // Device ID
 
-	id = data[0];
-	data++;
-	len--;
+	id = data[0]; // Extract device ID from first byte
+	data++; // Move to command ID
+	len--; // Decrement length
 
-	packet_id = data[0];
-	data++;
-	len--;
+	packet_id = data[0]; // Extract command ID
+	data++; // Move to data portion
+	len--; // Decrement length
 
+	// Check if this packet is for us (or broadcast)
+	// Accept packets addressed to:
+	// - Our main_id
+	// - ID_ALL (broadcast to all devices)
+	// - ID_VEHICLE_CLIENT (vehicle client)
 	if (id == main_id || id == ID_ALL || id == ID_VEHICLE_CLIENT) {
-		int id_ret = main_id;
+		int id_ret = main_id; // Default response ID is our main_id
 
+		// If packet was addressed to ID_VEHICLE_CLIENT, respond with that ID
 		if (id == ID_VEHICLE_CLIENT) {
 			id_ret = ID_VEHICLE_CLIENT;
 		}
+		
+		// Process the command based on packet_id
 		switch (packet_id) {
 		// ==================== General commands ==================== //
+		
+		// Terminal command (CMD_TERMINAL_CMD = 1)
+		// Executes a terminal command string. Used for sending text commands to the system.
+		// Data format: Null-terminated string
 		case CMD_TERMINAL_CMD: {
-			timeout_reset();
-			commands_set_send_func(func);
+			timeout_reset(); // Reset the system timeout (prevents watchdog reset)
+			commands_set_send_func(func); // Register send function for any responses
 
-			data[len] = '\0';
-			terminal_process_string((char*)data);
+			data[len] = '\0'; // Null-terminate the command string
+			terminal_process_string((char*)data); // Process the command string
 		} break;
 
 		// ==================== Vehicle commands ==================== //
 
-
+		// Heartbeat command (CMD_HEARTBEAT = 89)
+		// Currently commented out. Would signal heartbeat to watchdog.
 /*		case CMD_HEARTBEAT:
             chEvtBroadcast(&heartbeat_event); // Signal heartbeat to watchdog
 	        break;*/
+		
+		// Arduino status (CMD_ARDUINO_STATUS)
+		// Reports the connection status of an Arduino device.
+		// Data format: [status (1 byte, 0=disconnected, 1=connected)]
 		case CMD_ARDUINO_STATUS   :
-			if (data[0])
+			if (data[0]) // Check if status byte is non-zero
 			{
-				arduino_connected=true;
+				arduino_connected=true; // Set Arduino connected flag
 			} else
 			{
-				arduino_connected=false;
+				arduino_connected=false; // Clear Arduino connected flag
 			}
 			break;
 
+		// Get angle from sensor (CMD_GETANGLE = 100)
+		// Receives angle sensor data, validates it, and calculates the front angle.
+		// Data format: [start_byte (0xAA), voltage_high (1 byte), voltage_low (1 byte), checksum (1 byte)]
 		case CMD_GETANGLE: {
 		    // Check packet length (6 bytes: car_id, cmd, start, 2 data bytes, checksum)
 		    if (len < 4) {
