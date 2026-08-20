@@ -28,48 +28,73 @@
 #include "commands.h"
 #include "motor_sim.h"
 
+// CAN Communication Module
+// This module implements CAN bus communication for the RC Controller system.
+// It handles CAN message transmission and reception, VESC controller communication,
+// IO board control, and various CAN-based sensors and actuators.
+//
+// Key Features:
+// - CAN bus initialization and configuration
+// - Thread-based CAN message processing
+// - VESC (Vedder Electronic Speed Controller) communication
+// - IO board ADC and angle sensor reading
+// - ADDIO CAN protocol support
+// - Proportional valve control (PVG32)
+// - FTR2 sensor support
+// - CAN message forwarding
+// - Status message storage and retrieval
+//
+// The module uses a dual-thread architecture:
+// 1. Read thread: Receives CAN messages and stores them in a circular buffer
+// 2. Process thread: Processes received messages and executes appropriate actions
+
 // Settings
 #define CANDx						CAND1
 #define RX_FRAMES_SIZE				100
 #define RX_BUFFER_SIZE				PACKET_MAX_PL_LEN
 #define CAN_STATUS_MSGS_TO_STORE	10
 
-//ADDIO CAN
+// ADDIO CAN (Additional IO CAN protocol)
+// These are CAN IDs for ADDIO devices
 #define CAN_ADDIO_MASTER			0x28
 #define CAN_ANGLE					0x19F
 
 // Threads
-static THD_WORKING_AREA(cancom_read_thread_wa, 512);
-static THD_WORKING_AREA(cancom_process_thread_wa, 4096);
-static THD_FUNCTION(cancom_read_thread, arg);
-static THD_FUNCTION(cancom_process_thread, arg);
+// The module uses two threads for CAN communication:
+// 1. Read thread: Receives CAN messages from the bus and stores them in a buffer
+// 2. Process thread: Processes the buffered messages and executes appropriate actions
+static THD_WORKING_AREA(cancom_read_thread_wa, 512); // Read thread working area (512 bytes stack)
+static THD_WORKING_AREA(cancom_process_thread_wa, 4096); // Process thread working area (4096 bytes stack)
+static THD_FUNCTION(cancom_read_thread, arg); // Read thread function
+static THD_FUNCTION(cancom_process_thread, arg); // Process thread function
 
-extern int iDebug;
+extern int iDebug; // External debug flag for conditional debug output
 
 // Functions
-//static void cmd_terminal_useeid(int argc, const char **argv);
+//static void cmd_terminal_useeid(int argc, const char **argv); // Commented out: terminal command for EID filter
 
 // Variables
-static can_status_msg stat_msgs[CAN_STATUS_MSGS_TO_STORE];
-static mutex_t can_mtx;
-static mutex_t vesc_mtx_ext;
-static uint8_t rx_buffer[RX_BUFFER_SIZE];
-static unsigned int rx_buffer_last_id;
-static CANRxFrame rx_frames[RX_FRAMES_SIZE];
-static int rx_frame_read;
-static int rx_frame_write;
-static thread_t *process_tp;
-static int vesc_id = VESC_ID;
+static can_status_msg stat_msgs[CAN_STATUS_MSGS_TO_STORE]; // Status message storage for debugging
+static mutex_t can_mtx; // Mutex for CAN bus access synchronization
+static mutex_t vesc_mtx_ext; // Mutex for VESC access synchronization (external)
+static uint8_t rx_buffer[RX_BUFFER_SIZE]; // Receive buffer for CAN message data
+static unsigned int rx_buffer_last_id; // Last received CAN ID
+static CANRxFrame rx_frames[RX_FRAMES_SIZE]; // Circular buffer for received CAN frames
+static int rx_frame_read; // Read index for circular buffer
+static int rx_frame_write; // Write index for circular buffer
+static thread_t *process_tp; // Pointer to process thread
+static int vesc_id = VESC_ID; // Current VESC controller ID (default: VESC_ID)
 
 int iEid;
 extern float servo_output;
 
 // IO Board
-static float io_board_adc_voltages[8] = {0};
-static bool io_board_lim_sw[8] = {0};
-//static float io_board_as5047_angle = 0.0; //static?
-float io_board_as5047_angle = 0.0; //static?
-static float can_ftr2_angle = 0.0;
+// These variables store data received from the IO board via CAN bus
+static float io_board_adc_voltages[8] = {0}; // ADC voltage readings from IO board (8 channels)
+static bool io_board_lim_sw[8] = {0}; // Limit switch states from IO board (8 switches)
+//static float io_board_as5047_angle = 0.0; // Commented out: AS5047 angle sensor value (static?)
+float io_board_as5047_angle = 0.0; // AS5047 angle sensor value (degrees) - made global for external access
+static float can_ftr2_angle = 0.0; // FTR2 sensor angle value (degrees)
 
 #ifndef SERVO_READ
 ADC_CNT_t io_board_adc0_cnt = {1};
@@ -77,57 +102,68 @@ ADC_CNT_t io_board_adc0_cnt = {1};
 
 extern int iDebug;
 
-// ADDIO
-static bool addio_lim_sw[8] = {1};
-static uint8_t pvg32_node_id = 0;
-static bool ftr2_activated = false;
-static int ftr2_id = 0x61F;
-static uint8_t ftr2_frame[8] = {0x2f, 0x00, 0x18, 0x02, 0xFE, 0x00, 0x00, 0x00};
+// ADDIO (Additional Digital IO)
+// Variables for ADDIO CAN protocol support
+static bool addio_lim_sw[8] = {1}; // ADDIO limit switch states (8 switches, initialized to true)
+static uint8_t pvg32_node_id = 0; // PVG32 proportional valve node ID
+static bool ftr2_activated = false; // Flag indicating if FTR2 sensor is activated
+static int ftr2_id = 0x61F; // FTR2 sensor CAN ID
+static uint8_t ftr2_frame[8] = {0x2f, 0x00, 0x18, 0x02, 0xFE, 0x00, 0x00, 0x00}; // FTR2 frame data
 
 #ifdef ADDIO
+// CAN configuration for ADDIO mode
 /*
- * 5125KBaud, automatic wakeup, automatic recover
+ * 512.5KBaud, automatic wakeup, automatic recover
  * from abort mode.
  * See section 22.7.7 on the STM32 reference manual.
  */
 static const CANConfig cancfg = {
-		CAN_MCR_ABOM | CAN_MCR_AWUM | CAN_MCR_TXFP,
-		CAN_BTR_SJW(0) | CAN_BTR_TS2(1) |
-		CAN_BTR_TS1(8) | CAN_BTR_BRP(27)
+		CAN_MCR_ABOM | CAN_MCR_AWUM | CAN_MCR_TXFP, // Automatic bus-off management, automatic wakeup, transmit FIFO priority
+		CAN_BTR_SJW(0) | CAN_BTR_TS2(1) | // Synchronization jump width = 0, Time segment 2 = 1
+		CAN_BTR_TS1(8) | CAN_BTR_BRP(27) // Time segment 1 = 8, Baud rate prescaler = 27
 };
 #else
+// CAN configuration for standard mode
 /*
  * 500KBaud, automatic wakeup, automatic recover
  * from abort mode.
  * See section 22.7.7 on the STM32 reference manual.
  */
 static const CANConfig cancfg = {
-		CAN_MCR_ABOM | CAN_MCR_AWUM | CAN_MCR_TXFP,
-		CAN_BTR_SJW(0) | CAN_BTR_TS2(1) |
-		CAN_BTR_TS1(8) | CAN_BTR_BRP(6)
+		CAN_MCR_ABOM | CAN_MCR_AWUM | CAN_MCR_TXFP, // Automatic bus-off management, automatic wakeup, transmit FIFO priority
+		CAN_BTR_SJW(0) | CAN_BTR_TS2(1) | // Synchronization jump width = 0, Time segment 2 = 1
+		CAN_BTR_TS1(8) | CAN_BTR_BRP(6) // Time segment 1 = 8, Baud rate prescaler = 6
 };
 #endif
 
 // Private functions
-static void send_packet_wrapper(unsigned char *data, unsigned int len);
-static void printf_wrapper(char *str);
-static uint8_t update_addio_outputs(int valve, bool set);
-static void prop_valve_nmt_sm(uint8_t node_id, uint8_t state);
-static void prop_valve_status_sm(uint8_t node_id, uint8_t* data);
+static void send_packet_wrapper(unsigned char *data, unsigned int len); // Wrapper for sending CAN packets
+static void printf_wrapper(char *str); // Wrapper for printf output
+static uint8_t update_addio_outputs(int valve, bool set); // Update ADDIO outputs (valve control)
+static void prop_valve_nmt_sm(uint8_t node_id, uint8_t state); // Proportional valve NMT (Network Management) state machine
+static void prop_valve_status_sm(uint8_t node_id, uint8_t* data); // Proportional valve status state machine
 
-// Function pointers
-static void(*m_range_func)(uint8_t id, uint8_t dest, float range) = 0;
-static void(*m_dw_ping_func)(uint8_t id) = 0;
-static void(*m_dw_uptime_func)(uint8_t id, uint32_t uptime) = 0;
+// Function pointers for callbacks
+static void(*m_range_func)(uint8_t id, uint8_t dest, float range) = 0; // Callback for range measurements
+static void(*m_dw_ping_func)(uint8_t id) = 0; // Callback for distance sensor ping
+static void(*m_dw_uptime_func)(uint8_t id, uint32_t uptime) = 0; // Callback for distance sensor uptime
 
+// Initialize the CAN communication module
+// This function initializes all CAN-related hardware, threads, and data structures.
 void comm_can_init(void) {
+	// Initialize status message storage
 	for (int i = 0;i < CAN_STATUS_MSGS_TO_STORE;i++) {
-		stat_msgs[i].id = -1;
+		stat_msgs[i].id = -1; // Mark as unused
 	}
 
-	rx_frame_read = 0;
-	rx_frame_write = 0;
-	vesc_id = VESC_ID;
+	// Initialize circular buffer indices
+	rx_frame_read = 0; // Read index
+	rx_frame_write = 0; // Write index
+	
+	// Initialize VESC ID
+	vesc_id = VESC_ID; // Set to default VESC ID
+
+	// Commented out: Terminal command for EID filter (debug feature)
 /*
 	terminal_register_command_callback(
 			"eid",
@@ -136,45 +172,63 @@ void comm_can_init(void) {
 			cmd_terminal_useeid);
 */
 
-	chMtxObjectInit(&can_mtx);
-	chMtxObjectInit(&vesc_mtx_ext);
+	// Initialize mutexes for thread safety
+	chMtxObjectInit(&can_mtx); // CAN bus mutex
+	chMtxObjectInit(&vesc_mtx_ext); // VESC mutex
 
+	// Configure CAN GPIO pins for alternate function (CAN1)
 	palSetPadMode(CAN1_RX_GPIO, CAN1_RX_PIN, PAL_MODE_ALTERNATE(GPIO_AF_CAN1));
 	palSetPadMode(CAN1_TX_GPIO, CAN1_TX_PIN, PAL_MODE_ALTERNATE(GPIO_AF_CAN1));
 
+	// Start the CAN interface with the configured settings
 	canStart(&CANDx, &cancfg);
 
+	// Initialize BLDC interface (unless in ADDIO mode)
 	#ifndef ADDIO
-	bldc_interface_init(send_packet_wrapper);
-	bldc_interface_set_rx_printf_func(printf_wrapper);
+	bldc_interface_init(send_packet_wrapper); // Register send wrapper
+	bldc_interface_set_rx_printf_func(printf_wrapper); // Register printf wrapper
 	#endif
+	
+	// Create CAN communication threads
 	chThdCreateStatic(cancom_read_thread_wa, sizeof(cancom_read_thread_wa), NORMALPRIO + 1,
-			cancom_read_thread, NULL);
+			cancom_read_thread, NULL); // Read thread with higher priority
 	chThdCreateStatic(cancom_process_thread_wa, sizeof(cancom_process_thread_wa), NORMALPRIO,
-			cancom_process_thread, NULL);
+			cancom_process_thread, NULL); // Process thread with normal priority
 }
 
+// Set the current VESC controller ID
+// This function changes which VESC controller the module communicates with.
+//
+// @param id The VESC ID to set (VESC_LEFT, VESC_RIGHT, or other VESC_ID values)
 void comm_can_set_vesc_id(int id) {
+	// Debug output for motor selection
 	if (iDebug==43)
 	{
 		commands_printf("motor: %i",id);
 	}
 
-	vesc_id = id;
+	vesc_id = id; // Update the current VESC ID
 
+	// Update motor simulation based on VESC ID
 	if (vesc_id == VESC_LEFT) {
-		motor_sim_set_motor(0);
+		motor_sim_set_motor(0); // Set to left motor
 	} else if (vesc_id == VESC_RIGHT) {
-		motor_sim_set_motor(1);
+		motor_sim_set_motor(1); // Set to right motor
 	}
 }
 
+// Lock the VESC mutex
+// This function locks the VESC mutex to ensure thread-safe access to VESC resources.
+// Must be paired with comm_can_unlock_vesc().
 void comm_can_lock_vesc(void) {
-	chMtxLock(&vesc_mtx_ext);
+	chMtxLock(&vesc_mtx_ext); // Lock the VESC mutex
 }
 
+// Unlock the VESC mutex
+// This function unlocks the VESC mutex after a critical section.
+// Must be paired with comm_can_lock_vesc().
 void comm_can_unlock_vesc(void) {
-	chMtxUnlock(&vesc_mtx_ext);
+	chMtxUnlock(&vesc_mtx_ext); // Unlock the VESC mutex
 }
 
 static THD_FUNCTION(cancom_read_thread, arg) {
