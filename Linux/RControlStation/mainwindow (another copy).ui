@@ -1898,7 +1898,7 @@
                        <item>
                         <widget class="QLineEdit" name="mapStreamNmeaServerEdit">
                          <property name="text">
-                          <string>127.0.0.1</string>
+                          <string>192.168.200.3</string>
                          </property>
                         </widget>
                        </item>
@@ -2008,7 +2008,7 @@
                        <item>
                         <widget class="QLineEdit" name="mapStreamNmeaForwardUdpHostEdit">
                          <property name="text">
-                          <string>127.0.0.1</string>
+                          <string>192.168.200.3</string>
                          </property>
                         </widget>
                        </item>

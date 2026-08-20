@@ -1,7 +1,7 @@
 import subprocess
 import sqlite3
 import xml.etree.ElementTree as ET
-from flask import Flask, Response, request
+from flask import Flask, Response, request, send_from_directory
 
 app = Flask(__name__)
 
@@ -9,6 +9,26 @@ app = Flask(__name__)
 @app.route('/')
 def hello_world():
     return "Hello, World!"
+
+
+@app.route('/leafletLoadXML.html')
+def serve_leaflet():
+    return send_from_directory('.', 'leafletLoadXML.html')
+
+
+@app.route('/fields/<path:filename>')
+def serve_fields(filename):
+    return send_from_directory('fields', filename)
+
+
+@app.route('/field/<path:filename>')
+def serve_field(filename):
+    return send_from_directory('fields', filename)
+
+
+@app.route('/paths/<path:filename>')
+def serve_paths(filename):
+    return send_from_directory('paths', filename)
 
 
 @app.route('/machines')
@@ -220,6 +240,49 @@ def add_machine():
         return f"Error: {str(e)}", 500
 
 
+@app.route('/read_machine', methods=['GET', 'POST'])
+def read_machine():
+    try:
+        # Get all the fields from POST form data or URL parameters
+        def get_param(name):
+            value = request.form.get(name) or request.args.get(name)
+            return value
+
+        machine_id = get_param('id')
+
+        if not machine_id:
+            return "Error: 'id' field is required", 400
+
+        # Connect to database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+
+        # Get the machine with the specified id
+        cursor.execute('SELECT * FROM machines WHERE id = ?', (machine_id,))
+        machine = cursor.fetchone()
+
+        # Get column names
+        column_names = [description[0] for description in cursor.description]
+        conn.close()
+
+        if machine is None:
+            return f"Error: No machine found with id {machine_id}", 404
+
+        # Create XML structure
+        root = ET.Element('machines')
+        machine_elem = ET.SubElement(root, 'machine')
+        for i, column_name in enumerate(column_names):
+            ET.SubElement(machine_elem, column_name).text = str(machine[i])
+
+        # Convert to XML string with declaration
+        xml_str = '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding='unicode')
+
+        return Response(xml_str, mimetype='application/xml')
+
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
 @app.route('/remove_machine', methods=['GET', 'POST'])
 def remove_machine():
     try:
@@ -406,6 +469,49 @@ def add_farm():
         
     except sqlite3.IntegrityError as e:
         return f"Error: {str(e)}", 409
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
+@app.route('/read_farm', methods=['GET', 'POST'])
+def read_farm():
+    try:
+        # Get all the fields from POST form data or URL parameters
+        def get_param(name):
+            value = request.form.get(name) or request.args.get(name)
+            return value
+
+        farm_id = get_param('id')
+
+        if not farm_id:
+            return "Error: 'id' field is required", 400
+
+        # Connect to database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+
+        # Get the farm with the specified id
+        cursor.execute('SELECT * FROM locations WHERE id = ?', (farm_id,))
+        farm = cursor.fetchone()
+
+        # Get column names
+        column_names = [description[0] for description in cursor.description]
+        conn.close()
+
+        if farm is None:
+            return f"Error: No farm found with id {farm_id}", 404
+
+        # Create XML structure
+        root = ET.Element('locations')
+        farm_elem = ET.SubElement(root, 'location')
+        for i, column_name in enumerate(column_names):
+            ET.SubElement(farm_elem, column_name).text = str(farm[i])
+
+        # Convert to XML string with declaration
+        xml_str = '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding='unicode')
+
+        return Response(xml_str, mimetype='application/xml')
+
     except Exception as e:
         return f"Error: {str(e)}", 500
 
@@ -999,6 +1105,49 @@ def edit_path():
         return f"Error: {str(e)}", 500
 
 
+@app.route('/read_path', methods=['GET', 'POST'])
+def read_path():
+    try:
+        # Get all the fields from POST form data or URL parameters
+        def get_param(name):
+            value = request.form.get(name) or request.args.get(name)
+            return value
+
+        path_id = get_param('id')
+
+        if not path_id:
+            return "Error: 'id' field is required", 400
+
+        # Connect to database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+
+        # Get the path with the specified id
+        cursor.execute('SELECT * FROM paths WHERE id = ?', (path_id,))
+        path = cursor.fetchone()
+
+        # Get column names
+        column_names = [description[0] for description in cursor.description]
+        conn.close()
+
+        if path is None:
+            return f"Error: No path found with id {path_id}", 404
+
+        # Create XML structure
+        root = ET.Element('paths')
+        path_elem = ET.SubElement(root, 'path')
+        for i, column_name in enumerate(column_names):
+            ET.SubElement(path_elem, column_name).text = str(path[i])
+
+        # Convert to XML string with declaration
+        xml_str = '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding='unicode')
+
+        return Response(xml_str, mimetype='application/xml')
+
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
 @app.route('/remove_path', methods=['GET', 'POST'])
 def remove_path():
     try:
@@ -1208,6 +1357,133 @@ def edit_field():
         return f"Error: {str(e)}", 500
 
 
+@app.route('/read_field', methods=['GET', 'POST'])
+def read_field():
+    try:
+        # Get all the fields from POST form data or URL parameters
+        def get_param(name):
+            value = request.form.get(name) or request.args.get(name)
+            return value
+
+        field_id = get_param('id')
+
+        if not field_id:
+            return "Error: 'id' field is required", 400
+
+        # Connect to database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+
+        # Get the field with the specified id
+        cursor.execute('SELECT * FROM fields WHERE id = ?', (field_id,))
+        field = cursor.fetchone()
+
+        # Get column names
+        column_names = [description[0] for description in cursor.description]
+        conn.close()
+
+        if field is None:
+            return f"Error: No field found with id {field_id}", 404
+
+        # Create XML structure
+        root = ET.Element('fields')
+        field_elem = ET.SubElement(root, 'field')
+        for i, column_name in enumerate(column_names):
+            ET.SubElement(field_elem, column_name).text = str(field[i])
+
+        # Convert to XML string with declaration
+        xml_str = '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding='unicode')
+
+        return Response(xml_str, mimetype='application/xml')
+
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
+@app.route('/unconnected_paths')
+def unconnected_paths():
+    try:
+        import os
+        
+        # Get all XML files in the paths folder
+        paths_dir = 'paths'
+        xml_files = []
+        if os.path.exists(paths_dir) and os.path.isdir(paths_dir):
+            for filename in os.listdir(paths_dir):
+                if filename.lower().endswith('.xml'):
+                    xml_files.append(filename)
+        
+        # Get all storedinfile values from the paths table
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        cursor.execute('SELECT storedinfile FROM paths WHERE storedinfile IS NOT NULL')
+        db_files = [row[0] for row in cursor.fetchall()]
+        conn.close()
+        
+        # Extract just the filename part from storedinfile (handle paths like 'norr\demo19nov.xml')
+        db_filenames = []
+        for db_file in db_files:
+            if db_file:
+                # Handle both forward and backward slashes
+                filename = os.path.basename(db_file.replace('\\', '/'))
+                db_filenames.append(filename)
+        
+        # Find XML files that are not referenced in the database
+        unconnected = [f for f in xml_files if f not in db_filenames]
+        
+        # Create XML structure
+        root = ET.Element('unconnected_paths')
+        for filename in unconnected:
+            path_elem = ET.SubElement(root, 'path')
+            ET.SubElement(path_elem, 'filename').text = filename
+        
+        # Convert to XML string with declaration
+        xml_str = '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding='unicode')
+        
+        return Response(xml_str, mimetype='application/xml')
+        
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
+@app.route('/unconnected_fields')
+def unconnected_fields():
+    try:
+        import os
+        
+        # Get all XML files in the fields folder
+        fields_dir = 'fields'
+        xml_files = []
+        if os.path.exists(fields_dir) and os.path.isdir(fields_dir):
+            for filename in os.listdir(fields_dir):
+                if filename.lower().endswith('.xml'):
+                    xml_files.append(filename)
+        
+        # Get all storedinfile values from the fields table
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        cursor.execute('SELECT storedinfile FROM fields WHERE storedinfile IS NOT NULL')
+        db_files = [row[0] for row in cursor.fetchall()]
+        conn.close()
+        
+        # Find XML files that are not referenced in the database
+        unconnected = [f for f in xml_files if f not in db_files]
+        
+        # Create XML structure
+        root = ET.Element('unconnected_paths')
+        for filename in unconnected:
+            path_elem = ET.SubElement(root, 'path')
+            ET.SubElement(path_elem, 'filename').text = filename
+        
+        # Convert to XML string with declaration
+        xml_str = '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding='unicode')
+        
+        return Response(xml_str, mimetype='application/xml')
+        
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+
 @app.route('/remove_field', methods=['GET', 'POST'])
 def remove_field():
     try:
@@ -1259,4 +1535,4 @@ def remove_field():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080, debug=True)
+    app.run(host='192.168.200.3', port=8080, debug=True)

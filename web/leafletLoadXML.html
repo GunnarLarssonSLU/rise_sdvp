@@ -1,0 +1,847 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    <title>Path Visualization with Leaflet</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+      html, body {
+        height: 100%;
+        padding: 0;
+        margin: 0;
+      }
+      body {
+        font-family: Arial, sans-serif;
+      }
+      #map {
+        /* configure the size of the map */
+        width: 50%;
+        height: 45vh;
+	float: left;
+        min-height: 300px;
+      }
+
+      #xml {
+        width: 90%;
+	height: 35%;
+	background-color: #eeeeee;
+	float: none;
+	overflow: scroll;
+        margin: 5pt;
+      }
+img.huechange 
+{ filter: hue-rotate(120deg); }
+
+img.huechange2
+{ filter: hue-rotate(240deg); }
+
+img.huechange3
+{ filter: hue-rotate(180deg); }
+
+    </style>
+  </head>
+  <body>
+<div id="map"></div>
+    <form id="test" action="#" onclick='document.getElementById("active").value=document.activeElement.id;'>
+      <input id='active' type='hidden'></input>
+      <input id="line1lng" type='hidden'></input>
+      <input id="line1lat" type='hidden'></input>
+      <input id="line2lng" type='hidden'></input>
+      <input id="line2lat" type='hidden'></input>
+      <input id="startlng" type='hidden'></input>
+      <input id="startlat" type='hidden'></input>
+      <input id="rtklng" type='hidden'></input>
+      <input id="rtklat" type='hidden'></input>
+	<table>
+	<tr>
+		<td>Turning radius (m)</td>
+		<td><input id="fTurningRadius_m" value="4.5"></input></td>
+	</tr>
+	<tr>
+		<td>Implement width (m)</td>
+		<td><input id="fImplementWidth_m" value="1.5"></input></td>
+	</tr>
+	<tr>
+		<td>Length long side (m)</td>
+		<td><input id="fLengthLong_m" value="60"></input></td>
+	</tr>
+	<tr>
+		<td>Length short side (m)</td>
+		<td><input id="fLengthShort_m" value="30"></input></td>
+	</tr>
+	<tr>
+	      	<td>Speed (km/h)</td>
+		<td><input id="fSpeed_km__h" value="4.5"></input></td>
+	</tr>
+	<tr>
+		<td>Angle relative road (degrees)</td>
+      		<td><input id="fAngleRelativeRoad" value="0"></input></td>
+	</tr>
+	<tr>
+		<td>Path</td>
+		<td><select><option>Lantmännen</option><option>Mats</option></select><select><option value="I">Inside</option><option value="R">Right</option><option value="L">Left</option></select><button>Add path</button></td>
+	<tr>
+		<td></td><td><button onclick='generate();return false'>Generate XML</button><button onclick='loadXMLpath();return false'>Load XML</button></td>
+	</tr>
+	</table>
+    </form>
+Guide: 
+<ul>
+<li>BLUE pins = end coordinates for a road, that the field is aligned along
+<li>PINK pin  = starting position for driving on the road
+<li>GREEN pin = position of the RTK
+</ul>
+
+Click and drag on the pins to move them.
+
+It is possible to add a path to and from the field. In order to do that click on the map where you want to add a point for the path (a BROWN pin appears). Do so in the order from the field towards the start/end point. The same path will be added in both directions. If you are not happy with the positioning of the path - drag the BROWN pins!<br>
+Press "Generate" to produce xml text for driving over the field. The text will appear in the grey area below. Select all of the text and paste it into a text file that you save with an xml-suffix (i.e. 'agriculturalfield1.xml'). In RStationControl load the xml-file.<br>
+
+XML: 
+<div id="xml" class="xml"></div>
+
+    <script>
+
+	arrayBanor=["Lantmännen","matsMassor"];
+	arrayPositionAfterwards=["I","W"];
+	//arrayPositionAfterwards=["W","W"];
+
+
+      // initialize Leaflet
+      var map = L.map('map').setView({lon: 18.04, lat: 60.05}, 15);
+
+      // add the OpenStreetMap tiles - using CartoDB tiles which are more permissive
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>'
+      }).addTo(map);
+
+      // show the scale bar on the lower left corner
+      L.control.scale().addTo(map);
+
+
+      var Line2=new L.Marker({lon: 18.04153561592102, lat: 60.055057435353305}, {draggable:'true'});
+      Line2.bindPopup('Line2').addTo(map).on('dragend', onMarkerMoveLine2);
+	document.getElementById('line2lng').value=18.04153561592102;
+	document.getElementById('line2lat').value=60.055057435353305;
+
+      var Line1=new L.Marker({lon: 18.043144941329956, lat: 60.054768237783286}, {draggable:'true'});
+      Line1.bindPopup('Line1').addTo(map).on('dragend', onMarkerMoveLine1);
+	document.getElementById('line1lng').value=18.043144941329956;
+	document.getElementById('line1lat').value=60.054768237783286;
+
+      var Start=new L.Marker({lon: 18.043144941329956, lat: 60.054768237783286}, {draggable:'true'});
+      Start.bindPopup('Start').addTo(map).on('dragend', onMarkerMoveStart);
+	Start._icon.classList.add("huechange");
+	document.getElementById('startlng').value=18.043144941329956;
+	document.getElementById('startlat').value=60.054768237783286;
+
+      // show a marker on the map
+      var RTK=new L.Marker({lon: 18.04081926, lat: 60.05576905}, {draggable:'true'});
+      RTK.bindPopup('RTK').addTo(map).on('dragend', onMarkerMoveRTK);
+	RTK._icon.classList.add("huechange2");
+	document.getElementById('rtklng').value=18.04081926;
+	document.getElementById('rtklat').value=60.05576905;
+
+/*
+      // show a marker on the map
+      var RTK=new L.Marker({lon: 17.6552, lat: 59.81288}, {draggable:'true'});
+      RTK.bindPopup('RTK').addTo(map).on('dragend', onMarkerMoveRTK);
+	RTK._icon.classList.add("huechange2");
+	document.getElementById('rtklng').value=17.6552;
+	document.getElementById('rtklat').value=59.81288;	
+*/
+
+var polylinePath;
+var myCircles=new Array();
+var arrayTillFrom=new Array();
+var polylineTillFrom;
+var arrayLngTillFrom=[18.0408];
+var arrayLatTillFrom=[60.05];
+
+var StartLng=new Number(document.getElementById('startlng').value);
+var StartLat=new Number(document.getElementById('startlat').value);
+
+var fPolarRadius_m=6356800;
+var fEquatorialradius_m=6378100;
+fLocalRadius_m=Math.abs(Math.cos(2*Math.PI*StartLat/360))*fEquatorialradius_m;
+
+Start_m=polar2xy(StartLng,StartLat);
+
+var RTKLng=new Number(document.getElementById('rtklng').value);
+var RTKLat=new Number(document.getElementById('rtklat').value);
+
+RTK_m=polar2xy(RTKLng,RTKLat);
+
+var latlngs = [
+    Line1.getLatLng(),
+    Line2.getLatLng()
+];
+
+var polyline = new L.Polyline(latlngs, {color: 'blue'});
+polyline.addTo(map);
+
+map.on('click', onMapClick);
+map.on('keypress', onMapKeyPressed);
+
+fImplementsUpDist_m=1.5+3;   // Tested, ok
+fImplementsDownDist_m=0.5;   // Tested, ok
+
+function myarc(fRadius,startangle,endangle,iStops)
+{
+	// MYARC Producerar en kvartscirkel med radien fRadius och med iStops
+	// koordinater. För att undvika att vissa koordinater "dubbleras" i senare
+	// kod så ingår inte den sista punkten som skulle göra halvcirkeln
+	// fullständig.
+
+	var xs=Array(iStops);
+	var ys=Array(iStops);
+	fAngleStep=(endangle-startangle)/(iStops-1);
+	for (i=0;i<iStops;i++)
+	{
+        	fAngle=startangle+i*fAngleStep;
+        	xs[i]=Math.cos(fAngle)*fRadius;
+        	ys[i]=Math.sin(fAngle)*fRadius;
+	};
+	return { x: xs, y: ys};
+};
+
+function onMarkerMove(event,txtItem) 
+{
+	var marker = event.target;
+	var position = marker.getLatLng();
+	document.getElementById(txtItem+'lng').value=position.lng;
+	document.getElementById(txtItem+'lat').value=position.lat;
+	alert(position.lng + ':' + position.lat);
+};
+
+function onMarkerMoveStart(event) 
+{
+	onMarkerMove(event,'start');
+	latlng=event.target.getLatLng();
+	arrayLatTillFrom[0]=latlng.lat;
+	arrayLngTillFrom[0]=latlng.lng;
+
+	StartLng=latlng.lng;;
+	StartLat=new Number(document.getElementById('startlat').value);
+
+	fLocalRadius_m=Math.abs(Math.cos(2*Math.PI*StartLat/360))*fEquatorialradius_m;
+
+	Start_m=polar2xy(StartLng,StartLat);
+
+	generate();
+};
+
+function onMarkerMoveRTK(event) 
+{
+	onMarkerMove(event,'rtk');
+	RTKLng=new Number(document.getElementById('rtklng').value);
+	RTKLat=new Number(document.getElementById('rtklat').value);
+
+	RTK_m=polar2xy(RTKLng,RTKLat);
+	buildXML();
+};
+
+function onMarkerMoveLine1(event) 
+{
+	onMarkerMove(event,'line1');
+	updateRoad();
+};
+
+function onMarkerMoveLine2(event) 
+{
+	onMarkerMove(event,'line2');
+	updateRoad();
+};
+
+function updateRoad()
+{
+	latlngs = [
+	    Line1.getLatLng(),
+	    Line2.getLatLng()
+	];
+	map.removeLayer(polyline);
+	polyline = new L.Polyline(latlngs, {color: 'blue'});
+	polyline.addTo(map);
+};
+
+function onMarkerMoveTillFrom(event) 
+{
+	var marker = event.target;
+	iNo=marker.no;
+	latlng=marker.getLatLng();
+	arrayLatTillFrom[iNo]=latlng.lat;
+	arrayLngTillFrom[iNo]=latlng.lng;
+
+	arrayTmp=latlng2Array({lat: arrayLatTillFrom, lng: arrayLngTillFrom});
+
+	if (typeof polylineTillFrom !== 'undefined')
+	{
+		map.removeLayer(polylineTillFrom);
+	};
+
+	polylineTillFrom = new L.Polyline(arrayTmp, {color: 'red'});
+	polylineTillFrom.addTo(map);
+};
+
+function onMapKeyPressed(e) 
+{
+	alert('key pressed');
+	alert(e.keyCode);
+};
+
+function onMapClick(e) 
+{
+	iLast=arrayTillFrom.push(new L.Marker({lon: e.latlng.lng, lat: e.latlng.lat}, {draggable:'true'}))-1;
+	arrayLatTillFrom.push(e.latlng.lat);
+	arrayLngTillFrom.push(e.latlng.lng);
+	arrayTillFrom[iLast].bindPopup('Item: ' + (iLast+1) );
+	arrayTillFrom[iLast].addTo(map);
+	arrayTillFrom[iLast].on('dragend',onMarkerMoveTillFrom);
+	arrayTillFrom[iLast]._icon.classList.add('huechange3');
+	arrayTillFrom[iLast].no=iLast+1;
+
+	arrayTmp=latlng2Array({lat: arrayLatTillFrom, lng: arrayLngTillFrom});
+
+	if (typeof polylineTillFrom !== 'undefined')
+	{
+		map.removeLayer(polylineTillFrom);
+	};
+
+	polylineTillFrom = new L.Polyline(arrayTmp, {color: 'red'});
+	polylineTillFrom.addTo(map);
+}
+
+
+function latlngXY2polar(Xs_m,Ys_m)
+{
+	// XY2pol Converts relative local Cartesian coordinates at Earth's surface to polar coordinates (longitude & latitude) 
+	return { lat: Ys_m.map(x=>x*360/(fPolarRadius_m*2*Math.PI)), lng: Xs_m.map(x=>x*360/(fLocalRadius_m*2*Math.PI))};
+};
+
+function polar2xy(dLng,dLat)
+{
+	return { x: dLng*fLocalRadius_m*2*Math.PI/360, y: dLat*fPolarRadius_m*2*Math.PI/360 };
+};
+
+function polararray2xy(dLng,dLat)
+{
+	return { x: dLng.map(x => x*fLocalRadius_m*2*Math.PI/360), y: dLat.map(x => x*fPolarRadius_m*2*Math.PI/360) };
+};
+
+function latlng2Array(latlng)
+{
+	l=latlng.lat.length;
+	var A=new Array(l);
+	for (i=0;i<l;i++)
+	{
+		A[i]=[latlng.lat[i], latlng.lng[i]];
+	}
+	return A;
+};
+
+function xyRotate(fXs_array,fYs_array,fAngle)
+{
+	iItems=fXs_array.length;
+	var xs=Array(iItems);
+	var ys=Array(iItems);
+	for (i=0;i<iItems;i++)
+	{
+        	xs[i]=Math.cos(fAngle)*fXs_array[i]-Math.sin(fAngle)*fYs_array[i];
+        	ys[i]=Math.sin(fAngle)*fXs_array[i]+Math.cos(fAngle)*fYs_array[i];
+	};
+	return { x: xs, y: ys};
+};
+
+function reverse(array)
+{
+	return array.map((item,idx) => array[array.length-1-idx])
+}
+
+function actOnLate(numbers,item,action)
+{
+	var over = numbers.filter(myFunctionAbove,numbers.length-item);
+	var under = numbers.filter(myFunctionBelow,numbers.length-item);
+
+	over=over.map (action);
+	return under.concat(over);
+};
+
+function myFunctionAbove(value, index, array,thisArg) 
+{
+	return index >= this;
+}
+
+function myFunctionBelow(value, index, array,thisArg) 
+{
+  return index < this;
+}
+
+function generate()
+{
+	var Line1Lng=new Number(document.getElementById('line1lng').value);
+        var Line1Lat=new Number(document.getElementById('line1lat').value);
+
+	var Line2Lng=new Number(document.getElementById('line2lng').value);
+	var Line2Lat=new Number(document.getElementById('line2lat').value);
+
+	var fTurningRadius_m=new Number(document.getElementById('fTurningRadius_m').value);
+	var fImplementWidth_m=new Number(document.getElementById('fImplementWidth_m').value);
+
+	var fLengthShort_m=new Number(document.getElementById('fLengthShort_m').value);
+	var fLengthLong_m=new Number(document.getElementById('fLengthLong_m').value);
+
+	var fSpeed_km__h=new Number(document.getElementById('fSpeed_km__h').value);
+	var fAngleRelativeRoad_degrees=new Number(document.getElementById('fAngleRelativeRoad').value);
+
+	fSpeed_m__s=Math.round(100*fSpeed_km__h/3.6)/100;
+	fAngleRelativeRoad=fAngleRelativeRoad_degrees*2*Math.PI/360;
+
+	xNewRelStart_m = 0;
+	yNewRelStart_m = 0;
+	xRelStart_m = 0;
+	yRelStart_m = 0;
+
+	bFirstOperation=1;
+
+	iPaths=arrayBanor.length; //Antal körbanor
+
+	//koordinater att returnera
+	arrayXsAll_m=[];
+	arrayYsAll_m=[];
+	arrayAttributesAll=[];
+
+	// Hur många koordinater som läggs ut för varje halvcirkel (fler -> högre
+	// precision, men kan fylla minnet)
+	HALVBANEDELAR=5;
+
+	// Skapar banelement som kan användas för att sätta ihop olika banor
+
+	// Kvartscirklar för kantföljande mönster
+	var QuarterCircle1_m = myarc(fTurningRadius_m,-Math.PI/2,0,HALVBANEDELAR);
+	var QuarterCircle2_m = myarc(fTurningRadius_m,0,Math.PI/2,HALVBANEDELAR);
+	var QuarterCircle3_m = myarc(fTurningRadius_m,Math.PI/2,Math.PI,HALVBANEDELAR);
+	var QuarterCircle4_m= myarc(fTurningRadius_m,Math.PI,3*Math.PI/2,HALVBANEDELAR);
+
+	var QuarterCircle1i_m=myarc(fTurningRadius_m,0,-Math.PI/2,HALVBANEDELAR); 
+	var QuarterCircle2i_m = myarc(fTurningRadius_m,Math.PI/2,0,HALVBANEDELAR);
+	var QuarterCircle3i_m = myarc(fTurningRadius_m,Math.PI,Math.PI/2,HALVBANEDELAR);
+	var QuarterCircle4i_m= myarc(fTurningRadius_m,3*Math.PI/2,Math.PI,HALVBANEDELAR);
+
+	var AttributesTurn=new Array(HALVBANEDELAR);
+	AttributesTurn.fill(8);
+
+for (iPath=0;iPath<iPaths;iPath++)
+{
+	//Läs av körbanetyp
+	txtBantyp=arrayBanor[iPath];
+	txtPositionAfterwards = arrayPositionAfterwards[iPath];
+
+	switch(txtBantyp) 
+	{
+
+  		case 'Lantmännen':
+    			// code block
+            		iOuterTurns=Math.ceil(fTurningRadius_m/fImplementWidth_m);
+            		arrayXsPath_m=[fImplementWidth_m/2];
+            		arrayYsPath_m=[-fImplementWidth_m/2];
+            		arrayAttributes=[16];
+	    
+			arrayAttributeTurns=Array(4*HALVBANEDELAR);
+			arrayAttributeTurns.fill(16);
+            		for (var i=0;i<=(iOuterTurns-1);i++)
+			{
+				arrayXsPath_m=arrayXsPath_m.concat(QuarterCircle2i_m.x.map(x => x+ fLengthLong_m-(0.5+i)*fImplementWidth_m-fTurningRadius_m));
+				arrayXsPath_m=arrayXsPath_m.concat(QuarterCircle1i_m.x.map(x => x+ fLengthLong_m-(0.5+i)*fImplementWidth_m-fTurningRadius_m));
+				arrayXsPath_m=arrayXsPath_m.concat(QuarterCircle4i_m.x.map(x => x+ (0.5+i)*fImplementWidth_m+fTurningRadius_m));
+				arrayXsPath_m=arrayXsPath_m.concat(QuarterCircle3i_m.x.map(x => x+ (0.5+i)*fImplementWidth_m+fTurningRadius_m));
+
+				arrayYsPath_m=arrayYsPath_m.concat(QuarterCircle2i_m.y.map(x => x-(0.5+i)*fImplementWidth_m-fTurningRadius_m));	
+				arrayYsPath_m=arrayYsPath_m.concat(QuarterCircle1i_m.y.map(x => x-fLengthShort_m+(0.5+i)*fImplementWidth_m+fTurningRadius_m));
+				arrayYsPath_m=arrayYsPath_m.concat(QuarterCircle4i_m.y.map(x => x-fLengthShort_m+(0.5+i)*fImplementWidth_m+fTurningRadius_m));
+				arrayYsPath_m=arrayYsPath_m.concat(QuarterCircle3i_m.y.map(x => x-(1.5+i)*fImplementWidth_m-fTurningRadius_m));
+                		arrayAttributes=arrayAttributes.concat(arrayAttributeTurns);
+			}
+            		switch (txtPositionAfterwards)
+			{
+                		case 'N':
+           				//         1=2
+					break;
+				case 'E':
+                    			xNewRelStart_m=xNewRelStart_m+fLengthLong_m;
+					//          yNewRelStart_m=yNewRelStart_m-fTurningRadius_m;
+					break;
+				case 'S':
+           				//         3=4
+					break;
+				case 'W':
+                    			xNewRelStart_m=xNewRelStart_m-fLengthLong_m;
+          				//          yNewRelStart_m=yNewRelStart_m-fTurningRadius_m;
+					break;
+                		case 'I':
+                    			xNewRelStart_m=xNewRelStart_m;
+                    			yNewRelStart_m=yNewRelStart_m-fTurningRadius_m;
+                    			fLengthShort_m=fLengthShort_m-fTurningRadius_m*2;
+					break;
+                		case 'O':
+           				//         0=0;
+					break;
+			};
+    			break;
+
+  case 'matsMassor':
+    // code block
+
+
+            // Som "matsOne" men repetivt
+            // För att fordonet ska ta sig över fältet är körsträckan
+            // "tillbaka" längs kortsidan fImplementWidth kortare än när
+            // fordonet kör "framåt"
+
+            if (fLengthShort_m<(4*fTurningRadius_m+fImplementWidth_m))
+		{
+                    alert('Too narrow field. It is ' + fLengthShort_m + ' metres wide, but needs to be at least ' + (4.0*fTurningRadius_m+fImplementWidth_m) + ' metres wide');
+		};
+
+
+            // Sträckan som körs rakt (d.v.s fältets längd minus längden på vändtegarna)
+            fLengthLongStraight_m=fLengthLong_m-2*fTurningRadius_m;
+
+            // Totala antalet körningar rakt över fältet
+            iParallellruns=Math.ceil(fLengthShort_m/fImplementWidth_m)-1;
+            
+            // Om antalet körningar över fältet är udda
+            bOdd=iParallellruns % 2; 
+            
+            // Antalet färdiga körningar fram och tillbaka
+            iFullruns=Math.floor(iParallellruns/2);
+
+            // Antalet påbörjade körningar fram och tillbaka
+            iStartedruns=Math.ceil(iParallellruns/2);
+            
+            // Räkna ut sträckan som ska köras rakt på vändtegen
+            if (bOdd)
+		{
+                fLengthStraightShort_m=iStartedruns*fImplementWidth_m-2*fTurningRadius_m;
+		} else {
+                fLengthStraightShort_m=(iStartedruns+1)*fImplementWidth_m-2*fTurningRadius_m;
+		};
+            
+            //Koordinater som läggs till för varje körning fram och tillbaka
+            // (inkl. på vändtegen). Position flyttas fram för i loopen
+            // längre ner.
+        arrayXsAdd_m=[0,fImplementsDownDist_m,fLengthLongStraight_m-fImplementsUpDist_m];            	// 0, Implements down, Implements up
+ 	arrayXsAdd_m=arrayXsAdd_m.concat(QuarterCircle1_m.x.map(x => x + fLengthLongStraight_m));	// Quartercircle (long->short)
+        arrayXsAdd_m=arrayXsAdd_m.concat(QuarterCircle2_m.x.map(x => x + fLengthLongStraight_m));    	// Quartercircle (short->long)
+	arrayXsAdd_m=arrayXsAdd_m.concat(fLengthLongStraight_m-fImplementsDownDist_m,fImplementsUpDist_m); // Implements down, Implements up
+	arrayXsAdd_m=arrayXsAdd_m.concat(QuarterCircle3_m.x,QuarterCircle4_m.x);               // Quartercircle3m (long->short), Quartercircle4 (short->long)
+
+            arrayYsAdd_m=[0,0,0];		// 0, Implements down, Implements up
+            arrayYsAdd_m=arrayYsAdd_m.concat(QuarterCircle1_m.y.map(x => -x -fTurningRadius_m));   // Quartercircle (long->short)
+            arrayYsAdd_m=arrayYsAdd_m.concat(QuarterCircle2_m.y.map(x => -x -fTurningRadius_m-fLengthStraightShort_m)); // Quartercircle (short->long)
+            arrayYsAdd_m=arrayYsAdd_m.concat(-2*fTurningRadius_m-fLengthStraightShort_m);  // Implements down
+            arrayYsAdd_m=arrayYsAdd_m.concat(-2*fTurningRadius_m-fLengthStraightShort_m);  // Implements up
+            arrayYsAdd_m=arrayYsAdd_m.concat(QuarterCircle3_m.y.map(x => -x -fTurningRadius_m-fLengthStraightShort_m)); // Quartercircle (long->short)
+            arrayYsAdd_m=arrayYsAdd_m.concat(QuarterCircle4_m.y.map(x => -x -fTurningRadius_m-fImplementWidth_m));      // Quartercircle (short->long)
+
+	arrayAttributesAdd=[8,16,16];		// 8, Implements down, Implements up
+	arrayAttributesAdd=arrayAttributesAdd.concat(AttributesTurn,AttributesTurn);	// Quartercircle (long->short), Quartercircle (short->long)
+	arrayAttributesAdd=arrayAttributesAdd.concat(16,16);	// Implements down, Implements up
+	arrayAttributesAdd=arrayAttributesAdd.concat(AttributesTurn,AttributesTurn);	// Quartercircle (long->short), Quartercircle (short->long)
+
+             // Koordinater som läggs till för varje körning fram (men inte
+             // tillbaka), körs om antalet körningar över fältet är udda
+
+           arrayXsAddForward_m=[0,fImplementsDownDist_m,fLengthLongStraight_m-fImplementsUpDist_m];  // Implements down, Implements up
+	arrayXsAddForward_m=arrayXsAddForward_m.concat(QuarterCircle1_m.x.map(x => x + fLengthLongStraight_m));			// Quartercircle (long->short)
+        arrayXsAddForward_m=arrayXsAddForward_m.concat(QuarterCircle2_m.x.map(x => x + fLengthLongStraight_m));   		// Quartercircle (short->long)
+
+            arrayYsAddForward_m=[0,0,0];								//  Implements down,  Implements up
+            arrayYsAddForward_m=arrayYsAddForward_m.concat(QuarterCircle1_m.y.map(x => -x -fTurningRadius_m));   		// Quartercircle (long->short)
+            arrayYsAddForward_m=arrayYsAddForward_m.concat(QuarterCircle2_m.y.map(x => -x -fTurningRadius_m-fLengthStraightShort_m)); // Quartercircle (short->long)
+
+
+	arrayAttributesAddForward=[8,16,16];					// 8, Implements down, Implements up
+	arrayAttributesAddForward=arrayAttributesAddForward.concat(AttributesTurn,AttributesTurn);	// Quartercircle (long->short), Quartercircle (short->long)
+
+            // initiera arrayer
+            arrayXsPath_m=[0];
+            arrayYsPath_m=[0];
+            arrayAttributes=[0];
+
+            maxy=fLengthShort_m-fImplementWidth_m/2;
+            // A full run includes going over the field twice, one close to
+            // the start and once further away, between them there are two
+            // extended half circes, the ones "away" a bit (one implement
+            // width) longer than the "return" ones, so that the pattern is
+            // repeated at increasing distance from the start
+            
+            // Loopa över alla färdiga körningar
+	for (var i=0;i<iFullruns;i++)
+	{
+                arrayXsPath_m=arrayXsPath_m.concat(arrayXsAdd_m);
+                arrayYsPath_m=arrayYsPath_m.concat(arrayYsAdd_m.map(x => x - fImplementWidth_m*i));
+                arrayAttributes=arrayAttributes.concat(arrayAttributesAdd);
+	};
+
+
+            // If an odd number of turns are needed it is necessary to do the
+            // forward bit once more
+            if (bOdd)  
+		{ 
+               arrayXsPath_m=arrayXsPath_m.concat(arrayXsAddForward_m);
+                arrayYsPath_m=arrayYsPath_m.concat(arrayYsAddForward_m.map(x => x - fImplementWidth_m*(iStartedruns-1)));
+                arrayAttributes=arrayAttributes.concat(arrayAttributesAddForward);
+		
+                 // Check if it is necessary to move the path a little bit up
+                // so as to not drive outside of the field
+		lasty=arrayYsPath_m[arrayYsPath_m.length-1];
+                diffMaxy=Math.min(maxy+lasty,0);
+		arrayYsPath_m=actOnLate(arrayYsPath_m,HALVBANEDELAR,x => x -diffMaxy);
+            
+                //finish what started, i.e. return to the start position
+                
+                arrayXsPath_m=arrayXsPath_m.concat(QuarterCircle3_m.x);       //continue to short side through a quarter circle (as above)
+                arrayYsPath_m=arrayYsPath_m.concat(QuarterCircle3_m.y.map(x => -x-fTurningRadius_m-fLengthStraightShort_m-fImplementWidth_m*(iStartedruns-1)-diffMaxy));  // continue to short side through a quarter circle (as above)
+                arrayAttributes[arrayAttributes.length-1]=16;
+                arrayAttributes=arrayAttributes.concat(AttributesTurn); //continue to short side through a quarter circle (as above)
+		} else {
+                //finish what started
+                 arrayXsPath_m=arrayXsPath_m.concat(fLengthLongStraight_m);
+  		arrayXsPath_m=arrayXsPath_m.concat(QuarterCircle2i_m.x.map(x => x+ fLengthLongStraight_m));
+  		arrayXsPath_m=arrayXsPath_m.concat(QuarterCircle1i_m.x.map(x => x+ fLengthLongStraight_m));
+
+                arrayYsPath_m=arrayYsPath_m.concat(arrayYsPath_m[arrayYsPath_m.length-1]);
+                arrayYsPath_m=arrayYsPath_m.concat(QuarterCircle2i_m.y.map(x => -x +fTurningRadius_m-fImplementWidth_m*iStartedruns));
+                arrayYsPath_m=arrayYsPath_m.concat(QuarterCircle1i_m.y.map(x => -x -fTurningRadius_m));
+                arrayAttributes=arrayAttributes.concat(8,AttributesTurn,AttributesTurn); 
+	};
+            if (bFirstOperation==0)
+		{
+                arrayXsPath_m.shift();
+               	arrayXsPath_m.shift();
+               	arrayXsPath_m.shift();
+                arrayYsPath_m.shift();
+                arrayYsPath_m.shift();
+                arrayYsPath_m.shift();
+                arrayAttributes.shift();
+                arrayAttributes.shift();
+                arrayAttributes.shift();
+             	};
+            arrayXsPath_m=arrayXsPath_m.map(x => x +fTurningRadius_m);
+            arrayYsPath_m=arrayYsPath_m.map(x => x -fImplementWidth_m/2);
+    break;
+  default:
+    // code block
+	alert('Ingen körbana vald.');
+};
+
+arrayXsPath_m=arrayXsPath_m.map(x => x + xRelStart_m);
+arrayYsPath_m=arrayYsPath_m.map(x => x + yRelStart_m);
+xRelStart_m = xNewRelStart_m;
+yRelStart_m = yNewRelStart_m;
+bFirstOperation=0;
+
+if (arrayXsAll_m.length==0)
+{
+	arrayXsAll_m=arrayXsPath_m;
+} else
+{
+	arrayXsAll_m=arrayXsAll_m.concat(arrayXsPath_m);
+};
+if (arrayYsAll_m.length==0)
+{
+	arrayYsAll_m=arrayYsPath_m;
+} else
+{
+	arrayYsAll_m=arrayYsAll_m.concat(arrayYsPath_m);
+};
+
+if (arrayAttributesAll.length==0)
+{
+	arrayAttributesAll=arrayAttributes;
+} else
+{
+	arrayAttributesAll=arrayAttributesAll.concat(arrayAttributes);
+};
+
+arrayXsPath_m=[];
+arrayYsPath_m=[];
+arrayAttributes=[];
+};
+
+arrayXsAll_m=[0].concat(arrayXsAll_m).concat([0]);
+arrayYsAll_m=[0].concat(arrayYsAll_m).concat([0]);
+arrayAttributesAll=[8].concat(arrayAttributesAll).concat([8]);
+
+
+
+dLine_m=polar2xy(Line2Lng-Line1Lng,Line2Lat-Line1Lat);
+
+grad=dLine_m.y/dLine_m.x;
+angleRoadLatituteLine_degrees=Math.asin(grad);
+
+tmp=xyRotate(arrayXsAll_m,arrayYsAll_m,angleRoadLatituteLine_degrees+fAngleRelativeRoad);
+arrayXsAll_m=tmp.x;
+arrayYsAll_m=tmp.y;
+/*
+xyTillFrom=polararray2xy(arrayLngTillFrom.map(x => x - StartLng),arrayLatTillFrom.map(x => x - StartLat));
+
+xyTillFromRevX=reverse(xyTillFrom.x);
+xyTillFromRevY=reverse(xyTillFrom.y);
+
+arrayXsAll_m=xyTillFromRevX.concat(arrayXsAll_m,xyTillFrom.x);
+arrayYsAll_m=xyTillFromRevY.concat(arrayYsAll_m,xyTillFrom.y);
+
+attributesTillFrom=new Array(xyTillFrom.x.length);
+attributesTillFrom.fill(8);
+arrayAttributesAll=attributesTillFrom.concat(arrayAttributesAll);
+arrayAttributesAll=arrayAttributesAll.concat(attributesTillFrom);*/
+
+iAttributes=arrayAttributesAll.length;
+
+arraySpeeds=Array(iAttributes);
+arraySpeeds.fill(fSpeed_m__s);
+
+showPath();
+buildXML();
+};
+
+function showPath()
+{
+pathlatlng = latlngXY2polar(arrayXsAll_m,arrayYsAll_m);
+
+pathlatlng.lat=pathlatlng.lat.map(x=>x+StartLat);
+pathlatlng.lng=pathlatlng.lng.map(x=>x+StartLng);
+
+ll=latlng2Array(pathlatlng);
+
+if (typeof polylinePath !== 'undefined')
+{
+map.removeLayer(polylinePath);
+};
+
+polylinePath = new L.Polyline(ll, {color: 'red'});
+polylinePath.addTo(map);
+
+for (i=0;i<myCircles.length;i++)
+{
+map.removeLayer(myCircles[i]);
+};
+myCircles=new Array(arrayAttributesAll.length);
+for (i=0;i<arrayAttributesAll.length;i++)
+	{
+	switch(arrayAttributesAll[i])
+{
+	case 8:
+		col='#00ff00';
+		break;
+	case 16:
+		col='#0000ff';
+		break;
+}
+    	myCircles[i]=new L.Circle(ll[i], 0.5, { color: col, fillOpacity: 0.5,});
+	myCircles[i].addTo(map);
+  	};
+};
+
+
+
+function buildXML()
+{
+var xmlDoc = document.implementation.createDocument('','',null);
+
+var thisRoutes = xmlDoc.createElement('routes');
+var thisRoute = xmlDoc.createElement('route');
+var thisId = xmlDoc.createElement("id");
+var newText = xmlDoc.createTextNode("0");
+thisId.appendChild(newText);
+thisRoute.appendChild(thisId);
+
+// loopa igenom alla punkter och lägg till dem, hastigheten antas vara konstant
+l=arrayXsAll_m.length;
+//alert(arrayXsAll_m.length+':'+arrayYsAll_m.length+':'+arrayAttributesAll.length+':'+arraySpeeds.length);
+// iSpeeds=speed.length;
+
+arrayXsXML_m=arrayXsAll_m.map(x => x + Start_m.x - RTK_m.x);
+arrayYsXML_m=arrayYsAll_m.map(x => x + Start_m.y - RTK_m.y);
+
+for (var i=0;i<l;i++)
+{
+    var thisPoint = xmlDoc.createElement('point'); 
+        var thisX = xmlDoc.createElement('x'); 
+            thisX.appendChild(xmlDoc.createTextNode(Math.round(arrayXsXML_m[i]*10000)/10000));
+        var thisY = xmlDoc.createElement('y'); 
+            thisY.appendChild(xmlDoc.createTextNode(Math.round(arrayYsXML_m[i]*10000)/10000));
+    thisPoint.appendChild(thisX);
+    thisPoint.appendChild(thisY);
+    	var thisSpeed = xmlDoc.createElement('speed'); 
+    		thisSpeed.appendChild(xmlDoc.createTextNode(arraySpeeds[i]));
+    thisPoint.appendChild(thisSpeed);
+    	var thisTime = xmlDoc.createElement('time'); 
+    		thisTime.appendChild(xmlDoc.createTextNode(i*2000));
+    thisPoint.appendChild(thisTime);
+    thisAttribute = xmlDoc.createElement('attributes'); 
+    thisAttribute.appendChild(xmlDoc.createTextNode(arrayAttributesAll[i]));
+    thisPoint.appendChild(thisAttribute);
+    thisRoute.appendChild(thisPoint);
+};
+
+thisRoutes.appendChild(thisRoute);
+xmlDoc.appendChild(thisRoutes);
+
+var serializer = new XMLSerializer();
+var xmlString = serializer.serializeToString(xmlDoc);
+
+const escapeHtml=xmlString.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+document.getElementById("xml").innerHTML = escapeHtml;
+};
+
+function loadXMLpath()
+{
+if (window.XMLHttpRequest) {
+   xhttp = new XMLHttpRequest();
+} else {    // IE 5/6
+   xhttp = new ActiveXObject("Microsoft.XMLHTTP");
+}
+
+xhttp.overrideMimeType('text/xml');
+
+xhttp.open("GET", "/paths.xml", false);
+xhttp.send(null);
+xmlDoc = xhttp.responseXML;
+
+var serializer = new XMLSerializer();
+var xmlString = serializer.serializeToString(xmlDoc);
+
+document.getElementById("xml").innerHTML = xmlString;
+
+var tagPoint=xmlDoc.getElementsByTagName("point");
+var iPoints=tagPoint.length;
+x=new Array(iPoints);
+y=new Array(iPoints);
+for (i=0;i<iPoints;i++)
+{
+	x[i]= tagPoint[i].getElementsByTagName("x")[0].childNodes[0].nodeValue;
+	y[i]= tagPoint[i].getElementsByTagName("y")[0].childNodes[0].nodeValue;
+}
+latlngPnts=latlngXY2polar(x,y);
+for (i=0;i<iPoints;i++)
+{
+	poslat=latlngPnts.lat[i] + RTKLat;
+	poslng=latlngPnts.lng[i] + RTKLng;
+        var PointXML=new L.Marker({lon: poslng, lat: poslat}, {draggable:'false'});
+      PointXML.addTo(map);
+      	
+	
+}
+alert('end');
+};
+
+    </script>
+
+  </body>
+</html>
