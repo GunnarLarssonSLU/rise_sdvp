@@ -1,16 +1,48 @@
+# Build directories
 Linux/RControlStation/build/
-Linux/RControlStation/RControlStation-linux-x86_64.tar.gz
-Linux/RControlStation/build/Desktop_Qt_6_9_1-Debug/RControlStation
-Linux/RControlStation/RControlStation-Distributable/
+Linux/RControlStation/RControlStation-Portable/
+Linux/Car_Client/build/
+Linux/PI/Qt/
+
+# Compiled binaries and executables
+Linux/RControlStation/AppDir/
 Linux/RControlStation/*.zip
 Linux/RControlStation/*.tar.gz
-Linux/RControlStation/build/
 Linux/RControlStation/RControlStation-Distributable/
-Linux/RControlStation/RControlStation-Portable/
-Linux/PI/Qt/
-Hardware/**/*.pdf
-Hardware/**/*.step
-Hardware/**/*.exe
+Linux/PI/rtkrcv_arm/
+*.exe
+*.bin
 *.so*
+
+# Large files
 *.FCStd
-Linux/Car_Client/build/
+*.pdf
+*.step
+*.stp
+*.jpg
+*.png
+*.wrl
+*.bak
+*.blend
+
+# Documentation and cache files
+**/doc/*.pdf
+**/fp-info-cache
+**/*.kicad_pcb-bak
+
+# ChibiOS header files (large)
+Embedded/io_board/ChibiOS_20.3.0/os/common/ext/ST/
+Embedded/io_board/ChibiOS_20.3.0/community/os/common/ext/CMSIS/
+Embedded/io_board/ChibiOS_20.3.0/community/os/hal/ports/NRF5/
+
+# Models
+Linux/RControlStation/Models/*.model
+
+# Build artifacts
+**/build/
+**/lst/
+
+# Gerber files
+**/Gerber/
+**/*.gtl
+**/*.gbl
