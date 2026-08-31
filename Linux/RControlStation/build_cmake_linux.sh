@@ -39,7 +39,7 @@ echo "  Build Directory: $BUILD_DIR"
 check_dependencies() {
     local missing=()
     command -v cmake >/dev/null 2>&1 || missing+=("CMake")
-    command -v qmake >/dev/null 2>&1 || missing+=("Qt development tools (qmake)")
+    command -v qmake6 >/dev/null 2>&1 || command -v qmake >/dev/null 2>&1 || missing+=("Qt development tools (qmake6 or qmake)")
     pkg-config --exists Qt6Core >/dev/null 2>&1 || missing+=("Qt6 development libraries")
     pkg-config --exists sdl2 >/dev/null 2>&1 || missing+=("SDL2 (libsdl2-dev)")
     pkg-config --exists gdal >/dev/null 2>&1 || missing+=("GDAL (libgdal-dev)")
