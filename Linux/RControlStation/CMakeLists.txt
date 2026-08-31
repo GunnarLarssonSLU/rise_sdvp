@@ -304,7 +304,6 @@ list(REMOVE_ITEM HEADERS
     locpoint.h
     maproutecollection.h
     maproute.h
-    moc_predefs.h
     osmtile.h
     perspectivepixmap.h
     routegenerator.h
@@ -324,7 +323,6 @@ set(NON_MOC_HEADERS
     locpoint.h
     maproutecollection.h
     maproute.h
-    moc_predefs.h
     osmtile.h
     perspectivepixmap.h
     routegenerator.h
