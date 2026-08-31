@@ -38,7 +38,7 @@
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,2">
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout" stretch="0,1,0,0,0,0,0,0">
+     <layout class="QVBoxLayout" name="verticalLayout" stretch="0,1,0,0,0,0,0,0,0">
       <item>
        <widget class="QTableWidget" name="machinesTable">
         <property name="sizePolicy">
@@ -75,8 +75,8 @@
        <widget class="QPlainTextEdit" name="tcpConnEdit">
         <property name="maximumSize">
          <size>
-          <width>145</width>
-          <height>65</height>
+          <width>16777215</width>
+          <height>32</height>
          </size>
         </property>
         <property name="lineWrapMode">
@@ -1139,8 +1139,8 @@
                    <property name="geometry">
                     <rect>
                      <x>0</x>
-                     <y>-1</y>
-                     <width>439</width>
+                     <y>0</y>
+                     <width>392</width>
                      <height>535</height>
                     </rect>
                    </property>
@@ -1566,7 +1566,7 @@
                      <x>0</x>
                      <y>0</y>
                      <width>196</width>
-                     <height>433</height>
+                     <height>431</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_12">
@@ -1860,8 +1860,8 @@
                     <rect>
                      <x>0</x>
                      <y>0</y>
-                     <width>244</width>
-                     <height>562</height>
+                     <width>203</width>
+                     <height>560</height>
                     </rect>
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_15">
