@@ -40,7 +40,7 @@ check_dependencies() {
     local missing=()
     command -v cmake >/dev/null 2>&1 || missing+=("CMake")
     command -v qmake >/dev/null 2>&1 || missing+=("Qt development tools (qmake)")
-    pkg-config --exists Qt6Core >/dev/null 2>&1 || pkg-config --exists Qt5Core >/dev/null 2>&1 || missing+=("Qt6 or Qt5 development libraries")
+    pkg-config --exists Qt6Core >/dev/null 2>&1 || missing+=("Qt6 development libraries")
     pkg-config --exists sdl2 >/dev/null 2>&1 || missing+=("SDL2 (libsdl2-dev)")
     pkg-config --exists gdal >/dev/null 2>&1 || missing+=("GDAL (libgdal-dev)")
 
