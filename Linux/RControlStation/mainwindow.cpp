@@ -2520,28 +2520,22 @@ MainWindow::
 
 void MainWindow::on_connectSelectedButton_clicked()
 {
-    // Get the currently selected row in machinesTable
-    int selectedRow = ui->machinesTable->currentRow();
-    
-    if (selectedRow >= 0) {
-        // Get the IP address from the selected row (column 1)
-        QTableWidgetItem* ipItem = ui->machinesTable->item(selectedRow, 1);
-        if (ipItem && !ipItem->text().isEmpty()) {
-            QString ipAddress = ipItem->text();
-            
-            // Do the same thing as tcpConnectButton but with the selected IP
-            mTcpClientMulti->disconnectAll();
-            
-            // Parse the IP address (handle potential port specification)
-            QStringList ipPort = ipAddress.split(":");
-            
-            if (ipPort.size() == 1) {
-                mTcpClientMulti->addConnection(ipPort.at(0), 8300);
-            } else if (ipPort.size() == 2) {
-                mTcpClientMulti->addConnection(ipPort.at(0), ipPort.at(1).toInt());
-            }
-            addCar(mCars.size(), ipPort.at(0));
+    // Use the same logic as tcpConnectButton: read from tcpConnEdit
+    mTcpClientMulti->disconnectAll();
+
+    QStringList conns = ui->tcpConnEdit->toPlainText().split("\n");
+
+    for (QString c: conns) {
+        QStringList ipPort = c.split(":");
+
+        if (ipPort.size() == 1) {
+            mTcpClientMulti->addConnection(ipPort.at(0),
+                                           8300);
+        } else if (ipPort.size() == 2) {
+            mTcpClientMulti->addConnection(ipPort.at(0),
+                                           ipPort.at(1).toInt());
         }
+        addCar(mCars.size(), ipPort.at(0));
     }
 }
 
@@ -4945,7 +4939,6 @@ void MainWindow::on_MapRemovePixmapsButton_clicked()
     ui->mapLiveWidget->clearPerspectivePixmaps();
 }
 
-/*
 void MainWindow::on_tcpConnectButton_clicked()
 {
     mTcpClientMulti->disconnectAll();
@@ -4964,7 +4957,7 @@ void MainWindow::on_tcpConnectButton_clicked()
         }
         addCar(mCars.size(),ipPort.at(0));
     }
-}*/
+}
 
 /*
 void MainWindow::on_tcpPingButton_clicked()
