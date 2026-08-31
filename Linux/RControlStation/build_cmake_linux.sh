@@ -40,7 +40,7 @@ check_dependencies() {
     local missing=()
     command -v cmake >/dev/null 2>&1 || missing+=("CMake")
     command -v qmake >/dev/null 2>&1 || missing+=("Qt development tools (qmake)")
-    pkg-config --exists Qt5Core >/dev/null 2>&1 || missing+=("Qt5 development libraries")
+    pkg-config --exists Qt6Core >/dev/null 2>&1 || pkg-config --exists Qt5Core >/dev/null 2>&1 || missing+=("Qt6 or Qt5 development libraries")
     pkg-config --exists sdl2 >/dev/null 2>&1 || missing+=("SDL2 (libsdl2-dev)")
     pkg-config --exists gdal >/dev/null 2>&1 || missing+=("GDAL (libgdal-dev)")
 
@@ -51,7 +51,7 @@ check_dependencies() {
         done
         echo ""
         echo "Install them on Ubuntu/Debian with:"
-        echo "  sudo apt install cmake qt5-default libqt5charts5-dev libsdl2-dev libgdal-dev"
+        echo "  sudo apt install cmake qt6-base-dev libqt6charts6-dev libsdl2-dev libgdal-dev"
         exit 1
     fi
 }
@@ -73,6 +73,7 @@ echo "Configuring with CMake..."
 cmake \
     -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
     -DCMAKE_TOOLCHAIN_FILE="${SCRIPT_DIR}/cmake/Toolchains/Linux-GCC.cmake" \
+    -DCMAKE_PREFIX_PATH=/usr \
     -DHAS_OPENGL=OFF \
     -DHAS_ASSIMP=OFF \
     -DHAS_SIM_SCEN=OFF \
