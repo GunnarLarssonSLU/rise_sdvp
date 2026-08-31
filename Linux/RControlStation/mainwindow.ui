@@ -72,6 +72,22 @@
        </widget>
       </item>
       <item>
+       <widget class="QPlainTextEdit" name="tcpConnEdit">
+        <property name="maximumSize">
+         <size>
+          <width>145</width>
+          <height>65</height>
+         </size>
+        </property>
+        <property name="lineWrapMode">
+         <enum>QPlainTextEdit::LineWrapMode::NoWrap</enum>
+        </property>
+        <property name="plainText">
+         <string>192.168.1.147</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <layout class="QHBoxLayout" name="horizontalLayout_machinesButtons">
         <property name="spacing">
          <number>2</number>
