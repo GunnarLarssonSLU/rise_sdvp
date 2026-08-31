@@ -394,7 +394,8 @@ MainWindow::MainWindow(QWidget *parent) :
     // connect(ui->listLogfilesView, &QListView::clicked, this, &MainWindow::on_listLogFilesView_clicked);
     connect(ui->mapCarBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::onMapCarBoxChanged);
     connect(ui->refreshMachinesButton, &QPushButton::clicked, this, &MainWindow::on_refreshMachinesButton_clicked);
-//    connect(ui->connectSelectedButton, &QPushButton::clicked, this, &MainWindow::on_connectSelectedButton_clicked);
+    connect(ui->connectSelectedButton, &QPushButton::clicked, this, &MainWindow::on_tcpConnectButton_clicked);
+    connect(ui->connectSelectedTextButton, &QPushButton::clicked, this, &MainWindow::on_tcpConnectButton_clicked);
     connect(ui->disconnectSelectedButton, &QPushButton::clicked, this, &MainWindow::on_disconnectSelectedButton_clicked);
     connect(ui->pushButtonAddMachine, &QPushButton::clicked, this, &MainWindow::onAddMachineButtonClicked);
 
