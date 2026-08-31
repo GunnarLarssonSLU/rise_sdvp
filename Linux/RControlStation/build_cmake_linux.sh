@@ -74,6 +74,7 @@ cmake \
     -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
     -DCMAKE_TOOLCHAIN_FILE="${SCRIPT_DIR}/cmake/Toolchains/Linux-GCC.cmake" \
     -DCMAKE_PREFIX_PATH=/usr \
+    -DQt6_DIR=/usr/lib/x86_64-linux-gnu/cmake/Qt6 \
     -DHAS_OPENGL=OFF \
     -DHAS_ASSIMP=OFF \
     -DHAS_SIM_SCEN=OFF \
