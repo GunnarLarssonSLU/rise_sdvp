@@ -43,7 +43,7 @@ check_dependencies() {
     # Check for Qt6 libraries via ldconfig (system-wide)
     ldconfig -p | grep -q libQt6Core.so || missing+=("Qt6 development libraries")
     pkg-config --exists sdl2 >/dev/null 2>&1 || missing+=("SDL2 (libsdl2-dev)")
-    pkg-config --exists gdal >/dev/null 2>&1 || missing+=("GDAL (libgdal-dev)")
+    pkg-config --exists gdal >/dev/null 2>&1 || ldconfig -p | grep -q libgdal.so || missing+=("GDAL (libgdal-dev)")
 
     if [ ${#missing[@]} -gt 0 ]; then
         echo "ERROR: Missing dependencies:"
