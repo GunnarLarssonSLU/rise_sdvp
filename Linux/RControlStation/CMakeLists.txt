@@ -293,8 +293,46 @@ set(RESOURCE_FILES
 
 # Qt automatic code generation
 # Separate headers that should not be processed by MOC
-list(REMOVE_ITEM HEADERS qcustomplot.h)
-set(NON_MOC_HEADERS qcustomplot.h)
+list(REMOVE_ITEM HEADERS
+    qcustomplot.h
+    attributes_masks.h
+    carinfo.h
+    colourutils.h
+    database.h
+    gpsgen.h
+    historylineedit.h
+    locpoint.h
+    maproutecollection.h
+    maproute.h
+    moc_predefs.h
+    osmtile.h
+    perspectivepixmap.h
+    routegenerator.h
+    rtcm3_simple.h
+    shapefile.h
+    simscentree.h
+    utility.h
+)
+set(NON_MOC_HEADERS
+    qcustomplot.h
+    attributes_masks.h
+    carinfo.h
+    colourutils.h
+    database.h
+    gpsgen.h
+    historylineedit.h
+    locpoint.h
+    maproutecollection.h
+    maproute.h
+    moc_predefs.h
+    osmtile.h
+    perspectivepixmap.h
+    routegenerator.h
+    rtcm3_simple.h
+    shapefile.h
+    simscentree.h
+    utility.h
+)
 
 if(QT_VERSION EQUAL 5)
     qt5_wrap_cpp(MOC_SOURCES ${HEADERS})
