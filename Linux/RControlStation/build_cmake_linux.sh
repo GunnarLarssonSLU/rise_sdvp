@@ -39,9 +39,9 @@ echo "  Build Directory: $BUILD_DIR"
 check_dependencies() {
     local missing=()
     command -v cmake >/dev/null 2>&1 || missing+=("CMake")
-    command -v qmake6 >/dev/null 2>&1 || command -v qmake >/dev/null 2>&1 || missing+=("Qt development tools (qmake6 or qmake)")
-    # Check for Qt6 libraries directly (Ubuntu 22.04 does not provide Qt6 .pc files)
-    [ -f /usr/lib/x86_64-linux-gnu/libQt6Core.so ] || missing+=("Qt6 development libraries")
+    command -v qmake6 >/dev/null 2>&1 || missing+=("Qt6 development tools (qmake6)")
+    # Check for Qt6 libraries via ldconfig (system-wide)
+    ldconfig -p | grep -q libQt6Core.so || missing+=("Qt6 development libraries")
     pkg-config --exists sdl2 >/dev/null 2>&1 || missing+=("SDL2 (libsdl2-dev)")
     pkg-config --exists gdal >/dev/null 2>&1 || missing+=("GDAL (libgdal-dev)")
 
@@ -52,7 +52,7 @@ check_dependencies() {
         done
         echo ""
         echo "Install them on Ubuntu/Debian with:"
-        echo "  sudo apt install cmake qt6-base-dev libqt6charts6-dev libsdl2-dev libgdal-dev"
+        echo "  sudo apt install cmake qt6-base-dev qt6-base-dev-tools libsdl2-dev libgdal-dev"
         exit 1
     fi
 }
@@ -74,8 +74,6 @@ echo "Configuring with CMake..."
 cmake \
     -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
     -DCMAKE_TOOLCHAIN_FILE="${SCRIPT_DIR}/cmake/Toolchains/Linux-GCC.cmake" \
-    -DCMAKE_PREFIX_PATH=/usr \
-    -DQt6_DIR=/usr/lib/x86_64-linux-gnu/cmake/Qt6 \
     -DHAS_OPENGL=OFF \
     -DHAS_ASSIMP=OFF \
     -DHAS_SIM_SCEN=OFF \
