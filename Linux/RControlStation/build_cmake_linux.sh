@@ -51,9 +51,40 @@ check_dependencies() {
             echo "  - $dep"
         done
         echo ""
-        echo "Install them on Ubuntu/Debian with:"
-        echo "  sudo apt install cmake qt6-base-dev qt6-base-dev-tools libsdl2-dev libgdal-dev"
-        exit 1
+        
+        # Map missing dependencies to apt packages
+        declare -A apt_packages=(
+            ["CMake"]="cmake"
+            ["Qt6 development tools (qmake6)"]="qt6-base-dev-tools"
+            ["Qt6 development libraries"]="qt6-base-dev"
+            ["SDL2 (libsdl2-dev)"]="libsdl2-dev"
+            ["GDAL (libgdal-dev)"]="libgdal-dev"
+        )
+        
+        # Build apt install command
+        local apt_install_cmd="sudo apt update && sudo apt install -y"
+        for dep in "${missing[@]}"; do
+            if [ -n "${apt_packages[$dep]}" ]; then
+                apt_install_cmd+=" ${apt_packages[$dep]}"
+            fi
+        done
+        
+        # Ask user if they want to install automatically
+        read -p "Attempt to install missing dependencies automatically? [Y/n] " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
+            echo "Installing missing dependencies..."
+            eval $apt_install_cmd
+            if [ $? -ne 0 ]; then
+                echo "Failed to install dependencies. Please install them manually."
+                exit 1
+            fi
+            # Re-check dependencies after installation
+            check_dependencies
+        else
+            echo "Please install the missing dependencies manually and rerun this script."
+            exit 1
+        fi
     fi
 }
 check_dependencies
