@@ -3,6 +3,15 @@ cmake_minimum_required(VERSION 3.16)
 # Project name and version
 project(RControlStation VERSION 1.0.0 LANGUAGES CXX C)
 
+# Print helpful message if common dependencies are missing
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+    message(WARNING "
+        This project requires several dependencies to build successfully.
+        On Ubuntu/Debian, install them with:
+          sudo apt install cmake qt5-default libqt5charts5-dev libsdl2-dev libgdal-dev
+    ")
+endif()
+
 # Set C++ standard to C++17 (as used in the .pro file)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -63,12 +72,12 @@ else()
     include(${Qt${QT_VERSION}Core_DIR}/Qt6CoreMacros.cmake)
 endif()
 
-# Add SDL2 for gamepad support (Qt6)
-find_package(SDL2 QUIET)
+# Add SDL2 for gamepad support
+find_package(SDL2 REQUIRED)
 if(SDL2_FOUND)
-    message(STATUS "SDL2 found for gamepad support")
+    message(STATUS "Found SDL2: ${SDL2_VERSION}")
 else()
-    message(WARNING "SDL2 not found - gamepad support may be limited")
+    message(FATAL_ERROR "SDL2 not found. Install it with: sudo apt install libsdl2-dev")
 endif()
 
 # Find optional dependencies with find_package
@@ -79,13 +88,13 @@ else()
     message(WARNING "Eigen3 not found")
 endif()
 
-# GDAL linking is handled explicitly below to ensure version compatibility
-# find_package(GDAL QUIET) - disabled to use explicit paths
-# if(GDAL_FOUND)
-#     message(STATUS "GDAL found at ${GDAL_INCLUDE_DIRS}")
-# else()
-#     message(WARNING "GDAL not found")
-# endif()
+# Use CMake to find GDAL properly
+find_package(GDAL REQUIRED)
+if(GDAL_FOUND)
+    message(STATUS "Found GDAL: ${GDAL_VERSION} at ${GDAL_INCLUDE_DIRS}")
+else()
+    message(FATAL_ERROR "GDAL not found. Install it with: sudo apt install libgdal-dev")
+endif()
 
 # Add include directories
 include_directories(
@@ -96,8 +105,9 @@ include_directories(
 if(Eigen3_FOUND)
     include_directories(${Eigen3_INCLUDE_DIRS})
 endif()
-# GDAL include directories - using explicit paths for version compatibility
-include_directories(/usr/local/include /usr/include/gdal)
+if(GDAL_FOUND)
+    include_directories(${GDAL_INCLUDE_DIRS})
+endif()
 if(SDL2_FOUND)
     include_directories(${SDL2_INCLUDE_DIRS})
 endif()
@@ -337,7 +347,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt${QT_VERSION}::Network
     Qt${QT_VERSION}::Sql
     Qt${QT_VERSION}::SerialPort
-    /usr/lib/x86_64-linux-gnu/libQt6DBus.so.6.2.4
 )
 
 # Link Charts if available (required for Qt6, optional for Qt5)
@@ -369,10 +378,12 @@ if(HAS_ASSIMP AND Assimp_FOUND)
     target_link_libraries(${PROJECT_NAME} PRIVATE ${Assimp_LIBRARIES})
 endif()
 
-# Find and link external libraries
-# These are the libraries that were in the LIBS variable from the .pro file
+# Link GDAL library
+if(GDAL_FOUND)
+    target_link_libraries(${PROJECT_NAME} PRIVATE GDAL::GDAL)
+endif()
 
-# Find common system libraries
+# Find and link other common system libraries
 find_package(ZLIB QUIET)
 find_package(PNG QUIET)
 find_package(JPEG QUIET)
@@ -380,8 +391,6 @@ find_package(CURL QUIET)
 find_package(OpenSSL QUIET)
 find_package(SQLite3 QUIET)
 find_package(Expat QUIET)
-find_package(LibLZMA QUIET)
-find_package(Blosc QUIET)
 
 # Set up external libraries list
 set(EXTERNAL_LIBS)
@@ -454,7 +463,6 @@ else()
 endif()
 
 if(Expat_FOUND)
-    # Check if Expat provides imported targets
     if(TARGET Expat::Expat)
         list(APPEND EXTERNAL_LIBS Expat::Expat)
         message(STATUS "Found Expat (imported target)")
@@ -462,7 +470,6 @@ if(Expat_FOUND)
         list(APPEND EXTERNAL_LIBS ${Expat_LIBRARIES})
         message(STATUS "Found Expat (libraries: ${Expat_LIBRARIES})")
     else()
-        # Fallback to system expat library
         list(APPEND EXTERNAL_LIBS expat)
         message(STATUS "Found Expat (using system library)")
     endif()
@@ -471,62 +478,8 @@ else()
     message(WARNING "Expat not found, using system library")
 endif()
 
-# Add remaining libraries that don't have find_package modules
-# These will be linked as system libraries
-# Note: Link order matters! openjp2 must come before gdal
-list(APPEND EXTERNAL_LIBS
-    tiff
-    webp
-    deflate
-    lz4
-    zstd
-    openjp2
-    gdal
-    df
-    mfhdf
-    qhull
-    xerces-c
-    kmlbase
-    kmldom
-    kmlengine
-    json-c
-    geotiff
-    gif
-    heif
-    proj
-    geos_c
-    netcdf
-    hdf5_serial
-    hdf5_serial_hl
-    xml2
-    pq
-    blosc
-    pcre2-8
-    odbc
-    odbcinst
-    IlmImf
-    IlmThread
-    Imath
-    Half
-    Iex
-    cfitsio
-    ogdi
-    freexl
-)
-
 # Link external libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE ${EXTERNAL_LIBS})
-
-# Handle GDAL and OpenJPEG linking carefully
-# Use the exact OpenJPEG library that GDAL was compiled with
-# GDAL in /usr/local/lib was compiled with OpenJPEG 2.5.0, system has 2.4.0
-# Link order matters! OpenJPEG must be linked before GDAL since GDAL depends on it
-message(STATUS "Using explicit GDAL and OpenJPEG linking for version compatibility")
-target_link_directories(${PROJECT_NAME} PRIVATE
-    /usr/local/lib
-    /usr/lib/x86_64-linux-gnu
-    ${CMAKE_CURRENT_SOURCE_DIR}/local_libs
-)
 
 # Add linker flags to ensure all symbols are linked
 # Use -Wl,--no-as-needed to link all symbols
