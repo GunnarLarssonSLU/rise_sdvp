@@ -187,6 +187,7 @@ private slots:
 
     void on_disconnectButton_clicked();
     void on_connectSelectedButton_clicked();
+    void on_tcpConnectButton_clicked();
     void on_disconnectSelectedButton_clicked();
     void on_refreshMachinesButton_clicked();
     void on_mapRemoveTraceButton_clicked();
