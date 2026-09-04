@@ -103,7 +103,6 @@ public slots:
     void timerSlot();
     void readPendingDatagrams();
     void getState(quint8 id);
-    void getMrState(quint8 id);
     void sendTerminalCmd(quint8 id, QString cmd);
     void forwardVesc(quint8 id, QByteArray data);
     void setRcControlCurrent(quint8 id, double current, double steering);
@@ -119,8 +118,6 @@ public slots:
     void setYawOffset(quint8 id, double angle);
     void getEnuRef(quint8 id);
     void setMsToday(quint8 id, qint32 time);
-    void mrRcControl(quint8 id, double throttle, double roll, double pitch, double yaw);
-    void mrOverridePower(quint8 id, double fl_f, double bl_l, double fr_r, double br_b);
 
 private:
     unsigned short crc16(const unsigned char *buf, unsigned int len);

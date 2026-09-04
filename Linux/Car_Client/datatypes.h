@@ -386,11 +386,18 @@ typedef enum {
     CMD_GET_STATE = 120,
     CMD_RC_CONTROL,
     CMD_SET_SERVO_DIRECT,
-
-    // Multirotor commands
-    CMD_MR_GET_STATE = 160,
-    CMD_MR_RC_CONTROL,
-    CMD_MR_OVERRIDE_POWER,
+    CMD_GET_ACTUATORS,
+    CMD_SET_ACTUATORS,
+    CMD_RC_CONTROL_ADV,
+    CMD_GET_SENSOR_VALUE,      // Get value from specific sensor
+    CMD_GET_SENSOR_BY_ACTIVITY, // Get value from sensors of specific activity
+    CMD_SET_SENSOR_CONFIG,      // Configure sensors
+    CMD_GET_SENSOR_CONFIG,      // Get sensor configuration
+    CMD_SET_STATE_CONTROL,      // Configure a state control loop
+    CMD_GET_STATE_CONTROL,      // Get state control configuration
+    CMD_STATE_CONTROL_ENABLE,   // Enable/disable a control loop
+    CMD_STATE_CONTROL_TARGET,   // Set target value for a control loop
+    CMD_TEST_SENSOR_STATE,      // Test sensor and state control system
 
     // Mote commands
     CMD_MOTE_UBX_START_BASE = 200,

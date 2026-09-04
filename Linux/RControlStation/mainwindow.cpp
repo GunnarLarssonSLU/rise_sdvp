@@ -1202,11 +1202,13 @@ void MainWindow::handleControllerInput(int controllerNumber, float value)
         qDebug() << "Invalid controller number:" << controllerNumber << "- must be 1-8";
         return;
     }
-    
+    qDebug() << "Controller idr:" << controllerNumber;
+
     // Get the action ID for this controller from the database
     QSqlQuery query(db.getDb());
-    query.prepare("SELECT action FROM controllers WHERE id = :controllerId");
-    query.bindValue(":controllerId", controllerNumber);
+    query.prepare("SELECT action FROM controllers WHERE id = :controllerNumber");
+    query.bindValue(":controllerNumber", controllerNumber);
+//    query.bindValue(":controllerId", controllerNumber);
     
     if (!query.exec()) {
         qDebug() << "Failed to query controller action:" << query.lastError().text();
