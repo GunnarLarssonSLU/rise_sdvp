@@ -45,4 +45,6 @@ Linux/RControlStation/Models/*.model
 # Gerber files
 **/Gerber/
 **/*.gtl
-**/*.gbl
+**/*.gblweb/
+web/
+!web/server.py
