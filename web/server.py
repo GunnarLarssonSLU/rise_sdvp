@@ -1274,8 +1274,11 @@ def add_field():
             value = request.form.get(name) or request.args.get(name)
             return value
         
-        # Get field fields - adjust these based on your fields table schema
+        # Get field fields - matching the fields table schema
         name = get_param('name')
+        location = get_param('location')
+        fenced = get_param('fenced')
+        storedinfile = get_param('storedinfile')
         
         # Validate required fields
         if not name:
@@ -1292,13 +1295,9 @@ def add_field():
         
         # Add optional fields if provided
         field_mappings = [
-            ('description', get_param('description')),
-            ('farm_id', get_param('farm_id')),
-            ('location_id', get_param('location_id')),
-            ('area_ha', get_param('area_ha')),
-            ('crop_type', get_param('crop_type')),
-            ('soil_type', get_param('soil_type')),
-            ('created_at', get_param('created_at')),
+            ('location', location),
+            ('fenced', fenced),
+            ('storedinfile', storedinfile),
         ]
         
         for field_name, field_value in field_mappings:
