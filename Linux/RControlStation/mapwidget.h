@@ -311,6 +311,7 @@ private:
     InteractionMode mInteractionMode;
     QTimer *mTimer;
     QVector<MapModule*> mMapModules;
+    QNetworkAccessManager *mNetworkManager;
 
     void updateClosestInfoPoint();
     int drawInfoPoints(QPainter &painter, const QList<LocPoint> &pts,

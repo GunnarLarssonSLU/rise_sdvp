@@ -21,6 +21,11 @@
 #include <QPrinter>
 #include <QPrintEngine>
 #include <QTime>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
+#include <QUrl>
+#include <QUrlQuery>
 
 #include "mapwidget.h"
 #include "qmessagebox.h"
@@ -185,6 +190,8 @@ MapWidget::MapWidget(QWidget *parent) : QWidget(parent)
 
     mTimer = new QTimer(this);
     mTimer->start(20);
+    
+    mNetworkManager = new QNetworkAccessManager(this);
 
     // Set this to the SP base station position for now
     // Ultuna
@@ -662,9 +669,34 @@ void MapWidget::setFarm(double px,double py)
     utility::enuToLlh(illh, xyz, llh);
     qDebug() << "Move centre to: " << llh[0] << ", " << llh[1] << ", " << llh[2];
     int iFarm=mw->currentFarm();
-    db->updateFarmLocation(mw->currentFarm(), llh[0], llh[1]);
-    mw->updateFarms();
-    qDebug() << "farm: " << iFarm;
+    
+    // Call server to update farm location
+    QUrl url(SERVER_BASE_URL "/farm_movelocation");
+    QUrlQuery query;
+    query.addQueryItem("id", QString::number(iFarm));
+    query.addQueryItem("latitude", QString::number(llh[0], 'f', 14));
+    query.addQueryItem("longitude", QString::number(llh[1], 'f', 14));
+    url.setQuery(query);
+    
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+    
+    QNetworkReply* reply = mNetworkManager->get(request);
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, iFarm]() {
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "Farm move location HTTP Status Code:" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && statusCode == 200) {
+            qDebug() << "Farm location moved successfully";
+            mw->updateFarms();
+        } else {
+            qDebug() << "Error moving farm location:" << reply->errorString();
+            qDebug() << "HTTP Status Code:" << statusCode;
+        }
+        reply->deleteLater();
+    });
+    
     mw->setCurrentFarm(iFarm);
 }
 

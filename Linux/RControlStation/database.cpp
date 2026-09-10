@@ -6,6 +6,7 @@
 #include <QCoreApplication>
 
 database::database(QWidget* _qw) {
+    qDebug() << "DEBUG: database constructor - starting";
     qw=_qw;
     // Initialize the database:
     QSqlError err = initDb();
@@ -15,11 +16,17 @@ database::database(QWidget* _qw) {
     }
     
     // Ensure required tables exist
+    qDebug() << "DEBUG: database constructor - ensuring tables exist";
     ensureControllersTableExists();
+    qDebug() << "DEBUG: database constructor - controllers table ensured";
     ensureControlsTableExists();
+    qDebug() << "DEBUG: database constructor - controls table ensured";
     ensureActuatorsTableExists();
+    qDebug() << "DEBUG: database constructor - actuators table ensured";
     ensureSensorsTableExists();
+    qDebug() << "DEBUG: database constructor - sensors table ensured";
     ensureControlRelationshipsExist();
+    qDebug() << "DEBUG: database constructor - control relationships ensured";
 }
 
 QVariant database::addFarm(const QString &name)
@@ -142,9 +149,11 @@ void database::showError(const QSqlError &err)
 
 QSqlError database::initDb()
 {
+    qDebug() << "DEBUG: initDb - starting";
     db = QSqlDatabase::addDatabase("QSQLITE");
     
     // Try different locations for the database file
+    qDebug() << "DEBUG: initDb - trying to find database file";
     QStringList dbPaths;
     
     // 1. First try current directory (for development)
@@ -163,6 +172,7 @@ QSqlError database::initDb()
     
     // Try each path until we find a working database
     foreach (const QString &path, dbPaths) {
+        qDebug() << "DEBUG: initDb - trying path:" << path;
         db.setDatabaseName(path);
         if (db.open()) {
             qDebug() << "Database opened from:" << path;
@@ -663,9 +673,11 @@ void database::insertDefaultSensors()
 // Controller methods
 QList<ControllerInfo> database::getAllControllers()
 {
+    qDebug() << "DEBUG: getAllControllers - starting";
     QList<ControllerInfo> controllers;
     
     QSqlQuery query("SELECT id, name FROM controls ORDER BY name", db);
+    qDebug() << "DEBUG: getAllControllers - query prepared, executing";
     if (query.exec()) {
         while (query.next()) {
             ControllerInfo info;
@@ -677,6 +689,7 @@ QList<ControllerInfo> database::getAllControllers()
         qDebug() << "Error getting controls:" << query.lastError().text();
     }
     
+    qDebug() << "DEBUG: getAllControllers - found" << controllers.size() << "controllers";
     return controllers;
 }
 
@@ -702,11 +715,14 @@ ControllerInfo database::getControllerById(int id)
 
 void database::addController(const QString& name)
 {
+    qDebug() << "DEBUG: addController - adding controller:" << name;
     QSqlQuery query(db);
     query.prepare("INSERT INTO controls (name) VALUES (?)");
     query.addBindValue(name);
     
     if (!query.exec()) {
         qDebug() << "Error adding control:" << query.lastError().text();
+    } else {
+        qDebug() << "DEBUG: addController - successfully added controller:" << name;
     }
 }

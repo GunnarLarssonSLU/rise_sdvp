@@ -27,6 +27,9 @@ extern "C++" {
 }
 #endif
 
+// Server configuration
+#define SERVER_BASE_URL "http://192.168.200.3:8080"
+
 // Sizes
 #define LOG_NAME_MAX_LEN			20
 

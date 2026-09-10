@@ -401,7 +401,6 @@ FORMS += basestation.ui \
          "mainwindow (another copy).ui" \
          "mainwindow (copy).ui" \
          mainwindow.ui \
-         mainwindow_backup.ui \
          moteconfig.ui \
          ncom.ui \
          networkinterface.ui \

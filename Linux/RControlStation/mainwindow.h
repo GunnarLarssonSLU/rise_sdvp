@@ -150,7 +150,9 @@ private slots:
     void onSelectedField(const QModelIndex& current, const QModelIndex& previous);
     void onSelectedFieldGeneral(QStandardItemModel *model, QStandardItemModel *modelPth, const QModelIndex& current, const QModelIndex& previous);
     void on_listLogFilesView_clicked(const QModelIndex& index);
-    void onUnconnectedFieldsTableItemClicked(QTableWidgetItem *item);
+    void onUnconnectedFieldsTableItemClicked(int index);
+    void onAdminFileSelected(int index);
+    void fetchFarmLocationForAdmin(int farmId);
 
 
     void handleAddFieldButton();
@@ -183,6 +185,21 @@ private slots:
     void onFieldSelectedForLog(int index);
     void onPathSelectedForLog(int index);
     void onLogSelectedForLog(int index);
+    
+    // File admin tab slot functions
+    void onFarmSelectedForAdmin(int index);
+    void onFieldSelectedForAdmin(int index);
+    void onPathSelectedForAdmin(int index);
+    
+    // File admin tab fetch and parse functions
+    void fetchFieldsForAdminFarm(int farmId);
+    void fetchPathsForAdminField(int fieldId);
+    void fetchUnconnectedFields();
+    void parseUnconnectedFieldsXml(const QByteArray &xmlData);
+    void loadAdminPath(int pathId);
+    void parseAllFieldsXmlForAdmin(const QByteArray &xmlData);
+    void parseAllPathsXmlForAdmin(const QByteArray &xmlData);
+    
     void onLoadLogButtonClicked();
 
     void on_disconnectButton_clicked();
@@ -240,6 +257,11 @@ private slots:
     void on_mapTraceMinSpaceGpsBox_valueChanged(double arg1);
     void on_mapInfoTraceBox_valueChanged(int arg1);
     void on_removeInfoTraceExtraButton_clicked();
+    void on_moveFieldButton_clicked();
+    void fetchAllFarmsDataFileAdmin(int retryCount = 0);
+    void parseAllFarmsXmlFileAdmin(const QByteArray &xmlData);
+//    void loadAdminPath(int pathId);
+    void refreshAdminFields();
     void on_pollIntervalBox_valueChanged(int arg1);
     void on_actionAbout_triggered();
     void on_actionAboutLibrariesUsed_triggered();
@@ -321,8 +343,6 @@ private:
     void fetchAllFarmsData(int retryCount = 0);
     void fetchAllFieldsData(int farmId, int retryCount = 0);
     void fetchAllPathsData(int fieldId, int retryCount = 0);
-    void fetchUnconnectedFieldsData(int retryCount = 0);
-    void parseUnconnectedFieldsXml(const QByteArray &xmlData);
     void parseVehicleTypesXml(const QByteArray &xmlData);
     void parseAllMachinesXml(const QByteArray &xmlData);
     void parseMachinesXml(const QByteArray &xmlData);
@@ -348,6 +368,12 @@ private:
     QStandardItemModel *logFieldsModel;
     QStandardItemModel *logPathsModel;
     QStandardItemModel *logLogsModel;
+    
+    // Models for file admin tab dropdowns
+    QStandardItemModel *adminFarmsModel;
+    QStandardItemModel *adminFieldsModel;
+    QStandardItemModel *adminPathsModel;
+    QStandardItemModel *adminFilesModel;
     VehicleTypeDelegate *vehicleTypeDelegate;
     CheckBoxDelegate* checkboxdelegate;
     // QStringListModel* fileModel;  // Model to hold filenames - removed, replaced with combo boxes
@@ -379,7 +405,6 @@ private:
     QNetworkAccessManager *mNetworkManager;
     
     // File administration tab widgets
-    QTableWidget *mUnconnectedFieldsTable;
     MapWidget *mMapWidgetFileAdmin;
     QString mVersion;
     rtcm3_state mRtcmState;

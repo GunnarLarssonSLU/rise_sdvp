@@ -1015,74 +1015,6 @@ def add_path():
         return f"Error: {str(e)}", 500
 
 
-@app.route('/path_register', methods=['GET', 'POST'])
-def path_register():
-    try:
-        # Get all the fields from POST form data or URL parameters
-        def get_param(name):
-            value = request.form.get(name) or request.args.get(name)
-            return value
-
-        field = get_param('field')
-        file_location = get_param('file')
-
-        if not field:
-            return "Error: 'field' field is required", 400
-
-        if not file_location:
-            return "Error: 'file' field is required", 400
-
-        # Validate that field is an integer
-        try:
-            field_int = int(field)
-        except ValueError:
-            return "Error: 'field' parameter must be an integer", 400
-
-        # Process the file location to create the name
-        # Remove .xml extension and any folder paths
-        import os
-        # Remove .xml extension
-        name = file_location.replace('.xml', '')
-        # Remove any folder paths (keep only the filename)
-        name = os.path.basename(name)
-
-        # Connect to database
-        conn = sqlite3.connect('data.db')
-        cursor = conn.cursor()
-
-        # Insert the path with field=field_int, storedinfile=file_location, name=processed_name
-        cursor.execute(
-            'INSERT INTO paths (name, field, storedinfile) VALUES (?, ?, ?)',
-            (name, field_int, file_location)
-        )
-
-        # Get the ID of the newly inserted path
-        path_id = cursor.lastrowid
-
-        # Log the addition to log_paths table
-        from datetime import datetime
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-        # Build the path data as a string for logging
-        path_data = {'name': name, 'field': field_int, 'storedinfile': file_location}
-        path_data_str = str(path_data)
-
-        cursor.execute(
-            'INSERT INTO log_paths (path_id, path_data, timestamp, action) VALUES (?, ?, ?, ?)',
-            (path_id, path_data_str, timestamp, 'REGISTER')
-        )
-
-        conn.commit()
-        conn.close()
-
-        return "Path registered successfully", 201
-
-    except sqlite3.IntegrityError as e:
-        return f"Error: {str(e)}", 409
-    except Exception as e:
-        return f"Error: {str(e)}", 500
-
-
 @app.route('/edit_path', methods=['GET', 'POST'])
 def edit_path():
     try:
@@ -1538,9 +1470,9 @@ def unconnected_fields():
         unconnected = [f for f in xml_files if f not in db_files]
         
         # Create XML structure
-        root = ET.Element('unconnected_fields')
+        root = ET.Element('unconnected_paths')
         for filename in unconnected:
-            path_elem = ET.SubElement(root, 'field')
+            path_elem = ET.SubElement(root, 'path')
             ET.SubElement(path_elem, 'filename').text = filename
         
         # Convert to XML string with declaration
@@ -1603,4 +1535,4 @@ def remove_field():
 
 
 if __name__ == '__main__':
-    app.run(host='192.168.200.3', port=8080, debug=True)
+    app.run(host='127.0.0.1', port=8080, debug=True)

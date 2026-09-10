@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<vehicle_types><vehicle_type><id>1</id><name>MacTrac</name><typeofsteering>1</typeofsteering><length_m>4.0</length_m><width_m>3.0</width_m></vehicle_type><vehicle_type><id>2</id><name>Drängen</name><typeofsteering>2</typeofsteering><length_m>3.0</length_m><width_m>2.0</width_m></vehicle_type></vehicle_types>
