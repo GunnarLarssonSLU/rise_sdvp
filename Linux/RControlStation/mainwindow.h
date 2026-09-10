@@ -152,6 +152,7 @@ private slots:
     void on_listLogFilesView_clicked(const QModelIndex& index);
     void onUnconnectedFieldsTableItemClicked(int index);
     void onAdminFileSelected(int index);
+    void onAddAsFieldButtonClicked();
     void fetchFarmLocationForAdmin(int farmId);
 
 

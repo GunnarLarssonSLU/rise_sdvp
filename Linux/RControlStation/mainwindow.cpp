@@ -1525,6 +1525,7 @@ void MainWindow::setupLogTab()
     connect(ui->comboBoxAdminFile, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onAdminFileSelected);
     connect(ui->comboBoxLog, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onLogSelectedForLog);
     connect(ui->pushButtonLoadLog, &QPushButton::clicked, this, &MainWindow::onLoadLogButtonClicked);
+    connect(ui->addasFieldButton, &QPushButton::clicked, this, &MainWindow::onAddAsFieldButtonClicked);
     
     // Load unconnected fields
     qDebug() << "DEBUG: About to call fetchUnconnectedFields";
@@ -1829,6 +1830,93 @@ void MainWindow::onUnconnectedFieldsTableItemClicked(int index)
             }
             qDebug() << "Error fetching field:" << filename << "-" << errorMsg;
             showStatusInfo("Error loading: " + filename + " (" + errorMsg + ")", false);
+        }
+        reply->deleteLater();
+    });
+}
+
+void MainWindow::onAddAsFieldButtonClicked()
+{
+    qDebug() << "onAddAsFieldButtonClicked: Add as Field button clicked";
+    
+    // Get the selected filename from comboBoxAdminFile
+    QString storedinfile = ui->comboBoxAdminFile->currentText();
+    if (storedinfile.isEmpty()) {
+        qDebug() << "ERROR: No file selected in comboBoxAdminFile";
+        showStatusInfo("Error: Please select a file first", false);
+        return;
+    }
+    
+    // Get the selected farm from comboBoxAdminFarm
+    QString location = ui->comboBoxAdminFarm->currentText();
+    if (location.isEmpty()) {
+        qDebug() << "ERROR: No farm selected in comboBoxAdminFarm";
+        showStatusInfo("Error: Please select a farm first", false);
+        return;
+    }
+    
+    // Use the filename (without extension) as the field name by default
+    // Remove the .xml extension if present
+    QString name = storedinfile;
+    if (name.endsWith(".xml", Qt::CaseInsensitive)) {
+        name = name.left(name.length() - 4);
+    }
+    
+    qDebug() << "Adding field with name:" << name << ", location:" << location << ", storedinfile:" << storedinfile;
+    
+    // Prepare the POST request to /add_field
+    QUrl url(QString("%1/add_field").arg(SERVER_BASE_URL));
+    qDebug() << "POST URL:" << url.toString();
+    
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+    
+    // Prepare form data
+    QUrlQuery postData;
+    postData.addQueryItem("name", name);
+    postData.addQueryItem("location", location);
+    postData.addQueryItem("storedinfile", storedinfile);
+    
+    // Send as POST with form data
+    QNetworkReply* reply = mNetworkManager->post(request, postData.toString(QUrl::FullyEncoded).toUtf8());
+    
+    if (!reply) {
+        qDebug() << "ERROR: Network request failed for" << url.toString();
+        showStatusInfo("Network error: Could not add field", false);
+        return;
+    }
+    
+    // Show loading state
+    showStatusInfo("Adding field...", true);
+    
+    connect(reply, &QNetworkReply::finished, this, [this, reply, name, location, storedinfile]() {
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "add_field HTTP Status Code:" << statusCode;
+        
+        if (reply->error() == QNetworkReply::NoError && (statusCode == 201 || statusCode == 200)) {
+            QByteArray response = reply->readAll();
+            qDebug() << "Field added successfully:" << response;
+            showStatusInfo("Field '" + name + "' added successfully", true);
+            
+            // Refresh the fields list for the selected farm
+            QStandardItem* farmItem = adminFarmsModel->item(ui->comboBoxAdminFarm->currentIndex());
+            if (farmItem) {
+                QString farmId = farmItem->data(Qt::UserRole).toString();
+                if (!farmId.isEmpty()) {
+                    fetchFieldsForAdminFarm(farmId.toInt());
+                }
+            }
+        } else {
+            QString errorMsg = reply->errorString();
+            if (statusCode != 200 && statusCode != 201 && statusCode > 0) {
+                errorMsg = QString("HTTP %1").arg(statusCode);
+            }
+            QByteArray response = reply->readAll();
+            if (!response.isEmpty()) {
+                errorMsg += ": " + QString(response);
+            }
+            qDebug() << "Error adding field:" << errorMsg;
+            showStatusInfo("Error adding field: " + errorMsg, false);
         }
         reply->deleteLater();
     });
