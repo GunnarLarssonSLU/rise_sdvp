@@ -85,6 +85,7 @@ Packet::Packet(QObject *parent) : QObject(parent)
  */
 void Packet::sendPacket(const QByteArray &data)
 {
+    qDebug() << "Packet::sendPacket: Input data size:" << data.size();
     QByteArray to_send;
     unsigned int len_tot = data.size();
 
@@ -112,6 +113,7 @@ void Packet::sendPacket(const QByteArray &data)
     to_send.append((char)(crc & 0xFF));
     to_send.append((char)3);
 
+    qDebug() << "Packet::sendPacket: Emitting dataToSend, framed packet size:" << to_send.size();
     // Emit signal to send the framed packet
     emit dataToSend(to_send);
 }
@@ -149,6 +151,7 @@ unsigned short Packet::crc16(const unsigned char *buf, unsigned int len)
  */
 void Packet::processData(QByteArray data)
 {
+    qDebug() << "Packet::processData: Processing" << data.size() << "bytes";
     unsigned char rx_data;
     for(int i = 0;i < data.length();i++) {
         rx_data = data.at(i);
@@ -220,7 +223,7 @@ void Packet::processData(QByteArray data)
                 if (crc16((const unsigned char*)mRxBuffer.data(), mPayloadLength) ==
                         ((unsigned short)mCrcHigh << 8 | (unsigned short)mCrcLow)) {
                     // Packet received!
-//                    qDebug() << "Packet received! (packet::processData)";
+                    qDebug() << "Packet::processData: Packet received! Size:" << mPayloadLength;
                     emit packetReceived(mRxBuffer);
                 }
             }

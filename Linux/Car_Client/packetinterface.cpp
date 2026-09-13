@@ -124,6 +124,7 @@ PacketInterface::~PacketInterface()
  */
 void PacketInterface::processData(QByteArray &data)
 {
+    qDebug() << "PacketInterface::processData: Processing" << data.size() << "bytes";
     unsigned char rx_data;
     const int rx_timeout = 50;
 
@@ -203,6 +204,7 @@ void PacketInterface::processData(QByteArray &data)
                 if (crc16(mRxBuffer, mPayloadLength) ==
                         ((unsigned short)mCrcHigh << 8 | (unsigned short)mCrcLow)) {
                     // Packet received!
+                    qDebug() << "PacketInterface::processData: Packet received! Size:" << mPayloadLength;
                     processPacket(mRxBuffer, mPayloadLength);
                 }
             }
@@ -226,6 +228,7 @@ void PacketInterface::processData(QByteArray &data)
  */
 void PacketInterface::processPacket(const unsigned char *data, int len)
 {
+    qDebug() << "PacketInterface::processPacket: Processing packet, len:" << len;
     // Create QByteArray for the complete packet
     QByteArray pkt = QByteArray((const char*)data, len);
 
@@ -239,6 +242,7 @@ void PacketInterface::processPacket(const unsigned char *data, int len)
     data++;
     len--;
 
+    qDebug() << "PacketInterface::processPacket: id:" << id << ", cmd:" << cmd;
 
     if ((cmd!=63) && (cmd!=120))
     {

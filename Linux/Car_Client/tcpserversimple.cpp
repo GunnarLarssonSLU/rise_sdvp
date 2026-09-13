@@ -93,14 +93,17 @@ void TcpServerSimple::stopServer()
  */
 bool TcpServerSimple::sendData(const QByteArray &data)
 {
-//    qDebug() << "in TcpServerSimple::sendData: " << data;
+    qDebug() << "in TcpServerSimple::sendData: " << data;
     bool res = false;
 
     // Send data to connected client if available
     if (mTcpSocket) {
+        qDebug() << "TcpServerSimple::sendData: Sending data to TCP socket";
         mTcpSocket->write(data);
         sendMessageToRos2(data);
         res = true;
+    } else {
+        qDebug() << "TcpServerSimple::sendData: No TCP socket available";
     }
 
     return res;
@@ -162,15 +165,16 @@ void TcpServerSimple::tcpInputDisconnected()
 
 void TcpServerSimple::tcpInputDataAvailable()
 {
-//	qDebug() << "in TcpServerSimple::tcpInputDataAvailable";
+    qDebug() << "in TcpServerSimple::tcpInputDataAvailable";
     QByteArray data = mTcpSocket->readAll();
+    qDebug() << "TcpServerSimple::tcpInputDataAvailable: Read" << data.size() << "bytes, data:" << data;
     emit dataRx(data);
 
     if (mUsePacket) {
-//        qDebug() << "use Packet";
+        qDebug() << "TcpServerSimple::tcpInputDataAvailable: use Packet";
         mPacket->processData(data);
     } else {
-//    	qDebug() << "do not use Packet";
+        qDebug() << "TcpServerSimple::tcpInputDataAvailable: do not use Packet";
     }
 }
 
@@ -183,6 +187,7 @@ void TcpServerSimple::tcpInputError(QAbstractSocket::SocketError socketError)
 
 void TcpServerSimple::dataToSend(QByteArray &data)
 {
+    qDebug() << "TcpServerSimple::dataToSend: Data to send:" << data;
     sendData(data);
 }
 

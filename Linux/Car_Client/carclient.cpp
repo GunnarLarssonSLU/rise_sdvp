@@ -936,7 +936,7 @@ void CarClient::packetDataToSend(QByteArray &data)
             mSerialPort->writeData(data);
         } else
         {
-            qDebug() << "Packet not sent (port closed)";
+//            qDebug() << "Packet not sent (port closed)";
 
         }
     }
