@@ -112,7 +112,7 @@ void motor_set_speed(float speed)
 #else
 	#if HAS_DIFF_STEERING
 			float rpm_r=0.0 ,rpm_l=0.0;
-			void motor_diff_rpms(*rpm_r, *rpm_l, speed, m_turn_rad_now);
+			motor_diff_rpms(&rpm_r, &rpm_l, speed, m_turn_rad_now);
 			comm_can_lock_vesc();
 			comm_can_set_vesc_id(VESC_LEFT);
 			bldc_interface_set_rpm((int)rpm_l);
