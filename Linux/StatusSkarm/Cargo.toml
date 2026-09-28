@@ -1,0 +1,12 @@
+[package]
+name = "statusskarm"
+version = "0.1.0"
+edition = "2021"
+description = "Fullskärmsstatus för robotens Pi (5\" touchskärm): styrkort, Car_Client, internet, RTK, CPU"
+
+[dependencies]
+# Samma GUI-bibliotek som robotstyrning-klienten.
+eframe = "0.27"
+
+[profile.release]
+opt-level = 3
