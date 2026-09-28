@@ -2416,6 +2416,17 @@ bool MainWindow::gamepadAttached()
 
 void MainWindow::rcResendTick()
 {
+    // Hydraulik: firmware stoppar armarna efter 2 s utan kommando, så skicka om
+    // medan en armknapp hålls. Tappas dosan: stopp.
+    if (mArmFrontMove != 0 || mArmRearMove != 0) {
+        if (!gamepadAttached()) {
+            mArmL1 = mArmL2 = mArmR1 = mArmR2 = false;
+            updateArms();
+        } else if (!mArmResendAge.isValid() || mArmResendAge.elapsed() >= 500) {
+            sendArmHydraulics(true);
+        }
+    }
+
     if (mLastActionValues.isEmpty()) {
         return;
     }
@@ -2435,6 +2446,43 @@ void MainWindow::rcResendTick()
     for (auto it = mLastActionValues.constBegin(); it != mLastActionValues.constEnd(); ++it) {
         controllerAction(mActiveCarId, it.key(), it.value());
     }
+}
+
+// Armknapparna: L1 upp / L2 ned = främre armar, R1 upp / R2 ned = bakre armar.
+// Båda nedtryckta på samma sida = stopp.
+void MainWindow::updateArms()
+{
+    // Nyare vägen (dosabindningar, t.ex. VESC-armar): kontroll 1 = vänster sida,
+    // kontroll 3 = höger sida; +1 upp, -1 ned, 0 släppt.
+    float left = (mArmL1 == mArmL2) ? 0.0f : (mArmL1 ? 1.0f : -1.0f);
+    float right = (mArmR1 == mArmR2) ? 0.0f : (mArmR1 ? 1.0f : -1.0f);
+    handleControllerInput(1, left);
+    handleControllerInput(3, right);
+
+    // Hydraulik via firmware (CMD_HYDRAULIC_MOVE). Firmwarens värden skickas direkt:
+    // fram = 1, bak = 0; stopp = 0, upp = 1, ned = 2. (RControlStations egen
+    // HYDRAULIC_POS har fram = 0, bak = 1 — omvänt mot firmware, använd inte den.)
+    mArmFrontMove = (mArmL1 == mArmL2) ? 0 : (mArmL1 ? 1 : 2);
+    mArmRearMove = (mArmR1 == mArmR2) ? 0 : (mArmR1 ? 1 : 2);
+    sendArmHydraulics(false);
+}
+
+void MainWindow::sendArmHydraulics(bool force)
+{
+    static int lastFront = -1, lastRear = -1;
+    if (!mJoystickControlEnabled || !mTcpClientMulti->isAnyConnected()) {
+        return;
+    }
+    const quint8 FW_POS_FRONT = 1, FW_POS_REAR = 0;
+    if (force || mArmFrontMove != lastFront) {
+        mPacketInterface->hydraulicMove(mActiveCarId, (HYDRAULIC_POS)FW_POS_FRONT, (HYDRAULIC_MOVE)mArmFrontMove);
+        lastFront = mArmFrontMove;
+    }
+    if (force || mArmRearMove != lastRear) {
+        mPacketInterface->hydraulicMove(mActiveCarId, (HYDRAULIC_POS)FW_POS_REAR, (HYDRAULIC_MOVE)mArmRearMove);
+        lastRear = mArmRearMove;
+    }
+    mArmResendAge.restart();
 }
 
 void MainWindow::sendHeartbeat()
@@ -8001,13 +8049,13 @@ void MainWindow::handleButtonEvent(const SDL_ControllerButtonEvent& event) {
     switch (event.button) {
     case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
         qDebug() << "Button L1" << pressed;
-        handleControllerInput(1, pressed ? 1.0f : 0.0f);
-        //jsButtonChanged(4, pressed);
+        mArmL1 = pressed;
+        updateArms();
         break;
     case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
         qDebug() << "Button R1" << pressed;
-        handleControllerInput(3, pressed ? 1.0f : 0.0f);
-        //jsButtonChanged(5, pressed);
+        mArmR1 = pressed;
+        updateArms();
         break;
     }
 }
@@ -8027,14 +8075,15 @@ void MainWindow::handleAxisEvent(const SDL_ControllerAxisEvent& event) {
         handleControllerInput(7,-event.value/32768.0);
         break;
     case SDL_CONTROLLER_AXIS_TRIGGERLEFT:
-        qDebug() << "Button L2:" << event.value;
         ui->statusBar->showMessage(QString("Gamepad: L2 Trigger %1%").arg((int)((float)event.value / 327.68f)), 1500);
-        //jsButtonChanged(6, event.value > 0);
+        // Avtryckaren är analog: nedtryckt över halvvägs, släppt under en fjärdedel.
+        if (!mArmL2 && event.value > 16384) { mArmL2 = true; updateArms(); }
+        else if (mArmL2 && event.value < 8192) { mArmL2 = false; updateArms(); }
         break;
     case SDL_CONTROLLER_AXIS_TRIGGERRIGHT:
-        qDebug() << "Button R2:" << event.value;
         ui->statusBar->showMessage(QString("Gamepad: R2 Trigger %1%").arg((int)((float)event.value / 327.68f)), 1500);
-        //jsButtonChanged(7, event.value > 0);
+        if (!mArmR2 && event.value > 16384) { mArmR2 = true; updateArms(); }
+        else if (mArmR2 && event.value < 8192) { mArmR2 = false; updateArms(); }
         break;
     }
 }

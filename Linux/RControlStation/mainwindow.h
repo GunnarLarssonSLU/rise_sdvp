@@ -448,6 +448,15 @@ private:
     void rcResendTick();
     bool gamepadAttached();
 
+    // Armar (L1/L2 fram, R1/R2 bak). Skickas två vägar, varje maskin använder den
+    // den förstår: CMD_HYDRAULIC_MOVE (hydraulik via firmware, t.ex. MacTrac) och
+    // kontroll 1/3 via dosabindningarna (t.ex. VESC-armar på RobAnt).
+    bool mArmL1 = false, mArmL2 = false, mArmR1 = false, mArmR2 = false;
+    int mArmFrontMove = 0, mArmRearMove = 0;   // senast skickat, i firmwarens värden
+    QElapsedTimer mArmResendAge;
+    void updateArms();
+    void sendArmHydraulics(bool force);
+
 private slots:
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     void pollGamepad();
