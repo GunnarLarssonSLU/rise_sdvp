@@ -83,20 +83,20 @@
 #endif
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-#define FRONT_UP 5
+#define FRONT_UP 4
 #define FRONT_DOWN 7
-#define REAR_UP 4
-#define REAR_DOWN 6
-// 7: Front Up
-// 5: Front Down
+#define REAR_UP 6
+#define REAR_DOWN 5
+// 4: Front Up
+// 7: Front Down
 // 6: Rear up
-// 4: Rear down
+// 5: Rear down
 #else
-#define FRONT_UP 5
+#define FRONT_UP 4
 #define FRONT_DOWN 7
-#define REAR_UP 4
-#define REAR_DOWN 6
-// 5: Front Up
+#define REAR_UP 6
+#define REAR_DOWN 5
+// 4: Front Up
 // 7: Front Down
 // 4: Rear up
 // 6: Rear down
@@ -8227,20 +8227,31 @@ void MainWindow::handleButtonEvent(const SDL_ControllerButtonEvent& event) {
     qDebug() << "button id: " << event.button;
     bool pressed = (event.state == SDL_PRESSED);
     
+    // Map SDL button numbers to action IDs
+    // Action IDs: FRONT_UP=4, FRONT_DOWN=7, REAR_UP=6, REAR_DOWN=5
+    if (pressed) {
+        switch (event.button) {
+        case 4:  // If SDL button 4 is pressed
+            controllerAction(mActiveCarId, FRONT_UP);
+            break;
+        case 6:  // If SDL button 6 is pressed
+            controllerAction(mActiveCarId, REAR_UP);
+            break;
+        default:
+            // For other buttons, try to use the button number as action ID
+            controllerAction(mActiveCarId, event.button);
+            break;
+        }
+    }
+    
     switch (event.button) {
     case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:  // Button 9
         qDebug() << "Button L1" << pressed;
-        if (pressed) {
-            controllerAction(mActiveCarId, REAR_UP);  // REAR_UP = 4
-        }
         handleControllerInput(1,1.0);
         //jsButtonChanged(4, pressed);
         break;
     case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:  // Button 10
         qDebug() << "Button R1" << pressed;
-        if (pressed) {
-            controllerAction(mActiveCarId, REAR_DOWN);  // REAR_DOWN = 6
-        }
         handleControllerInput(3,1.0);
         //jsButtonChanged(5, pressed);
         break;
@@ -8263,10 +8274,16 @@ void MainWindow::handleAxisEvent(const SDL_ControllerAxisEvent& event) {
         break;
     case SDL_CONTROLLER_AXIS_TRIGGERLEFT:
         qDebug() << "Button L2:" << event.value;
+        if (event.value > 10000) {
+            controllerAction(mActiveCarId, FRONT_DOWN);
+        }
         //jsButtonChanged(6, event.value > 0);
         break;
     case SDL_CONTROLLER_AXIS_TRIGGERRIGHT:
         qDebug() << "Button R2:" << event.value;
+        if (event.value > 10000) {
+            controllerAction(mActiveCarId, REAR_DOWN);
+        }
         //jsButtonChanged(7, event.value > 0);
         break;
     }
