@@ -1381,10 +1381,10 @@ void MainWindow::handleControllerInput(int controllerNumber, float value)
     // Update the label text with dynamic ASCII feedback bar in real-time
     switch (controllerNumber) {
         case 1:
-            ui->label_9->setText(QString("Left flip %1").arg(getControllerAsciiBar(value, false)));
+            ui->label_9->setText(QString("Left flip %1").arg(getControllerAsciiBar(value, true))); // L1 +1, L2 -1
             break;
         case 3:
-            ui->label_10->setText(QString("Right flip %1").arg(getControllerAsciiBar(value, false)));
+            ui->label_10->setText(QString("Right flip %1").arg(getControllerAsciiBar(value, true))); // R1 +1, R2 -1
             break;
         case 5:
             ui->label_4->setText(QString("Left control stick - up/down %1").arg(getControllerAsciiBar(value, true)));
