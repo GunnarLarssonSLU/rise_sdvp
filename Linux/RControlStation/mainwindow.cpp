@@ -8227,20 +8227,20 @@ void MainWindow::handleButtonEvent(const SDL_ControllerButtonEvent& event) {
     qDebug() << "button id: " << event.button;
     bool pressed = (event.state == SDL_PRESSED);
     
-    // Directly call controllerAction with the button number as action ID
-    // This bypasses the database lookup for testing
-    if (pressed) {
-        controllerAction(mActiveCarId, event.button);
-    }
-    
     switch (event.button) {
-    case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+    case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:  // Button 9
         qDebug() << "Button L1" << pressed;
+        if (pressed) {
+            controllerAction(mActiveCarId, REAR_UP);  // REAR_UP = 4
+        }
         handleControllerInput(1,1.0);
         //jsButtonChanged(4, pressed);
         break;
-    case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+    case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:  // Button 10
         qDebug() << "Button R1" << pressed;
+        if (pressed) {
+            controllerAction(mActiveCarId, REAR_DOWN);  // REAR_DOWN = 6
+        }
         handleControllerInput(3,1.0);
         //jsButtonChanged(5, pressed);
         break;
