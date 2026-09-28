@@ -20,6 +20,7 @@
 //!   statusskarm            helskärm (på Pi:n)
 //!   statusskarm --demo     påhittad status, omstarter bara låtsas (för test på datorn)
 //!   statusskarm --fonster  fönster 720x1280 i stället för helskärm
+//!   statusskarm --fonster=800x480   fönster i valfri storlek (t.ex. en 4,3"-skärm)
 //!   statusskarm --utan-nedrakning   visa rutorna direkt
 //!   statusskarm --text     ingen skärm: skriv status i terminalen var 2:a sekund (felsökning)
 
@@ -131,7 +132,13 @@ impl Action {
 fn main() -> eframe::Result<()> {
     let args: Vec<String> = std::env::args().collect();
     let demo = args.iter().any(|a| a == "--demo");
-    let windowed = args.iter().any(|a| a == "--fonster");
+    let windowed = args.iter().any(|a| a == "--fonster" || a.starts_with("--fonster="));
+    let window_size = args
+        .iter()
+        .find_map(|a| a.strip_prefix("--fonster="))
+        .and_then(|s| s.split_once('x'))
+        .and_then(|(w, h)| Some([w.parse::<f32>().ok()?, h.parse::<f32>().ok()?]))
+        .unwrap_or([720.0, 1280.0]);
     let skip_countdown = args.iter().any(|a| a == "--utan-nedrakning");
 
     let status = Arc::new(Mutex::new(Status::default()));
@@ -164,7 +171,7 @@ fn main() -> eframe::Result<()> {
     }
 
     let viewport = if windowed {
-        egui::ViewportBuilder::default().with_inner_size([720.0, 1280.0]).with_title("Status")
+        egui::ViewportBuilder::default().with_inner_size(window_size).with_title("Status")
     } else {
         egui::ViewportBuilder::default().with_fullscreen(true).with_title("Status")
     };
@@ -562,15 +569,26 @@ impl App {
             }
             ui.painter().rect_filled(b, 16.0, fill);
 
-            let title_size = (h * 0.16).min(w * 0.14);
-            let detail_size = title_size * 0.55;
+            // Stor text även på en liten skärm (4,3" 800x480): detaljraden radbryts
+            // inom rutan i stället för att krympa.
+            let title_size = (h * 0.19).min(w * 0.16);
+            let detail_size = title_size * 0.68;
+            let wrap = tw * 0.9;
+            let painter = ui.painter();
+            let centered = |text: &str, size: f32, color: egui::Color32, y: f32| {
+                let mut job = egui::text::LayoutJob::simple(text.to_string(), egui::FontId::proportional(size), color, wrap);
+                job.halign = egui::Align::Center; // varje radbruten rad centreras
+                let galley = painter.layout_job(job);
+                let pos = egui::pos2(b.center().x, y - galley.size().y / 2.0);
+                painter.galley(pos, galley, color);
+            };
             if let Some(big) = &tile.big {
-                ui.painter().text(b.center_top() + egui::vec2(0.0, h * 0.2), egui::Align2::CENTER_CENTER, tile.title, egui::FontId::proportional(title_size), TEXT);
-                ui.painter().text(b.center(), egui::Align2::CENTER_CENTER, big, egui::FontId::proportional(title_size * 1.6), TEXT);
-                ui.painter().text(b.center_bottom() - egui::vec2(0.0, h * 0.17), egui::Align2::CENTER_CENTER, &tile.detail, egui::FontId::proportional(detail_size), TEXT_DIM);
+                centered(tile.title, title_size, TEXT, b.top() + h * 0.2);
+                centered(big, title_size * 1.6, TEXT, b.center().y);
+                centered(&tile.detail, detail_size, TEXT_DIM, b.bottom() - h * 0.18);
             } else {
-                ui.painter().text(b.center() - egui::vec2(0.0, h * 0.1), egui::Align2::CENTER_CENTER, tile.title, egui::FontId::proportional(title_size), TEXT);
-                ui.painter().text(b.center() + egui::vec2(0.0, h * 0.14), egui::Align2::CENTER_CENTER, &tile.detail, egui::FontId::proportional(detail_size), TEXT_DIM);
+                centered(tile.title, title_size, TEXT, b.center().y - h * 0.13);
+                centered(&tile.detail, detail_size, TEXT_DIM, b.center().y + h * 0.17);
             }
 
             if let Some(action) = tile.action {
