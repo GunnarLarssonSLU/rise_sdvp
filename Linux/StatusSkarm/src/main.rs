@@ -4,7 +4,7 @@
 //! 3 min). Tryck var som helst för att hoppa förbi. Sedan sju rutor som uppdateras
 //! var 2:a sekund. Grön = OK, grå = inte OK. CPU-rutan är grön/gul/röd.
 //!
-//! Tryck på Car_Client- eller RTK-rutan när den inte är grön, eller på Pi-rutan
+//! Tryck på Car_Client-, Internet- eller RTK-rutan när den inte är grön, eller på Pi-rutan
 //! (alltid), för att starta om efter en Ja/Nej-fråga. Kommandona körs med
 //! `sudo -n` och är begränsade av en sudoers-regel (se installera.sh).
 //!
@@ -84,6 +84,7 @@ enum Action {
     RestartCarClient,
     RestartRtk,
     Reboot,
+    RestartWireGuard,
 }
 
 impl Action {
@@ -92,6 +93,7 @@ impl Action {
             Action::RestartCarClient => "Är du säker att du vill starta om car_service?",
             Action::RestartRtk => "Är du säker att du vill starta om RTK-tjänsten (car_rtk)?",
             Action::Reboot => "Är du säker att du vill starta om Pi:n?",
+            Action::RestartWireGuard => "Är du säker att du vill starta om internet (WireGuard)?",
         }
     }
 
@@ -102,6 +104,10 @@ impl Action {
                  WireGuard-tunneln. Alla fjärranslutningar bryts. \
                  Därefter visas nedräkningen på nytt.",
             ),
+            Action::RestartWireGuard => Some(
+                "Tunneln tas ner och upp igen. Fjärranslutningar (RControlStation, ssh) \
+                 bryts en kort stund och får anslutas på nytt.",
+            ),
             _ => None,
         }
     }
@@ -111,6 +117,9 @@ impl Action {
             Action::RestartCarClient => &["sudo", "-n", "/usr/bin/systemctl", "restart", "car_client.service"],
             Action::RestartRtk => &["sudo", "-n", "/usr/bin/systemctl", "restart", "car_rtk.service"],
             Action::Reboot => &["sudo", "-n", "/usr/bin/systemctl", "reboot"],
+            // Samma som wg-quick down + up, men via systemd som äger tunneln, så att
+            // wg-quick@wg0 inte står som aktiv när tunneln i själva verket är nere.
+            Action::RestartWireGuard => &["sudo", "-n", "/usr/bin/systemctl", "restart", "wg-quick@wg0.service"],
         }
     }
 
@@ -171,6 +180,7 @@ fn main() -> eframe::Result<()> {
                     Ok("car_client") => Some(Action::RestartCarClient),
                     Ok("rtk") => Some(Action::RestartRtk),
                     Ok("pi") => Some(Action::Reboot),
+                    Ok("wireguard") => Some(Action::RestartWireGuard),
                     _ => None,
                 };
             }
@@ -371,7 +381,7 @@ struct App {
     countdown_skipped: bool,
     dialog: Option<Action>,
     /// När respektive omstart trycktes (index = Action::index()).
-    restarted_at: [Option<Instant>; 3],
+    restarted_at: [Option<Instant>; 4],
 }
 
 /// En ruta som ska ritas.
@@ -393,7 +403,7 @@ impl App {
             started: Instant::now(),
             countdown_skipped: false,
             dialog: None,
-            restarted_at: [None; 3],
+            restarted_at: [None; 4],
         }
     }
 
@@ -442,22 +452,21 @@ impl App {
         tiles.push(self.service_tile("Car_Client", st.car_client_ok, Action::RestartCarClient));
 
         let internet_ok = st.handshake_age.map_or(false, |a| a < HANDSHAKE_MAX_AGE);
-        tiles.push(Tile {
-            title: "Internet",
-            detail: if st.handshake_error {
-                "kan inte läsa WireGuard".into()
+        let mut internet = self.service_tile("Internet", internet_ok, Action::RestartWireGuard);
+        if internet_ok {
+            internet.detail = format!("WireGuard {} s", st.handshake_age.unwrap_or(0));
+        } else if !self.restarting(Action::RestartWireGuard) {
+            let why = if st.handshake_error {
+                "kan inte läsa WireGuard".to_string()
             } else {
                 match st.handshake_age {
-                    Some(a) if a < HANDSHAKE_MAX_AGE => format!("WireGuard {a} s"),
                     Some(a) => format!("tyst i {} min", a / 60),
                     None => "ingen kontakt".into(),
                 }
-            },
-            big: None,
-            color: ok(internet_ok),
-            pulsing: false,
-            action: None,
-        });
+            };
+            internet.detail = format!("{why} – tryck för omstart");
+        }
+        tiles.push(internet);
 
         tiles.push(self.service_tile("RTK-tjänst", st.rtk_service_ok, Action::RestartRtk));
 
@@ -705,7 +714,12 @@ mod tests {
         let app = App::new(Arc::new(Mutex::new(Status::default())), true);
         assert_eq!(app.service_tile("Car_Client", false, Action::RestartCarClient).action, Some(Action::RestartCarClient));
         assert_eq!(app.service_tile("Car_Client", true, Action::RestartCarClient).action, None);
-        // Pi-rutan går alltid att trycka på.
+        // Internet (WireGuard) likadant, Pi-rutan går alltid att trycka på.
+        let t = app.tiles();
+        assert_eq!(t.iter().find(|t| t.title == "Internet").unwrap().action, Some(Action::RestartWireGuard));
+        let st = Status { handshake_age: Some(20), ..Default::default() };
+        let t = App::new(Arc::new(Mutex::new(st)), true).tiles();
+        assert_eq!(t.iter().find(|t| t.title == "Internet").unwrap().action, None);
         let t = app.tiles();
         assert_eq!(t.iter().find(|t| t.title == "Pi").unwrap().action, Some(Action::Reboot));
     }

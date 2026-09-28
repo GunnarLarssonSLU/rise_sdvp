@@ -8,8 +8,8 @@
 #   1. Rust via rustup om det saknas (i hemkatalogen, ingen sudo)
 #   2. Bygger statusskarm och lägger den i ~/.local/bin
 #   3. sudoers-regel: EXAKT dessa kommandon utan lösenord för den här användaren,
-#      inget annat: omstart av car_client och car_rtk, omstart av Pi:n och läsning
-#      av WireGuards senaste handskakning
+#      inget annat: omstart av car_client, car_rtk och WireGuard (wg-quick@wg0),
+#      omstart av Pi:n och läsning av WireGuards senaste handskakning
 #   4. Startar automatiskt i skrivbordet (helskärm), startar om sig själv om den kraschar
 #
 # Säkert att köra igen efter git pull (bygger om, skriver om regeln och autostarten).
@@ -51,13 +51,14 @@ done
 LOOP
 chmod 755 "$HOME/.local/bin/statusskarm-loop"
 
-echo "--- sudoers-regel för $ANV (bara de fyra kommandona) ---"
+echo "--- sudoers-regel för $ANV (bara de fem kommandona) ---"
 TMP="$(mktemp)"
 cat > "$TMP" <<RULE
 # statusskärmen (rise_sdvp/Linux/StatusSkarm): exakt dessa kommandon, inget annat.
 $ANV ALL=(root) NOPASSWD: /usr/bin/systemctl restart car_client.service
 $ANV ALL=(root) NOPASSWD: /usr/bin/systemctl restart car_rtk.service
 $ANV ALL=(root) NOPASSWD: /usr/bin/systemctl reboot
+$ANV ALL=(root) NOPASSWD: /usr/bin/systemctl restart wg-quick@wg0.service
 $ANV ALL=(root) NOPASSWD: /usr/bin/wg show wg0 latest-handshakes
 RULE
 # Kontrollera syntaxen innan den läggs på plats: en trasig sudoers-fil kan låsa ute sudo.
