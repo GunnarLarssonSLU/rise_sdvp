@@ -1265,9 +1265,8 @@ void MainWindow::handleControllerInput(int controllerNumber, float value)
 
     // Get the action ID for this controller from the database
     QSqlQuery query(db.getDb());
-    query.prepare("SELECT action FROM controllers WHERE id = :controllerNumber");
-    query.bindValue(":controllerNumber", controllerNumber);
-//    query.bindValue(":controllerId", controllerNumber);
+    query.prepare("SELECT action FROM controllers WHERE id = ?");
+    query.bindValue(0, controllerNumber);
     
     if (!query.exec()) {
         qDebug() << "Failed to query controller action:" << query.lastError().text();
@@ -2694,7 +2693,7 @@ void MainWindow::jsButtonChanged(int button, bool pressed)
 
             // 3: Extra in
 
-            if (button == FRONT_UP || button == FRONT_DOWN || button == 1 ||
+            if (button == FRONT_UP || button == FRONT_DOWN || bRONT_DOWNutton == 1 ||
                     button == REAR_DOWN || button == REAR_UP || button == 6) {
                 // Use the cached active car ID
 
@@ -8225,7 +8224,7 @@ void MainWindow::pollGamepad() {
 }
 
 void MainWindow::handleButtonEvent(const SDL_ControllerButtonEvent& event) {
-//    qDebug() << "button id: " << event.button;
+    qDebug() << "button id: " << event.button;
     bool pressed = (event.state == SDL_PRESSED);
     switch (event.button) {
     case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
