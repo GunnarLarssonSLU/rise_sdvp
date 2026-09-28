@@ -2729,7 +2729,9 @@ void MainWindow::nmeaGgaRx(int fields, NmeaServer::nmea_gga_info_t gga)
                          gga.diff_age);
 #endif
             p.setInfo(info);
-            ui->mapLiveWidget->addInfoPoint(p);
+            if (mNmeaDrawTrace) {
+                ui->mapLiveWidget->addInfoPoint(p);
+            }
 
             if (ui->mapStreamNmeaFollowBox->isChecked()) {
                 ui->mapLiveWidget->moveView(p.getX(), p.getY());
@@ -5439,6 +5441,9 @@ void MainWindow::on_tcpConnectButton_clicked()
         // Automatically connect to port 2948 NMEA stream (rtkrcv) for real-time RTK satellites and age updates!
         ui->mapStreamNmeaServerEdit->setText(ipPort.at(0));
         ui->mapStreamNmeaPortBox->setValue(2948);
+        // Bara för status (satelliter, RTK, ålder) och nollpunkten: rita inte ut
+        // var roboten kört. Connect-knappen i NMEA-rutan slår på spåret igen.
+        mNmeaDrawTrace = false;
         mNmea->connectClientTcp(ipPort.at(0), 2948);
         mConnectedIp = ipPort.at(0);
     }
@@ -7441,6 +7446,7 @@ void MainWindow::on_mapEditHelpButton_clicked()
 
 void MainWindow::on_mapStreamNmeaConnectButton_clicked()
 {
+    mNmeaDrawTrace = true;
     mNmea->connectClientTcp(ui->mapStreamNmeaServerEdit->text(),
                             ui->mapStreamNmeaPortBox->value());
 }

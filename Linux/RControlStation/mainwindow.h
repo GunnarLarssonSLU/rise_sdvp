@@ -439,6 +439,7 @@ private:
     QElapsedTimer mStateAge;                // Tid sedan senaste statuspaket från bilen
     void updateStatusBox();
     QString mConnectedIp;                   // IP till bilen vi senast anslöt till
+    bool mNmeaDrawTrace = true;             // rita GPS-positionerna som spår (inte vid automatisk anslutning)
     QNetworkAccessManager *mRouterNet = nullptr; // Egen hanterare: mNetworkManager har globala finished-kopplingar
     QString mRouterLine;                    // Färdig HTML-rad för 4G/5G-mottagningen
     QElapsedTimer mRouterAge;
