@@ -2660,8 +2660,7 @@ void MainWindow::controllerAction(int car, int iAction,float value=0)
         qDebug() << "Sending";
         mPacketInterface->setRcControlAdvanced(car, iAction, value);
     };
-/*
- *     switch (iAction)
+    switch (iAction)
     {
     case FRONT_UP:
         qDebug() << "Hydraulic, front up: " << value;
@@ -2680,7 +2679,6 @@ void MainWindow::controllerAction(int car, int iAction,float value=0)
         mPacketInterface->hydraulicMove(car, HYDRAULIC_POS_REAR, HYDRAULIC_MOVE_DOWN);
         break;
     }
-*/
 }
 
 
