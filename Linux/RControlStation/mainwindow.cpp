@@ -8229,17 +8229,15 @@ void MainWindow::handleButtonEvent(const SDL_ControllerButtonEvent& event) {
     
     // Map SDL button numbers to action IDs
     // Action IDs: FRONT_UP=4, FRONT_DOWN=7, REAR_UP=6, REAR_DOWN=5
+    // SDL button 9 (L1) -> FRONT_UP (4)
+    // SDL button 10 (R1) -> REAR_UP (6)
     if (pressed) {
         switch (event.button) {
-        case 4:  // If SDL button 4 is pressed
+        case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:  // Button 9
             controllerAction(mActiveCarId, FRONT_UP);
             break;
-        case 6:  // If SDL button 6 is pressed
+        case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:  // Button 10
             controllerAction(mActiveCarId, REAR_UP);
-            break;
-        default:
-            // For other buttons, try to use the button number as action ID
-            controllerAction(mActiveCarId, event.button);
             break;
         }
     }
