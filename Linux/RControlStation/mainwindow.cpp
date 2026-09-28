@@ -8226,6 +8226,13 @@ void MainWindow::pollGamepad() {
 void MainWindow::handleButtonEvent(const SDL_ControllerButtonEvent& event) {
     qDebug() << "button id: " << event.button;
     bool pressed = (event.state == SDL_PRESSED);
+    
+    // Directly call controllerAction with the button number as action ID
+    // This bypasses the database lookup for testing
+    if (pressed) {
+        controllerAction(mActiveCarId, event.button);
+    }
+    
     switch (event.button) {
     case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
         qDebug() << "Button L1" << pressed;
@@ -8236,30 +8243,6 @@ void MainWindow::handleButtonEvent(const SDL_ControllerButtonEvent& event) {
         qDebug() << "Button R1" << pressed;
         handleControllerInput(3,1.0);
         //jsButtonChanged(5, pressed);
-        break;
-    case SDL_CONTROLLER_BUTTON_Y:
-        if (pressed) {
-            qDebug() << "Button Y (FRONT_UP)";
-            controllerAction(mActiveCarId, FRONT_UP);
-        }
-        break;
-    case SDL_CONTROLLER_BUTTON_A:
-        if (pressed) {
-            qDebug() << "Button A (FRONT_DOWN)";
-            controllerAction(mActiveCarId, FRONT_DOWN);
-        }
-        break;
-    case SDL_CONTROLLER_BUTTON_X:
-        if (pressed) {
-            qDebug() << "Button X (REAR_UP)";
-            controllerAction(mActiveCarId, REAR_UP);
-        }
-        break;
-    case SDL_CONTROLLER_BUTTON_B:
-        if (pressed) {
-            qDebug() << "Button B (REAR_DOWN)";
-            controllerAction(mActiveCarId, REAR_DOWN);
-        }
         break;
     }
 }
