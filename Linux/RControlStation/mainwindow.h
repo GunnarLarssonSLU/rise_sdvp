@@ -334,7 +334,7 @@ private slots:
 private:
     // Helper methods
     bool isPointInsideBorder(const LocPoint& point, const MapRoute& border); // Check if point is inside border
-    void controllerAction(int car, int iAction,float value);
+    void controllerAction(int car, int iAction, float value = 0);
     void updateCurrentRoutePointControlStates();
     void updateControlStatesTableFromRoutePoint();
     void updateControlStatesTable(const QList<ControlState> &controlStates);
