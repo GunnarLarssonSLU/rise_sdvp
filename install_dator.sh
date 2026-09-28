@@ -54,12 +54,17 @@ fi
 echo -e "\n${YELLOW}${BOLD}Installerar systempaket och utvecklingstillägg...${NC}"
 echo -e "Detta inkluderar Qt6, GDAL (för kartor), SDL2 (för spelkontroll/joystick) samt matematiska bibliotek."
 
+# Vänta upp till 5 min om apt är upptaget (t.ex. automatiska uppdateringar efter
+# uppstart), och städa upp en tidigare avbruten installation.
+APT="apt-get -y -o DPkg::Lock::Timeout=300"
+dpkg --configure -a
+
 # Säkerställ att universe-arkivet är aktiverat (krävs för GDAL och vissa Qt6-paket i Ubuntu).
 # add-apt-repository finns i software-properties-common, som saknas på minimala installationer.
-command -v add-apt-repository >/dev/null 2>&1 || { apt update; apt install -y software-properties-common; }
+command -v add-apt-repository >/dev/null 2>&1 || { $APT update; $APT install software-properties-common; }
 add-apt-repository -y universe
 
-apt update
+$APT update
 
 # Definiera listan på alla paket som behövs
 PACKAGES=(
@@ -81,12 +86,13 @@ PACKAGES=(
     libjpeg-dev
     wireguard
     wireguard-tools
-    resolvconf
+    # Inte resolvconf: vår wg0.conf har ingen DNS-rad, och resolvconf kan ta över
+    # /etc/resolv.conf från systemd-resolved och lämna datorn utan DNS.
 )
 
 # Försök installera alla paket på en gång först (snabbaste vägen)
 echo -e "Försöker installera alla paket på en gång..."
-if apt install -y "${PACKAGES[@]}" &>/dev/null; then
+if $APT install "${PACKAGES[@]}" &>/dev/null; then
   echo -e "${GREEN}✅ Alla bibliotek och tillägg installerades felfritt!${NC}\n"
 else
   echo -e "${YELLOW}⚠️ Något paket gick inte att installera på en gång. Testar att installera dem individuellt för att hitta felet...${NC}"
@@ -99,10 +105,11 @@ else
     fi
     
     # Försök installera paketet individuellt
-    if apt install -y "$pkg" &>/dev/null; then
+    if APT_OUT=$($APT install "$pkg" 2>&1); then
       echo -e "  [${GREEN}OK${NC}] Installerad: $pkg"
     else
       echo -e "  [${RED}FEL${NC}] Kunde inte installera: $pkg"
+      echo "$APT_OUT" | grep -E "^(E|Error|W):" | tail -3 | sed 's/^/        /'
       FAILED_PKGS+=("$pkg")
     fi
   done

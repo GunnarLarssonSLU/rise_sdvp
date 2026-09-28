@@ -3,9 +3,10 @@
 # ==============================================================================
 # 🍓 install_pi.sh: Konfigurera enbart Raspberry Pi-systemet
 # ==============================================================================
-# Detta skript sätter upp alla paket, udev-regler, Swepos, bygger Car_Client
-# och ställer in boot-autostart på din Raspberry Pi.
-# Det har även avancerad felrapportering för saknade eller trasiga paket.
+# Detta skript sätter upp alla paket, udev-regler, Swepos (valfritt), bygger
+# Car_Client och ställer in boot-autostart på din Raspberry Pi.
+#     sudo bash install_pi.sh             (bil-ID 4)
+#     sudo CAR_ID=7 bash install_pi.sh    (annat bil-ID)
 # ==============================================================================
 
 GREEN='\e[32m'
@@ -36,7 +37,11 @@ echo -e "Installationsmapp: ${BOLD}$DIR${NC}\n"
 # 📦 STEG 1: Paketinstallation med avancerad felrapportering
 # ------------------------------------------------------------------------------
 echo -e "${YELLOW}${BOLD}[Steg 1/5] Installerar Linux-paket...${NC}"
-apt update
+# Vänta upp till 5 min om apt är upptaget (t.ex. automatiska uppdateringar efter
+# uppstart), och städa upp en tidigare avbruten installation (strömavbrott o.d.).
+APT="apt-get -y -o DPkg::Lock::Timeout=300"
+dpkg --configure -a
+$APT update
 
 # Listan på alla baspaket som behövs på Pi:n
 PACKAGES=(
@@ -50,7 +55,6 @@ PACKAGES=(
     usbutils
     wireguard
     wireguard-tools
-    resolvconf
 )
 
 # Intelligent detektering av Qt-version (Prioriterar Qt6 enligt Benjamins instruktioner)
@@ -64,7 +68,7 @@ fi
 
 # Försök ladda ner och installera alla på en gång först
 echo -e "Försöker installera alla paket på en gång..."
-if apt install -y "${PACKAGES[@]}" &>/dev/null; then
+if $APT install "${PACKAGES[@]}" &>/dev/null; then
   echo -e "${GREEN}✅ Alla Linux-paket installerades framgångsrikt!${NC}\n"
 else
   echo -e "${YELLOW}⚠️ Något paket gick inte att installera på en gång. Testar individuellt för att hitta felet...${NC}"
@@ -77,10 +81,11 @@ else
     fi
     
     # Försök installera paketet individuellt
-    if apt install -y "$pkg" &>/dev/null; then
+    if APT_OUT=$($APT install "$pkg" 2>&1); then
       echo -e "  [${GREEN}OK${NC}] Installerad: $pkg"
     else
       echo -e "  [${RED}FEL${NC}] Kunde inte installera: $pkg"
+      echo "$APT_OUT" | grep -E "^(E|Error|W):" | tail -3 | sed 's/^/        /'
       FAILED_PKGS+=("$pkg")
     fi
   done
@@ -105,9 +110,12 @@ fi
 echo -e "${YELLOW}${BOLD}[Steg 2/5] Installerar USB-regler (udev)...${NC}"
 UDEV_DIR="/etc/udev/rules.d"
 
-if [ -f "$DIR/rise_sdvp/Linux/PI/udev/10-rise_sdvp.rules" ]; then
-  cp "$DIR/rise_sdvp/Linux/PI/udev/10-rise_sdvp.rules" "$UDEV_DIR/"
-  cp "$DIR/rise_sdvp/Linux/PI/udev/49-stlinkv2.rules" "$UDEV_DIR/"
+# Mallarna: skriptet körs inifrån rise_sdvp eller från mappen ovanför.
+UDEV_SRC="$DIR/Linux/PI/udev"
+[ -f "$UDEV_SRC/10-rise_sdvp.rules" ] || UDEV_SRC="$DIR/rise_sdvp/Linux/PI/udev"
+if [ -f "$UDEV_SRC/10-rise_sdvp.rules" ]; then
+  cp "$UDEV_SRC/10-rise_sdvp.rules" "$UDEV_DIR/"
+  cp "$UDEV_SRC/49-stlinkv2.rules" "$UDEV_DIR/"
   udevadm control --reload-rules && udevadm trigger
   echo -e "${GREEN}✅ USB-regler installerade! (/dev/car och /dev/ublox är aktiva)${NC}\n"
 else
@@ -154,10 +162,18 @@ if [ -n "$DEFAULT_USER" ]; then
   echo ""
   SWEPOS_PASS=${SWEPOS_PASS:-$DEFAULT_PASS}
 else
-  read -p "Mata in ditt Swepos-användarnamn: " SWEPOS_USER
-  read -s -p "Mata in ditt Swepos-lösenord: " SWEPOS_PASS
-  echo ""
+  echo -e "Swepos behövs bara för RTK (cm-noggrann GPS till karta/autopilot i RControlStation)."
+  echo -e "robotstyrning/robotd använder inte GPS. ${BOLD}Tryck Enter för att hoppa över RTK.${NC}"
+  read -p "Mata in ditt Swepos-användarnamn (tomt = hoppa över): " SWEPOS_USER
+  if [ -n "$SWEPOS_USER" ]; then
+    read -s -p "Mata in ditt Swepos-lösenord: " SWEPOS_PASS
+    echo ""
+  fi
 fi
+
+if [ -z "$SWEPOS_USER" ]; then
+  echo -e "${YELLOW}Hoppar över Swepos/RTK (car_rtk.service skapas inte). Kör skriptet igen för att lägga till det senare.${NC}\n"
+else
 
 read -p "Mata in din basstations Latitud [$DEFAULT_LAT]: " SWEPOS_LAT
 SWEPOS_LAT=${SWEPOS_LAT:-$DEFAULT_LAT}
@@ -190,6 +206,7 @@ systemctl enable car_rtk.service
 systemctl restart car_rtk.service
 
 echo -e "${GREEN}✅ Swepos RTK-tjänst konfigurerad och startad!${NC}\n"
+fi
 
 # ------------------------------------------------------------------------------
 # 💻 STEG 4: Kompilera Car_Client
@@ -236,7 +253,7 @@ START_SCRIPT="$REAL_HOME/start_car.sh"
 cat <<EOF > "$START_SCRIPT"
 #!/bin/bash
 # Startar Car_Client i en bakgrunds-screen med en initial fördröjning inuti screen (icke-blockerande för systemd)
-screen -S car -d -m bash -c "sleep 15 && cd '$CLIENT_DIR' && ./Car_Client -p /dev/vehicle --useudp --logusb --usetcp --tcprtcmserver 8200 --tcpubxserver 8210 --setid 4; bash"
+screen -S car -d -m bash -c "sleep 15 && cd '$CLIENT_DIR' && ./Car_Client -p /dev/vehicle --useudp --logusb --usetcp --tcprtcmserver 8200 --tcpubxserver 8210 --setid ${CAR_ID:-4}; bash"
 echo "Car_Client startades i en screen-session med namnet 'car'."
 echo "För att ansluta live, kör: screen -r car"
 EOF
@@ -265,7 +282,7 @@ systemctl daemon-reload
 systemctl enable car_client.service
 systemctl start car_client.service
 
-echo -e "${GREEN}✅ Raspberry Pi 4 konfigurerad framgångsrikt! Autostart är aktiverad!${NC}"
+echo -e "${GREEN}✅ Raspberry Pi konfigurerad framgångsrikt! Autostart är aktiverad!${NC}"
 echo -e "Koppla nu in dina två USB-kablar och njut av robotdriften."
 echo -e "Live-konsolen för Car_Client finns tillgänglig via: ${BOLD}screen -r car${NC}\n"
 echo -e "${YELLOW}${BOLD}⚡ Viktigt om styrkortets ström:${NC}"
