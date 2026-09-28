@@ -37,8 +37,17 @@ Samarbete med SLU och Jordbruksverket. En maskin (Lövsta). Körs med **RControl
   saknas, och Car_Client hittar `Linux/PI/rtkrcv_arm` bredvid sig själv. Ombyggt och
   omstartat på Pi:n; rtkrcv startas nu av Car_Client och tar emot u-blox (8210) och
   Swepos (1234). RTK Fix ej verifierat än (står inne utan antenn).
-- Pi 5 har skrivbord (labwc/Wayland, autologin `macbot-slu`) — planerad statusskärm
-  (5" DSI-touch) körs som helskärmsapp där.
+- Pi 5 har skrivbord (labwc/Wayland, autologin `macbot-slu`).
+- **Statusskärm installerad 2026-09-28** (`Linux/StatusSkarm`, `bash installera.sh`):
+  helskärm i skrivbordet (autostart), 3:00-nedräkning, sju rutor. Verifierat med
+  `statusskarm --text`: styrkort svarar (UDP via Car_Client, CMD_AP_GET_ROUTE_PART —
+  nollställer inte kortets säkerhetstid), Car_Client, internet (WireGuard-handskakning)
+  och RTK-tjänst gröna; RTK Float/Fix grå (ingen antenn); CPU ~1 %. sudoers
+  `/etc/sudoers.d/statusskarm`: exakt fem kommandon (restart car_client, car_rtk,
+  wg-quick@wg0, reboot, `wg show wg0 latest-handshakes`). Ingen skärm beställd än
+  (förslag: Raspberry Pi Touch Display 2, 5"). Ruta "CAN lever" medvetet utelämnad.
+- `Linux/Car_Client/Car_Client` i git är en x86-64-binär. På Pi:n är den ombyggd
+  (aarch64) och visas som ändrad — kör aldrig `git checkout` på den filen.
 
 ## Att göra
 1. Besök i Lövsta: foton, Confcommon-skärmbilder, CAN-terminering, Jetson-läsrunda
