@@ -51,6 +51,7 @@
 #include <QtCharts>
 #include <QtWidgets>
 #include <QDir>
+#include <QSettings>
 #include <iostream>
 #include <fstream>
 
@@ -149,6 +150,13 @@ MainWindow::MainWindow(QWidget *parent) :
     qDebug() << "DEBUG: MainWindow constructor - starting";
     ui->setupUi(this);
     qDebug() << "DEBUG: MainWindow constructor - UI setup complete";
+    
+    // Load saved server IP from settings
+    QSettings settings("SLU", "RControlStation");
+    QString savedServerIp = settings.value("serverip", "").toString();
+    if (!savedServerIp.isEmpty()) {
+        ui->serveripEdit->setText(savedServerIp);
+    }
     
     // Initialize File Administration tab widgets from UI
     qDebug() << "DEBUG: MainWindow constructor - initializing File Administration tab";
@@ -422,10 +430,10 @@ MainWindow::MainWindow(QWidget *parent) :
         mPacketInterface->processPacket((unsigned char*)data.data(), data.size());
     });
 
-    connect(mTcpClientMulti, &TcpClientMulti::stateChanged, [this](QString msg, QString ip, bool isError) {
-        showStatusInfo(msg, !isError);
+    connect(mTcpClientMulti, &TcpClientMulti::stateChanged, [this](QString msg, QString ip, bool isGood) {
+        showStatusInfo(msg, isGood);
 
-        if (isError) {
+        if (!isGood) {
             qWarning() << "TCP Error:" << msg << ", ip: " << ip;
             QString all=msg  + ", ip: " + ip;
             QMessageBox::warning(this, "TCP Error", all);
@@ -604,6 +612,25 @@ MainWindow::~MainWindow()
 #endif
     
     delete ui;
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    // Save server IP setting before closing
+    QSettings settings("SLU", "RControlStation");
+    settings.setValue("serverip", ui->serveripEdit->text());
+    
+    QMainWindow::closeEvent(event);
+}
+
+QString MainWindow::getServerBaseUrl() const
+{
+    QString ip = ui->serveripEdit->text();
+    // Ensure the URL has the proper format (add http:// if missing)
+    if (!ip.startsWith("http://") && !ip.startsWith("https://")) {
+        return "http://" + ip;
+    }
+    return ip;
 }
 
 void MainWindow::checkForUpdates()
@@ -820,7 +847,7 @@ bool MainWindow::eventFilter(QObject *object, QEvent *e)
                                 qDebug() << "Deleting machine with ID:" << machineId;
                                 
                                 // Send DELETE request to remove the machine
-                                QUrl url(SERVER_BASE_URL "/remove_machine");
+                                QUrl url(getServerBaseUrl() + "/remove_machine");
                                 QUrlQuery query;
                                 query.addQueryItem("id", machineId);
                                 url.setQuery(query);
@@ -1771,7 +1798,7 @@ void MainWindow::onUnconnectedFieldsTableItemClicked(int index)
     mMapWidgetFileAdmin->update();
     
     // Load the file from the server via HTTP
-    QUrl url(QString("%1/field/%2").arg(SERVER_BASE_URL).arg(filename));
+    QUrl url(QString("%1/field/%2").arg(getServerBaseUrl()).arg(filename));
     qDebug() << "Fetching field from URL:" << url.toString();
     
     QNetworkRequest request(url);
@@ -1865,7 +1892,7 @@ void MainWindow::onAddAsFieldButtonClicked()
     qDebug() << "Adding field with name:" << name << ", location:" << location << ", storedinfile:" << storedinfile;
     
     // Prepare the POST request to /add_field
-    QUrl url(QString("%1/add_field").arg(SERVER_BASE_URL));
+    QUrl url(QString("%1/add_field").arg(getServerBaseUrl()));
     qDebug() << "POST URL:" << url.toString();
     
     QNetworkRequest request(url);
@@ -1945,7 +1972,7 @@ void MainWindow::onAdminFileSelected(int index)
     mMapWidgetFileAdmin->update();
     
     // Load the file from the server via HTTP
-    QUrl url(QString("%1/field/%2").arg(SERVER_BASE_URL).arg(filename));
+    QUrl url(QString("%1/field/%2").arg(getServerBaseUrl()).arg(filename));
     qDebug() << "Fetching field from URL:" << url.toString();
     
     QNetworkRequest request(url);
@@ -2809,7 +2836,7 @@ void MainWindow::fetchMachinesData(int retryCount)
     const int MAX_RETRIES = 3;
     const int RETRY_DELAY_MS = 2000; // 2 seconds between retries
     
-    QUrl url(SERVER_BASE_URL "/machines");
+    QUrl url(getServerBaseUrl() + "/machines");
     QNetworkRequest request(url);
     
     // Set a timeout for the request (10 seconds to be safe)
@@ -2973,7 +3000,7 @@ void MainWindow::fetchAllMachinesData(int retryCount)
     const int MAX_RETRIES = 3;
     const int RETRY_DELAY_MS = 2000; // 2 seconds between retries
     
-    QUrl url(SERVER_BASE_URL "/all_machines");
+    QUrl url(getServerBaseUrl() + "/all_machines");
     QNetworkRequest request(url);
     
     // Set a timeout for the request (10 seconds to be safe)
@@ -3054,7 +3081,7 @@ void MainWindow::fetchAllFarmsData(int retryCount)
     const int MAX_RETRIES = 3;
     const int RETRY_DELAY_MS = 2000; // 2 seconds between retries
     
-    QUrl url(SERVER_BASE_URL "/all_farms");
+    QUrl url(getServerBaseUrl() + "/all_farms");
     QNetworkRequest request(url);
     
     // Set a timeout for the request (10 seconds to be safe)
@@ -3167,7 +3194,7 @@ void MainWindow::fetchAllFarmsForLog()
     // Add loading indicator
     logFarmsModel->appendRow(new QStandardItem("Loading farms..."));
     
-    QUrl url(SERVER_BASE_URL "/all_farms");
+    QUrl url(getServerBaseUrl() + "/all_farms");
     QNetworkRequest request(url);
     request.setTransferTimeout(10000);
     
@@ -3278,7 +3305,7 @@ void MainWindow::fetchFieldsForLogFarm(int farmId)
     // Add loading indicator
     logFieldsModel->appendRow(new QStandardItem("Loading fields..."));
     
-    QUrl url(SERVER_BASE_URL "/all_fields");
+    QUrl url(getServerBaseUrl() + "/all_fields");
     QUrlQuery query;
     query.addQueryItem("farm", QString::number(farmId));
     url.setQuery(query);
@@ -3390,7 +3417,7 @@ void MainWindow::fetchPathsForLogField(int fieldId)
     // Add loading indicator
     logPathsModel->appendRow(new QStandardItem("Loading paths..."));
     
-    QUrl url(SERVER_BASE_URL "/all_paths");
+    QUrl url(getServerBaseUrl() + "/all_paths");
     QUrlQuery query;
     query.addQueryItem("field", QString::number(fieldId));
     url.setQuery(query);
@@ -3491,7 +3518,7 @@ void MainWindow::loadPathAsLog(int pathId)
 {
     qDebug() << "loadPathAsLog: Starting for pathId:" << pathId;
     
-    QUrl url(SERVER_BASE_URL "/log");
+    QUrl url(getServerBaseUrl() + "/log");
     QUrlQuery query;
     query.addQueryItem("path", QString::number(pathId));
     url.setQuery(query);
@@ -3722,7 +3749,7 @@ void MainWindow::fetchLogsForPath(int pathId)
     // Add loading indicator
     logLogsModel->appendRow(new QStandardItem("Loading logs..."));
     
-    QUrl url(SERVER_BASE_URL "/all_logs");
+    QUrl url(getServerBaseUrl() + "/all_logs");
     QUrlQuery query;
     query.addQueryItem("path", QString::number(pathId));
     url.setQuery(query);
@@ -3768,7 +3795,7 @@ void MainWindow::fetchFarmLocationForAdmin(int farmId)
     qDebug() << "fetchFarmLocationForAdmin: Starting for farmId:" << farmId;
     
     // Create URL for /read_farm endpoint
-    QUrl url(QString("%1/read_farm").arg(SERVER_BASE_URL));
+    QUrl url(QString("%1/read_farm").arg(getServerBaseUrl()));
     QUrlQuery query;
     query.addQueryItem("id", QString::number(farmId));
     url.setQuery(query);
@@ -3879,7 +3906,7 @@ void MainWindow::fetchFieldsForAdminFarm(int farmId)
     connect(ui->comboBoxAdminField, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onFieldSelectedForAdmin);
     connect(ui->comboBoxAdminPath, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onPathSelectedForAdmin);
     
-    QUrl url(SERVER_BASE_URL "/all_fields");
+    QUrl url(getServerBaseUrl() + "/all_fields");
     QUrlQuery query;
     query.addQueryItem("farm", QString::number(farmId));
     url.setQuery(query);
@@ -3949,7 +3976,7 @@ void MainWindow::fetchPathsForAdminField(int fieldId)
     // Reconnect signals
     connect(ui->comboBoxAdminPath, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onPathSelectedForAdmin);
     
-    QUrl url(SERVER_BASE_URL "/all_paths");
+    QUrl url(getServerBaseUrl() + "/all_paths");
     QUrlQuery query;
     query.addQueryItem("field", QString::number(fieldId));
     url.setQuery(query);
@@ -4008,7 +4035,7 @@ void MainWindow::loadAdminPath(int pathId)
     mMapWidgetFileAdmin->update();
     
     // Load the file from the server via HTTP
-    QUrl url(QString("%1/field/%2").arg(SERVER_BASE_URL).arg(pathId));
+    QUrl url(QString("%1/field/%2").arg(getServerBaseUrl()).arg(pathId));
     qDebug() << "Fetching field from URL:" << url.toString();
     
     QNetworkRequest request(url);
@@ -4244,7 +4271,7 @@ void MainWindow::fetchUnconnectedFields()
     // Add loading indicator
     adminFilesModel->appendRow(new QStandardItem("Loading unconnected fields..."));
     
-    QUrl url(SERVER_BASE_URL "/unconnected_fields");
+    QUrl url(getServerBaseUrl() + "/unconnected_fields");
     qDebug() << "Fetching unconnected fields from:" << url.toString();
     
     QNetworkRequest request(url);
@@ -4410,7 +4437,7 @@ void MainWindow::fetchLogForLog(int logId)
 {
     qDebug() << "fetchLogForLog: Starting for logId:" << logId;
     
-    QUrl url(SERVER_BASE_URL "/log");
+    QUrl url(getServerBaseUrl() + "/log");
     QUrlQuery query;
     query.addQueryItem("id", QString::number(logId));
     url.setQuery(query);
@@ -4502,7 +4529,7 @@ void MainWindow::fetchAllFieldsData(int farmId, int retryCount)
     const int MAX_RETRIES = 3;
     const int RETRY_DELAY_MS = 2000; // 2 seconds between retries
     
-    QUrl url(SERVER_BASE_URL "/all_fields");
+    QUrl url(getServerBaseUrl() + "/all_fields");
     QUrlQuery query;
     query.addQueryItem("farm", QString::number(farmId));
     url.setQuery(query);
@@ -4599,7 +4626,7 @@ void MainWindow::fetchAllPathsData(int fieldId, int retryCount)
     const int MAX_RETRIES = 3;
     const int RETRY_DELAY_MS = 2000; // 2 seconds between retries
     
-    QUrl url(SERVER_BASE_URL "/all_paths");
+    QUrl url(getServerBaseUrl() + "/all_paths");
     QUrlQuery query;
     query.addQueryItem("field", QString::number(fieldId));
     url.setQuery(query);
@@ -4695,7 +4722,7 @@ void MainWindow::fetchVehicleTypes(int retryCount)
     const int MAX_RETRIES = 3;
     const int RETRY_DELAY_MS = 2000; // 2 seconds between retries
     
-    QUrl url(SERVER_BASE_URL "/vehicle_types");
+    QUrl url(getServerBaseUrl() + "/vehicle_types");
     QNetworkRequest request(url);
     
     // Set a timeout for the request (10 seconds to be safe)
@@ -5250,7 +5277,7 @@ void MainWindow::parseAllPathsXml(const QByteArray &xmlData)
 
 void MainWindow::addFarmToServer(const QString &name)
 {
-    QUrl url(SERVER_BASE_URL "/add_farm");
+    QUrl url(getServerBaseUrl() + "/add_farm");
     QUrlQuery query;
     query.addQueryItem("name", name);
     url.setQuery(query);
@@ -5280,7 +5307,7 @@ void MainWindow::addFarmToServer(const QString &name)
 
 void MainWindow::updateFarmOnServer(int farmId, const QString &name, double latitude, double longitude)
 {
-    QUrl url(SERVER_BASE_URL "/edit_farm");
+    QUrl url(getServerBaseUrl() + "/edit_farm");
     QUrlQuery query;
     query.addQueryItem("id", QString::number(farmId));
     query.addQueryItem("name", name);
@@ -5313,7 +5340,7 @@ void MainWindow::updateFarmOnServer(int farmId, const QString &name, double lati
 
 void MainWindow::deleteFarmFromServer(int farmId)
 {
-    QUrl url(SERVER_BASE_URL "/remove_farm");
+    QUrl url(getServerBaseUrl() + "/remove_farm");
     QUrlQuery query;
     query.addQueryItem("id", QString::number(farmId));
     url.setQuery(query);
@@ -5343,7 +5370,7 @@ void MainWindow::deleteFarmFromServer(int farmId)
 
 void MainWindow::fetchFieldXml(int fieldId, const QString &fieldName)
 {
-    QUrl url(SERVER_BASE_URL "/field");
+    QUrl url(getServerBaseUrl() + "/field");
     QUrlQuery query;
     query.addQueryItem("id", QString::number(fieldId));
     url.setQuery(query);
@@ -5427,7 +5454,7 @@ void MainWindow::onFieldDataChanged(const QModelIndex &topLeft, const QModelInde
 
 void MainWindow::addFieldToServer(const QString &name, int farmId, const QString &filename)
 {
-    QUrl url(SERVER_BASE_URL "/add_field");
+    QUrl url(getServerBaseUrl() + "/add_field");
     QUrlQuery query;
     query.addQueryItem("name", name);
     query.addQueryItem("farm_id", QString::number(farmId));
@@ -5464,7 +5491,7 @@ void MainWindow::updateFieldOnServer(int fieldId, const QString &name, const QSt
 {
     qDebug() << "updateFieldOnServer called with fieldId:" << fieldId << "name:" << name << "filename:" << filename;
     
-    QUrl url(SERVER_BASE_URL "/edit_field");
+    QUrl url(getServerBaseUrl() + "/edit_field");
     QUrlQuery query;
     query.addQueryItem("id", QString::number(fieldId));
     query.addQueryItem("name", name);
@@ -5510,7 +5537,7 @@ void MainWindow::updateFieldOnServer(int fieldId, const QString &name, const QSt
 
 void MainWindow::deleteFieldFromServer(int fieldId)
 {
-    QUrl url(SERVER_BASE_URL "/remove_field");
+    QUrl url(getServerBaseUrl() + "/remove_field");
     QUrlQuery query;
     query.addQueryItem("id", QString::number(fieldId));
     url.setQuery(query);
@@ -5543,7 +5570,7 @@ void MainWindow::deleteFieldFromServer(int fieldId)
 
 void MainWindow::addPathToServer(const QString &name, int fieldId)
 {
-    QUrl url(SERVER_BASE_URL "/add_path");
+    QUrl url(getServerBaseUrl() + "/add_path");
     QUrlQuery query;
     query.addQueryItem("name", name);
     query.addQueryItem("field", QString::number(fieldId));
@@ -5574,7 +5601,7 @@ void MainWindow::addPathToServer(const QString &name, int fieldId)
 
 void MainWindow::updatePathOnServer(int pathId, const QString &name)
 {
-    QUrl url(SERVER_BASE_URL "/edit_path");
+    QUrl url(getServerBaseUrl() + "/edit_path");
     QUrlQuery query;
     query.addQueryItem("id", QString::number(pathId));
     query.addQueryItem("name", name);
@@ -5613,7 +5640,7 @@ void MainWindow::updatePathOnServer(int pathId, const QString &name)
 
 void MainWindow::deletePathFromServer(int pathId)
 {
-    QUrl url(SERVER_BASE_URL "/remove_path");
+    QUrl url(getServerBaseUrl() + "/remove_path");
     QUrlQuery query;
     query.addQueryItem("id", QString::number(pathId));
     url.setQuery(query);
@@ -5672,7 +5699,7 @@ void MainWindow::onAddMachineButtonClicked()
     }
     
     // Create the URL with query parameters
-    QUrl url(SERVER_BASE_URL "/add_machine");
+    QUrl url(getServerBaseUrl() + "/add_machine");
     QUrlQuery query;
     query.addQueryItem("name", name);
     query.addQueryItem("ip", ip);
@@ -8341,6 +8368,17 @@ MainWindow* findMainWindow() {
     return nullptr; // Return nullptr if no MainWindow is found
 }
 
+// Global function to get server base URL
+QString getServerBaseUrl()
+{
+    MainWindow* mw = findMainWindow();
+    if (mw) {
+        return mw->getServerBaseUrl();
+    }
+    // Fallback to default if MainWindow not available
+    return "http://192.168.200.3:8080";
+}
+
 // Missing method implementations
 void MainWindow::routePointSelected(LocPoint pos)
 {
@@ -8645,7 +8683,7 @@ void MainWindow::fetchAllFarmsDataFileAdmin(int retryCount)
         return;
     }
     
-    QUrl url(SERVER_BASE_URL "/all_farms");
+    QUrl url(getServerBaseUrl() + "/all_farms");
     QNetworkRequest request(url);
     request.setTransferTimeout(10000);
     
@@ -8838,7 +8876,7 @@ void MainWindow::on_moveFieldButton_clicked()
     qDebug() << "Selected field:" << fieldLocation;
     
     // Call the web service to register the field
-    QUrl url(SERVER_BASE_URL "/field_register");
+    QUrl url(getServerBaseUrl() + "/field_register");
     QUrlQuery query;
     query.addQueryItem("farm", farmName);
     query.addQueryItem("field", fieldLocation);

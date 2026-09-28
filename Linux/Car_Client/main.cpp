@@ -85,13 +85,33 @@ void showHelp()
  * 
  * @param sig Signal number
  */
+static CarClient* g_carClient = nullptr;
+
 static void m_cleanup(int sig)
 {
     (void)sig;  // Unused parameter
     
-    // Request application to quit
+    qDebug() << "Received shutdown signal (Ctrl+C), initiating shutdown...";
+    
+    // Mark that we're shutting down
+    if (g_carClient) {
+        g_carClient->setShuttingDown(true);
+    }
+    
+    // First, try to stop the serial port immediately
+    if (g_carClient && g_carClient->serialPort() && g_carClient->serialPort()->isOpen()) {
+        g_carClient->serialPort()->stopImmediately();
+    }
+    
+    // Then request application to quit
     qApp->quit();
-    qDebug() << "Bye :)";
+    
+    // If we're still running after a short delay, force exit
+    // This handles cases where we're stuck in a blocking operation
+    QTimer::singleShot(100, []() {
+        qDebug() << "Forcing immediate exit...";
+        exit(0);
+    });
 }
 
 int main(int argc, char *argv[])
@@ -493,12 +513,28 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine qmlEngine;
 #endif
 
+    // Set global pointer for signal handler
+    g_carClient = &car;
+
     car.setCarIdToSet(carId);
     qDebug() << "TTY port:" << ttyPort;
 
     if (!ttyPort.isEmpty()) {
         qDebug() << "Connecting to a car";
         car.connectSerial(ttyPort, baudrate);
+        
+        // Check if connection was successful
+        if (!car.serialPort()->isOpen()) {
+            qWarning() << "WARNING: Failed to connect to serial port" << ttyPort;
+            qWarning() << "The program will continue but will not be able to communicate with the vehicle.";
+            qWarning() << "Possible causes:";
+            qWarning() << "  1. Device" << ttyPort << "does not exist";
+            qWarning() << "  2. Permission denied (try: sudo chmod 666" << ttyPort << ")";
+            qWarning() << "  3. Device is not connected or powered off";
+            qWarning() << "  4. Wrong baud rate (current:" << baudrate << ")";
+            qWarning() << "  5. Device does not support the Car_Client protocol";
+            qWarning() << "To run without a vehicle, use: --simulatecars 1:0";
+        }
     } else {
         qDebug() << "Not connecting to a car";
         // Not connected to any car, set default ID

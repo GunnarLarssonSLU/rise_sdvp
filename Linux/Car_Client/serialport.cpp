@@ -19,6 +19,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <QtDebug>
+#include <QElapsedTimer>
 
 #include <cstdio>   /* Standard input/output definitions */
 #include <unistd.h>  /* UNIX standard function definitions */
@@ -92,27 +93,33 @@ int SerialPort::openPort(
         SerialStopBits stopBits,
         SerialParity parity)
 {
+    qDebug() << "SerialPort::openPort: Attempting to open port:" << port << "at baudrate:" << baudrate;
+    
     // Close existing port if open
     if (mIsOpen) {
+        qDebug() << "SerialPort::openPort: Closing existing port first";
         closePort();
     }
 
     // Open the serial port
     mFd = open(port.toLocal8Bit().data(), O_RDWR | O_NOCTTY | O_NDELAY);
     if (mFd == -1) {
-        qCritical() << "Opening serial port failed.";
+        qCritical() << "SerialPort::openPort: Opening serial port failed for" << port << ". Error:" << strerror(errno);
         return -1;
     }
+    qDebug() << "SerialPort::openPort: Successfully opened file descriptor:" << mFd;
 
     mIsOpen = true;
 
     // Configure non-blocking I/O
+    qDebug() << "SerialPort::openPort: Configuring non-blocking I/O";
     fcntl(mFd, F_SETFL, FNDELAY);
 
     // Get current port settings
+    qDebug() << "SerialPort::openPort: Getting current port settings";
     struct termios options;
     if (0 != tcgetattr(mFd, &options)) {
-        qCritical() << "Reading serial port options failed.";
+        qCritical() << "SerialPort::openPort: Reading serial port options failed. Error:" << strerror(errno);
         return -2;
     }
 
@@ -141,41 +148,43 @@ int SerialPort::openPort(
 
     // Apply the new settings
     if (0 != tcsetattr(mFd, TCSANOW, &options)) {
-        qCritical() << "Writing serial port options failed.";
+        qCritical() << "SerialPort::openPort: Writing serial port options failed. Error:" << strerror(errno);
         closePort();
         return -3;
     }
 
     // Configure data bits
     if (false == setDataBits(dataBits)) {
-        qCritical() << "Setting data bits failed.";
+        qCritical() << "SerialPort::openPort: Setting data bits failed.";
         closePort();
         return -4;
     }
 
     // Configure stop bits
     if (false == setStopBits(stopBits)) {
-        qCritical() << "Setting stopbits failed.";
+        qCritical() << "SerialPort::openPort: Setting stop bits failed.";
         closePort();
         return -5;
     }
 
     // Configure parity
     if (false == setParity(parity)) {
-        qCritical() << "Setting parity failed.";
+        qCritical() << "SerialPort::openPort: Setting parity failed.";
         closePort();
         return -6;
     }
 
     // Configure baud rate
     if (false == setBaudrate(baudrate)) {
-        qCritical() << "Setting baudrate failed.";
+        qCritical() << "SerialPort::openPort: Setting baudrate failed.";
         closePort();
         return -7;
     }
 
     mAbort = false;
+    qDebug() << "SerialPort::openPort: Starting read thread";
     start(LowPriority);
+    qDebug() << "SerialPort::openPort: Port successfully opened and configured";
     return 0;
 }
 
@@ -204,6 +213,19 @@ void SerialPort::closePort()
         close(mFd);
         mIsOpen = false;
     }
+    mMutex.unlock();
+}
+
+/**
+ * Request immediate stop of the read thread.
+ * This is called from signal handlers to ensure quick shutdown.
+ */
+void SerialPort::stopImmediately()
+{
+    qDebug() << "SerialPort::stopImmediately: Requesting immediate stop";
+    mMutex.lock();
+    mAbort = true;
+    mCondition.wakeAll();  // Wake all waiting threads
     mMutex.unlock();
 }
 
@@ -517,10 +539,11 @@ QByteArray SerialPort::readAll()
 int SerialPort::writeData(const char *data, int length, bool block)
 {
     if (!mIsOpen) {
-        qCritical() << "Serial port not open.";
+        qCritical() << "SerialPort::writeData: Serial port not open.";
         return -2;
     }
 
+    qDebug() << "SerialPort::writeData: Attempting to write" << length << "bytes, blocking:" << block;
     int res = 0;
     int written = 0;
     fd_set set;
@@ -535,26 +558,28 @@ int SerialPort::writeData(const char *data, int length, bool block)
             res = pselect(mFd + 1, NULL, &set, NULL, &timeout, NULL);
 
             if(res < 0) {
-                qCritical().nospace() << "PSelect failed in writeData (" << res << "), ignoring";
+                qCritical() << "SerialPort::writeData: pselect failed (" << res << "). Error:" << strerror(errno);
                 //return res;
             } else if(res == 0) {
-                // Timeout
+                // Timeout - normal in non-blocking mode
+                // qDebug() << "SerialPort::writeData: pselect timeout";
             } else {
                 res = write(mFd, data + written, length);
                 if (res >= 0) {
                     length -= res;
                     written += res;
                 } else {
-                    qCritical().nospace() << "Writing to serial port failed (" << res << "), ignoring";
+                    qCritical() << "SerialPort::writeData: Writing to serial port failed (" << res << "). Error:" << strerror(errno);
                     //return res;
                 }
             }
 
             if (!mIsOpen) {
-                qCritical() << "Serial port closed during write";
+                qCritical() << "SerialPort::writeData: Serial port closed during write";
                 return -2;
             }
         }
+        qDebug() << "SerialPort::writeData: Successfully wrote" << written << "bytes";
         return written;
     } else {
         return write(mFd, data, length);
@@ -670,27 +695,65 @@ int SerialPort::captureBytes(char *buffer, int num, int timeoutMs, const char *p
 
 void SerialPort::run()
 {
+    qDebug() << "SerialPort::run: Read thread started for port fd:" << mFd;
     unsigned char buffer[1024];
     int res = 0;
     int failed_reads = 0;
+    int no_activity_count = 0;
+    const int MAX_NO_ACTIVITY = 10000; // ~10 seconds at 1ms timeout
     fd_set set;
     timespec timeout;
+    QElapsedTimer activityTimer;
+    activityTimer.start();
 
     while (false == mAbort) {
         FD_ZERO(&set); /* clear the set */
         FD_SET(mFd, &set); /* add our file descriptor to the set */
         timeout.tv_sec = 0;
-        timeout.tv_nsec = 10000000;
+        timeout.tv_nsec = 1000000;  // 1ms timeout for faster response to abort
         res = pselect(mFd + 1, &set, NULL, NULL, &timeout, NULL);
 
         if(res < 0) {
-            qWarning() << "Select failed in read thread";
+            if (errno == EINTR) {
+                qDebug() << "SerialPort::run: pselect interrupted by signal";
+            } else {
+                qWarning() << "SerialPort::run: pselect failed. Error:" << strerror(errno);
+            }
         } else if(res == 0) {
-            // Timeout
+            // Timeout - check for no activity
+            no_activity_count++;
+            
+            // Log periodically to show we're still alive
+            if (no_activity_count % 1000 == 0) {
+                qDebug() << "SerialPort::run: No activity for ~1 second (" << no_activity_count << " timeouts)";
+            }
+            
+            // If no activity for too long, assume device is not responding
+            if (no_activity_count > MAX_NO_ACTIVITY) {
+                qWarning() << "SerialPort::run: No activity on serial port for" << (MAX_NO_ACTIVITY * 10) / 1000.0 << "seconds. Device may not be connected or responding.";
+                
+                // Emit error signal
+                Q_EMIT serial_port_error(-100); // Custom error code for no activity
+                
+                // Close the port
+                QMutexLocker locker(&mMutex);
+                if (mIsOpen) {
+                    close(mFd);
+                    mIsOpen = false;
+                }
+                mAbort = true;
+                qCritical() << "SerialPort::run: Closing port due to no activity";
+                return;
+            }
         } else {
+            no_activity_count = 0; // Reset counter on activity
+            activityTimer.restart();
+            
             res = read(mFd, buffer, 1024);
             if (res > 0) {
+                qDebug() << "SerialPort::run: Read" << res << "bytes from serial port";
                 failed_reads = 0;
+                no_activity_count = 0; // Reset no activity counter
 
                 QMutexLocker locker(&mMutex);
                 for (int i = 0;i < res;i++) {
@@ -715,12 +778,15 @@ void SerialPort::run()
                 }
             } else {
                 if (res < 0) {
-                    qCritical().nospace() << "Reading failed. MSG: " << strerror(errno);
+                    qCritical() << "SerialPort::run: Reading failed. Error:" << strerror(errno) << "fd:" << mFd;
                 } else {
-                    qCritical().nospace() << "Reading serial port returned 0";
+                    qCritical() << "SerialPort::run: Reading serial port returned 0 (connection may be lost)";
                 }
+                
+                no_activity_count = 0; // Reset counter since we got a response (even if error)
 
                 failed_reads++;
+                qDebug() << "SerialPort::run: Failed reads count:" << failed_reads;
 
                 if (failed_reads > 3) {
                     QMutexLocker locker(&mMutex);
@@ -729,11 +795,12 @@ void SerialPort::run()
                         mIsOpen = false;
                     }
                     mAbort = true;
-                    qCritical().nospace() << "Too many consecutive failed reads. Closing port.";
+                    qCritical() << "SerialPort::run: Too many consecutive failed reads (" << failed_reads << "). Closing port.";
                     Q_EMIT serial_port_error(res);
                     return;
                 }
             }
         }
     }
+    qDebug() << "SerialPort::run: Read thread exiting";
 }

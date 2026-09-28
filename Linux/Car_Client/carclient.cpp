@@ -101,6 +101,12 @@ CarClient::CarClient(QObject *parent) : QObject(parent)
     mOverrideUwbPos = false;
     mOverrideUwbX = 0.0;
     mOverrideUwbY = 0.0;
+    
+    // Serial port reconnection tracking
+    mSerialReconnectAttempts = 0;
+    mSerialReconnectMaxAttempts = 5;  // Max 5 reconnection attempts
+    mSerialConnectionFailed = false;
+    mShuttingDown = false;
 
     // Network configuration
     mHostAddress = QHostAddress("0.0.0.0");
@@ -203,15 +209,18 @@ void CarClient::handleRos2Connection() {
  */
 void CarClient::connectSerial(QString port, int baudrate)
 {
-    qDebug() << "Trying to connect to serial port: " << port;
+    qDebug() << "CarClient::connectSerial: Attempting to connect to serial port:" << port << "at baudrate:" << baudrate;
     
     // Close existing connection if open
     if(mSerialPort->isOpen()) {
+        qDebug() << "CarClient::connectSerial: Closing existing serial port connection";
         mSerialPort->closePort();
     }
 
     // Open new connection
-    mSerialPort->openPort(port, baudrate);
+    qDebug() << "CarClient::connectSerial: Opening new serial port connection";
+    int result = mSerialPort->openPort(port, baudrate);
+    qDebug() << "CarClient::connectSerial: openPort returned:" << result;
 
     // Update settings
     mSettings.serialConnect = true;
@@ -220,13 +229,18 @@ void CarClient::connectSerial(QString port, int baudrate)
 
     // Check if connection succeeded
     if(!mSerialPort->isOpen()) {
-//        qDebug() << "Serial port connection failed";
+        qCritical() << "CarClient::connectSerial: Serial port connection failed for" << port;
         return;
     }
 
-    qDebug() << "Serial port connected";
+    qDebug() << "CarClient::connectSerial: Serial port connected successfully";
+    
+    // Reset reconnection tracking on successful connection
+    mSerialReconnectAttempts = 0;
+    mSerialConnectionFailed = false;
 
     mPacketInterface->stopUdpConnection();
+    qDebug() << "CarClient::connectSerial: Requesting car state to get ID";
     mPacketInterface->getState(255); // To get car ID
 }
 
@@ -659,17 +673,42 @@ CarSim *CarClient::getSimulatedCar(int id)
 
 void CarClient::serialDataAvailable()
 {
+    qDebug() << "CarClient::serialDataAvailable: Data available on serial port";
+    int available = mSerialPort->bytesAvailable();
+    qDebug() << "CarClient::serialDataAvailable: Bytes available:" << available;
+    
     while (mSerialPort->bytesAvailable() > 0) {
-        processCarData(mSerialPort->readAll());
+        QByteArray data = mSerialPort->readAll();
+        qDebug() << "CarClient::serialDataAvailable: Read" << data.size() << "bytes, processing...";
+        processCarData(data);
     }
 }
 
 void CarClient::serialPortError(int error)
 {
-    qDebug() << "Serial error:" << error;
+    qCritical() << "CarClient::serialPortError: Serial port error occurred. Error code:" << error;
 
     if(mSerialPort->isOpen()) {
+        qDebug() << "CarClient::serialPortError: Closing serial port due to error";
         mSerialPort->closePort();
+    }
+    
+    // Track connection failures
+    mSerialReconnectAttempts++;
+    
+    // Special error code for no activity (-100 from SerialPort)
+    if (error == -100) {
+        qCritical() << "CarClient::serialPortError: Device not responding. This may be normal if no vehicle controller is connected.";
+        mSerialConnectionFailed = true;
+    } else {
+        qWarning() << "CarClient::serialPortError: Connection attempt" << mSerialReconnectAttempts << "failed";
+    }
+    
+    // Check if we've exceeded max attempts
+    if (mSerialReconnectAttempts >= mSerialReconnectMaxAttempts) {
+        qCritical() << "CarClient::serialPortError: Maximum reconnection attempts (" << mSerialReconnectMaxAttempts << ") reached. Giving up on serial port.";
+        mSerialConnectionFailed = true;
+        mSettings.serialConnect = false; // Disable further reconnection attempts
     }
 }
 
@@ -971,24 +1010,30 @@ void CarClient::rtcmUsbRx(quint8 id, QByteArray data)
 
 void CarClient::reconnectTimerSlot()
 {
-    // Try to reconnect if the connections are lost
-    if (mSettings.serialConnect && !mSerialPort->isOpen()) {
- //       qDebug() << "Trying to reconnect serial...";
+    // If we're shutting down, don't try to reconnect
+    if (mShuttingDown) {
+        qDebug() << "CarClient::reconnectTimerSlot: Shutting down, skipping reconnection attempts";
+        return;
+    }
+    
+    // Try to reconnect if the connections are lost and we haven't given up
+    if (mSettings.serialConnect && !mSerialPort->isOpen() && !mSerialConnectionFailed) {
+        qDebug() << "CarClient::reconnectTimerSlot: Attempting to reconnect serial port (attempt" << mSerialReconnectAttempts + 1 << ")";
         connectSerial(mSettings.serialPort, mSettings.serialBaud);
     }
 
     if (mSettings.serialRtcmConnect && !mSerialPortRtcm->isOpen()) {
-//        qDebug() << "Trying to reconnect RTCM serial...";
+        qDebug() << "CarClient::reconnectTimerSlot: Attempting to reconnect RTCM serial port";
         connectSerialRtcm(mSettings.serialRtcmPort, mSettings.serialRtcmBaud);
     }
 
     if (mSettings.serialArduinoConnect && !mSerialPortArduino->isOpen()) {
-//        qDebug() << "Trying to reconnect Arduino serial...";
+        qDebug() << "CarClient::reconnectTimerSlot: Attempting to reconnect Arduino serial port";
         connectSerialArduino(mSettings.serialArduinoPort, mSettings.serialArduinoBaud);
     }
 
     if (mSettings.nmeaConnect && !mTcpConnected) {
-        qDebug() << "Trying to reconnect nmea tcp...";
+        qDebug() << "CarClient::reconnectTimerSlot: Attempting to reconnect NMEA TCP";
         connectNmea(mSettings.nmeaServer, mSettings.nmeaPort);
     }
 
@@ -1168,6 +1213,7 @@ void CarClient::logEthernetReceived(quint8 id, QByteArray data)
 
 void CarClient::processCarData(QByteArray data)
 {
+    qDebug() << "CarClient::processCarData: Processing" << data.size() << "bytes of car data";
     mPacketInterface->processData(data);
 }     //   qDebug() << "Published: " << str;
 

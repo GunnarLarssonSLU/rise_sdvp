@@ -24,11 +24,16 @@
 #ifdef __cplusplus
 extern "C++" {
 #include <QObject>
+#include <QString>
 }
 #endif
 
 // Server configuration
-#define SERVER_BASE_URL "http://192.168.200.3:8080"
+#ifdef __cplusplus
+QString getServerBaseUrl();
+#else
+const char* getServerBaseUrl();
+#endif
 
 // Sizes
 #define LOG_NAME_MAX_LEN			20

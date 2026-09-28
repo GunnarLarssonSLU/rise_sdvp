@@ -84,6 +84,8 @@ public:
     bool isRtklibRunning();
     quint8 carId();
     void setCarId(quint8 id);
+    SerialPort* serialPort() { return mSerialPort; }
+    void setShuttingDown(bool shuttingDown) { mShuttingDown = shuttingDown; }
     void connectNtrip(QString server, QString stream, QString user = "", QString pass = "", int port = 80);
     void setSendRtcmBasePos(bool send, double lat = 0.0, double lon = 0.0, double height = 0.0);
     Q_INVOKABLE void rebootSystem(bool powerOff = false);
@@ -159,6 +161,12 @@ private:
     bool mRtklibRunning;
     int mBatteryCells;
     QList<CarSim*> mSimulatedCars;
+    
+    // Serial port reconnection tracking
+    int mSerialReconnectAttempts;
+    int mSerialReconnectMaxAttempts;
+    bool mSerialConnectionFailed;
+    bool mShuttingDown;
     QVector<UWB_ANCHOR> mUwbAnchorsNow;
     int mCarIdToSet;
 

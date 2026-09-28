@@ -92,6 +92,8 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
     bool eventFilter(QObject *object, QEvent *e);
+    void closeEvent(QCloseEvent *event) override;
+    QString getServerBaseUrl() const;
 
     void addCar(int id, QString name, bool pollData = false);
     void removeCars();

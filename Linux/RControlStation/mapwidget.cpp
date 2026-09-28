@@ -27,6 +27,7 @@
 #include <QUrl>
 #include <QUrlQuery>
 
+#include "datatypes.h"
 #include "mapwidget.h"
 #include "qmessagebox.h"
 #include "utility.h"
@@ -671,7 +672,7 @@ void MapWidget::setFarm(double px,double py)
     int iFarm=mw->currentFarm();
     
     // Call server to update farm location
-    QUrl url(SERVER_BASE_URL "/farm_movelocation");
+    QUrl url(getServerBaseUrl() + "/farm_movelocation");
     QUrlQuery query;
     query.addQueryItem("id", QString::number(iFarm));
     query.addQueryItem("latitude", QString::number(llh[0], 'f', 14));

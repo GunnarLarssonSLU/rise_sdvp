@@ -124,7 +124,7 @@ PacketInterface::~PacketInterface()
  */
 void PacketInterface::processData(QByteArray &data)
 {
-    qDebug() << "PacketInterface::processData: Processing" << data.size() << "bytes";
+    qDebug() << "PacketInterface::processData: Processing" << data.size() << "bytes, current state:" << mRxState;
     unsigned char rx_data;
     const int rx_timeout = 50;
 
@@ -136,21 +136,25 @@ void PacketInterface::processData(QByteArray &data)
         case 0:
             // Looking for start byte
             if (rx_data == 2) {
+                qDebug() << "PacketInterface::processData: Found start byte 2 (small packet)";
                 mRxState += 3;  // Skip to payload reading
                 mRxTimer = rx_timeout;
                 mRxDataPtr = 0;
                 mPayloadLength = 0;
             } else if (rx_data == 3) {
+                qDebug() << "PacketInterface::processData: Found start byte 3 (medium packet)";
                 mRxState += 2;  // Skip to length reading
                 mRxTimer = rx_timeout;
                 mRxDataPtr = 0;
                 mPayloadLength = 0;
             } else if (rx_data == 4) {
+                qDebug() << "PacketInterface::processData: Found start byte 4 (large packet)";
                 mRxState++;  // Start reading length
                 mRxTimer = rx_timeout;
                 mRxDataPtr = 0;
                 mPayloadLength = 0;
             } else {
+                // qDebug() << "PacketInterface::processData: Invalid start byte:" << rx_data;
                 mRxState = 0;  // Invalid start byte
             }
             break;
@@ -201,22 +205,29 @@ void PacketInterface::processData(QByteArray &data)
 
         case 7:
             if (rx_data == 3) {
-                if (crc16(mRxBuffer, mPayloadLength) ==
-                        ((unsigned short)mCrcHigh << 8 | (unsigned short)mCrcLow)) {
+                unsigned short calculated_crc = crc16(mRxBuffer, mPayloadLength);
+                unsigned short received_crc = ((unsigned short)mCrcHigh << 8 | (unsigned short)mCrcLow);
+                if (calculated_crc == received_crc) {
                     // Packet received!
-                    qDebug() << "PacketInterface::processData: Packet received! Size:" << mPayloadLength;
+                    qDebug() << "PacketInterface::processData: Packet received and CRC verified! Size:" << mPayloadLength << "bytes";
                     processPacket(mRxBuffer, mPayloadLength);
+                } else {
+                    qWarning() << "PacketInterface::processData: CRC mismatch! Calculated:" << QString::number(calculated_crc, 16) << "Received:" << QString::number(received_crc, 16);
                 }
+            } else {
+                qWarning() << "PacketInterface::processData: Expected end byte 3, got:" << rx_data;
             }
 
             mRxState = 0;
             break;
 
         default:
+            qWarning() << "PacketInterface::processData: Invalid state:" << mRxState << ", resetting";
             mRxState = 0;
             break;
         }
     }
+    qDebug() << "PacketInterface::processData: Finished processing, final state:" << mRxState;
 }
 
 /**
@@ -574,21 +585,21 @@ unsigned short PacketInterface::crc16(const unsigned char *buf, unsigned int len
 bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_packet)
 {
     unsigned int ind = 0;
-//    qDebug() << "in packetinterface::sendPacket";
+    qDebug() << "PacketInterface::sendPacket: Sending packet of size:" << len_packet << "bytes, UDP address:" << mHostAddress.toString();
 
     // If the IP is valid, send the packet over UDP (no framing needed)
     if (QString::compare(mHostAddress.toString(), "0.0.0.0") != 0) {
+        qDebug() << "PacketInterface::sendPacket: Sending via UDP to" << mHostAddress.toString() << ":" << mUdpPort;
         memcpy(mSendBufferAck + ind, data, len_packet);
         ind += len_packet;
 
         QByteArray toSend = QByteArray::fromRawData((const char*)mSendBufferAck, ind);
-//        qDebug() << "ok and about to write";
-
-        mUdpSocket->writeDatagram(toSend, mHostAddress, mUdpPort);
-        //ros2 ...
+        qint64 bytesSent = mUdpSocket->writeDatagram(toSend, mHostAddress, mUdpPort);
+        qDebug() << "PacketInterface::sendPacket: UDP writeDatagram returned:" << bytesSent << "bytes";
 
         // Send to secondary address if configured
         if (QString::compare(mHostAddress2.toString(), "0.0.0.0") != 0) {
+            qDebug() << "PacketInterface::sendPacket: Also sending to secondary UDP address:" << mHostAddress2.toString();
             mUdpSocket->writeDatagram(toSend, mHostAddress2, mUdpPort);
         }
 
@@ -596,21 +607,24 @@ bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_pac
     }
 
     // For serial communication, add framing and CRC
+    qDebug() << "PacketInterface::sendPacket: Preparing serial packet with framing";
     int len_tot = len_packet;
     unsigned int data_offs = 0;
 
- //   qDebug() << "Length: " << len_tot;
     // Add start byte based on packet size
     if (len_tot <= 255) {
+        qDebug() << "PacketInterface::sendPacket: Small packet (len <= 255), using start byte 2";
         mSendBufferAck[ind++] = 2;
         mSendBufferAck[ind++] = len_tot;
         data_offs = 2;
     } else if (len_tot <= 65535) {
+        qDebug() << "PacketInterface::sendPacket: Medium packet (len <= 65535), using start byte 3";
         mSendBufferAck[ind++] = 3;
         mSendBufferAck[ind++] = len_tot >> 8;
         mSendBufferAck[ind++] = len_tot & 0xFF;
         data_offs = 3;
     } else {
+        qDebug() << "PacketInterface::sendPacket: Large packet (len > 65535), using start byte 4";
         mSendBufferAck[ind++] = 4;
         mSendBufferAck[ind++] = (len_tot >> 16) & 0xFF;
         mSendBufferAck[ind++] = (len_tot >> 8) & 0xFF;
@@ -624,12 +638,14 @@ bool PacketInterface::sendPacket(const unsigned char *data, unsigned int len_pac
 
     // Calculate and add CRC checksum
     unsigned short crc = crc16(mSendBufferAck + data_offs, len_tot);
+    qDebug() << "PacketInterface::sendPacket: Calculated CRC:" << QString::number(crc, 16);
     mSendBufferAck[ind++] = crc >> 8;
     mSendBufferAck[ind++] = crc;
     mSendBufferAck[ind++] = 3;  // End marker
 
     // Emit signal to send the framed packet
     QByteArray sendData = QByteArray::fromRawData((char*)mSendBufferAck, ind);
+    qDebug() << "PacketInterface::sendPacket: Emitting dataToSend signal with" << sendData.size() << "bytes";
     emit dataToSend(sendData);
 
     return true;

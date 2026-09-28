@@ -50,6 +50,7 @@ public:
         SerialParity parity = PARITY_NONE);
 
     void closePort();
+    void stopImmediately();  // Request immediate stop from external signal
     bool setBaudrate(int baudrate);
     bool setParity(SerialParity parity);
     bool setStopBits(SerialStopBits stopBits);
