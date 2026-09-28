@@ -56,6 +56,9 @@ private:
             });
 
             connect(&socket, &QTcpSocket::connected, [this,client]() {
+                // Stäng av Nagle: annars håller TCP små spakkommandon tills förra
+                // paketet kvitterats, och över 4G (300-500 ms) kom "släpp" en sekund för sent.
+                socket.setSocketOption(QAbstractSocket::LowDelayOption, 1);
                 emit client->stateChanged("TCP Connected", attempedip, false);
             });
 
