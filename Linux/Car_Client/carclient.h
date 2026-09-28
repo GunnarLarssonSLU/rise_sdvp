@@ -159,6 +159,7 @@ private:
     QFile mLog;
     Ublox *mUblox;
     bool mRtklibRunning;
+    QString mUbloxDevice; // Riktig tty bakom /dev/ublox när porten öppnades (t.ex. /dev/ttyACM1)
     int mBatteryCells;
     QList<CarSim*> mSimulatedCars;
     

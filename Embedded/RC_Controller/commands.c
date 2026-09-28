@@ -22,6 +22,7 @@
 #include "pos.h"
 #include "buffer.h"
 #include "terminal.h"
+#include "bldc_interface.h"
 #include "motor_control.h"
 #include "servo_simple.h"
 #include "utils.h"
@@ -1138,7 +1139,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 
 			activity = data[ind];
 			ind += 1;
-			commands_printf("Activity: %d", activity);
+			// commands_printf("Activity: %d", activity); // Borttaget: floodade USB-debugutskriften på varje spakrörelse
 
 			// Debug: Print raw int32 before conversion
 			int32_t raw_value = buffer_get_int32(data, &ind);

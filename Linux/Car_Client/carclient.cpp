@@ -16,6 +16,7 @@
     */
 
 #include "carclient.h"
+#include <QFileInfo>
 #include <QDebug>
 #include <QDateTime>
 #include <QDir>
@@ -489,6 +490,7 @@ void CarClient::restartRtklib()
     mUblox->disconnectSerial();
 
     if (mUblox->connectSerial(ublox.fileName())) {
+        mUbloxDevice = QFileInfo(ublox.fileName()).canonicalFilePath();
         // Serial port baud rate
         // if it is too low the buffer will overfill and it won't work properly.
         ubx_cfg_prt_uart uart;
@@ -565,9 +567,26 @@ void CarClient::restartRtklib()
 
     QProcess process3;
     process3.setEnvironment(QProcess::systemEnvironment());
+    // rtkrcv-mappen ligger bredvid Car_Client i samma repo (Linux/Car_Client ->
+    // Linux/PI/rtkrcv_arm), var repot än är klonat. De hårdkodade sökvägarna nedan
+    // fanns inte på nya installationer (t.ex. ~/rise_sdvp med Linux/PI, inte Linux/RTK),
+    // så rtklib startade aldrig och ingen position kom på port 2948.
+    QStringList rtkCandidates;
+    rtkCandidates << QDir(QCoreApplication::applicationDirPath() + "/../PI/rtkrcv_arm").absolutePath()
+                  << QString("/home/%1/RControllStation/rise_sdvp/Linux/PI/rtkrcv_arm").arg(user)
+                  << QString("/home/%1/rise_sdvp/Linux/PI/rtkrcv_arm").arg(user)
+                  << QString("/home/%1/rise_sdvp/Linux/RTK/rtkrcv_arm").arg(user);
+    QString rtkPath = rtkCandidates.first();
+    for (const QString &c : rtkCandidates) {
+        if (QFile::exists(c + "/start_ublox")) {
+            rtkPath = c;
+            break;
+        }
+    }
+    qDebug() << "Starting rtklib in" << rtkPath;
     process3.start("screen", QStringList() <<
                    "-d" << "-m" << "-S" << "rtklib" << "bash" << "-c" <<
-                   QString("cd /home/%1/rise_sdvp/Linux/RTK/rtkrcv_arm && ./start_ublox ; bash").arg(user));
+                   QString("cd %1 && ./start_ublox ; bash").arg(rtkPath));
     waitProcess(process3);
 }
 
@@ -906,8 +925,7 @@ void CarClient::packetDataToSend(QByteArray &data)
     (void)id;
     qDebug() << "in CarClient::packetDataToSend.... Id: " << id << ", mCarId: " << mCarId << ", cmd: " << cmd;
 
-//    if (id == mCarId || id == 255) {
-    if (id == mCarId || mCarId == 255) {
+    if (id == mCarId || id == 0 || id == 255 || mCarId == 255) {
         if (cmd == CMD_CAMERA_STREAM_START) {
         } else if (cmd == CMD_TERMINAL_CMD) {
             QString str(vb);
@@ -1004,7 +1022,7 @@ void CarClient::tcpDisconnected()
 
 void CarClient::rtcmUsbRx(quint8 id, QByteArray data)
 {
-    mCarId = id;
+    (void)id;
     mRtcmBroadcaster->broadcastData(data);
 }
 
@@ -1030,6 +1048,21 @@ void CarClient::reconnectTimerSlot()
     if (mSettings.serialArduinoConnect && !mSerialPortArduino->isOpen()) {
         qDebug() << "CarClient::reconnectTimerSlot: Attempting to reconnect Arduino serial port";
         connectSerialArduino(mSettings.serialArduinoPort, mSettings.serialArduinoBaud);
+    }
+
+    // u-blox har tappats (USB-bortfall/strömavbrott): öppna och konfigurera om den
+    // när enheten finns igen, annars står rtkrcv utan UBX-data för alltid.
+    if (mRtklibRunning && !mUblox->isSerialConnected() && QFile::exists("/dev/ublox")) {
+        qDebug() << "u-blox lost, reconnecting and restarting rtklib...";
+        restartRtklib();
+    } else if (mRtklibRunning && mUblox->isSerialConnected() && QFile::exists("/dev/ublox") &&
+               QFileInfo("/dev/ublox").canonicalFilePath() != mUbloxDevice) {
+        // u-bloxen har kommit tillbaka under ett nytt tty-namn (t.ex. när styrkortet
+        // flashas och USB räknas om). Den gamla porten ser fortfarande öppen ut men
+        // pekar på en borttagen enhet, så inget fel signaleras – jämför namnen i stället.
+        qDebug() << "u-blox moved from" << mUbloxDevice << "to"
+                 << QFileInfo("/dev/ublox").canonicalFilePath() << ", reconnecting and restarting rtklib...";
+        restartRtklib();
     }
 
     if (mSettings.nmeaConnect && !mTcpConnected) {
@@ -1086,7 +1119,9 @@ void CarClient::carPacketRx(quint8 id, CMD_PACKET cmd, const QByteArray &data)
 */
     if (id != 254) {
 //        qDebug() << "In CarClient::carPacketRx. Car: " << id;
-        mCarId = id;
+        if (mCarId == 255) {
+            mCarId = id;
+        }
 
         if (QString::compare(mHostAddress.toString(), "0.0.0.0") != 0) {
 //            qDebug() << "datagramming";
@@ -1149,8 +1184,8 @@ void CarClient::ubxRx(const QByteArray &data)
 
 void CarClient::rxRawx(ubx_rxm_rawx rawx)
 {
-    if (!rawx.leap_sec) {
-        // Leap seconds are not known...
+    if (!rawx.leap_sec || rawx.week < 2000) {
+        // Leap seconds or week number are not known yet...
         return;
     }
 
@@ -1412,7 +1447,11 @@ void CarClient::startStr2Str(double lat,double lon )
 void CarClient::stopStr2Str() {
     if (s2sProcess.state() == QProcess::Running) {
         s2sProcess.terminate();
-        s2sProcess.waitForFinished();
+        if (!s2sProcess.waitForFinished(1000)) { // Wait max 1 second!
+            qDebug() << "str2str did not stop in time, force-killing it...";
+            s2sProcess.kill();
+            s2sProcess.waitForFinished(500);
+        }
         qDebug() << "Stopped str2str with PID:" << s2sProcess.processId();
     } else {
         qCritical() << "No running instance of str2str to stop.";
