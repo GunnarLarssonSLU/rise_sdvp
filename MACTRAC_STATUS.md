@@ -29,6 +29,17 @@ Samarbete med SLU och Jordbruksverket. En maskin (Lövsta). Körs med **RControl
 - Bygg: `cd Embedded/RC_Controller && make mactrac` → `build/fw_mactrac.elf`.
   Flasha ALLTID elf (inte bin), annars raderas inställningarna i EEPROM.
 
+## Pi 5:an (mactrack-slu) — rättat 2026-09-28
+- **rtkrcv startade aldrig** på Pi:n, så port 2948 (position/RTK till RControlStation)
+  saknades. Två fel: `./rtkrcv` finns inte i git (bara byggd för hand på RobAnt), och
+  Car_Client letade efter rtkrcv-mappen på hårdkodade sökvägar som inte finns här.
+  Rättat: `start_ublox` använder `/usr/bin/rtkrcv` (Debians rtklib, 2.4.3) om `./rtkrcv`
+  saknas, och Car_Client hittar `Linux/PI/rtkrcv_arm` bredvid sig själv. Ombyggt och
+  omstartat på Pi:n; rtkrcv startas nu av Car_Client och tar emot u-blox (8210) och
+  Swepos (1234). RTK Fix ej verifierat än (står inne utan antenn).
+- Pi 5 har skrivbord (labwc/Wayland, autologin `macbot-slu`) — planerad statusskärm
+  (5" DSI-touch) körs som helskärmsapp där.
+
 ## Att göra
 1. Besök i Lövsta: foton, Confcommon-skärmbilder, CAN-terminering, Jetson-läsrunda
    (checklista: robot-control/besok_mactrac_checklista.md).
