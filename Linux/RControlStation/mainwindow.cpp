@@ -299,6 +299,7 @@ MainWindow::MainWindow(QWidget *parent) :
     mSupportedFirmwares.append(qMakePair(20, 1));
     mSupportedFirmwares.append(qMakePair(30, 1));
     mSupportedFirmwares.append(qMakePair(30, 2)); // Write-hängningen rättad, heartbeat i sekunder
+    mSupportedFirmwares.append(qMakePair(30, 3)); // + autopiloten sätter körriktningen
 
     ui->mapStreamNmeaFollowBox->setChecked(true);
 
