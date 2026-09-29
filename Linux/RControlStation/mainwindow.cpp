@@ -298,6 +298,7 @@ MainWindow::MainWindow(QWidget *parent) :
     mSupportedFirmwares.append(qMakePair(12, 3));
     mSupportedFirmwares.append(qMakePair(20, 1));
     mSupportedFirmwares.append(qMakePair(30, 1));
+    mSupportedFirmwares.append(qMakePair(30, 2)); // Write-hängningen rättad, heartbeat i sekunder
 
     ui->mapStreamNmeaFollowBox->setChecked(true);
 
