@@ -369,6 +369,22 @@ MainWindow::MainWindow(QWidget *parent) :
         }
     }
 
+    // Redskapets mått (arbetsbredd = avstånd mellan körningarna i ZigZag, och GL-fill)
+    // sparas så att de inte går tillbaka till standard vid varje start.
+    // Standard: MacBot/MacTrac, aggregatet 2,4 m brett och 3,4 m långt.
+    {
+        QSettings s("RControlStation", "redskap");
+        ui->boundsFillSpacingSpinBox->setValue(s.value("zigzagBredd", 2.4).toDouble());
+        ui->implementWidthLineEdit->setText(s.value("bredd", "2.4").toString());
+        ui->implementLengthLineEdit->setText(s.value("langd", "3.4").toString());
+        connect(ui->boundsFillSpacingSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                this, [](double v) { QSettings("RControlStation", "redskap").setValue("zigzagBredd", v); });
+        connect(ui->implementWidthLineEdit, &QLineEdit::textChanged,
+                this, [](const QString &t) { QSettings("RControlStation", "redskap").setValue("bredd", t); });
+        connect(ui->implementLengthLineEdit, &QLineEdit::textChanged,
+                this, [](const QString &t) { QSettings("RControlStation", "redskap").setValue("langd", t); });
+    }
+
     // Styrkortet kan byta ENU-referens (t.ex. till basstationen när RTCM 1005 kommer),
     // så hämta den regelbundet så att kartan och bilen räknar från samma nollpunkt.
     QTimer *enuSyncTimer = new QTimer(this);
