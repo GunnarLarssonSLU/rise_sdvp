@@ -258,6 +258,19 @@
 #define VIN_R2						1500.0
 #endif
 
+// ROV_MCU (Upwis MP101_323): F9-kortets stiftlayout (IS_F9_BOARD) med CM5 och
+// STM32F415VGT, men BMI270 i stället för BMI160. Övriga skillnader (CAN-
+// transceivrarnas SILENT-ben, riktning på DI1-4, GPS 2:s reset) sköts av
+// rovmcu_board_init() i main.c. Stiftkarta: Embedded/RC_Controller/ROVMCU.md.
+#ifdef IS_ROVMCU
+#undef HAS_BMI160
+#define HAS_BMI160					0
+#define HAS_BMI270					1
+#endif
+#ifndef HAS_BMI270
+#define HAS_BMI270					0
+#endif
+
 #ifndef M_PI
 #define M_PI						D(3.14159265358979323846)
 #endif

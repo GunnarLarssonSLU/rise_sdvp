@@ -342,6 +342,12 @@ robant: override PROJECT = fw_robant
 robant: USE_OPT += -DMAIN_MODE=MAIN_MODE_vehicle -DUBLOX_EN=1 -DBOARD_YAW_ROT=180.0 -DHAS_HYDRAULIC_DRIVE=0 -DIS_ROBANT
 robant: touch_conf_general build/fw_robant.elf build/fw_robant.bin
 
+# ROV_MCU (Upwis MP101_323): F9-kortets layout + BMI270, CAN-SILENT, DIR på DI1-4.
+# Maskinprofil som RobAnt (VESC via CAN). Kortets riktning på maskinen: BOARD_YAW_ROT.
+rovmcu: override PROJECT = fw_rovmcu
+rovmcu: USE_OPT += -DMAIN_MODE=MAIN_MODE_vehicle -DUBLOX_EN=1 -DHAS_HYDRAULIC_DRIVE=0 -DIS_ROBANT -DIS_ROVMCU
+rovmcu: touch_conf_general build/fw_rovmcu.elf build/fw_rovmcu.bin
+
 RULESPATH = $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC
 include $(RULESPATH)/rules.mk
 
