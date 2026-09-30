@@ -45,9 +45,11 @@ Linux/RControlStation/Models/*.model
 # Gerber files
 **/Gerber/
 **/*.gtl
-**/*.gblweb/
-web/
+**/*.gbl
+web/*
 !web/server.py
+!web/kundisolering.sh
+!web/kunder.exempel.json
 
 # Memory and log files (local only)
 GEMINI.md

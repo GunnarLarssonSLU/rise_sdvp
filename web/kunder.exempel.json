@@ -1,0 +1,14 @@
+{
+  "_om": "Kunder på servern. datorer = kundens WireGuard-adresser (de ser bara sina robotar och gårdar). robotar = robotarnas adresser. gardar = id i locations-tabellen. Alla andra adresser (våra) ser allt. Ändringar gäller direkt för webbservern; kör sedan sudo bash kundisolering.sh för brandväggen. Kopiera till kunder.json på servern (kunder.json ska inte in i git).",
+  "kunder": {
+    "exempelkund": {
+      "datorer": [
+        "192.168.200.2xx"
+      ],
+      "robotar": [
+        "192.168.200.xx"
+      ],
+      "gardar": []
+    }
+  }
+}
