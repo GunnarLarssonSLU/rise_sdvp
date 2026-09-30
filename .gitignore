@@ -50,6 +50,7 @@ web/*
 !web/server.py
 !web/kundisolering.sh
 !web/kunder.exempel.json
+!web/kundlogg.sh
 
 # Memory and log files (local only)
 GEMINI.md
