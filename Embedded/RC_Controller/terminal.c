@@ -133,8 +133,10 @@ void terminal_process_string(char *str) {
 		led_write(LED_RED, 1);
 		mpu9150_sample_gyro_offsets(100);
 		led_write(LED_RED, 0);
+#elif HAS_BMI270
+		commands_printf("TODO: Implement for BMI270\n");
 #else
-		commands_printf("TODO: Implement for BMI160/BMI270\n");
+		commands_printf("TODO: Implement for BMI160\n");
 #endif
 	} else if (strcmp(argv[0], "io_board_read") == 0) {
 		for (int i = 0;i < 100;i++) {
