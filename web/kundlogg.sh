@@ -24,6 +24,8 @@ visa_brandvagg() {
 if [ "${2:-}" = "--nu" ]; then
   journalctl -u rise_sdvp.service --since "-24h" --no-pager | grep -E "$MONSTER" | tail -20
   visa_brandvagg
+  echo "--- stoppade paket (senaste 24 h):"
+  journalctl -k --since "-24h" --no-pager | grep "KUNDISOL-$KUND" | tail -10 | sed -E 's/.*(SRC=[^ ]+ DST=[^ ]+).*(PROTO=[^ ]+)( SPT=[^ ]+ DPT=[^ ]+)?.*/  \1 \2\3/'
   exit 0
 fi
 

@@ -11,6 +11,7 @@
 #   - svar på befintliga anslutningar släpps alltid (vi kan nå kundernas robotar)
 #   - kunddator -> egna robotar: ok; kunddator -> allt annat i tunneln: stopp
 #   - kundrobot -> egna kunddatorer: ok; kundrobot -> allt annat i tunneln: stopp
+#   - stoppade paket loggas (högst 10/min per regel) i kärnloggen: journalctl -k | grep KUNDISOL
 #   - allt annat (våra datorer och robotar) påverkas inte
 # Servern själv (192.168.200.1, webbservern) påverkas inte: den trafiken går inte via
 # FORWARD.
@@ -31,10 +32,12 @@ for namn, k in kunder.items():
     for d in datorer:
         for r in robotar:
             print(f"-s {d} -d {r} -j RETURN -m comment --comment {namn}")
+        print(f"-s {d} -m limit --limit 10/min -j LOG --log-prefix KUNDISOL-{namn}: -m comment --comment {namn}")
         print(f"-s {d} -j DROP -m comment --comment {namn}")
     for r in robotar:
         for d in datorer:
             print(f"-s {r} -d {d} -j RETURN -m comment --comment {namn}")
+        print(f"-s {r} -m limit --limit 10/min -j LOG --log-prefix KUNDISOL-{namn}: -m comment --comment {namn}")
         print(f"-s {r} -j DROP -m comment --comment {namn}")
 print("-j RETURN")
 EOF
