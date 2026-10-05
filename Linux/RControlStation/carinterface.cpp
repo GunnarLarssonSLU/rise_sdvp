@@ -27,6 +27,7 @@
 #include <QDateTime>
 #include <QXmlStreamWriter>
 #include <QXmlStreamReader>
+#include "vehicledata.h"
 
 namespace {
 void faultToStr(mc_fault_code fault, QString &str, bool &isOk)
@@ -514,6 +515,10 @@ void CarInterface::tcpRx(QByteArray &data)
 
 void CarInterface::terminalPrint(quint8 id, QString str)
 {
+    // Statusrutans egna "vinkel"-frågor (en gång per sekund) ska inte fylla terminalen.
+    if (VehicleData::hideAnglePrint(str)) {
+        return;
+    }
     if (id == mId || id == 255) {
         ui->terminalBrowser->append(str);
     }

@@ -44,6 +44,7 @@
 #include "carinterface.h"
 #include "packetinterface.h"
 #include "ping.h"
+#include "vehicledata.h"
 #include "nmeaserver.h"
 #include "rtcm3_simple.h"
 #include "intersectiontest.h"
@@ -438,6 +439,7 @@ private:
     QElapsedTimer mGgaAge;                  // Tid sedan senaste GGA från RTK-strömmen
     QElapsedTimer mStateAge;                // Tid sedan senaste statuspaket från bilen
     void updateStatusBox();
+    VehicleData *mVehicle = nullptr;       // Fordonsdata i statusrutan + körlogg
     QString mConnectedIp;                   // IP till bilen vi senast anslöt till
     bool mNmeaDrawTrace = true;             // rita GPS-positionerna som spår (inte vid automatisk anslutning)
     QNetworkAccessManager *mRouterNet = nullptr; // Egen hanterare: mNetworkManager har globala finished-kopplingar

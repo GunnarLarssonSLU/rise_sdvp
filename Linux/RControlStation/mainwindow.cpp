@@ -435,6 +435,11 @@ MainWindow::MainWindow(QWidget *parent) :
             this, SLOT(packetDataToSend(QByteArray&)));
     connect(mPacketInterface, SIGNAL(stateReceived(quint8,CAR_STATE)),
             this, SLOT(stateReceived(quint8,CAR_STATE)));
+    mVehicle = new VehicleData(this);
+    connect(mPacketInterface, &PacketInterface::packetReceived, this,
+            [this](quint8 id, CMD_PACKET cmd, const QByteArray &pkt) {
+        mVehicle->packetReceived(id, (quint8)cmd, pkt);
+    });
     connect(ui->mapLiveWidget, SIGNAL(posSet(quint8,LocPoint)),
             this, SLOT(mapPosSet(quint8,LocPoint)));
     connect(mPacketInterface, SIGNAL(ackReceived(quint8,CMD_PACKET,QString)),
@@ -2363,7 +2368,29 @@ void MainWindow::updateStatusBox()
         router = "<br>" + mRouterLine;
     }
 
-    mStatusBoxLabel->setText(gps + "<br>" + link + router);
+    // Fordonsdata (batteri, räckvidd, styrning, lutning, fel) och körlogg.
+    QString vehicle;
+    if (mVehicle) {
+        bool connected = mTcpClientMulti->isAnyConnected();
+        mVehicle->tick(connected);
+        if (connected && mStateAge.isValid() && mStateAge.elapsed() < 3000) {
+            if (mVehicle->wantAngleQuery()) {
+                mPacketInterface->sendTerminalCmd(mVehicle->carId(), "vinkel");
+            }
+            if (mVehicle->wantVescQuery()) {
+                QByteArray p;
+                p.append((char)mVehicle->carId());
+                p.append((char)140); // CMD_GET_VESC_STATUS
+                mPacketInterface->sendPacket(p);
+            }
+        }
+        QString h = mVehicle->html();
+        if (!h.isEmpty()) {
+            vehicle = "<hr>" + h;
+        }
+    }
+
+    mStatusBoxLabel->setText(gps + "<br>" + link + router + vehicle);
 }
 
 // Hämtar routerns mottagning från router_signal.py på Pi:n (port 8310).
@@ -2539,6 +2566,9 @@ void MainWindow::packetDataToSend(QByteArray &data)
 void MainWindow::stateReceived(quint8 id, CAR_STATE state)
 {
     mStateAge.restart();
+    if (mVehicle) {
+        mVehicle->stateReceived(id, state);
+    }
 
     if (!mSupportedFirmwares.contains(qMakePair(static_cast<int>(state.fw_major), static_cast<int>(state.fw_minor)))) {
         on_disconnectButton_clicked();
