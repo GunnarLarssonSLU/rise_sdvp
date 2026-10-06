@@ -21,6 +21,7 @@ int RouteGenerator::checkFieldTrial(int x,int y,int task)
                                    {7,1,8,6,7,4,10,4}};
 
     std::array<int, 10> sowing = {1,1,1,1,0,0,0,0,0,1};
+    std::array<int, 10> sowing_cereals = {1,1,1,1,1,1,1,1,1,1};
     std::array<int, 10> cutting_intense = {1,1,0,0,1,1,0,0,2,1};
     std::array<int, 10> kant = {1,0,1,0,1,0,1,0,2,1};
     std::array<int, 10> plan;
@@ -30,6 +31,7 @@ int RouteGenerator::checkFieldTrial(int x,int y,int task)
         case 0: plan = sowing; qDebug() << "Sowing!" ; break;
         case 1: plan = cutting_intense; break;
         case 2: plan = kant; break;
+        case 3: plan = sowing_cereals; qDebug() << "Sowing cereals!" ; break;
     }
 
     int no=fieldtrial_random[y][x];

@@ -268,7 +268,7 @@ private:
     QList<PerspectivePixmap> mPerspectivePixmaps;
     double mRoutePointSpeed;
     qint32 mRoutePointTime;
-    quint32 mRoutePointAttributes;
+    quint32 mRoutePointAttributes = 0;
     QList<ControlState> mRoutePointControlStates;
     double mScaleFactor;
     double mRotation;
