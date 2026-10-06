@@ -54,6 +54,7 @@ HEADERS += actionmanager.h \
            packetinterface.h \
            perspectivepixmap.h \
            ping.h \
+           vehicledata.h \
            "qcustomplot (copy).h" \
            qcustomplot.h \
            rangeslider.h \
@@ -447,6 +448,7 @@ SOURCES += actionmanager.cpp \
            packetinterface.cpp \
            perspectivepixmap.cpp \
            ping.cpp \
+           vehicledata.cpp \
            "qcustomplot (copy).cpp" \
            qcustomplot.cpp \
            qrc_resources.cpp \

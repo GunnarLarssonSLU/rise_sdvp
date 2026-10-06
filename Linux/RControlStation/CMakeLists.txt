@@ -182,6 +182,7 @@ set(SOURCES
     rtcmwidget.cpp
     basestation.cpp
     ping.cpp
+    vehicledata.cpp
     networklogger.cpp
     osmclient.cpp
     osmtile.cpp
@@ -238,6 +239,7 @@ set(HEADERS
     rtcmwidget.h
     basestation.h
     ping.h
+    vehicledata.h
     networklogger.h
     osmclient.h
     osmtile.h

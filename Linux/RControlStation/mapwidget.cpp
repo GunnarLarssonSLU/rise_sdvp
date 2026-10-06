@@ -150,6 +150,11 @@ MapWidget::MapWidget(QWidget *parent) : QWidget(parent)
     mMouseLastX = 1000000;
     mMouseLastY = 1000000;
     mFollowCar = -1;
+    // Utan startvärden fick nya ruttpunkter skräp från minnet: attributet 0x6518
+    // (2026-09-28) betyder "bakre armar upp" för autopiloten (ATTR_HYDRAULIC_REAR_UP).
+    mRoutePointAttributes = 0;
+    mRoutePointSpeed = 0.0; // sätts från V-rutan av MainWindow vid start
+    mRoutePointTime = 0;
     mTraceCar = -1;
     mSelectedCar = -1;
     xRealPos = 0;
@@ -468,6 +473,9 @@ LocPoint* MapWidget::getCurrentPoint(void)
 void MapWidget::setRoutePointSpeed(double speed)
 {
     qDebug() << "setRoutePointSpeed()";
+    // Nya punkter får den här farten (V-rutan). Förut sattes bara den markerade
+    // punkten, så nya punkter fick oinitierat minne som fart (0 km/h 2026-09-28).
+    mRoutePointSpeed = speed;
     LocPoint* currentPoint = getCurrentPoint();
     if (currentPoint) {
         qDebug() << "OK";
@@ -488,6 +496,11 @@ void MapWidget::setRoutePointSpeed(double speed)
 
 void MapWidget::addInfoPoint(LocPoint &info, bool updateMap)
 {
+    QList<LocPoint> l;
+    while (mInfoTraces.size() < (mInfoTraceNow + 1)) {
+        mInfoTraces.append(l);
+    }
+
     mInfoTraces[mInfoTraceNow].append(info);
 
     if (updateMap) {
@@ -497,6 +510,11 @@ void MapWidget::addInfoPoint(LocPoint &info, bool updateMap)
 
 void MapWidget::clearInfoTrace()
 {
+    QList<LocPoint> l;
+    while (mInfoTraces.size() < (mInfoTraceNow + 1)) {
+        mInfoTraces.append(l);
+    }
+
     mInfoTraces[mInfoTraceNow].clear();
     update();
 }
@@ -2929,9 +2947,8 @@ void MapWidget::updateTraces()
     {
         // Store trace for the selected car
         if (mTraceCar >= 0) {
-            CarInfo &carInfo = mCarInfo[0];
             for (int i = 0;i < mCarInfo.size();i++) {
-                carInfo = mCarInfo[i];
+                CarInfo &carInfo = mCarInfo[i];
                 if (carInfo.getId() == mTraceCar) {
                     if (mCarTrace.isEmpty()) {
                         mCarTrace.append(carInfo.getLocation());

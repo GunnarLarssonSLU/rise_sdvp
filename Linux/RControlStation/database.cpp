@@ -2,11 +2,11 @@
 #include <QtWidgets>
 #include <QStandardPaths>
 #include <QDir>
+#include <QFile>
 #include <QDebug>
 #include <QCoreApplication>
 
 database::database(QWidget* _qw) {
-    qDebug() << "DEBUG: database constructor - starting";
     qw=_qw;
     // Initialize the database:
     QSqlError err = initDb();
@@ -16,17 +16,11 @@ database::database(QWidget* _qw) {
     }
     
     // Ensure required tables exist
-    qDebug() << "DEBUG: database constructor - ensuring tables exist";
     ensureControllersTableExists();
-    qDebug() << "DEBUG: database constructor - controllers table ensured";
     ensureControlsTableExists();
-    qDebug() << "DEBUG: database constructor - controls table ensured";
     ensureActuatorsTableExists();
-    qDebug() << "DEBUG: database constructor - actuators table ensured";
     ensureSensorsTableExists();
-    qDebug() << "DEBUG: database constructor - sensors table ensured";
     ensureControlRelationshipsExist();
-    qDebug() << "DEBUG: database constructor - control relationships ensured";
 }
 
 QVariant database::addFarm(const QString &name)
@@ -149,30 +143,41 @@ void database::showError(const QSqlError &err)
 
 QSqlError database::initDb()
 {
-    qDebug() << "DEBUG: initDb - starting";
     db = QSqlDatabase::addDatabase("QSQLITE");
     
-    // Try different locations for the database file
-    qDebug() << "DEBUG: initDb - trying to find database file";
+    // Try different locations for the database file. Ordered so that the path tied to
+    // the BINARY's own location (deterministic, independent of the terminal's current
+    // directory) is tried before the working-directory-relative one — otherwise a stray
+    // "data.db" left behind in whatever folder the app happens to be launched from
+    // (e.g. $HOME) silently wins over the real project database every time.
     QStringList dbPaths;
-    
-    // 1. First try current directory (for development)
-    dbPaths << "data.db";
-    
-    // 2. Try AppImage data directory
+
+    // 1. AppImage data directory or local application directory (next to the binary)
     QString appImagePath = QCoreApplication::applicationDirPath();
+    dbPaths << appImagePath + "/data.db";
     dbPaths << appImagePath + "/../share/RControlStation/data.db";
     dbPaths << appImagePath + "/../../share/RControlStation/data.db";
     dbPaths << "/usr/share/RControlStation/data.db";
-    
-    // 3. Try common data directories
+
+    // 2. Common data directories
     dbPaths << QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/data.db";
     // DataLocation doesn't exist in Qt 6, use AppDataLocation instead
     // dbPaths << QStandardPaths::writableLocation(QStandardPaths::DataLocation) + "/data.db";
+
+    // 3. Current directory last (for development only — e.g. running via `make run`
+    // straight from the source tree without a proper install).
+    dbPaths << "data.db";
     
-    // Try each path until we find a working database
+    // Try each path until we find a working, EXISTING database. SQLite's db.open()
+    // silently creates a fresh empty file if none exists at the given path, so without
+    // this QFile::exists() check the very first candidate ("data.db", relative to the
+    // current working directory) always "succeeds" — creating/opening a throwaway
+    // database whenever the app is launched from a different directory, while the
+    // real project database further down the list is never even tried.
     foreach (const QString &path, dbPaths) {
-        qDebug() << "DEBUG: initDb - trying path:" << path;
+        if (!QFile::exists(path)) {
+            continue;
+        }
         db.setDatabaseName(path);
         if (db.open()) {
             qDebug() << "Database opened from:" << path;
@@ -229,29 +234,34 @@ void database::ensureControllersTableExists()
 {
     QSqlQuery query(db);
     
-    // Check if controls table exists
-    if (!query.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='controls'")) {
-        qDebug() << "Error checking for controls table:" << query.lastError().text();
+    // Check if controllers table exists
+    if (!query.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='controllers'")) {
+        qDebug() << "Error checking for controllers table:" << query.lastError().text();
         return;
     }
     
     // If table doesn't exist, create it
     if (!query.next()) {
         QString createTableSql = 
-            "CREATE TABLE controls (" 
+            "CREATE TABLE controllers (" 
             "    id INTEGER PRIMARY KEY AUTOINCREMENT," 
-            "    name TEXT NOT NULL UNIQUE" 
+            "    name TEXT," 
+            "    action INTEGER" 
             ");";
         
         if (!query.exec(createTableSql)) {
-            qDebug() << "Error creating controls table:" << query.lastError().text();
+            qDebug() << "Error creating controllers table:" << query.lastError().text();
             return;
         }
         
-        qDebug() << "Controls table created successfully.";
-        
-        // Add some default controls
-        addController("Front Lift");
+        qDebug() << "Controllers table created successfully.";
+
+        // Standardbindningar för en ny databas, samma som på RobAnt: vänster spak
+        // upp/ner (5) = Speed Control (10), höger spak sidled (8) = Steering Control (11).
+        // Aktivitetsnumren måste stämma med styrkortets aktuatorer (och robotd).
+        QSqlQuery ins(db);
+        ins.exec("INSERT INTO controllers (id, name, action) VALUES (5, NULL, 10)");
+        ins.exec("INSERT INTO controllers (id, name, action) VALUES (8, NULL, 11)");
     }
 }
 
@@ -334,6 +344,32 @@ void database::ensureControlsTableExists()
             if (!existingColumns.contains("logical_operation")) {
                 query.exec("ALTER TABLE controls ADD COLUMN logical_operation TEXT DEFAULT 'AND'");
             }
+        }
+        
+        // Self-healing database check: If controls table is empty, contains only 1 row, OR is missing "Steering Control",
+        // reset the table and insert the full set of default controls!
+        bool needRestore = false;
+        QSqlQuery checkQuery("SELECT COUNT(*) FROM controls", db);
+        if (checkQuery.exec() && checkQuery.next()) {
+            int count = checkQuery.value(0).toInt();
+            if (count <= 1) {
+                needRestore = true;
+            }
+        }
+        
+        if (!needRestore) {
+            QSqlQuery checkSteering("SELECT COUNT(*) FROM controls WHERE name = 'Steering Control'", db);
+            if (checkSteering.exec() && checkSteering.next()) {
+                if (checkSteering.value(0).toInt() == 0) {
+                    needRestore = true;
+                }
+            }
+        }
+        
+        if (needRestore) {
+            qDebug() << "Controls table needs restoration. Restoring full default control system...";
+            query.exec("DELETE FROM controls");
+            insertDefaultControls();
         }
     }
 }
@@ -559,14 +595,21 @@ void database::insertDefaultControls()
         {"Rear Lift Control", "logical"},
         {"Implement Position", "pid"},
         {"Speed Control", "pid"},
+        {"Steering Control", "pid"},
         {"Emergency Stop", "logical"}
     };
     
     QSqlQuery query(db);
-    query.prepare("INSERT INTO controls (name, type, target_value, is_active, colour, pid_kp, pid_ki, pid_kd, pid_output_min, pid_output_max, logical_operation) "
-                  "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    // Fasta id 7–12, samma som i befintliga databaser: id:t skickas som aktivitet
+    // till styrkortet (CMD_RC_CONTROL_ADV), och styrkortets aktuatorer och robotd
+    // använder Speed Control = 10 och Steering Control = 11. Med AUTOINCREMENT
+    // blev de 4 och 5 i en ny databas, och då rörde sig ingenting.
+    const int firstId = 7;
+    query.prepare("INSERT INTO controls (id, name, type, target_value, is_active, colour, pid_kp, pid_ki, pid_kd, pid_output_min, pid_output_max, logical_operation) "
+                  "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     
     for (int i = 0; i < defaultControls.size(); i++) {
+        query.addBindValue(firstId + i);
         query.addBindValue(defaultControls[i].first);
         query.addBindValue(defaultControls[i].second);
         
@@ -673,11 +716,9 @@ void database::insertDefaultSensors()
 // Controller methods
 QList<ControllerInfo> database::getAllControllers()
 {
-    qDebug() << "DEBUG: getAllControllers - starting";
     QList<ControllerInfo> controllers;
     
     QSqlQuery query("SELECT id, name FROM controls ORDER BY name", db);
-    qDebug() << "DEBUG: getAllControllers - query prepared, executing";
     if (query.exec()) {
         while (query.next()) {
             ControllerInfo info;
@@ -689,7 +730,6 @@ QList<ControllerInfo> database::getAllControllers()
         qDebug() << "Error getting controls:" << query.lastError().text();
     }
     
-    qDebug() << "DEBUG: getAllControllers - found" << controllers.size() << "controllers";
     return controllers;
 }
 
@@ -715,14 +755,11 @@ ControllerInfo database::getControllerById(int id)
 
 void database::addController(const QString& name)
 {
-    qDebug() << "DEBUG: addController - adding controller:" << name;
     QSqlQuery query(db);
     query.prepare("INSERT INTO controls (name) VALUES (?)");
     query.addBindValue(name);
     
     if (!query.exec()) {
         qDebug() << "Error adding control:" << query.lastError().text();
-    } else {
-        qDebug() << "DEBUG: addController - successfully added controller:" << name;
     }
 }

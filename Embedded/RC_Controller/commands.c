@@ -252,7 +252,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 	// - Our main_id
 	// - ID_ALL (broadcast to all devices)
 	// - ID_VEHICLE_CLIENT (vehicle client)
-	if (id == main_id || id == ID_ALL || id == ID_VEHICLE_CLIENT) {
+	if (id == main_id || id == 0 || id == ID_ALL || id == ID_VEHICLE_CLIENT) {
 		int id_ret = main_id; // Default response ID is our main_id
 
 		// If packet was addressed to ID_VEHICLE_CLIENT, respond with that ID
@@ -558,6 +558,9 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 		} break;
 
 		case CMD_SEND_RTCM_USB: {
+#if UBLOX_EN
+			ublox_send(data, len);
+#endif
 			for (unsigned int i = 0;i < len;i++) {
 				rtcm3_input_data(data[i], &m_rtcm_state);
 			}
@@ -663,6 +666,12 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			timeout_reset();
 			commands_set_send_func(func);
 
+			// Stoppa maskinen innan inställningarna ändras och sparas: sparningen i
+			// flash står still en stund, och körning med halvt ändrade värden vill
+			// ingen ha. (Gunnars förslag 2026-09-28.)
+			autopilot_set_active(false);
+			motor_stop();
+
 			int32_t ind = 0;
 			main_config.mag_use = data[ind++];
 			main_config.mag_comp = data[ind++];
@@ -714,10 +723,6 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			log_set_name(main_config.log_name);
 			log_set_ext(main_config.log_mode_ext, main_config.log_uart_baud);
 
-			// Initialize sensor and state control systems
-			sensor_control_init();
-			state_control_init();
-
 			// vehicle settings
 			main_config.vehicle.yaw_use_odometry = data[ind++];
 			main_config.vehicle.yaw_imu_gain = buffer_get_float32_auto(data, &ind);
@@ -743,54 +748,79 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			main_config.vehicle.degreeinterval = buffer_get_float32_auto(data, &ind);
 			float deadband= buffer_get_float32_auto(data, &ind);
 			main_config.vehicle.deadband =deadband;
-			main_config.vehicle.heartbeat_maxtime = buffer_get_float32_auto(data, &ind);
-			main_config.vehicle.actuators = buffer_get_uint16(data, &ind);
-		    commands_printf("antal lästa aktuatorer: %u",main_config.vehicle.actuators);
-			for (int i=0;i<4;i++)
-			{
-				main_config.vehicle.actuator[i].type=buffer_get_uint16(data, &ind);;
-				main_config.vehicle.actuator[i].motorid=buffer_get_uint16(data, &ind);;
-				main_config.vehicle.actuator[i].activity=buffer_get_uint16(data, &ind);;
-				main_config.vehicle.actuator[i].mode=buffer_get_uint16(data, &ind);;
-			};
-			
+
+			// Fälten nedan finns bara i nyare RControlStation, och RControlStation
+			// skickar i dag bara t.o.m. aktuatorerna. Läs ett fält bara om det finns i
+			// paketet: förut läste kortet vidare in i gamla bytes i mottagningsbufferten
+			// (GPS-text), sparade dem som sensorer/reglerloopar, och nästa Write
+			// startade reglerloopar med skräpindex -> HardFault, kortet hängde.
+			if (ind + 4 <= (int32_t)len) {
+				main_config.vehicle.heartbeat_maxtime = buffer_get_float32_auto(data, &ind);
+			}
+			if (ind + 2 + 4 * 8 <= (int32_t)len) {
+				main_config.vehicle.actuators = buffer_get_uint16(data, &ind);
+				for (int i=0;i<4;i++)
+				{
+					main_config.vehicle.actuator[i].type=buffer_get_uint16(data, &ind);;
+					main_config.vehicle.actuator[i].motorid=buffer_get_uint16(data, &ind);;
+					main_config.vehicle.actuator[i].activity=buffer_get_uint16(data, &ind);;
+					main_config.vehicle.actuator[i].mode=buffer_get_uint16(data, &ind);;
+				};
+			}
+
 			// Sensor configurations
-			main_config.vehicle.sensors = buffer_get_uint16(data, &ind);
-			commands_printf("antal lästa sensorer: %u",main_config.vehicle.sensors);
-			for (int i=0;i<4;i++)
-			{
-				main_config.vehicle.sensor[i].type=buffer_get_uint16(data, &ind);;
-				main_config.vehicle.sensor[i].sensorid=buffer_get_uint16(data, &ind);;
-				main_config.vehicle.sensor[i].activity=buffer_get_uint16(data, &ind);;
-				main_config.vehicle.sensor[i].reserved=buffer_get_uint16(data, &ind);;
-			};
-			
-			// State control configurations
-			main_config.vehicle.state_controls = buffer_get_uint16(data, &ind);
-			commands_printf("antal lästa state controls: %u",main_config.vehicle.state_controls);
-			for (int i=0;i<4;i++)
-			{
-				main_config.vehicle.control[i].actuator_activity=buffer_get_uint16(data, &ind);;
-				main_config.vehicle.control[i].sensor_activity=buffer_get_uint16(data, &ind);;
-				main_config.vehicle.control[i].control_type=buffer_get_uint16(data, &ind);;
-				main_config.vehicle.control[i].target_value=buffer_get_float32_auto(data, &ind);;
-				main_config.vehicle.control[i].kp=buffer_get_float32_auto(data, &ind);;
-				main_config.vehicle.control[i].ki=buffer_get_float32_auto(data, &ind);;
-				main_config.vehicle.control[i].kd=buffer_get_float32_auto(data, &ind);;
-				main_config.vehicle.control[i].min_output=buffer_get_float32_auto(data, &ind);;
-				main_config.vehicle.control[i].max_output=buffer_get_float32_auto(data, &ind);;
-				main_config.vehicle.control[i].enabled=data[ind++];;
-			};
+			if (ind + 2 + 4 * 8 <= (int32_t)len) {
+				main_config.vehicle.sensors = buffer_get_uint16(data, &ind);
+				for (int i=0;i<4;i++)
+				{
+					main_config.vehicle.sensor[i].type=buffer_get_uint16(data, &ind);;
+					main_config.vehicle.sensor[i].sensorid=buffer_get_uint16(data, &ind);;
+					main_config.vehicle.sensor[i].activity=buffer_get_uint16(data, &ind);;
+					main_config.vehicle.sensor[i].reserved=buffer_get_uint16(data, &ind);;
+				};
+			} else {
+				main_config.vehicle.sensors = 0;
+			}
+
+			// State control configurations (3 uint16 + 6 float32 + 1 byte per loop)
+			if (ind + 2 + 4 * 31 <= (int32_t)len) {
+				main_config.vehicle.state_controls = buffer_get_uint16(data, &ind);
+				for (int i=0;i<4;i++)
+				{
+					main_config.vehicle.control[i].actuator_activity=buffer_get_uint16(data, &ind);;
+					main_config.vehicle.control[i].sensor_activity=buffer_get_uint16(data, &ind);;
+					main_config.vehicle.control[i].control_type=buffer_get_uint16(data, &ind);;
+					main_config.vehicle.control[i].target_value=buffer_get_float32_auto(data, &ind);;
+					main_config.vehicle.control[i].kp=buffer_get_float32_auto(data, &ind);;
+					main_config.vehicle.control[i].ki=buffer_get_float32_auto(data, &ind);;
+					main_config.vehicle.control[i].kd=buffer_get_float32_auto(data, &ind);;
+					main_config.vehicle.control[i].min_output=buffer_get_float32_auto(data, &ind);;
+					main_config.vehicle.control[i].max_output=buffer_get_float32_auto(data, &ind);;
+					main_config.vehicle.control[i].enabled=data[ind++];;
+				};
+			} else {
+				main_config.vehicle.state_controls = 0;
+			}
+			conf_general_sanitize_main_config(&main_config);
+
 			motor_sim_set_running(main_config.vehicle.simulate_motor);
 			conf_general_store_main_config(&main_config);
 			// Doing this while driving will get wrong as there is so much accelerometer noise then.
 			//pos_reset_attitude();
 
+			// Först nu, med de nya värdena (förut kördes detta före tolkningen och
+			// läste då de gamla, ev. trasiga, värdena från EEPROM).
+			sensor_control_init();
+			state_control_init();
+
+			// Nytt heartbeat gäller direkt (förut först efter omstart av kortet).
+			timeout_configure(timeout_heartbeat_ms(main_config.vehicle.heartbeat_maxtime),
+					timeout_get_brake_current());
+
 			// Send ack
 			int32_t send_index = 0;
 			m_send_buffer[send_index++] = id_ret;
 			m_send_buffer[send_index++] = packet_id;
-			commands_printf("setting deadband (in struct 2): %f",main_config.vehicle.deadband);
 			commands_send_packet(m_send_buffer, send_index);
 		} break;
 
@@ -1083,6 +1113,41 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			commands_send_packet(m_send_buffer, send_index);
 		} break;
 
+		case CMD_GET_VESC_STATUS: {
+			// Läser bara: listar de VESC som skickat CAN-status (comm_can.c),
+			// ändrar inget och skickar inget på CAN-bussen.
+			// Svar: [id][cmd] { [vesc_id u8][ålder ms u16][rpm i32]
+			//                   [ström*10 i16][duty*1000 i16] } för varje VESC.
+			commands_set_send_func(func);
+
+			int32_t send_index = 0;
+			m_send_buffer[send_index++] = id_ret;
+			m_send_buffer[send_index++] = packet_id;
+
+			for (int i = 0;;i++) {
+				can_status_msg *msg = comm_can_get_status_msg_index(i);
+				if (!msg) {
+					break; // slut på lagrade statusplatser
+				}
+				if (msg->id < 0 || msg->id > 255) {
+					continue; // oanvänd plats (id = -1)
+				}
+
+				uint32_t age_ms = ST2MS(chVTTimeElapsedSinceX(msg->rx_time));
+				if (age_ms > 65535) {
+					age_ms = 65535;
+				}
+
+				m_send_buffer[send_index++] = (uint8_t)msg->id;
+				buffer_append_uint16(m_send_buffer, (uint16_t)age_ms, &send_index);
+				buffer_append_int32(m_send_buffer, (int32_t)msg->rpm, &send_index);
+				buffer_append_int16(m_send_buffer, (int16_t)(msg->current * 10.0), &send_index);
+				buffer_append_int16(m_send_buffer, (int16_t)(msg->duty * 1000.0), &send_index);
+			}
+
+			commands_send_packet(m_send_buffer, send_index);
+		} break;
+
 		case CMD_VESC_FWD:
 			timeout_reset();
 			commands_set_send_func(func);
@@ -1151,6 +1216,7 @@ void commands_process_packet(unsigned char *data, unsigned int len,
 			// Get actuators with the specified activity
 			int actuator_count = 0;
 			ACTUATOR* actuators = motor_get_actuators_by_activity(activity, &actuator_count);
+			commands_printf("Activity %d -> %d actuator(s)", activity, actuator_count);
 
 			if (actuators != NULL) {
 				// Process each actuator that matches the activity
@@ -1444,13 +1510,20 @@ void commands_forward_vesc_packet(unsigned char *data, unsigned int len) {
 }
 
 void commands_send_nmea(unsigned char *data, unsigned int len) {
+	// Egen buffert: anropas från u-blox-tråden och fick inte skriva i
+	// m_send_buffer medan kommandotråden byggde ett svar där (t.ex. inställningarna).
+	static uint8_t nmea_buffer[2 + 256];
+
 	if (main_config.gps_send_nmea) {
+		if (len > sizeof(nmea_buffer) - 2) {
+			len = sizeof(nmea_buffer) - 2;
+		}
 		int32_t send_index = 0;
-		m_send_buffer[send_index++] = main_id;
-		m_send_buffer[send_index++] = CMD_SEND_NMEA_RADIO;
-		memcpy(m_send_buffer + send_index, data, len);
+		nmea_buffer[send_index++] = main_id;
+		nmea_buffer[send_index++] = CMD_SEND_NMEA_RADIO;
+		memcpy(nmea_buffer + send_index, data, len);
 		send_index += len;
-		commands_send_packet(m_send_buffer, send_index);
+		commands_send_packet(nmea_buffer, send_index);
 	}
 }
 
@@ -1472,7 +1545,10 @@ static void rtcm_rx(uint8_t *data, int len, int type) {
 	(void)type;
 
 #if UBLOX_EN
-	ublox_send(data, len);
+	// We now send the raw RTCM data directly in CMD_SEND_RTCM_USB to prevent
+	// message filtering/latency, so we do not send it again here.
+	(void)data;
+	(void)len;
 	(void)m_send_buffer;
 #else
 	int32_t send_index = 0;

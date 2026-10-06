@@ -35,7 +35,7 @@ public:
     void sendAll(QByteArray data);
 
 signals:
-    void stateChanged(QString msg, QString ip, bool isGood);
+    void stateChanged(QString msg, QString ip, bool isError);
     void packetRx(QByteArray data);
 
 public slots:
@@ -56,11 +56,14 @@ private:
             });
 
             connect(&socket, &QTcpSocket::connected, [this,client]() {
-                emit client->stateChanged("TCP Connected", attempedip, true);
+                // Stäng av Nagle: annars håller TCP små spakkommandon tills förra
+                // paketet kvitterats, och över 4G (300-500 ms) kom "släpp" en sekund för sent.
+                socket.setSocketOption(QAbstractSocket::LowDelayOption, 1);
+                emit client->stateChanged("TCP Connected", attempedip, false);
             });
 
             discConn = connect(&socket, &QTcpSocket::disconnected, [this,client]() {
-                emit client->stateChanged("TCP Disconnected", attempedip, false);
+                emit client->stateChanged("TCP Disconnected", attempedip,  false);
             });
 
 
@@ -78,7 +81,7 @@ private:
 */
                         QString errorStr = socket.errorString();
                         socket.close();
-                        emit client->stateChanged(QString("TCP Error: %1").arg(errorStr), attempedip, false);
+                        emit client->stateChanged(QString("TCP Error: %1").arg(errorStr), attempedip, true);
                     });
    #else
             connect(&socket, QOverload<QAbstractSocket::SocketError>::of(&QTcpSocket::error),
@@ -86,7 +89,7 @@ private:
                 (void)e;
                 QString errorStr = socket.errorString();
                 socket.close();
-                emit client->stateChanged(QString("TCP Error: %1").arg(errorStr), attempedip, false);
+                emit client->stateChanged(QString("TCP Error: %1").arg(errorStr), attempedip, true);
             });
     #endif
             connect(&packet, &PacketInterface::packetReceived,

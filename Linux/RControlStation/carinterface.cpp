@@ -27,6 +27,7 @@
 #include <QDateTime>
 #include <QXmlStreamWriter>
 #include <QXmlStreamReader>
+#include "vehicledata.h"
 
 namespace {
 void faultToStr(mc_fault_code fault, QString &str, bool &isOk)
@@ -100,7 +101,10 @@ CarInterface::~CarInterface()
 
 void CarInterface::setID(int id)
 {
+    mId = id;
+    ui->idBox->blockSignals(true);
     ui->idBox->setValue(id);
+    ui->idBox->blockSignals(false);
 }
 
 int CarInterface::getId()
@@ -346,8 +350,8 @@ void CarInterface::setPacketInterface(PacketInterface *packetInterface)
             mPacketInterface, SLOT(setRcControlDuty(quint8,double,double)));
     connect(this, SIGNAL(setServoDirect(quint8,double)),
             mPacketInterface, SLOT(setServoDirect(quint8,double)));
-    connect(mPacketInterface, SIGNAL(nmeaRadioReceived(quint8,QByteArray)),
-            this, SLOT(nmeaReceived(quint8,QByteArray)));
+    //    connect(mPacketInterface, SIGNAL(nmeaRadioReceived(quint8,QByteArray)),
+    //            this, SLOT(nmeaReceived(quint8,QByteArray)));
     connect(mPacketInterface, SIGNAL(configurationReceived(quint8,MAIN_CONFIG)),
             this, SLOT(configurationReceived(quint8,MAIN_CONFIG)));
     connect(this, SIGNAL(ioBoardSetPwm(quint8,quint8,double)),
@@ -511,6 +515,10 @@ void CarInterface::tcpRx(QByteArray &data)
 
 void CarInterface::terminalPrint(quint8 id, QString str)
 {
+    // Statusrutans egna "vinkel"-frågor (en gång per sekund) ska inte fylla terminalen.
+    if (VehicleData::hideAnglePrint(str)) {
+        return;
+    }
     if (id == mId || id == 255) {
         ui->terminalBrowser->append(str);
     }
@@ -580,8 +588,24 @@ void CarInterface::configurationReceived(quint8 id, MAIN_CONFIG config)
 {
     if (id == mId) {
         mSettingsReadDone = true;
-        mConfigLast = config;
-        setConfGui(config);
+
+        // Automatically ensure GPS Compensation, RTK requirement, and Base ENU Ref are active on connection
+        if (!config.gps_comp || !config.gps_req_rtk || !config.gps_use_rtcm_base_as_enu_ref || !config.gps_use_ubx_info) {
+            config.gps_comp = true;
+            config.gps_req_rtk = true;
+            config.gps_use_rtcm_base_as_enu_ref = true;
+            config.gps_use_ubx_info = true;
+            mConfigLast = config;
+            setConfGui(config);
+
+            if (mPacketInterface) {
+                mPacketInterface->setConfiguration(mId, config, 3);
+            }
+        } else {
+            mConfigLast = config;
+            setConfGui(config);
+        }
+
         QString str;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
         str = QString("Car %1: Configuration Received").arg(QString::number(id));

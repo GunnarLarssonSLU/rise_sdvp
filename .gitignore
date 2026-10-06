@@ -45,6 +45,38 @@ Linux/RControlStation/Models/*.model
 # Gerber files
 **/Gerber/
 **/*.gtl
-**/*.gblweb/
-web/
+**/*.gbl
+web/*
 !web/server.py
+!web/kundisolering.sh
+!web/kunder.exempel.json
+!web/kundlogg.sh
+
+# Memory and log files (local only)
+GEMINI.md
+fyi.md
+*data.db
+*.db
+
+# Exclude admin-only tools from repository
+wireguard_admin.sh
+
+# Exclude sensitive databases containing passwords
+*data.db
+*.db
+data.db
+
+# Diagnostic reference guide (local only)
+RTKpos.md
+
+# Lokalt skräp (inte på GitHub): terminalloggar, säkerhetskopior, IDE-byggen, körloggar
+/20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]_*.txt
+*.bak_20[0-9][0-9]*
+**/.qtcreator/
+Linux/Car_Client/logs/
+# Interna statusanteckningar
+MACTRAC_STATUS.md
+SESSION_STATUS.md
+# Kartbrickor (cache som RControlStation laddar ner själv) och Python-cache
+osm_tiles/
+__pycache__/

@@ -4,8 +4,10 @@
 //! 3 min). Tryck var som helst för att hoppa förbi. Sedan sju rutor som uppdateras
 //! var 2:a sekund. Grön = OK, grå = inte OK. CPU-rutan är grön/gul/röd.
 //!
-//! Tryck på Car_Client-, Internet- eller RTK-rutan när den inte är grön, eller på Pi-rutan
-//! (alltid), för att starta om efter en Ja/Nej-fråga. Kommandona körs med
+//! Tryck på Car_Client-, Internet- eller RTK-rutan när den inte är grön för att starta om
+//! efter en Ja/Nej-fråga. Pi-rutan går alltid att trycka på och frågar om Pi:n ska
+//! startas om eller stängas av (stäng av innan strömmen bryts, skyddar SD-kortet).
+//! Kommandona körs med
 //! `sudo -n` och är begränsade av en sudoers-regel (se installera.sh).
 //!
 //! Allt läses lokalt på Pi:n och ingenting här tar Car_Client:s TCP-plats (8300),
@@ -47,6 +49,9 @@ const GGA_MAX_AGE: Duration = Duration::from_secs(5);
 
 const CAR_CLIENT_ADDR: &str = "127.0.0.1:8300";
 const BOARD_REPLY_ADDR: &str = "127.0.0.1:8301";
+/// Unix-tid (s) för styrkortets senaste svar, skrivs av den instans som äger port
+/// 8301 och läses av en andra instans (t.ex. `--text` över ssh).
+const BOARD_SHARED_FILE: &str = "/tmp/statusskarm_styrkort_svar";
 const RTKRCV_NMEA_ADDR: &str = "127.0.0.1:2948";
 const USB_DEVICE: &str = "/dev/vehicle";
 /// ID 255 = alla, så kortet svarar oavsett vilket bil-ID Car_Client kör med.
@@ -54,13 +59,28 @@ const CMD_AP_GET_ROUTE_PART: u8 = 58;
 const BOARD_QUERY: [u8; 7] = [255, CMD_AP_GET_ROUTE_PART, 0, 0, 0, 0, 0];
 
 // Färger: mörk bakgrund, rutor lite ljusare i vila.
-const BG: egui::Color32 = egui::Color32::from_rgb(18, 20, 24);
 const BOX_IDLE: egui::Color32 = egui::Color32::from_rgb(52, 58, 68);
 const BOX_OK: egui::Color32 = egui::Color32::from_rgb(40, 150, 70);
 const BOX_WARN: egui::Color32 = egui::Color32::from_rgb(214, 160, 0);
 const BOX_BAD: egui::Color32 = egui::Color32::from_rgb(190, 50, 40);
 const TEXT: egui::Color32 = egui::Color32::WHITE;
 const TEXT_DIM: egui::Color32 = egui::Color32::from_rgb(200, 205, 212);
+// Utseende: mörkt "glas" med lysande kanter i statusfärgen.
+const BG_DEEP: egui::Color32 = egui::Color32::from_rgb(7, 10, 16);
+const PANEL: egui::Color32 = egui::Color32::from_rgb(16, 22, 32);
+const GRID: egui::Color32 = egui::Color32::from_rgba_premultiplied(40, 70, 110, 22);
+const NEON_OK: egui::Color32 = egui::Color32::from_rgb(46, 229, 157);
+const NEON_WARN: egui::Color32 = egui::Color32::from_rgb(255, 184, 48);
+const NEON_BAD: egui::Color32 = egui::Color32::from_rgb(255, 77, 94);
+const NEON_IDLE: egui::Color32 = egui::Color32::from_rgb(92, 104, 124);
+const NEON_CYAN: egui::Color32 = egui::Color32::from_rgb(56, 189, 248);
+/// Dialogens lager: mörk bakgrund över rutorna, knapparna överst. Båda måste ta emot
+/// tryck (egui:s Tooltip-lager gör det inte; då gick trycket på Ja/Stäng av rakt
+/// igenom till bakgrunden och dialogen stängdes utan att något kördes).
+const DIALOG_BG_ORDER: egui::Order = egui::Order::Middle;
+const DIALOG_ORDER: egui::Order = egui::Order::Foreground;
+/// Insamlingen räknas som hängd om ingen runda blivit klar på så länge.
+const DATA_STALE: Duration = Duration::from_secs(8);
 
 /// Senast kända status, skrivs av insamlingstråden och läses av gränssnittet.
 #[derive(Clone, Default)]
@@ -78,6 +98,8 @@ struct Status {
     cpu_percent: Option<f32>,
     /// När CPU:n senast gick över 90 % (för "röd efter 10 s").
     cpu_very_high_since: Option<Instant>,
+    /// När insamlingstråden senast blev klar med en runda (hjärtslaget i toppremsan).
+    updated: Option<Instant>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -86,7 +108,11 @@ enum Action {
     RestartRtk,
     Reboot,
     RestartWireGuard,
+    Shutdown,
+    /// Pi-rutan: fråga om omstart eller avstängning.
+    PiMenu,
 }
+const ACTIONS: usize = 6;
 
 impl Action {
     fn question(self) -> &'static str {
@@ -95,6 +121,8 @@ impl Action {
             Action::RestartRtk => "Är du säker att du vill starta om RTK-tjänsten (car_rtk)?",
             Action::Reboot => "Är du säker att du vill starta om Pi:n?",
             Action::RestartWireGuard => "Är du säker att du vill starta om internet (WireGuard)?",
+            Action::Shutdown => "Är du säker att du vill stänga av Pi:n?",
+            Action::PiMenu => "Vad vill du göra med Pi:n?",
         }
     }
 
@@ -109,6 +137,11 @@ impl Action {
                 "Tunneln tas ner och upp igen. Fjärranslutningar (RControlStation, ssh) \
                  bryts en kort stund och får anslutas på nytt.",
             ),
+            Action::PiMenu => Some(
+                "Stäng av innan strömmen bryts, det skyddar SD-kortet. Vänta tills skärmen \
+                 är svart och den gröna lampan på Pi:n har slutat blinka. Efter avstängning \
+                 startar Pi:n först när strömmen har varit bruten och slås på igen.",
+            ),
             _ => None,
         }
     }
@@ -121,6 +154,8 @@ impl Action {
             // Samma som wg-quick down + up, men via systemd som äger tunneln, så att
             // wg-quick@wg0 inte står som aktiv när tunneln i själva verket är nere.
             Action::RestartWireGuard => &["sudo", "-n", "/usr/bin/systemctl", "restart", "wg-quick@wg0.service"],
+            Action::Shutdown => &["sudo", "-n", "/usr/bin/systemctl", "poweroff"],
+            Action::PiMenu => &[],
         }
     }
 
@@ -186,7 +221,7 @@ fn main() -> eframe::Result<()> {
                 app.dialog = match std::env::var("STATUSSKARM_DEMO_DIALOG").as_deref() {
                     Ok("car_client") => Some(Action::RestartCarClient),
                     Ok("rtk") => Some(Action::RestartRtk),
-                    Ok("pi") => Some(Action::Reboot),
+                    Ok("pi") => Some(Action::PiMenu),
                     Ok("wireguard") => Some(Action::RestartWireGuard),
                     _ => None,
                 };
@@ -205,6 +240,13 @@ fn service_active(name: &str) -> bool {
         .status()
         .map(|s| s.success())
         .unwrap_or(false)
+}
+
+/// Sekunder sedan styrkortet senast svarade enligt den instans som äger port 8301.
+fn shared_board_reply_age() -> Option<u64> {
+    let t: u64 = std::fs::read_to_string(BOARD_SHARED_FILE).ok()?.trim().parse().ok()?;
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).ok()?.as_secs();
+    Some(now.saturating_sub(t))
 }
 
 /// Sekunder sedan senaste handskakning med någon peer på wg0.
@@ -276,10 +318,21 @@ fn spawn_collector(status: Arc<Mutex<Status>>) {
             if let Some(s) = &socket {
                 if last_board_query.map_or(true, |t| t.elapsed() >= BOARD_POLL) {
                     last_board_query = Some(Instant::now());
-                    let _ = s.send_to(&BOARD_QUERY, CAR_CLIENT_ADDR);
-                    // Läs tills svaret kommer. Car_Client skickar också vidare
-                    // allt annat kortet säger (tillstånd, utskrifter): hoppa över det.
                     let mut buf = [0u8; 2048];
+                    // Car_Client skickar ALLT kortet säger hit (GPS-text, tillståndssvar
+                    // till RControlStation, ~25 paket/s). Mellan frågorna fylls bufferten,
+                    // och då kastades kortets svar: "svarar inte" fast kortet svarade.
+                    // Töm bufferten först (ett sent svar på förra frågan räknas också).
+                    if s.set_nonblocking(true).is_ok() {
+                        while let Ok(n) = s.recv(&mut buf) {
+                            if n >= 2 && buf[1] == CMD_AP_GET_ROUTE_PART {
+                                last_board_reply = Some(Instant::now());
+                            }
+                        }
+                        let _ = s.set_nonblocking(false);
+                    }
+                    let _ = s.send_to(&BOARD_QUERY, CAR_CLIENT_ADDR);
+                    // Läs tills svaret kommer, hoppa över allt annat.
                     let deadline = Instant::now() + Duration::from_millis(1200);
                     while Instant::now() < deadline {
                         match s.recv(&mut buf) {
@@ -291,9 +344,19 @@ fn spawn_collector(status: Arc<Mutex<Status>>) {
                             Err(_) => break,
                         }
                     }
+                    if last_board_reply.map_or(false, |t| t.elapsed() < BOARD_POLL) {
+                        let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+                        let _ = std::fs::write(BOARD_SHARED_FILE, now.to_string());
+                    }
                 }
             }
-            let board_ok = usb_present && last_board_reply.map_or(false, |t| t.elapsed() < BOARD_POLL * 2);
+            // Porten upptagen (den grafiska statusskärmen kör redan, t.ex. vid --text
+            // över ssh): använd dess senaste svar i stället för att visa "svarar inte".
+            let board_ok = usb_present
+                && match &socket {
+                    Some(_) => last_board_reply.map_or(false, |t| t.elapsed() < BOARD_POLL * 2),
+                    None => shared_board_reply_age().map_or(false, |age| age < (BOARD_POLL * 2).as_secs()),
+                };
 
             let car_client_ok = service_active("car_client.service");
             let rtk_service_ok = service_active("car_rtk.service");
@@ -313,6 +376,7 @@ fn spawn_collector(status: Arc<Mutex<Status>>) {
                     Some(p) if p > 90.0 => st.cpu_very_high_since.or(Some(Instant::now())),
                     _ => None,
                 };
+                st.updated = Some(Instant::now());
             }
 
             thread::sleep(POLL.saturating_sub(started.elapsed()));
@@ -372,6 +436,7 @@ fn spawn_demo_collector(status: Arc<Mutex<Status>>) {
             let p = 50.0 + 45.0 * ((t as f32) / 15.0).sin();
             st.cpu_percent = Some(p);
             st.cpu_very_high_since = if p > 90.0 { st.cpu_very_high_since.or(Some(Instant::now())) } else { None };
+            st.updated = Some(Instant::now());
             drop(st);
             thread::sleep(POLL);
         }
@@ -388,7 +453,10 @@ struct App {
     countdown_skipped: bool,
     dialog: Option<Action>,
     /// När respektive omstart trycktes (index = Action::index()).
-    restarted_at: [Option<Instant>; 4],
+    restarted_at: [Option<Instant>; ACTIONS],
+    hostname: String,
+    /// Bara i demoläge: skärmbild till STATUSSKARM_SKARMBILD (PPM) efter 3 s, sedan stäng.
+    screenshot_requested: bool,
 }
 
 /// En ruta som ska ritas.
@@ -410,13 +478,20 @@ impl App {
             started: Instant::now(),
             countdown_skipped: false,
             dialog: None,
-            restarted_at: [None; 4],
+            restarted_at: [None; ACTIONS],
+            hostname: std::fs::read_to_string("/etc/hostname")
+                .map(|s| s.trim().to_uppercase())
+                .unwrap_or_else(|_| "ROBOT".into()),
+            screenshot_requested: false,
         }
     }
 
     fn run(&mut self, action: Action) {
         self.restarted_at[action.index()] = Some(Instant::now());
         let cmd = action.command();
+        if cmd.is_empty() {
+            return;
+        }
         if self.demo {
             println!("(demo) skulle köra: {}", cmd.join(" "));
             return;
@@ -456,6 +531,11 @@ impl App {
             action: None,
         });
 
+        // Nödstoppet (Car_Client --nodstopp-gpio skriver filen). Ingen ruta utan nödstopp.
+        if let Some(t) = nodstopp_tile(std::fs::read_to_string(NODSTOPP_FIL).ok().as_deref(), unix_now()) {
+            tiles.push(t);
+        }
+
         tiles.push(self.service_tile("Car_Client", st.car_client_ok, Action::RestartCarClient));
 
         let internet_ok = st.handshake_age.map_or(false, |a| a < HANDSHAKE_MAX_AGE);
@@ -493,6 +573,7 @@ impl App {
         tiles.push(Tile { title: "RTK Fix", detail: fix_text, big: None, color: ok(fix), pulsing: false, action: None });
 
         let reboot = self.restarting(Action::Reboot);
+        let shutdown = self.restarted_at[Action::Shutdown.index()].is_some();
         let (cpu_color, cpu_big) = match st.cpu_percent {
             None => (BOX_IDLE, "–".to_string()),
             Some(p) => {
@@ -503,11 +584,17 @@ impl App {
         };
         tiles.push(Tile {
             title: "Pi",
-            detail: if reboot { "Startar om...".into() } else { "tryck för omstart".into() },
+            detail: if shutdown {
+                "Stängs av...".into()
+            } else if reboot {
+                "Startar om...".into()
+            } else {
+                "tryck för omstart / stäng av".into()
+            },
             big: Some(cpu_big),
-            color: if reboot { BOX_WARN } else { cpu_color },
-            pulsing: reboot,
-            action: (!reboot).then_some(Action::Reboot),
+            color: if shutdown { BOX_BAD } else if reboot { BOX_WARN } else { cpu_color },
+            pulsing: reboot || shutdown,
+            action: (!reboot && !shutdown).then_some(Action::PiMenu),
         });
         tiles
     }
@@ -529,19 +616,108 @@ impl App {
 
     fn draw_countdown(&mut self, ui: &mut egui::Ui) {
         let rect = ui.max_rect();
+        paint_background(ui.painter(), rect);
+        let total = COUNTDOWN.as_secs_f32();
+        let elapsed = self.started.elapsed().as_secs_f32().min(total);
         let left = COUNTDOWN.saturating_sub(self.started.elapsed()).as_secs();
+        let t = self.started.elapsed().as_secs_f32();
+        let center = rect.center() + egui::vec2(0.0, -rect.height() * 0.04);
+        let r = rect.width().min(rect.height()) * 0.33;
+        let painter = ui.painter();
+
+        // Ring: spår, ifylld del och en "komet" som snurrar runt.
+        painter.circle_stroke(center, r, egui::Stroke::new(r * 0.07, with_alpha(NEON_IDLE, 50)));
+        let frac = elapsed / total;
+        paint_arc(painter, center, r, -90.0, -90.0 + 360.0 * frac, egui::Stroke::new(r * 0.07, NEON_CYAN));
+        let spin = t * 140.0;
+        for k in 0..14 {
+            let a = (spin - k as f32 * 4.0).to_radians();
+            let p = center + egui::vec2(a.cos(), a.sin()) * (r * 1.12);
+            painter.circle_filled(p, r * 0.022 * (1.0 - k as f32 / 14.0), with_alpha(NEON_CYAN, (220.0 * (1.0 - k as f32 / 14.0)) as u8));
+        }
+
         let text = format!("{}:{:02}", left / 60, left % 60);
-        let size = (rect.width() * 0.3).min(rect.height() * 0.3);
-        ui.painter().text(rect.center(), egui::Align2::CENTER_CENTER, text, egui::FontId::proportional(size), TEXT);
+        painter.text(center, egui::Align2::CENTER_CENTER, text, egui::FontId::proportional(r * 0.62), TEXT);
+        painter.text(
+            center + egui::vec2(0.0, r * 0.5),
+            egui::Align2::CENTER_CENTER,
+            "STARTAR SYSTEM",
+            egui::FontId::proportional(r * 0.11),
+            with_alpha(NEON_CYAN, 220),
+        );
+        painter.text(
+            egui::pos2(rect.center().x, rect.bottom() - rect.height() * 0.06),
+            egui::Align2::CENTER_CENTER,
+            "tryck för att hoppa över",
+            egui::FontId::proportional(r * 0.1),
+            with_alpha(TEXT_DIM, 140),
+        );
         // Tryck var som helst för att hoppa över.
         if ui.interact(rect, egui::Id::new("countdown"), egui::Sense::click()).clicked() {
             self.countdown_skipped = true;
         }
     }
 
+    /// Toppremsan: robotens namn, klocka och ett EKG-hjärtslag. Hjärtslaget rör sig så
+    /// länge skärmen ritas, och blir rött ("INGEN DATA") om insamlingen slutat leverera.
+    fn draw_header(&self, ui: &egui::Ui, bar: egui::Rect) {
+        let painter = ui.painter();
+        let t = self.started.elapsed().as_secs_f32();
+        let fresh = self.status.lock().unwrap().updated.map_or(false, |u| u.elapsed() < DATA_STALE);
+        let color = if fresh { NEON_OK } else { NEON_BAD };
+        let h = bar.height();
+
+        // Tunn linje under remsan.
+        painter.line_segment(
+            [bar.left_bottom(), bar.right_bottom()],
+            egui::Stroke::new(1.0_f32, with_alpha(NEON_CYAN, 60)),
+        );
+        // Vänster: statuslampa + namn.
+        let dot = egui::pos2(bar.left() + h * 0.4, bar.center().y);
+        painter.circle_filled(dot, h * 0.14, NEON_CYAN);
+        painter.circle_stroke(dot, h * 0.14 + (t * 2.0).sin().abs() * h * 0.12, egui::Stroke::new(1.0_f32, with_alpha(NEON_CYAN, 90)));
+        painter.text(
+            egui::pos2(dot.x + h * 0.35, bar.center().y),
+            egui::Align2::LEFT_CENTER,
+            format!("{}  ·  STATUS", self.hostname),
+            egui::FontId::proportional(h * 0.42),
+            with_alpha(TEXT, 230),
+        );
+
+        // Höger: klocka, sedan EKG.
+        let clock = chrono::Local::now().format("%H:%M:%S").to_string();
+        let clock_rect = painter.text(
+            egui::pos2(bar.right() - h * 0.3, bar.center().y),
+            egui::Align2::RIGHT_CENTER,
+            clock,
+            egui::FontId::monospace(h * 0.46),
+            TEXT,
+        );
+        let label = if fresh { "LIVE" } else { "INGEN DATA" };
+        let label_rect = painter.text(
+            egui::pos2(clock_rect.left() - h * 0.45, bar.center().y),
+            egui::Align2::RIGHT_CENTER,
+            label,
+            egui::FontId::proportional(h * 0.34),
+            color,
+        );
+        let ecg_w = h * 3.2;
+        let ecg = egui::Rect::from_min_max(
+            egui::pos2(label_rect.left() - h * 0.3 - ecg_w, bar.top() + h * 0.18),
+            egui::pos2(label_rect.left() - h * 0.3, bar.bottom() - h * 0.18),
+        );
+        paint_ecg(painter, ecg, t, color, fresh);
+    }
+
     fn draw_tiles(&mut self, ui: &mut egui::Ui) -> bool {
         let tiles = self.tiles();
-        let rect = ui.max_rect().shrink(12.0);
+        let full = ui.max_rect();
+        paint_background(ui.painter(), full);
+        let header_h = (full.height() * 0.085).clamp(30.0, 60.0);
+        let bar = egui::Rect::from_min_size(full.min, egui::vec2(full.width(), header_h));
+        self.draw_header(ui, bar);
+
+        let rect = egui::Rect::from_min_max(egui::pos2(full.left(), full.top() + header_h), full.max).shrink(12.0);
         let cols = if rect.width() > rect.height() { 4 } else { 2 };
         let rows = (tiles.len() + cols - 1) / cols;
         let gap = 12.0;
@@ -549,6 +725,7 @@ impl App {
         let h = (rect.height() - gap * (rows as f32 - 1.0)) / rows as f32;
         let t = self.started.elapsed().as_secs_f32();
         let mut any_pulsing = false;
+        let cpu = self.status.lock().unwrap().cpu_percent;
 
         for (i, tile) in tiles.iter().enumerate() {
             let (c, r) = (i % cols, i / cols);
@@ -556,25 +733,64 @@ impl App {
             // Sista rutan (Pi) fyller resten av sista raden i stället för att lämna ett hål.
             let span = if i + 1 == tiles.len() { cols - c } else { 1 };
             let tw = w * span as f32 + gap * (span as f32 - 1.0);
-            let b = egui::Rect::from_min_size(min, egui::vec2(tw, h));
-            let mut fill = tile.color;
-            if tile.pulsing {
-                any_pulsing = true;
-                let k = 0.65 + 0.35 * (t * 4.0).sin().abs();
-                fill = egui::Color32::from_rgb(
-                    (fill.r() as f32 * k) as u8,
-                    (fill.g() as f32 * k) as u8,
-                    (fill.b() as f32 * k) as u8,
-                );
-            }
-            ui.painter().rect_filled(b, 16.0, fill);
-
-            // Stor text även på en liten skärm (4,3" 800x480): detaljraden radbryts
-            // inom rutan i stället för att krympa.
-            let title_size = (h * 0.19).min(w * 0.16);
-            let detail_size = title_size * 0.68;
-            let wrap = tw * 0.9;
+            let b0 = egui::Rect::from_min_size(min, egui::vec2(tw, h));
+            // Pekskärm: ingen hover, men rutan lyser upp och krymper lite medan man trycker.
+            let resp = tile.action.map(|_| ui.interact(b0, egui::Id::new(("tile", i)), egui::Sense::click()));
+            let pressed = resp.as_ref().map_or(false, |r| r.is_pointer_button_down_on());
+            let b = if pressed { b0.shrink(3.0) } else { b0 };
+            let accent = neon(tile.color);
+            let lit = tile.color != BOX_IDLE;
+            any_pulsing |= tile.pulsing;
+            // Pulserande rutor (omstart pågår) andas snabbare.
+            let breathe = if tile.pulsing { 0.55 + 0.45 * (t * 5.0).sin().abs() } else { 1.0 };
             let painter = ui.painter();
+            let rounding = 14.0;
+
+            // Sken runt rutan i statusfärgen.
+            if lit {
+                for k in 1..=4 {
+                    let a = (34.0 / k as f32 * breathe) as u8;
+                    painter.rect_stroke(b.expand(k as f32 * 2.0), rounding + k as f32 * 2.0, egui::Stroke::new(2.0_f32, with_alpha(accent, a)));
+                }
+            }
+            // Glas: mörk yta, ljusare överkant (ljusare medan man trycker).
+            painter.rect_filled(b, rounding, if pressed { lighten(PANEL, 0.12) } else { PANEL });
+            let sheen = egui::Rect::from_min_max(b.min, egui::pos2(b.right(), b.top() + h * 0.45));
+            painter.rect_filled(
+                sheen,
+                egui::Rounding { nw: rounding, ne: rounding, sw: 0.0, se: 0.0 },
+                egui::Color32::from_white_alpha(6),
+            );
+            // Ett ljus med svans som vandrar runt kanten. Rutorna går förskjutet.
+            if lit || pressed {
+                let lap = if tile.pulsing { 1.6 } else { 4.2 };
+                let head = (t / lap + i as f32 * 0.137).fract();
+                paint_border_comet(painter, b, rounding, head, accent);
+            }
+            // Kant och markering i vänsterkanten.
+            painter.rect_stroke(b, rounding, egui::Stroke::new(1.5_f32, with_alpha(accent, if lit { (200.0 * breathe) as u8 } else { 90 })));
+            let mark = egui::Rect::from_center_size(egui::pos2(b.left() + 7.0, b.center().y), egui::vec2(4.0, h * 0.5));
+            painter.rect_filled(mark, 2.0, with_alpha(accent, if lit { 255 } else { 120 }));
+
+            // Statuslampa uppe till höger som "andas" när rutan är grön/gul/röd.
+            let led = egui::pos2(b.right() - 18.0, b.top() + 18.0);
+            painter.circle_filled(led, 5.0, with_alpha(accent, if lit { 255 } else { 140 }));
+            if lit {
+                let p = (t / 1.8 + i as f32 * 0.13).fract();
+                painter.circle_stroke(led, 5.0 + p * 10.0, egui::Stroke::new(1.5_f32, with_alpha(accent, ((1.0 - p) * 160.0) as u8)));
+            }
+
+            // Omstart pågår: ett ljus som vandrar längs nederkanten.
+            if tile.pulsing {
+                let x = b.left() + 14.0 + ((t * 0.8).fract()) * (tw - 28.0 - tw * 0.25);
+                let seg = egui::Rect::from_min_size(egui::pos2(x, b.bottom() - 10.0), egui::vec2(tw * 0.25, 3.0));
+                painter.rect_filled(seg, 2.0, accent);
+            }
+
+            // Text: stor även på en liten skärm (4,3" 800x480); detaljraden radbryts.
+            let title_size = (h * 0.17).min(w * 0.15);
+            let detail_size = title_size * 0.66;
+            let wrap = tw * 0.86;
             let centered = |text: &str, size: f32, color: egui::Color32, y: f32| {
                 let mut job = egui::text::LayoutJob::simple(text.to_string(), egui::FontId::proportional(size), color, wrap);
                 job.halign = egui::Align::Center; // varje radbruten rad centreras
@@ -582,17 +798,33 @@ impl App {
                 let pos = egui::pos2(b.center().x, y - galley.size().y / 2.0);
                 painter.galley(pos, galley, color);
             };
+            let title = tile.title.to_uppercase();
+            let detail_color = if lit { lighten(accent, 0.55) } else { with_alpha(TEXT_DIM, 170) };
             if let Some(big) = &tile.big {
-                centered(tile.title, title_size, TEXT, b.top() + h * 0.2);
-                centered(big, title_size * 1.6, TEXT, b.center().y);
-                centered(&tile.detail, detail_size, TEXT_DIM, b.bottom() - h * 0.18);
+                centered(&title, title_size, TEXT, b.top() + h * 0.17);
+                centered(big, title_size * 1.7, TEXT, b.top() + h * 0.43);
+                // CPU-mätare: tio segment.
+                let mw = (tw * 0.6).min(320.0);
+                let meter = egui::Rect::from_center_size(egui::pos2(b.center().x, b.top() + h * 0.66), egui::vec2(mw, h * 0.07));
+                let segs = 10;
+                let sg = 4.0;
+                let sw = (mw - sg * (segs as f32 - 1.0)) / segs as f32;
+                let filled = cpu.map_or(0, |p| ((p / 100.0) * segs as f32).ceil() as usize);
+                for s in 0..segs {
+                    let r = egui::Rect::from_min_size(
+                        egui::pos2(meter.left() + s as f32 * (sw + sg), meter.top()),
+                        egui::vec2(sw, meter.height()),
+                    );
+                    let on = s < filled;
+                    painter.rect_filled(r, 2.0, if on { accent } else { with_alpha(NEON_IDLE, 60) });
+                }
+                centered(&tile.detail, detail_size, detail_color, b.bottom() - h * 0.14);
             } else {
-                centered(tile.title, title_size, TEXT, b.center().y - h * 0.13);
-                centered(&tile.detail, detail_size, TEXT_DIM, b.center().y + h * 0.17);
+                centered(&title, title_size, TEXT, b.center().y - h * 0.12);
+                centered(&tile.detail, detail_size, detail_color, b.center().y + h * 0.17);
             }
 
-            if let Some(action) = tile.action {
-                let resp = ui.interact(b, egui::Id::new(("tile", i)), egui::Sense::click());
+            if let (Some(action), Some(resp)) = (tile.action, &resp) {
                 if resp.clicked() && self.dialog.is_none() {
                     self.dialog = Some(action);
                 }
@@ -607,9 +839,9 @@ impl App {
         let screen = ctx.screen_rect();
 
         let mut close = false;
-        let mut confirmed = false;
+        let mut confirmed: Option<Action> = None;
         egui::Area::new(egui::Id::new("dialog_bg"))
-            .order(egui::Order::Foreground)
+            .order(DIALOG_BG_ORDER)
             .fixed_pos(screen.min)
             .show(ctx, |ui| {
                 ui.painter().rect_filled(screen, 0.0, egui::Color32::from_black_alpha(190));
@@ -621,7 +853,7 @@ impl App {
         let w = (screen.width() * 0.86).min(700.0);
         let big = (w * 0.06).max(22.0);
         egui::Area::new(egui::Id::new("dialog"))
-            .order(egui::Order::Tooltip)
+            .order(DIALOG_ORDER)
             .anchor(egui::Align2::CENTER_CENTER, egui::vec2(0.0, 0.0))
             .show(ctx, |ui| {
                 egui::Frame::none()
@@ -637,63 +869,273 @@ impl App {
                                 ui.label(egui::RichText::new(warn).size(big * 0.7).color(egui::Color32::from_rgb(255, 190, 90)));
                             }
                             ui.add_space(26.0);
-                            ui.horizontal(|ui| {
+                            let btn = |txt: &str, fill, bw: f32| {
+                                egui::Button::new(egui::RichText::new(txt).size(big).color(TEXT).strong())
+                                    .fill(fill)
+                                    .rounding(12.0)
+                                    .min_size(egui::vec2(bw, big * 2.4))
+                            };
+                            if action == Action::PiMenu {
+                                // Tre knappar: valet i sig är bekräftelsen.
+                                let bw = (w - 40.0) / 3.0;
+                                ui.horizontal(|ui| {
+                                    if ui.add(btn("Starta om", BOX_WARN, bw)).clicked() {
+                                        confirmed = Some(Action::Reboot);
+                                    }
+                                    if ui.add(btn("Stäng av", BOX_BAD, bw)).clicked() {
+                                        confirmed = Some(Action::Shutdown);
+                                    }
+                                    if ui.add(btn("Avbryt", BOX_IDLE, bw)).clicked() {
+                                        close = true;
+                                    }
+                                });
+                            } else {
                                 let bw = (w - 20.0) / 2.0;
-                                let btn = |txt: &str, fill| {
-                                    egui::Button::new(egui::RichText::new(txt).size(big).color(TEXT).strong())
-                                        .fill(fill)
-                                        .rounding(12.0)
-                                        .min_size(egui::vec2(bw, big * 2.4))
-                                };
-                                if ui.add(btn("Ja", BOX_BAD)).clicked() {
-                                    confirmed = true;
-                                }
-                                if ui.add(btn("Nej", BOX_IDLE)).clicked() {
-                                    close = true;
-                                }
-                            });
+                                ui.horizontal(|ui| {
+                                    if ui.add(btn("Ja", BOX_BAD, bw)).clicked() {
+                                        confirmed = Some(action);
+                                    }
+                                    if ui.add(btn("Nej", BOX_IDLE, bw)).clicked() {
+                                        close = true;
+                                    }
+                                });
+                            }
                         });
                     });
             });
 
-        if confirmed {
+        if let Some(a) = confirmed {
             self.dialog = None;
-            self.run(action);
+            self.run(a);
         } else if close {
             self.dialog = None;
         }
     }
 }
 
+impl App {
+    fn demo_screenshot(&mut self, ctx: &egui::Context) {
+        let Some(path) = std::env::var_os("STATUSSKARM_SKARMBILD") else { return };
+        let image = ctx.input(|i| {
+            i.raw.events.iter().find_map(|e| match e {
+                egui::Event::Screenshot { image, .. } => Some(image.clone()),
+                _ => None,
+            })
+        });
+        if let Some(img) = image {
+            let mut ppm = format!("P6\n{} {}\n255\n", img.size[0], img.size[1]).into_bytes();
+            for p in &img.pixels {
+                ppm.extend([p.r(), p.g(), p.b()]);
+            }
+            let _ = std::fs::write(path, ppm);
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+        } else if !self.screenshot_requested && self.started.elapsed() > Duration::from_secs(3) {
+            self.screenshot_requested = true;
+            ctx.send_viewport_cmd(egui::ViewportCommand::Screenshot);
+        }
+    }
+}
+
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Pekskärm: ingen muspekare mitt i bilden.
+        ctx.set_cursor_icon(egui::CursorIcon::None);
         let in_countdown = !self.countdown_skipped && self.started.elapsed() < COUNTDOWN;
-        let mut pulsing = false;
         egui::CentralPanel::default()
-            .frame(egui::Frame::none().fill(BG))
+            .frame(egui::Frame::none().fill(BG_DEEP))
             .show(ctx, |ui| {
                 if in_countdown {
                     self.draw_countdown(ui);
                 } else {
-                    pulsing = self.draw_tiles(ui);
+                    self.draw_tiles(ui);
                 }
             });
         self.draw_dialog(ctx);
-
-        // Rita om så sällan som möjligt: status ändras var 2:a sekund.
-        let next = if pulsing || self.dialog.is_some() {
-            Duration::from_millis(80)
-        } else if in_countdown {
-            Duration::from_millis(250)
-        } else {
-            Duration::from_millis(500)
-        };
-        ctx.request_repaint_after(next);
+        if self.demo {
+            self.demo_screenshot(ctx);
+        }
+        // Ca 15 bilder/s: räcker för mjuka animationer (hjärtslag, lampor) och är lätt
+        // för Pi:n. Står bilden still har skärmen hängt sig.
+        ctx.request_repaint_after(Duration::from_millis(66));
     }
+}
+
+// ---------------------------------------------------------------------------
+// Ritverktyg
+
+fn with_alpha(c: egui::Color32, a: u8) -> egui::Color32 {
+    egui::Color32::from_rgba_unmultiplied(c.r(), c.g(), c.b(), a)
+}
+
+/// Blanda mot vitt (k = 0 oförändrad, 1 vitt).
+fn lighten(c: egui::Color32, k: f32) -> egui::Color32 {
+    let m = |x: u8| (x as f32 + (255.0 - x as f32) * k) as u8;
+    egui::Color32::from_rgb(m(c.r()), m(c.g()), m(c.b()))
+}
+
+/// Statusfärg (logik) -> lysande färg (utseende).
+fn neon(c: egui::Color32) -> egui::Color32 {
+    if c == BOX_OK {
+        NEON_OK
+    } else if c == BOX_WARN {
+        NEON_WARN
+    } else if c == BOX_BAD {
+        NEON_BAD
+    } else {
+        NEON_IDLE
+    }
+}
+
+/// Mörk bakgrund med ett svagt rutnät.
+fn paint_background(painter: &egui::Painter, rect: egui::Rect) {
+    painter.rect_filled(rect, 0.0, BG_DEEP);
+    let step = 32.0;
+    let mut x = rect.left() + step;
+    while x < rect.right() {
+        painter.line_segment([egui::pos2(x, rect.top()), egui::pos2(x, rect.bottom())], egui::Stroke::new(1.0_f32, GRID));
+        x += step;
+    }
+    let mut y = rect.top() + step;
+    while y < rect.bottom() {
+        painter.line_segment([egui::pos2(rect.left(), y), egui::pos2(rect.right(), y)], egui::Stroke::new(1.0_f32, GRID));
+        y += step;
+    }
+}
+
+/// Båge från a0 till a1 grader (0 = höger, medurs).
+fn paint_arc(painter: &egui::Painter, c: egui::Pos2, r: f32, a0: f32, a1: f32, stroke: egui::Stroke) {
+    if a1 <= a0 {
+        return;
+    }
+    let n = (((a1 - a0) / 4.0).ceil() as usize).max(2);
+    let pts: Vec<egui::Pos2> = (0..=n)
+        .map(|i| {
+            let a = (a0 + (a1 - a0) * i as f32 / n as f32).to_radians();
+            c + egui::vec2(a.cos(), a.sin()) * r
+        })
+        .collect();
+    painter.add(egui::Shape::line(pts, stroke));
+}
+
+/// Punkt på kanten av en rundad rektangel, s = 0..1 ett varv medurs från övre vänstra
+/// rakan.
+fn rrect_point(b: egui::Rect, r: f32, s: f32) -> egui::Pos2 {
+    let r = r.min(b.width() / 2.0).min(b.height() / 2.0);
+    let (w, h) = (b.width() - 2.0 * r, b.height() - 2.0 * r);
+    let arc = std::f32::consts::FRAC_PI_2 * r;
+    let perim = 2.0 * (w + h) + 4.0 * arc;
+    let mut d = s.rem_euclid(1.0) * perim;
+    let corner = |c: egui::Pos2, a0: f32, d: f32| {
+        let a = (a0 + 90.0 * d / arc).to_radians();
+        c + egui::vec2(a.cos(), a.sin()) * r
+    };
+    // överkant
+    if d < w { return egui::pos2(b.left() + r + d, b.top()); }
+    d -= w;
+    if d < arc { return corner(egui::pos2(b.right() - r, b.top() + r), -90.0, d); }
+    d -= arc;
+    // högerkant
+    if d < h { return egui::pos2(b.right(), b.top() + r + d); }
+    d -= h;
+    if d < arc { return corner(egui::pos2(b.right() - r, b.bottom() - r), 0.0, d); }
+    d -= arc;
+    // nederkant
+    if d < w { return egui::pos2(b.right() - r - d, b.bottom()); }
+    d -= w;
+    if d < arc { return corner(egui::pos2(b.left() + r, b.bottom() - r), 90.0, d); }
+    d -= arc;
+    // vänsterkant
+    if d < h { return egui::pos2(b.left(), b.bottom() - r - d); }
+    d -= h;
+    corner(egui::pos2(b.left() + r, b.top() + r), 180.0, d.min(arc))
+}
+
+/// Ljus med svans som går runt kanten: huvudet vid `head` (0..1), svansen tonar ut.
+fn paint_border_comet(painter: &egui::Painter, b: egui::Rect, r: f32, head: f32, color: egui::Color32) {
+    let tail = 0.22; // andel av varvet
+    let n = 28;
+    let mut prev: Option<egui::Pos2> = None;
+    for k in 0..=n {
+        let u = k as f32 / n as f32; // 0 = svansens slut, 1 = huvudet
+        let p = rrect_point(b, r, head - tail * (1.0 - u));
+        if let Some(q) = prev {
+            // Ett brett, svagt sken under en smal, stark linje.
+            painter.line_segment([q, p], egui::Stroke::new(6.0_f32 * u, with_alpha(color, (40.0 * u * u) as u8)));
+            painter.line_segment([q, p], egui::Stroke::new(1.0_f32 + 2.0 * u, with_alpha(lighten(color, 0.25 * u), (255.0 * u * u) as u8)));
+        }
+        prev = Some(p);
+    }
+    if let Some(p) = prev {
+        painter.circle_filled(p, 7.0, with_alpha(color, 45));
+        painter.circle_filled(p, 3.0, lighten(color, 0.5));
+    }
+}
+
+/// EKG-kurva som rullar från höger till vänster; nyaste delen är starkast.
+fn paint_ecg(painter: &egui::Painter, rect: egui::Rect, t: f32, color: egui::Color32, alive: bool) {
+    // En hjärtslagsperiod: P-våg, QRS-topp, T-våg (0..1 -> -1..1).
+    fn beat(x: f32) -> f32 {
+        let bump = |c: f32, w: f32, a: f32| a * (-((x - c) / w).powi(2)).exp();
+        bump(0.18, 0.04, 0.15) - bump(0.30, 0.012, 0.25) + bump(0.33, 0.012, 1.0) - bump(0.36, 0.014, 0.35)
+            + bump(0.58, 0.06, 0.28)
+    }
+    let n = 60;
+    let speed = if alive { 1.1 } else { 0.0 }; // ingen data: platt linje
+    let mut prev: Option<egui::Pos2> = None;
+    for i in 0..=n {
+        let u = i as f32 / n as f32;
+        let phase = (t * speed - (1.0 - u) * 1.5).rem_euclid(1.0);
+        let y = if alive { beat(phase) } else { 0.0 };
+        let p = egui::pos2(rect.left() + u * rect.width(), rect.center().y - y * rect.height() * 0.48);
+        if let Some(q) = prev {
+            painter.line_segment([q, p], egui::Stroke::new(1.8_f32, with_alpha(color, (40.0 + 215.0 * u) as u8)));
+        }
+        prev = Some(p);
+    }
+    if let Some(p) = prev {
+        painter.circle_filled(p, 3.0, color);
+        painter.circle_filled(p, 6.0, with_alpha(color, 50));
+    }
+}
+
+/// Läget som Car_Client skriver: "<ok|intryckt|sparrad|fel> <unix-tid>", varje sekund.
+const NODSTOPP_FIL: &str = "/tmp/nodstopp_status";
+
+fn unix_now() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
+
+fn nodstopp_tile(text: Option<&str>, now: u64) -> Option<Tile> {
+    let text = text?;
+    let mut delar = text.split_whitespace();
+    let lage = delar.next().unwrap_or("");
+    let skriven: Option<u64> = delar.next().and_then(|t| t.parse().ok());
+    let farsk = skriven.map_or(false, |w| now.saturating_sub(w) <= 3);
+    let (detail, color, pulsing) = match (farsk, lage) {
+        (true, "ok") => ("OK", BOX_OK, false),
+        (true, "intryckt") => ("INTRYCKT", BOX_BAD, true),
+        (true, "sparrad") => ("utdragen – väntar på stopp från föraren", BOX_WARN, false),
+        (true, _) => ("kan inte läsas – kontrollera kabeln", BOX_BAD, true),
+        (false, _) => ("inget svar från Car_Client", BOX_BAD, false),
+    };
+    Some(Tile { title: "Nödstopp", detail: detail.into(), big: None, color, pulsing, action: None })
 }
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn nodstopp_rutan() {
+        use super::*;
+        assert!(nodstopp_tile(None, 100).is_none());
+        assert_eq!(nodstopp_tile(Some("ok 100"), 101).unwrap().color, BOX_OK);
+        assert_eq!(nodstopp_tile(Some("intryckt 100"), 100).unwrap().color, BOX_BAD);
+        assert_eq!(nodstopp_tile(Some("sparrad 100"), 100).unwrap().color, BOX_WARN);
+        assert_eq!(nodstopp_tile(Some("ok 100"), 110).unwrap().color, BOX_BAD);
+    }
+
     use super::*;
 
     #[test]
@@ -739,7 +1181,42 @@ mod tests {
         let t = App::new(Arc::new(Mutex::new(st)), true).tiles();
         assert_eq!(t.iter().find(|t| t.title == "Internet").unwrap().action, None);
         let t = app.tiles();
-        assert_eq!(t.iter().find(|t| t.title == "Pi").unwrap().action, Some(Action::Reboot));
+        assert_eq!(t.iter().find(|t| t.title == "Pi").unwrap().action, Some(Action::PiMenu));
+    }
+
+    #[test]
+    fn dialogens_knappar_tar_emot_tryck() {
+        assert!(DIALOG_ORDER.allow_interaction());
+        assert!(DIALOG_BG_ORDER.allow_interaction());
+        // Knapparna ska ligga över bakgrunden, och bakgrunden över rutorna.
+        assert!(DIALOG_ORDER > DIALOG_BG_ORDER && DIALOG_BG_ORDER > egui::Order::Background);
+    }
+
+    #[test]
+    fn avstangning_last_pi_rutan() {
+        let mut app = App::new(Arc::new(Mutex::new(Status::default())), true);
+        assert_eq!(Action::Shutdown.command(), &["sudo", "-n", "/usr/bin/systemctl", "poweroff"]);
+        assert!(Action::PiMenu.command().is_empty());
+        app.run(Action::Shutdown);
+        let t = app.tiles();
+        let pi = t.iter().find(|t| t.title == "Pi").unwrap();
+        assert_eq!(pi.detail, "Stängs av...");
+        assert_eq!(pi.action, None);
+    }
+
+    #[test]
+    fn ljuset_följer_kanten_utan_hopp() {
+        let b = egui::Rect::from_min_size(egui::pos2(10.0, 20.0), egui::vec2(180.0, 200.0));
+        let n = 2000;
+        let pts: Vec<egui::Pos2> = (0..=n).map(|k| rrect_point(b, 14.0, k as f32 / n as f32)).collect();
+        // Varje punkt ligger på kanten (inom rutan, nära någon sida eller ett hörn).
+        for p in &pts {
+            assert!(b.expand(0.01).contains(*p), "utanför rutan: {p:?}");
+        }
+        // Inga hopp: steget är litet överallt, och varvet slutar där det började.
+        let max_step = pts.windows(2).map(|w| w[0].distance(w[1])).fold(0.0, f32::max);
+        assert!(max_step < 1.0, "hopp på {max_step}");
+        assert!(pts[0].distance(pts[n]) < 0.01);
     }
 
     #[test]

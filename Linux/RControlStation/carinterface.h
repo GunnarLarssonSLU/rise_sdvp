@@ -71,6 +71,9 @@ public:
     void populateActionsComboBoxes(const QList<QPair<int, QString>>& actions);
     void populateModesComboBoxes(const QList<QPair<int, QString>>& modes);
 
+public slots:
+    void nmeaReceived(quint8 id, QByteArray nmea_msg);
+
 signals:
     void terminalCmd(quint8 id, QString cmd);
     void forwardVesc(quint8 id, QByteArray data);
@@ -88,7 +91,6 @@ private slots:
     void vescFwdReceived(quint8 id, QByteArray data);
     void routePointSet(LocPoint pos);
     void lastRoutePointRemoved();
-    void nmeaReceived(quint8 id, QByteArray nmea_msg);
     void configurationReceived(quint8 id, MAIN_CONFIG config);
     void loadMagCal();
     void on_terminalSendButton_clicked();

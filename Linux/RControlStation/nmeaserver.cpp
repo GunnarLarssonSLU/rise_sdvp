@@ -432,7 +432,8 @@ int NmeaServer::decodeNmeaGGA(QByteArray data, NmeaServer::nmea_gga_info_t &gga)
                 str[i + 2] == 'A' &&
                 str[i + 3] == ',') {
             found = true;
-            strcpy(nmea_str, str + i + 4);
+            strncpy(nmea_str, str + i + 4, sizeof(nmea_str) - 1);
+            nmea_str[sizeof(nmea_str) - 1] = '\0';
             break;
         }
     }
@@ -583,14 +584,37 @@ void NmeaServer::tcpInputDisconnected()
 
 void NmeaServer::tcpInputDataAvailable()
 {
-    QByteArray data =  mTcpClient->readAll();
-    QTextStream in(data);
+    QByteArray data = mTcpClient->readAll();
+    if (data.isEmpty()) {
+        return;
+    }
 
-    while(!in.atEnd()) {
-        QString line = in.readLine();
+    QList<QByteArray> lines = data.split('\n');
+
+    QByteArray lastGgaLine;
+    nmea_gga_info_t lastGga;
+    int lastRes = -1;
+    bool foundGga = false;
+
+    for (int i = 0; i < lines.size(); ++i) {
+        QByteArray line = lines.at(i).trimmed();
+        if (line.isEmpty()) {
+            continue;
+        }
+
         nmea_gga_info_t gga;
-        int res = decodeNmeaGGA(line.toLocal8Bit(), gga);
-        emit clientGgaRx(res, gga);
+        int res = decodeNmeaGGA(line, gga);
+        if (res >= 0) {
+            lastGgaLine = line;
+            lastGga = gga;
+            lastRes = res;
+            foundGga = true;
+        }
+    }
+
+    if (foundGga) {
+        emit clientGgaRx(lastRes, lastGga);
+        emit clientLineRx(lastGgaLine);
     }
 }
 

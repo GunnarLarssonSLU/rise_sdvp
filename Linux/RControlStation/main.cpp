@@ -18,6 +18,7 @@
 #include "mainwindow.h"
 #include <QApplication>
 #include <QStyleFactory>
+#include <QTimer>
 #include <memory>
 #include "utility.h"
 #include "mapwidget.h"
@@ -363,8 +364,25 @@ int main(int argc, char *argv[])
                 w->connectJoystick();
             }
 
+            // --addcar fanns i hjälptexten men gjorde inget.
+            for (auto c: carsToAdd) {
+                w->addCar(c.id, QString("Car %1").arg(c.id), c.pollData);
+            }
+
             for (auto c: carsToConn) {
                 w->addTcpConnection(c.ip, c.port);
+            }
+
+            // Test: RCONTROLSTATION_SKARMBILD=fil.png sparar en bild av fönstret efter
+            // RCONTROLSTATION_SKARMBILD_S sekunder (standard 10) och avslutar.
+            QString shot = qEnvironmentVariable("RCONTROLSTATION_SKARMBILD");
+            if (!shot.isEmpty()) {
+                int secs = qEnvironmentVariableIntValue("RCONTROLSTATION_SKARMBILD_S");
+                MainWindow *mw = w.get();
+                QTimer::singleShot((secs > 0 ? secs : 10) * 1000, mw, [mw, shot]() {
+                    mw->grab().save(shot);
+                    QApplication::quit();
+                });
             }
 
             if (xmlTcpPort >= -1) {

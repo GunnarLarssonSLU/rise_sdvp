@@ -33,13 +33,15 @@
 
 // Firmware version
 #define FW_VERSION_MAJOR			30
-#define FW_VERSION_MINOR			1
+#define FW_VERSION_MINOR			3	// 30.3 (2026-09-30): som 30.2 + autopiloten sätter körriktningen. 30.2 (2026-09-29): Write-hängningen rättad, heartbeat i sekunder, stopp
 
 // IO BOARD
 // #define IO_BOARD
 
-#ifndef IS_MACTRAC	// make mactrac: Drängen av, annars krockar wheelspeed.c
+#ifndef IS_MACTRAC
+#ifndef IS_ROBANT
 #define DRANGEN_NY
+#endif
 #endif
 //#define DRANGEN_NY
 #define COMMUNICATION_TIMEOUT_MSEC 6000
@@ -50,6 +52,18 @@
 #define VESC_LEFT 94
 #define VESC_RIGHT 125
 #define VESC_STEERING 113 // 9
+#define LOADING 8
+#define WHEEL_SENSOR                1
+#endif
+
+// RobAnt 3 — VESC-ID:n bekräftade på riktig hårdvara 2026-09-22
+// (vänster=28, höger=36, styrning=76). Eget block så att Drängen/Mactrac
+// inte påverkas.
+#ifdef IS_ROBANT
+#define IS_DRANGEN
+#define VESC_LEFT 28
+#define VESC_RIGHT 36
+#define VESC_STEERING 76
 #define LOADING 8
 #define WHEEL_SENSOR                1
 #endif
@@ -244,6 +258,19 @@
 #define VIN_R2						1500.0
 #endif
 
+// ROV_MCU (Upwis MP101_323): F9-kortets stiftlayout (IS_F9_BOARD) med CM5 och
+// STM32F415VGT, men BMI270 i stället för BMI160. Övriga skillnader (CAN-
+// transceivrarnas SILENT-ben, riktning på DI1-4, GPS 2:s reset) sköts av
+// rovmcu_board_init() i main.c. Stiftkarta: Embedded/RC_Controller/ROVMCU.md.
+#ifdef IS_ROVMCU
+#undef HAS_BMI160
+#define HAS_BMI160					0
+#define HAS_BMI270					1
+#endif
+#ifndef HAS_BMI270
+#define HAS_BMI270					0
+#endif
+
 #ifndef M_PI
 #define M_PI						D(3.14159265358979323846)
 #endif
@@ -255,6 +282,7 @@ extern int main_id;
 void conf_general_init(void);
 void conf_general_get_default_main_config(MAIN_CONFIG *conf);
 void conf_general_read_main_conf(MAIN_CONFIG *conf);
+void conf_general_sanitize_main_config(MAIN_CONFIG *conf);
 bool conf_general_store_main_config(MAIN_CONFIG *conf);
 
 #endif /* CONF_GENERAL_H_ */

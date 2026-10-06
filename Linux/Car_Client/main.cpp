@@ -73,6 +73,7 @@ void showHelp()
     qDebug() << "--simlogen [rateHz] : Enable simulator logging output at rateHz Hz";
     qDebug() << "--simuwben [port]:[rateHz] : Enable simulator UWB emulation output on TCP port port at rateHz Hz";
     qDebug() << "--setid [id] : Override ID of board";
+    qDebug() << "--nodstopp-gpio [n] : Nödstopp (NC-brytare mellan GPIO n och GND). Bruten krets spärrar all körning";
     qDebug() << "--broadcastcarstate : Broadcast state received from car on TCP Port 2102";
 #ifdef HAS_GUI
     qDebug() << "--usegui : Use QML GUI";
@@ -85,33 +86,13 @@ void showHelp()
  * 
  * @param sig Signal number
  */
-static CarClient* g_carClient = nullptr;
-
 static void m_cleanup(int sig)
 {
     (void)sig;  // Unused parameter
     
-    qDebug() << "Received shutdown signal (Ctrl+C), initiating shutdown...";
-    
-    // Mark that we're shutting down
-    if (g_carClient) {
-        g_carClient->setShuttingDown(true);
-    }
-    
-    // First, try to stop the serial port immediately
-    if (g_carClient && g_carClient->serialPort() && g_carClient->serialPort()->isOpen()) {
-        g_carClient->serialPort()->stopImmediately();
-    }
-    
-    // Then request application to quit
+    // Request application to quit
     qApp->quit();
-    
-    // If we're still running after a short delay, force exit
-    // This handles cases where we're stuck in a blocking operation
-    QTimer::singleShot(100, []() {
-        qDebug() << "Forcing immediate exit...";
-        exit(0);
-    });
+    qDebug() << "Bye :)";
 }
 
 int main(int argc, char *argv[])
@@ -172,6 +153,7 @@ int main(int argc, char *argv[])
     int simUwbHz = -1;
     int simUwbTcpPort = -1;
     int carId = -1;
+    int nodstoppGpio = -1;
     bool broadcastCarState = false;
     std::unique_ptr<CarStateBroadcaster> carstatebroadcaster;
 
@@ -466,6 +448,18 @@ int main(int argc, char *argv[])
             }
         }
 
+        if (str == "--nodstopp-gpio") {
+            if ((i + 1) < args.size()) {
+                i++;
+                bool ok;
+                nodstoppGpio = args.at(i).toInt(&ok);
+                found = ok;
+                if (!ok) {
+                    nodstoppGpio = -1;
+                }
+            }
+        }
+
         if (str == "--setid") {
             if ((i + 1) < args.size()) {
                 i++;
@@ -517,10 +511,10 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine qmlEngine;
 #endif
 
-    // Set global pointer for signal handler
-    g_carClient = &car;
-
     car.setCarIdToSet(carId);
+    if (nodstoppGpio >= 0) {
+        car.enableNodstopp(nodstoppGpio);
+    }
     if (carId != -1) {
         car.setCarId(carId); // Initialize mCarId to the specified ID on startup to avoid auto-detecting ID 0 from the board's default boot ID before setid is processed!
     }
@@ -529,19 +523,6 @@ int main(int argc, char *argv[])
     if (!ttyPort.isEmpty()) {
         qDebug() << "Connecting to a car";
         car.connectSerial(ttyPort, baudrate);
-        
-        // Check if connection was successful
-        if (!car.serialPort()->isOpen()) {
-            qWarning() << "WARNING: Failed to connect to serial port" << ttyPort;
-            qWarning() << "The program will continue but will not be able to communicate with the vehicle.";
-            qWarning() << "Possible causes:";
-            qWarning() << "  1. Device" << ttyPort << "does not exist";
-            qWarning() << "  2. Permission denied (try: sudo chmod 666" << ttyPort << ")";
-            qWarning() << "  3. Device is not connected or powered off";
-            qWarning() << "  4. Wrong baud rate (current:" << baudrate << ")";
-            qWarning() << "  5. Device does not support the Car_Client protocol";
-            qWarning() << "To run without a vehicle, use: --simulatecars 1:0";
-        }
     } else {
         qDebug() << "Not connecting to a car";
         // Not connected to any car, set default ID

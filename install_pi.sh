@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # ==============================================================================
-# 🍓 install_pi.sh: grundsystemet på maskinens Raspberry Pi (MacTrac-grenen)
-# Körs PÅ Pi:n från rise_sdvp-mappen:
-#     cd ~/rise_sdvp && sudo bash install_pi.sh          (bil-ID 4)
-#     cd ~/rise_sdvp && sudo CAR_ID=7 bash install_pi.sh (annat bil-ID)
-# Installerar paket, udev-regler, Swepos-RTK (valfritt), bygger Car_Client och
-# startar den automatiskt vid uppstart. Ingen robotd/robotstyrning.
+# 🍓 install_pi.sh: Konfigurera enbart Raspberry Pi-systemet
+# ==============================================================================
+# Detta skript sätter upp alla paket, udev-regler, Swepos (valfritt), bygger
+# Car_Client och ställer in boot-autostart på din Raspberry Pi.
+#     sudo bash install_pi.sh             (bil-ID 4)
+#     sudo CAR_ID=7 bash install_pi.sh    (annat bil-ID)
 # ==============================================================================
 
 GREEN='\e[32m'
@@ -110,9 +110,12 @@ fi
 echo -e "${YELLOW}${BOLD}[Steg 2/5] Installerar USB-regler (udev)...${NC}"
 UDEV_DIR="/etc/udev/rules.d"
 
-if [ -f "$DIR/Linux/PI/udev/10-rise_sdvp.rules" ]; then
-  cp "$DIR/Linux/PI/udev/10-rise_sdvp.rules" "$UDEV_DIR/"
-  cp "$DIR/Linux/PI/udev/49-stlinkv2.rules" "$UDEV_DIR/"
+# Mallarna: skriptet körs inifrån rise_sdvp eller från mappen ovanför.
+UDEV_SRC="$DIR/Linux/PI/udev"
+[ -f "$UDEV_SRC/10-rise_sdvp.rules" ] || UDEV_SRC="$DIR/rise_sdvp/Linux/PI/udev"
+if [ -f "$UDEV_SRC/10-rise_sdvp.rules" ]; then
+  cp "$UDEV_SRC/10-rise_sdvp.rules" "$UDEV_DIR/"
+  cp "$UDEV_SRC/49-stlinkv2.rules" "$UDEV_DIR/"
   udevadm control --reload-rules && udevadm trigger
   echo -e "${GREEN}✅ USB-regler installerade! (/dev/car och /dev/ublox är aktiva)${NC}\n"
 else
@@ -133,8 +136,8 @@ echo -e "${YELLOW}${BOLD}[Steg 3/5] Konfigurerar Swepos RTK-korrektioner...${NC}
 # Sök efter existerande Swepos-konfiguration för smarta standardval
 DEFAULT_USER=""
 DEFAULT_PASS=""
-DEFAULT_LAT="59.838520749533"   # Lövsta (gårdslistan i RControlStation)
-DEFAULT_LON="17.7889236920748"
+DEFAULT_LAT="60.063221"
+DEFAULT_LON="18.078982"
 
 if [ -f "/etc/systemd/system/car_rtk.service" ]; then
   EXISTING_EXEC=$(grep "ExecStart" /etc/systemd/system/car_rtk.service)
@@ -250,7 +253,7 @@ START_SCRIPT="$REAL_HOME/start_car.sh"
 cat <<EOF > "$START_SCRIPT"
 #!/bin/bash
 # Startar Car_Client i en bakgrunds-screen med en initial fördröjning inuti screen (icke-blockerande för systemd)
-screen -S car -d -m bash -c "sleep 15 && cd '$CLIENT_DIR' && ./Car_Client -p /dev/vehicle --useudp --logusb --usetcp --tcprtcmserver 8200 --tcpubxserver 8210 --setid ${CAR_ID:-4}; bash"
+screen -S car -d -m bash -c "sleep 15 && cd '$CLIENT_DIR' && ./Car_Client -p /dev/vehicle --useudp --logusb --usetcp --tcprtcmserver 8200 --tcpubxserver 8210 --setid ${CAR_ID:-4}${NODSTOPP_GPIO:+ --nodstopp-gpio $NODSTOPP_GPIO}; bash"
 echo "Car_Client startades i en screen-session med namnet 'car'."
 echo "För att ansluta live, kör: screen -r car"
 EOF

@@ -27,6 +27,7 @@
 #include <QProcess>
 #include <QImage>
 #include <QLocalServer>
+#include <QElapsedTimer>
 #include "packetinterface.h"
 #include "tcpbroadcast.h"
 //#include <QSerialPort>
@@ -36,6 +37,7 @@
 #include "tcpserversimple.h"
 #include "rtcmclient.h"
 #include "carsim/carsim.h"
+#include "nodstopp.h"
 
 #include <QCoreApplication>
 #include <QProcess>
@@ -80,12 +82,11 @@ public:
     void logStop();
     void rtcmRx(QByteArray data, int type);
     void restartRtklib();
+    void configureUblox();
     Q_INVOKABLE PacketInterface* packetInterface();
     bool isRtklibRunning();
     quint8 carId();
     void setCarId(quint8 id);
-    SerialPort* serialPort() { return mSerialPort; }
-    void setShuttingDown(bool shuttingDown) { mShuttingDown = shuttingDown; }
     void connectNtrip(QString server, QString stream, QString user = "", QString pass = "", int port = 80);
     void setSendRtcmBasePos(bool send, double lat = 0.0, double lon = 0.0, double height = 0.0);
     Q_INVOKABLE void rebootSystem(bool powerOff = false);
@@ -129,11 +130,15 @@ public slots:
     void handleRos2Connection();
     void readRos2Command();
 
+    // Nödstopp: NC-brytare på GPIO<gpio> (se nodstopp.h). Av om den inte anropas.
+    void enableNodstopp(int gpio);
+
 
 private slots:
     void processCarData(QByteArray data);
     void cameraImageCaptured(QImage img);
     void logBroadcasterDataReceived(QByteArray &data);
+    void nodstoppTick();
 //    QString processCommand(QByteArray &data);
 
 private:
@@ -160,16 +165,30 @@ private:
     Ublox *mUblox;
     bool mRtklibRunning;
     QString mUbloxDevice; // Riktig tty bakom /dev/ublox när porten öppnades (t.ex. /dev/ttyACM1)
+    QElapsedTimer mRawxTimer;      // tid sedan senaste RAWX från u-bloxen
+    QElapsedTimer mUbloxCfgTimer;  // tid sedan u-bloxen senast fick sina inställningar
+    int mUbloxCfgRetries = 0;      // omkonfigureringar i rad utan att RAWX kommit tillbaka
     int mBatteryCells;
     QList<CarSim*> mSimulatedCars;
-    
-    // Serial port reconnection tracking
-    int mSerialReconnectAttempts;
-    int mSerialReconnectMaxAttempts;
-    bool mSerialConnectionFailed;
-    bool mShuttingDown;
     QVector<UWB_ANCHOR> mUwbAnchorsNow;
     int mCarIdToSet;
+
+    // Nödstopp (se enableNodstopp). Läget skrivs till /tmp/nodstopp_status för robotd
+    // och statusskärmen: "ok", "intryckt", "sparrad" (knappen ute, väntar på ett
+    // stoppkommando från föraren) eller "fel" (pinnen går inte att läsa = nödstopp).
+    enum NodstoppLage { NS_AV, NS_OK, NS_INTRYCKT, NS_SPARRAD, NS_FEL };
+    NodstoppGpio *mNodstopp = nullptr;
+    QTimer *mNodstoppTimer = nullptr;
+    NodstoppLage mNsLage = NS_AV;
+    int mNsBrutenIRad = 0;
+    QElapsedTimer mNsSlutenSedan;   // tid som kontakten varit sluten utan avbrott
+    QElapsedTimer mNsStoppSkickat;  // senaste nollkommando till kortet
+    QElapsedTimer mNsApSkickat;     // senaste "autopilot av" till kortet
+    QElapsedTimer mNsFilSkriven;
+    bool nodstoppSparrar(const QByteArray &data);
+    void nodstoppSattLage(NodstoppLage lage, const QString &text);
+    void nodstoppSkrivFil();
+    void skickaTillKlienter(const QByteArray &data);
 
     QString mUsr;
     QString mPwd;

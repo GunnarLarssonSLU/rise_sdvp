@@ -23,6 +23,7 @@
 #include <QFileDialog>
 #include <QTextStream>
 #include <QDateTime>
+#include <QTime>
 
 NmeaWidget::NmeaWidget(QWidget *parent) :
     QWidget(parent),
@@ -41,6 +42,9 @@ NmeaWidget::NmeaWidget(QWidget *parent) :
     QString filename = now.toString("yyyy-MM-dd_hh-mm-ss") + ".txt";
     ui->nmeaLogEdit->setText(filename);
     on_nmeaLogActiveBox_toggled(true);
+
+    // Disable "Print NMEA" by default so the raw NMEA terminal is not active immediately unless requested.
+    ui->nmeaPrintBox->setChecked(false);
 }
 
 NmeaWidget::~NmeaWidget()
@@ -71,11 +75,16 @@ void NmeaWidget::inputNmea(QByteArray msg)
 
         if (NmeaServer::decodeNmeaGGA(data, gga) >= 0) {
             QString satStr;
+            int rtk_sats = 0;
+            if (gga.fix_type == 4 || gga.fix_type == 5) {
+                rtk_sats = gga.n_sat;
+            }
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            satStr = QString("Satellites: %1")
-                      .arg(QString::number(gga.n_sat));
+            satStr = QString("Satellites: %1 (RTK: %2)")
+                      .arg(QString::number(gga.n_sat))
+                      .arg(QString::number(rtk_sats));
 #else
-            satStr.sprintf("Satellites: %d", gga.n_sat);
+            satStr.sprintf("Satellites: %d (RTK: %d)", gga.n_sat, rtk_sats);
 #endif
             ui->nmeaSatsLabel->setText(satStr);
 
@@ -90,7 +99,8 @@ void NmeaWidget::inputNmea(QByteArray msg)
             }
 
             ui->nmeaFixTypeLabel->setText("Solution: " + mFixType);
-            ui->nmeaCorrAgeLabel->setText(QString("Corr age: %1 s").arg(gga.diff_age));
+            ui->nmeaCorrAgeLabel->setText(QString("Corr age: %1 s")
+                                          .arg(gga.diff_age));
         }
     }
 }

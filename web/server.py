@@ -1,9 +1,81 @@
+import json
+import os
 import subprocess
 import sqlite3
 import xml.etree.ElementTree as ET
+from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, Response, request, send_from_directory
 
 app = Flask(__name__)
+
+
+# --- Kunder: var kund ser bara sina egna robotar och gårdar -----------------------
+# kunder.json (bredvid server.py) talar om vilka WireGuard-adresser som är kunddatorer
+# och vilka robotar/gårdar som hör till dem. Frågor från alla andra adresser (våra
+# egna) ser allt som förut. Filen läses vid varje fråga, så ändringar gäller direkt.
+KUNDFIL = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'kunder.json')
+
+# Det här får en kunddator göra (allt annat nekas): läsa listorna och sina egna
+# robotar/gårdar. Ändra/lägga till/ta bort, fält, banor och loggar är bara för oss.
+KUND_TILLATET = {'hello_world', 'list_machines', 'all_machines', 'vehicle_types',
+                 'all_farms', 'read_machine', 'read_farm'}
+
+
+def las_kunder():
+    try:
+        with open(KUNDFIL) as f:
+            return json.load(f).get('kunder', {})
+    except FileNotFoundError:
+        return {}
+
+
+def kund_for(ip):
+    """Kunden som äger datorn med den här adressen, eller None (= vi själva, ser allt)."""
+    for namn, k in las_kunder().items():
+        if ip in k.get('datorer', []):
+            return dict(k, namn=namn)
+    return None
+
+
+def fragande_kund():
+    return kund_for(request.remote_addr or '')
+
+
+def maskin_tillhor(kund, ip):
+    return kund is None or ip in kund.get('robotar', [])
+
+
+def gard_tillhor(kund, gard_id):
+    return kund is None or str(gard_id) in [str(g) for g in kund.get('gardar', [])]
+
+
+@app.before_request
+def kundsparr():
+    kund = fragande_kund()
+    if kund is None:
+        return None
+    if request.endpoint not in KUND_TILLATET:
+        return Response('Inte tillgängligt för kunddatorer', status=403)
+    obj_id = request.form.get('id') or request.args.get('id')
+    if request.endpoint == 'read_machine' and obj_id:
+        conn = sqlite3.connect('data.db')
+        rad = conn.execute('SELECT ip FROM machines WHERE id = ?', (obj_id,)).fetchone()
+        conn.close()
+        if rad is None or not maskin_tillhor(kund, rad[0]):
+            return Response(f'Error: No machine found with id {obj_id}', status=404)
+    if request.endpoint == 'read_farm' and obj_id and not gard_tillhor(kund, obj_id):
+        return Response(f'Error: No farm found with id {obj_id}', status=404)
+    return None
+
+
+def svarar_pa_ping(ip, forsok=3):
+    """Pingar en robot flera gånger (4G har långa och ojämna svarstider)."""
+    for _ in range(forsok):
+        r = subprocess.run(['ping', '-c', '1', '-W', '2', ip],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if r.returncode == 0:
+            return True
+    return False
 
 
 @app.route('/')
@@ -33,50 +105,35 @@ def serve_paths(filename):
 
 @app.route('/machines')
 def list_machines():
+    """Registrerade robotar som svarar just nu (för kunder: bara deras egna).
+
+    Förut: nmap över hela 192.168.200.0/24 med 0,8 s svarstid och 12 s totalt, vilket
+    över 4G ibland missade robotar eller gav tom lista. Nu pingas bara de registrerade
+    robotarna, parallellt och med tre försök à 2 s.
+    """
     try:
-        result = subprocess.run(
-            ['nmap', '-sP', '192.168.200.3/24'],
-            capture_output=True,
-            text=True,
-            timeout=30
-        )
-        # Parse output to extract IP addresses
-        import re
-        ip_pattern = r'\b(?:\d{1,3}\.){3}\d{1,3}\b'
-        ips = re.findall(ip_pattern, result.stdout)
-        # Remove duplicates and 192.168.200.3, then sort
-        #unique_ips = sorted(set(ips) - {'192.168.200.3'})
-        unique_ips = sorted(set(ips))
-        
-        # Look up names and vehicle types from database
+        kund = fragande_kund()
         conn = sqlite3.connect('data.db')
-        cursor = conn.cursor()
-        
-        # Create XML structure
-        root = ET.Element('machines')
-        for ip in unique_ips:
-            cursor.execute('SELECT name, iVehicletype FROM machines WHERE ip = ?', (ip,))
-            row = cursor.fetchone()
-            conn.commit()
-            if row:
-                machine_elem = ET.SubElement(root, 'machine')
-                ET.SubElement(machine_elem, 'name').text = row[0]
-                ET.SubElement(machine_elem, 'ip').text = ip
-                if row[1] is not None:
-                    ET.SubElement(machine_elem, 'iVehicletype').text = str(row[1])
-        
+        rader = conn.execute('SELECT name, ip, iVehicletype FROM machines').fetchall()
         conn.close()
-        
-        # Convert to XML string with declaration
+        rader = [r for r in rader if r[1] and maskin_tillhor(kund, r[1])]
+
+        with ThreadPoolExecutor(max_workers=32) as ex:
+            svar = list(ex.map(lambda r: svarar_pa_ping(r[1]), rader))
+
+        root = ET.Element('machines')
+        for (name, ip, vtyp), lever in sorted(zip(rader, svar), key=lambda x: x[0][1]):
+            if not lever:
+                continue
+            machine_elem = ET.SubElement(root, 'machine')
+            ET.SubElement(machine_elem, 'name').text = name
+            ET.SubElement(machine_elem, 'ip').text = ip
+            if vtyp is not None:
+                ET.SubElement(machine_elem, 'iVehicletype').text = str(vtyp)
+
         xml_str = '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding='unicode')
-        
-        # Write to file
-        with open('found_machines.xml', 'w') as f:
-            f.write(xml_str)
-        
+        xml_str = xml_str.replace('<machines />', '<machines></machines>')
         return Response(xml_str, mimetype='application/xml')
-    except subprocess.TimeoutExpired:
-        return "Command timed out", 500
     except Exception as e:
         return f"Error: {str(e)}", 500
 
@@ -95,7 +152,10 @@ def all_machines():
         
         # Create XML structure
         root = ET.Element('machines')
+        kund = fragande_kund()
         for machine_id, name, ip, iVehicletype in machines:
+            if not maskin_tillhor(kund, ip):
+                continue
             machine_elem = ET.SubElement(root, 'machine')
             ET.SubElement(machine_elem, 'id').text = str(machine_id)
             ET.SubElement(machine_elem, 'name').text = name
@@ -106,9 +166,11 @@ def all_machines():
         # Convert to XML string with declaration
         xml_str = '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding='unicode')
         
-        # Write to file
-        with open('machines.xml', 'w') as f:
-            f.write(xml_str)
+        xml_str = xml_str.replace('<machines />', '<machines></machines>')
+        if fragande_kund() is None:
+            # Write to file
+            with open('machines.xml', 'w') as f:
+                f.write(xml_str)
         
         return Response(xml_str, mimetype='application/xml')
     except Exception as e:
@@ -340,8 +402,8 @@ def vehicle_types():
         conn = sqlite3.connect('data.db')
         cursor = conn.cursor()
         
-        # Query all vehicle types from the table
-        cursor.execute('SELECT id, name, typeofsteering, length_m, width_m FROM vehicle_types')
+        # Query all vehicle types from the table using correct database column names (length, wtidth)
+        cursor.execute('SELECT id, name, typeofsteering, length, wtidth FROM vehicle_types')
         vehicle_types = cursor.fetchall()
         conn.close()
         
@@ -384,7 +446,11 @@ def all_farms():
         
         # Create XML structure
         root = ET.Element('locations')
+        kund = fragande_kund()
+        id_kol = column_names.index('id') if 'id' in column_names else 0
         for location in locations:
+            if not gard_tillhor(kund, location[id_kol]):
+                continue
             location_elem = ET.SubElement(root, 'location')
             for i, column_name in enumerate(column_names):
                 ET.SubElement(location_elem, column_name).text = str(location[i])
@@ -392,9 +458,11 @@ def all_farms():
         # Convert to XML string with declaration
         xml_str = '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding='unicode')
         
-        # Write to file
-        with open('locations.xml', 'w') as f:
-            f.write(xml_str)
+        xml_str = xml_str.replace('<locations />', '<locations></locations>')
+        if kund is None:
+            # Write to file
+            with open('locations.xml', 'w') as f:
+                f.write(xml_str)
         
         return Response(xml_str, mimetype='application/xml')
     except Exception as e:
@@ -1602,4 +1670,4 @@ def remove_field():
 
 
 if __name__ == '__main__':
-    app.run(host='192.168.200.3', port=8080, debug=True)
+    app.run(host='0.0.0.0', port=8080, debug=True)

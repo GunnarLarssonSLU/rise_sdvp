@@ -19,7 +19,10 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QElapsedTimer>
+#include <QLabel>
 #include <QtWidgets>
+#include <QItemSelection>
 #include <QList>
 #include <QTimer>
 #include <tuple>
@@ -41,6 +44,7 @@
 #include "carinterface.h"
 #include "packetinterface.h"
 #include "ping.h"
+#include "vehicledata.h"
 #include "nmeaserver.h"
 #include "rtcm3_simple.h"
 #include "intersectiontest.h"
@@ -145,6 +149,9 @@ private slots:
     void onMapCarBoxChanged(int value);
     void setJoystickControlEnabled(bool enabled);
     void loadControllerSettingsFromDatabase();
+    void onMachinesTableClicked(const QModelIndex &index);
+    void onMachinesTableDoubleClicked(const QModelIndex &index);
+    void onMachinesSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
     void saveControllerSettingsToDatabase();
     void handleControllerInput(int controllerNumber, float value);
 
@@ -447,6 +454,39 @@ private:
     VersionChecker *m_versionChecker;
     QAction *m_checkForUpdatesAction;
     QMenu *m_helpMenu;
+    QMap<int, int> mCachedControllerActions; // Cache for database-free controller mapping
+    QMap<int, float> mCachedControllerValues; // Cache for preventing network flooding from joystick jitter
+    QLabel *mStatusBoxLabel = nullptr;      // Statusruta under anslutningslistan
+    NmeaServer::nmea_gga_info_t mLastGga;
+    bool mHaveGga = false;
+    // Nollpunkt vid anslutning: sätts på robotens första GPS-position (nmeaGgaRx),
+    // så att kartan visar rätt var man än är, utan att välja gård först.
+    bool mAutoEnuRefPending = false;
+    void applyAutoEnuRef(double lat, double lon, double height);
+    void saveMapPosition(double lat, double lon);
+    QElapsedTimer mGgaAge;                  // Tid sedan senaste GGA från RTK-strömmen
+    QElapsedTimer mStateAge;                // Tid sedan senaste statuspaket från bilen
+    void updateStatusBox();
+    VehicleData *mVehicle = nullptr;       // Fordonsdata i statusrutan + körlogg
+    QString mConnectedIp;                   // IP till bilen vi senast anslöt till
+    bool mNmeaDrawTrace = true;             // rita GPS-positionerna som spår (inte vid automatisk anslutning)
+    QNetworkAccessManager *mRouterNet = nullptr; // Egen hanterare: mNetworkManager har globala finished-kopplingar
+    QString mRouterLine;                    // Färdig HTML-rad för 4G/5G-mottagningen
+    QElapsedTimer mRouterAge;
+    void pollRouterSignal();
+    QMap<int, float> mLastActionValues; // Senast skickade värde per action (≠ 0), skickas om av mRcResendTimer
+    QTimer *mRcResendTimer = nullptr;
+    void rcResendTick();
+    bool gamepadAttached();
+
+    // Armar (L1/L2 fram, R1/R2 bak). Skickas två vägar, varje maskin använder den
+    // den förstår: CMD_HYDRAULIC_MOVE (hydraulik via firmware, t.ex. MacTrac) och
+    // kontroll 1/3 via dosabindningarna (t.ex. VESC-armar på RobAnt).
+    bool mArmL1 = false, mArmL2 = false, mArmR1 = false, mArmR2 = false;
+    int mArmFrontMove = 0, mArmRearMove = 0;   // senast skickat, i firmwarens värden
+    QElapsedTimer mArmResendAge;
+    void updateArms();
+    void sendArmHydraulics(bool force);
 
 private slots:
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))

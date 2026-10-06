@@ -19,6 +19,7 @@
 #include <QFileInfo>
 #include <QDebug>
 #include <QDateTime>
+#include <cstdio>
 #include <QDir>
 #include <sys/time.h>
 #include <sys/reboot.h>
@@ -102,12 +103,6 @@ CarClient::CarClient(QObject *parent) : QObject(parent)
     mOverrideUwbPos = false;
     mOverrideUwbX = 0.0;
     mOverrideUwbY = 0.0;
-    
-    // Serial port reconnection tracking
-    mSerialReconnectAttempts = 0;
-    mSerialReconnectMaxAttempts = 5;  // Max 5 reconnection attempts
-    mSerialConnectionFailed = false;
-    mShuttingDown = false;
 
     // Network configuration
     mHostAddress = QHostAddress("0.0.0.0");
@@ -210,18 +205,15 @@ void CarClient::handleRos2Connection() {
  */
 void CarClient::connectSerial(QString port, int baudrate)
 {
-    qDebug() << "CarClient::connectSerial: Attempting to connect to serial port:" << port << "at baudrate:" << baudrate;
+    qDebug() << "Trying to connect to serial port: " << port;
     
     // Close existing connection if open
     if(mSerialPort->isOpen()) {
-        qDebug() << "CarClient::connectSerial: Closing existing serial port connection";
         mSerialPort->closePort();
     }
 
     // Open new connection
-    qDebug() << "CarClient::connectSerial: Opening new serial port connection";
-    int result = mSerialPort->openPort(port, baudrate);
-    qDebug() << "CarClient::connectSerial: openPort returned:" << result;
+    mSerialPort->openPort(port, baudrate);
 
     // Update settings
     mSettings.serialConnect = true;
@@ -230,18 +222,13 @@ void CarClient::connectSerial(QString port, int baudrate)
 
     // Check if connection succeeded
     if(!mSerialPort->isOpen()) {
-        qCritical() << "CarClient::connectSerial: Serial port connection failed for" << port;
+//        qDebug() << "Serial port connection failed";
         return;
     }
 
-    qDebug() << "CarClient::connectSerial: Serial port connected successfully";
-    
-    // Reset reconnection tracking on successful connection
-    mSerialReconnectAttempts = 0;
-    mSerialConnectionFailed = false;
+    qDebug() << "Serial port connected";
 
     mPacketInterface->stopUdpConnection();
-    qDebug() << "CarClient::connectSerial: Requesting car state to get ID";
     mPacketInterface->getState(255); // To get car ID
 }
 
@@ -477,6 +464,59 @@ void CarClient::rtcmRx(QByteArray data, int type)
     printTerminal(str);
 }
 
+void CarClient::configureUblox()
+{
+    // Inställningarna ligger bara i u-bloxens RAM och försvinner när den startar om
+    // (t.ex. när styrkortet flashas eller återställs), därför kan de skickas igen.
+    // Serial port baud rate
+    // if it is too low the buffer will overfill and it won't work properly.
+    ubx_cfg_prt_uart uart;
+    uart.baudrate = 115200;
+    uart.in_ubx = true;
+    uart.in_nmea = true;
+    uart.in_rtcm2 = false;
+    uart.in_rtcm3 = true;
+    uart.out_ubx = true;
+    uart.out_nmea = true;
+    uart.out_rtcm3 = true;
+    mUblox->ubxCfgPrtUart(&uart);
+
+    // Set configuration
+    // Switch on RAWX and NMEA messages, set rate to 1 Hz and time reference to UTC
+    mUblox->ubxCfgRate(200, 1, 0);
+    mUblox->ubxCfgMsg(UBX_CLASS_RXM, UBX_RXM_RAWX, 1); // Every second
+    mUblox->ubxCfgMsg(UBX_CLASS_RXM, UBX_RXM_SFRBX, 1); // Every second
+    mUblox->ubxCfgMsg(UBX_CLASS_NMEA, UBX_NMEA_GGA, 1); // Every second
+
+    // Automotive dynamic model
+    ubx_cfg_nav5 nav5;
+    memset(&nav5, 0, sizeof(ubx_cfg_nav5));
+    nav5.apply_dyn = true;
+    nav5.dyn_model = 4;
+    mUblox->ubxCfgNav5(&nav5);
+
+    // Time pulse configuration
+    ubx_cfg_tp5 tp5;
+    memset(&tp5, 0, sizeof(ubx_cfg_tp5));
+    tp5.active = true;
+    tp5.polarity = true;
+    tp5.alignToTow = true;
+    tp5.lockGnssFreq = true;
+    tp5.lockedOtherSet = true;
+    tp5.syncMode = false;
+    tp5.isFreq = false;
+    tp5.isLength = true;
+    tp5.freq_period = 1000000;
+    tp5.pulse_len_ratio = 0;
+    tp5.freq_period_lock = 1000000;
+    tp5.pulse_len_ratio_lock = 100000;
+    tp5.gridUtcGnss = 0;
+    tp5.user_config_delay = 0;
+    tp5.rf_group_delay = 0;
+    tp5.ant_cable_delay = 50;
+    mUblox->ubloxCfgTp5(&tp5);
+}
+
 void CarClient::restartRtklib()
 {
     QFile ublox("/dev/ublox");
@@ -491,53 +531,10 @@ void CarClient::restartRtklib()
 
     if (mUblox->connectSerial(ublox.fileName())) {
         mUbloxDevice = QFileInfo(ublox.fileName()).canonicalFilePath();
-        // Serial port baud rate
-        // if it is too low the buffer will overfill and it won't work properly.
-        ubx_cfg_prt_uart uart;
-        uart.baudrate = 115200;
-        uart.in_ubx = true;
-        uart.in_nmea = true;
-        uart.in_rtcm2 = false;
-        uart.in_rtcm3 = true;
-        uart.out_ubx = true;
-        uart.out_nmea = true;
-        uart.out_rtcm3 = true;
-        mUblox->ubxCfgPrtUart(&uart);
-
-        // Set configuration
-        // Switch on RAWX and NMEA messages, set rate to 1 Hz and time reference to UTC
-        mUblox->ubxCfgRate(200, 1, 0);
-        mUblox->ubxCfgMsg(UBX_CLASS_RXM, UBX_RXM_RAWX, 1); // Every second
-        mUblox->ubxCfgMsg(UBX_CLASS_RXM, UBX_RXM_SFRBX, 1); // Every second
-        mUblox->ubxCfgMsg(UBX_CLASS_NMEA, UBX_NMEA_GGA, 1); // Every second
-
-        // Automotive dynamic model
-        ubx_cfg_nav5 nav5;
-        memset(&nav5, 0, sizeof(ubx_cfg_nav5));
-        nav5.apply_dyn = true;
-        nav5.dyn_model = 4;
-        mUblox->ubxCfgNav5(&nav5);
-
-        // Time pulse configuration
-        ubx_cfg_tp5 tp5;
-        memset(&tp5, 0, sizeof(ubx_cfg_tp5));
-        tp5.active = true;
-        tp5.polarity = true;
-        tp5.alignToTow = true;
-        tp5.lockGnssFreq = true;
-        tp5.lockedOtherSet = true;
-        tp5.syncMode = false;
-        tp5.isFreq = false;
-        tp5.isLength = true;
-        tp5.freq_period = 1000000;
-        tp5.pulse_len_ratio = 0;
-        tp5.freq_period_lock = 1000000;
-        tp5.pulse_len_ratio_lock = 100000;
-        tp5.gridUtcGnss = 0;
-        tp5.user_config_delay = 0;
-        tp5.rf_group_delay = 0;
-        tp5.ant_cable_delay = 50;
-        mUblox->ubloxCfgTp5(&tp5);
+        configureUblox();
+        mRawxTimer.start();
+        mUbloxCfgTimer.start();
+        mUbloxCfgRetries = 0;
     }
 
     QString user = qgetenv("USER");
@@ -640,6 +637,17 @@ void CarClient::rebootSystem(bool powerOff)
     process.start(cmd, args);
     waitProcess(process);
 
+    // Avsluta bara om omstarten/avstängningen faktiskt startade. Kräver sudo
+    // lösenord (eller saknas rättighet) misslyckas kommandot, och då ska
+    // Car_Client fortsätta köra – annars står roboten utan Car_Client tills
+    // någon startar om tjänsten för hand (hände på RobAnt 3 2026-10-01).
+    if (process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0) {
+        qWarning() << (powerOff ? "Shutdown" : "Reboot") << "failed (exit code"
+                   << process.exitCode() << "), Car_Client keeps running:"
+                   << process.readAllStandardError().trimmed();
+        return;
+    }
+
     qApp->quit();
 }
 
@@ -692,42 +700,17 @@ CarSim *CarClient::getSimulatedCar(int id)
 
 void CarClient::serialDataAvailable()
 {
-    qDebug() << "CarClient::serialDataAvailable: Data available on serial port";
-    int available = mSerialPort->bytesAvailable();
-    qDebug() << "CarClient::serialDataAvailable: Bytes available:" << available;
-    
     while (mSerialPort->bytesAvailable() > 0) {
-        QByteArray data = mSerialPort->readAll();
-        qDebug() << "CarClient::serialDataAvailable: Read" << data.size() << "bytes, processing...";
-        processCarData(data);
+        processCarData(mSerialPort->readAll());
     }
 }
 
 void CarClient::serialPortError(int error)
 {
-    qCritical() << "CarClient::serialPortError: Serial port error occurred. Error code:" << error;
+    qDebug() << "Serial error:" << error;
 
     if(mSerialPort->isOpen()) {
-        qDebug() << "CarClient::serialPortError: Closing serial port due to error";
         mSerialPort->closePort();
-    }
-    
-    // Track connection failures
-    mSerialReconnectAttempts++;
-    
-    // Special error code for no activity (-100 from SerialPort)
-    if (error == -100) {
-        qCritical() << "CarClient::serialPortError: Device not responding. This may be normal if no vehicle controller is connected.";
-        mSerialConnectionFailed = true;
-    } else {
-        qWarning() << "CarClient::serialPortError: Connection attempt" << mSerialReconnectAttempts << "failed";
-    }
-    
-    // Check if we've exceeded max attempts
-    if (mSerialReconnectAttempts >= mSerialReconnectMaxAttempts) {
-        qCritical() << "CarClient::serialPortError: Maximum reconnection attempts (" << mSerialReconnectMaxAttempts << ") reached. Giving up on serial port.";
-        mSerialConnectionFailed = true;
-        mSettings.serialConnect = false; // Disable further reconnection attempts
     }
 }
 
@@ -993,7 +976,7 @@ void CarClient::packetDataToSend(QByteArray &data)
             mSerialPort->writeData(data);
         } else
         {
-//            qDebug() << "Packet not sent (port closed)";
+            qDebug() << "Packet not sent (port closed)";
 
         }
     }
@@ -1028,25 +1011,19 @@ void CarClient::rtcmUsbRx(quint8 id, QByteArray data)
 
 void CarClient::reconnectTimerSlot()
 {
-    // If we're shutting down, don't try to reconnect
-    if (mShuttingDown) {
-        qDebug() << "CarClient::reconnectTimerSlot: Shutting down, skipping reconnection attempts";
-        return;
-    }
-    
-    // Try to reconnect if the connections are lost and we haven't given up
-    if (mSettings.serialConnect && !mSerialPort->isOpen() && !mSerialConnectionFailed) {
-        qDebug() << "CarClient::reconnectTimerSlot: Attempting to reconnect serial port (attempt" << mSerialReconnectAttempts + 1 << ")";
+    // Try to reconnect if the connections are lost
+    if (mSettings.serialConnect && !mSerialPort->isOpen()) {
+ //       qDebug() << "Trying to reconnect serial...";
         connectSerial(mSettings.serialPort, mSettings.serialBaud);
     }
 
     if (mSettings.serialRtcmConnect && !mSerialPortRtcm->isOpen()) {
-        qDebug() << "CarClient::reconnectTimerSlot: Attempting to reconnect RTCM serial port";
+//        qDebug() << "Trying to reconnect RTCM serial...";
         connectSerialRtcm(mSettings.serialRtcmPort, mSettings.serialRtcmBaud);
     }
 
     if (mSettings.serialArduinoConnect && !mSerialPortArduino->isOpen()) {
-        qDebug() << "CarClient::reconnectTimerSlot: Attempting to reconnect Arduino serial port";
+//        qDebug() << "Trying to reconnect Arduino serial...";
         connectSerialArduino(mSettings.serialArduinoPort, mSettings.serialArduinoBaud);
     }
 
@@ -1063,10 +1040,25 @@ void CarClient::reconnectTimerSlot()
         qDebug() << "u-blox moved from" << mUbloxDevice << "to"
                  << QFileInfo("/dev/ublox").canonicalFilePath() << ", reconnecting and restarting rtklib...";
         restartRtklib();
+    } else if (mRtklibRunning && mUblox->isSerialConnected() && mRawxTimer.isValid() &&
+               mRawxTimer.elapsed() > 10000 && mUbloxCfgTimer.elapsed() > 10000) {
+        // Porten är öppen men ingen RAWX: u-bloxen har startat om (styrkortet flashat
+        // eller återställt) och tappat sina inställningar, utan att USB försvann. Skicka
+        // inställningarna igen; hjälper inte det på tre försök, öppna porten på nytt.
+        if (mUbloxCfgRetries < 3) {
+            mUbloxCfgRetries++;
+            qDebug() << "No RAWX from u-blox for" << mRawxTimer.elapsed() / 1000
+                     << "s, sending configuration again (attempt" << mUbloxCfgRetries << ")";
+            configureUblox();
+            mUbloxCfgTimer.restart();
+        } else {
+            qDebug() << "Still no RAWX from u-blox, reconnecting and restarting rtklib...";
+            restartRtklib();
+        }
     }
 
     if (mSettings.nmeaConnect && !mTcpConnected) {
-        qDebug() << "CarClient::reconnectTimerSlot: Attempting to reconnect NMEA TCP";
+        qDebug() << "Trying to reconnect nmea tcp...";
         connectNmea(mSettings.nmeaServer, mSettings.nmeaPort);
     }
 
@@ -1100,6 +1092,9 @@ void CarClient::readPendingDatagrams()
         mUdpSocket->readDatagram(datagram.data(), datagram.size(),
                                 &mHostAddress, &senderPort);
 
+        if (nodstoppSparrar(datagram)) {
+            continue;
+        }
         mPacketInterface->sendPacket(datagram);
     }
 }
@@ -1184,6 +1179,9 @@ void CarClient::ubxRx(const QByteArray &data)
 
 void CarClient::rxRawx(ubx_rxm_rawx rawx)
 {
+    mRawxTimer.restart();
+    mUbloxCfgRetries = 0;
+
     if (!rawx.leap_sec || rawx.week < 2000) {
         // Leap seconds or week number are not known yet...
         return;
@@ -1221,6 +1219,9 @@ void CarClient::tcpRx(QByteArray &data)
 {
     qDebug() << "In CarClient::tcpRx";
     qDebug() << "data: " << data;
+    if (nodstoppSparrar(data)) {
+        return;
+    }
     mPacketInterface->sendPacket(data);
 }
 
@@ -1248,7 +1249,6 @@ void CarClient::logEthernetReceived(quint8 id, QByteArray data)
 
 void CarClient::processCarData(QByteArray data)
 {
-    qDebug() << "CarClient::processCarData: Processing" << data.size() << "bytes of car data";
     mPacketInterface->processData(data);
 }     //   qDebug() << "Published: " << str;
 
@@ -1456,4 +1456,208 @@ void CarClient::stopStr2Str() {
     } else {
         qCritical() << "No running instance of str2str to stop.";
     }
+}
+
+// ---------------------------------------------------------------------------
+// Nödstopp (NC-brytare på en GPIO-pinne, se nodstopp.h)
+//
+// Alla körkommandon från RControlStation och robotd går genom Car_Client, så spärren
+// sitter här. Medan knappen är intryckt:
+//   - släpps inga körkommandon igenom (fart, styrning, servo, hydraulik, autopilot på),
+//   - skickar Car_Client själv "fart = 0" (aktivitet 10) var 200 ms och "autopilot av"
+//     varje sekund till styrkortet (styrkortets CMD_EMERGENCY_STOP gör ingenting).
+// När knappen dras ut förblir körningen spärrad tills föraren skickar ett stoppkommando:
+// spaken i neutralläge, Lås/AKTIVERA av (Robotstyrning) eller Stopp/Esc (RControlStation).
+// Roboten kan alltså aldrig börja köra av sig själv när knappen dras ut.
+// ---------------------------------------------------------------------------
+
+namespace {
+const quint8 NS_CMD_AP_SET_ACTIVE = 59;
+const quint8 NS_CMD_EMERGENCY_STOP = 76;
+const quint8 NS_CMD_IO_BOARD_SET_PWM_DUTY = 86;
+const quint8 NS_CMD_IO_BOARD_SET_VALVE = 87;
+const quint8 NS_CMD_HYDRAULIC_MOVE = 88;
+const quint8 NS_CMD_RC_CONTROL = 121;
+const quint8 NS_CMD_SET_SERVO_DIRECT = 122;
+const quint8 NS_CMD_RC_CONTROL_ADV = 125;
+const quint8 NS_CMD_STATE_CONTROL_ENABLE = 132;
+const quint8 NS_CMD_STATE_CONTROL_TARGET = 133;
+const quint8 NS_AKTIVITET_FART = 10;
+const quint8 NS_RC_MODE_CURRENT_BRAKE = 3;
+
+qint32 nsInt32(const QByteArray &d, int ind)
+{
+    return (qint32)(((quint32)(quint8)d[ind] << 24) | ((quint32)(quint8)d[ind + 1] << 16) |
+                    ((quint32)(quint8)d[ind + 2] << 8) | (quint32)(quint8)d[ind + 3]);
+}
+}
+
+void CarClient::enableNodstopp(int gpio)
+{
+    QFile::remove("/tmp/nodstopp_status");
+    mNodstopp = new NodstoppGpio();
+    QString fel;
+    if (mNodstopp->open(gpio, fel)) {
+        qWarning() << "Nödstopp: läser GPIO" << gpio << "(NC-brytare mot GND)";
+        // Börja spärrat: körning släpps först efter ett stoppkommando från föraren.
+        nodstoppSattLage(NS_SPARRAD, "Nödstopp: Car_Client startad, väntar på stoppkommando innan körning tillåts");
+    } else {
+        nodstoppSattLage(NS_FEL, "Nödstopp: " + fel + " — all körning spärrad");
+    }
+
+    mNodstoppTimer = new QTimer(this);
+    connect(mNodstoppTimer, SIGNAL(timeout()), this, SLOT(nodstoppTick()));
+    mNodstoppTimer->start(20);
+}
+
+void CarClient::nodstoppTick()
+{
+    const int sluten = mNodstopp->lasSluten();
+
+    if (sluten < 0) {
+        if (mNsLage != NS_FEL) {
+            nodstoppSattLage(NS_FEL, "Nödstopp: kan inte läsa GPIO-pinnen — all körning spärrad");
+        }
+    } else if (sluten == 0) {
+        mNsSlutenSedan.invalidate();
+        // Två läsningar i rad (40 ms) så att en enstaka störning inte stoppar roboten.
+        if (++mNsBrutenIRad >= 2 && mNsLage != NS_INTRYCKT) {
+            nodstoppSattLage(NS_INTRYCKT, "NÖDSTOPP INTRYCKT — körningen stoppad");
+        }
+    } else {
+        mNsBrutenIRad = 0;
+        if (!mNsSlutenSedan.isValid()) {
+            mNsSlutenSedan.start();
+        }
+        // Knappen ska ha varit ute i 0,5 s innan spärren kan släppas.
+        if ((mNsLage == NS_INTRYCKT || mNsLage == NS_FEL) && mNsSlutenSedan.elapsed() > 500) {
+            nodstoppSattLage(NS_SPARRAD, "Nödstopp utdraget. Släpp spaken / tryck Lås eller Stopp innan du kör igen");
+        }
+    }
+
+    if (mNsLage == NS_INTRYCKT || mNsLage == NS_FEL) {
+        if (!mNsStoppSkickat.isValid() || mNsStoppSkickat.elapsed() >= 200) {
+            QByteArray fart;
+            fart.append((char)255);
+            fart.append((char)NS_CMD_RC_CONTROL_ADV);
+            fart.append((char)NS_AKTIVITET_FART);
+            fart.append(QByteArray(4, 0));
+            mPacketInterface->sendPacket(fart);
+            mNsStoppSkickat.start();
+        }
+        if (!mNsApSkickat.isValid() || mNsApSkickat.elapsed() >= 1000) {
+            QByteArray ap;
+            ap.append((char)255);
+            ap.append((char)NS_CMD_AP_SET_ACTIVE);
+            ap.append((char)0);
+            ap.append((char)0);
+            mPacketInterface->sendPacket(ap);
+            mNsApSkickat.start();
+        }
+    }
+
+    if (!mNsFilSkriven.isValid() || mNsFilSkriven.elapsed() >= 1000) {
+        nodstoppSkrivFil();
+    }
+}
+
+bool CarClient::nodstoppSparrar(const QByteArray &data)
+{
+    if (mNsLage == NS_AV || mNsLage == NS_OK || data.size() < 2) {
+        return false;
+    }
+
+    const quint8 cmd = (quint8)data[1];
+    bool stopp = false;   // kommandot betyder "stå still" och får gå igenom
+    bool korning = false; // kommandot kan få roboten att röra sig
+
+    switch (cmd) {
+    case NS_CMD_AP_SET_ACTIVE:
+        stopp = data.size() >= 3 && data[2] == 0;
+        korning = !stopp;
+        break;
+    case NS_CMD_RC_CONTROL_ADV:
+        // Bara "fart = 0" släpps igenom. Styrning och övriga aktiviteter spärras.
+        stopp = data.size() >= 7 && (quint8)data[2] == NS_AKTIVITET_FART && nsInt32(data, 3) == 0;
+        korning = !stopp;
+        break;
+    case NS_CMD_RC_CONTROL:
+        // RControlStations Stopp skickar broms här. Spärras medan knappen är intryckt
+        // (kommandot styr även hjulen rakt), men räknas som stoppkommando efteråt.
+        stopp = data.size() >= 7 && ((quint8)data[2] == NS_RC_MODE_CURRENT_BRAKE || nsInt32(data, 3) == 0);
+        korning = true;
+        break;
+    case NS_CMD_EMERGENCY_STOP:
+        stopp = true;
+        break;
+    case NS_CMD_IO_BOARD_SET_PWM_DUTY:
+    case NS_CMD_IO_BOARD_SET_VALVE:
+    case NS_CMD_HYDRAULIC_MOVE:
+    case NS_CMD_SET_SERVO_DIRECT:
+    case NS_CMD_STATE_CONTROL_ENABLE:
+    case NS_CMD_STATE_CONTROL_TARGET:
+        korning = true;
+        break;
+    default:
+        break;
+    }
+
+    if (mNsLage == NS_SPARRAD && stopp) {
+        nodstoppSattLage(NS_OK, "Nödstopp: spärren släppt, körning tillåten");
+        return false;
+    }
+
+    if (korning) {
+        static QElapsedTimer senastLoggat;
+        if (!senastLoggat.isValid() || senastLoggat.elapsed() > 1000) {
+            qWarning() << "Nödstopp: spärrade kommando" << cmd;
+            senastLoggat.start();
+        }
+    }
+    return korning;
+}
+
+void CarClient::nodstoppSattLage(NodstoppLage lage, const QString &text)
+{
+    mNsLage = lage;
+    mNsStoppSkickat.invalidate();
+    mNsApSkickat.invalidate();
+    qWarning() << text;
+    nodstoppSkrivFil();
+
+    // Visas i RControlStations terminal och i robotd:s logg.
+    QByteArray printf;
+    printf.append((char)(mCarId >= 0 ? mCarId : 0));
+    printf.append((char)CMD_PRINTF);
+    printf.append(text.toUtf8());
+    skickaTillKlienter(printf);
+}
+
+void CarClient::nodstoppSkrivFil()
+{
+    const char *namn = "ok";
+    switch (mNsLage) {
+    case NS_INTRYCKT: namn = "intryckt"; break;
+    case NS_SPARRAD: namn = "sparrad"; break;
+    case NS_FEL: namn = "fel"; break;
+    default: break;
+    }
+
+    // Skriv till en tillfällig fil och byt namn, så att läsarna aldrig ser en halv fil.
+    QFile f("/tmp/nodstopp_status.tmp");
+    if (f.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        f.write(QString("%1 %2\n").arg(namn).arg(QDateTime::currentSecsSinceEpoch()).toLatin1());
+        f.close();
+        ::rename("/tmp/nodstopp_status.tmp", "/tmp/nodstopp_status");
+    }
+    mNsFilSkriven.start();
+}
+
+void CarClient::skickaTillKlienter(const QByteArray &data)
+{
+    QByteArray toSend = data;
+    if (QString::compare(mHostAddress.toString(), "0.0.0.0") != 0) {
+        mUdpSocket->writeDatagram(toSend, mHostAddress, mUdpPort);
+    }
+    mTcpServer->packet()->sendPacket(toSend);
 }
