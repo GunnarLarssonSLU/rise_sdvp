@@ -531,6 +531,11 @@ impl App {
             action: None,
         });
 
+        // Nödstoppet (Car_Client --nodstopp-gpio skriver filen). Ingen ruta utan nödstopp.
+        if let Some(t) = nodstopp_tile(std::fs::read_to_string(NODSTOPP_FIL).ok().as_deref(), unix_now()) {
+            tiles.push(t);
+        }
+
         tiles.push(self.service_tile("Car_Client", st.car_client_ok, Action::RestartCarClient));
 
         let internet_ok = st.handshake_age.map_or(false, |a| a < HANDSHAKE_MAX_AGE);
@@ -1093,8 +1098,44 @@ fn paint_ecg(painter: &egui::Painter, rect: egui::Rect, t: f32, color: egui::Col
     }
 }
 
+/// Läget som Car_Client skriver: "<ok|intryckt|sparrad|fel> <unix-tid>", varje sekund.
+const NODSTOPP_FIL: &str = "/tmp/nodstopp_status";
+
+fn unix_now() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
+
+fn nodstopp_tile(text: Option<&str>, now: u64) -> Option<Tile> {
+    let text = text?;
+    let mut delar = text.split_whitespace();
+    let lage = delar.next().unwrap_or("");
+    let skriven: Option<u64> = delar.next().and_then(|t| t.parse().ok());
+    let farsk = skriven.map_or(false, |w| now.saturating_sub(w) <= 3);
+    let (detail, color, pulsing) = match (farsk, lage) {
+        (true, "ok") => ("OK", BOX_OK, false),
+        (true, "intryckt") => ("INTRYCKT", BOX_BAD, true),
+        (true, "sparrad") => ("utdragen – väntar på stopp från föraren", BOX_WARN, false),
+        (true, _) => ("kan inte läsas – kontrollera kabeln", BOX_BAD, true),
+        (false, _) => ("inget svar från Car_Client", BOX_BAD, false),
+    };
+    Some(Tile { title: "Nödstopp", detail: detail.into(), big: None, color, pulsing, action: None })
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn nodstopp_rutan() {
+        use super::*;
+        assert!(nodstopp_tile(None, 100).is_none());
+        assert_eq!(nodstopp_tile(Some("ok 100"), 101).unwrap().color, BOX_OK);
+        assert_eq!(nodstopp_tile(Some("intryckt 100"), 100).unwrap().color, BOX_BAD);
+        assert_eq!(nodstopp_tile(Some("sparrad 100"), 100).unwrap().color, BOX_WARN);
+        assert_eq!(nodstopp_tile(Some("ok 100"), 110).unwrap().color, BOX_BAD);
+    }
+
     use super::*;
 
     #[test]
